@@ -25,10 +25,3 @@ Records = sf.records()
 NoShapes = len(Shapes)
 print("Number of records = ", NoShapes)
 
-# create a list of coastal segments
-CoastSegments = []
-
-# loop through coastal segments
-for i in range(0, NoShapes):
-    
-    TempCoast = Coast()
