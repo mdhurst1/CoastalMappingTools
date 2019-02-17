@@ -8,8 +8,8 @@ Febraury 2019
 """
 
 # import modules
-improt numpy as np
-import cartopy.io.shapereader as shpreader
+import numpy as np
+import pyshp
 
 class Coast:
     """
