@@ -686,8 +686,92 @@ def PlotProfiles(Folder,CoastTransectsShp):
         
         plt.savefig(ProfsFolder+"Profile_"+str(l)+".png", dpi=300)
 
-def FindBarrier(Folder,CoastTransectsShp):
+def FindBarrierPosition(Folder,CoastTransectsShp):
     
+    """
+    """
+    
+    print("FindBarrierPosition: Finding the position of the barrier")
+
+    # set up the workspace
+    ProfsFolder = Folder + "Profiles/"
+    if os.path.exists(ProfsFolder) is False:
+        raise SystemExit("No profiles to analyse. Run TransectProfilesIDW first.")
+        
+    # Open transects file and read shapes and records
+    RL = shapefile.Reader(CoastTransectsShp)
+    ShapeRecs = RL.shapeRecords()
+    NoTransects = len(ShapeRecs)
+    RL.close()
+        
+    for i in range(25,58):
+        
+        # load transect pkl file
+        DF = pd.read_pickle(ProfsFolder+"Profile_"+str(i)+".pkl")
+        
+        #Run through sorted profile and remove data below sea level
+        DF = DF[DF.ZIDW > 0]
+        
+        #Find the highest point of the barrier Zmax
+        MaxInd = DF.ZIDW.idxmax()
+                
+        #Get Angle to detrend towards the coast
+        Angle = np.degrees(np.arctan((DF.ZIDW.iloc[MaxInd]-DF.ZIDW.iloc[-1])/(DF.DistAlong.iloc[MaxInd]-DF.DistAlong.iloc[-1])))
+        
+        #Get detrended elevation
+        Ztrend = (DF.ZIDW+(DF.DistAlong.iloc[-1]-DF.DistAlong)*np.tan(np.radians(Angle)))
+        Ztrend.iloc[0:MaxInd] = np.nan
+        
+        #Find Minimum and Maximum Ztrend
+        TopInd = Ztrend.idxmax()
+        ToeInd = Ztrend.idxmin()
+        
+        #Check top is not at the end, bottom is ok to be at end
+        if TopInd > ToeInd:
+            TopInd = MaxInd
+            
+        #Get Angle to detrend towards away from the coast
+        Angle = np.degrees(np.arctan((DF.ZIDW.iloc[MaxInd]-DF.ZIDW.iloc[0])/(DF.DistAlong.iloc[MaxInd]-DF.DistAlong.iloc[0])))
+        
+        #Get detrended elevation
+        Ztrend2 = (DF.ZIDW+(DF.DistAlong.iloc[0]-DF.DistAlong)*np.tan(np.radians(Angle)))
+        Ztrend2.iloc[MaxInd+1:] = np.nan
+        
+        #Find Minimum and Maximum Ztrend
+        BackTopInd = Ztrend2.idxmax()
+        BackToeInd = Ztrend2.idxmin()
+                
+        #Check top is not at the end, bottom is ok to be at end
+        if BackTopInd < BackToeInd:
+            BackTopInd = MaxInd
+            
+        #Calculate Cliff height and slope
+        #Elevation = Ztrend[MaxInd]
+        #CliffHeight = Ztrend[MaxInd]-Ztrend[MinInd]
+        #CliffSlope = np.degrees(np.arctan(CliffHeight/np.abs(DistMean[MaxInd]-DistMean[MinInd])))
+        
+        # create array for filling in geometry
+        Dist = DF.DistAlong.iloc[BackToeInd:ToeInd].values
+        Z = DF.ZIDW.iloc[BackToeInd:ToeInd].values
+        
+        DistFill = np.concatenate((Dist,[Dist[0],]))
+        ZFill = np.concatenate((Z,[Z[0],]))
+        
+        #plot the profile and points
+        fig = plt.figure(1,figsize=(8,2))
+        ax = fig.add_subplot(111)            
+        ax.plot(DF.DistAlong,DF.ZIDW,'k-')
+        ax.fill(DistFill,ZFill,c=[0.8,0.8,0.8])
+        ax.plot(DF.DistAlong[TopInd],DF.ZIDW[TopInd],'ko')
+        ax.plot(DF.DistAlong[ToeInd],DF.ZIDW[ToeInd],'ko')
+        ax.plot(DF.DistAlong[BackTopInd],DF.ZIDW[BackTopInd],'ko')
+        ax.plot(DF.DistAlong[BackToeInd],DF.ZIDW[BackToeInd],'ko')
+        ax.set_xlabel("Distance (m)")
+        ax.set_ylabel("Elevation (m)")
+        
+        
+        fig.savefig(ProfsFolder + "barrier" + str(i) + ".png", dpi=300, bbox_inches="tight")
+        plt.clf()        
           
 if __name__ == "__main__":
     
@@ -731,4 +815,4 @@ if __name__ == "__main__":
     #PlotProfiles(Folder,CoastTransectsShp)
     
     # analyse barrier morphology
-    
+    FindBarrierPosition(Folder,CoastTransectsShp)
