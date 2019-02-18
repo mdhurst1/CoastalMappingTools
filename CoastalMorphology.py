@@ -14,6 +14,7 @@ import os
 
 # numerical and statistical packages
 import numpy as np
+import numpy.ma as ma
 from scipy.signal import savgol_filter
 import pandas as pd
 
@@ -25,6 +26,18 @@ import shapefile
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
+plt.style.use('classic')
+from matplotlib import rcParams
+
+#################################
+# Customise global figure style #
+#################################
+rcParams['font.sans-serif'] = "Arial"
+rcParams['font.size'] = 12
+#rcParams['xtick.top'] = True
+#rcParams['xtick.bottom'] = True
+
+padding = 5
 
 def ReadCoastlineShp(CoastLineShp):
 
@@ -172,7 +185,7 @@ def MergeCoastline(CoastLineShp,MergedCoastLineShp):
             WriteCoastlineShp(MergedCoastLineShp,Projection,X1,Y1,Fields,Record)    
             ID += 1
     
-def SmoothCoastline(CoastLineShp,SmoothedCoastLineShp):
+def SmoothCoastline(CoastLineShp,SmoothedCoastLineShp, WindowSize):
     
     """
     Savitzky and Golay (1964) smoothing filter
@@ -202,7 +215,6 @@ def SmoothCoastline(CoastLineShp,SmoothedCoastLineShp):
         
         # smooth X and Y individually with Savitzky Golay filter
         # window size and polyorder must be integers you idiot!
-        WindowSize = 1001
         PolyOrder = 4
         XSmooth = savgol_filter(X,WindowSize,PolyOrder, mode="nearest")
         YSmooth = savgol_filter(Y,WindowSize,PolyOrder, mode="nearest")
@@ -455,7 +467,7 @@ def ExtractSwathProfiles(Folder,CoastTransectsShp,DTM,SwathDist):
                 #find distance to point
                 DistanceToLine = np.sqrt((XLine-XNode)*(XLine-XNode) + (YLine-YNode)*(YLine-YNode))
 
-                if (DistanceToLine < SwathDist):
+                if ((DistanceToLine < SwathDist) and (DTMArray[i][j] != NDV)):
                     X.append(XNode)
                     Y.append(YNode)
                     DistAlong.append(DistanceAlongLine)
@@ -472,7 +484,7 @@ def ExtractSwathProfiles(Folder,CoastTransectsShp,DTM,SwathDist):
         
         # Write results to text file using pandas (easier) for each profile
         DF = pd.DataFrame({"X": X, "Y": Y, "Z": Z, "DistAlong": DistAlong, "DistTo": DistTo})
-        DF.to_csv(SwathProfsFolder+"Swath_"+str(l)+".csv")
+        DF.to_pickle(SwathProfsFolder+"Swath_"+str(l)+".pkl")
 
 def TransectProfilesIDW(Folder,CoastTransectsShp,DTM,SwathDist):
     
@@ -495,6 +507,7 @@ def TransectProfilesIDW(Folder,CoastTransectsShp,DTM,SwathDist):
     # Get DTM properties (but not elevation array)
     DTM_Dataset = rasterio.open(DTM)
     Resolutions = DTM_Dataset.res
+    NDV = -9999.
     
     # check for square pixels
     if Resolutions[0] == Resolutions[1]:
@@ -519,8 +532,8 @@ def TransectProfilesIDW(Folder,CoastTransectsShp,DTM,SwathDist):
     
     for l, ShapeRec in enumerate(ShapeRecs):
         
-        # load transect csv file
-        DF = pd.read_csv(SwathProfsFolder+"Swath_"+str(l)+".csv")
+        # load transect pkl file
+        DF = pd.read_pickle(SwathProfsFolder+"Swath_"+str(l)+".pkl")
         DistAlong = DF['DistAlong'].values
         DistTo = DF['DistTo'].values
         Z = DF['Z'].values
@@ -531,7 +544,7 @@ def TransectProfilesIDW(Folder,CoastTransectsShp,DTM,SwathDist):
         
         #Create a line for interpolating to
         LineLength = np.sqrt((X2-X1)**2 + (Y2-Y1)**2)
-        NoPoints = (int)(LineLength/DTM_Resolution)
+        NoPoints = (int)(LineLength/(DTM_Resolution*2.))
         XLine = np.linspace(X1,X2,NoPoints)
         YLine = np.linspace(Y1,Y2,NoPoints)
         DistAlongLine = np.zeros(len(XLine))
@@ -548,11 +561,25 @@ def TransectProfilesIDW(Folder,CoastTransectsShp,DTM,SwathDist):
         for i in range(0,NoPoints):
             
             #Calculate distance along the line
-            DistAlongLine[i] = i*DTM_Resolution
+            DistAlongLine[i] = i*DTM_Resolution*2.
             
             #Could sample a reduced array here i.e. a neighbourhood?
-            Neighbourhood = np.abs(DistAlongLine[i]-DistAlong) < SwathDist
+            Neighbourhood = np.abs(DistAlongLine[i]-DistAlong) < DTM_Resolution*2.
             ZLocal = Z[Neighbourhood]
+            
+            if len(ZLocal) == 0:
+                
+                # Set to NDV
+                ZIDW[i] = NDV
+                ZMin[i] = NDV
+                ZMax[i] = NDV
+                Z16[i] = NDV
+                Z50[i] = NDV
+                Z84[i] = NDV
+                ZMean[i] = NDV
+                ZStd[i] = NDV
+                
+                continue
             
             # Do IDW
             # Create a distance vector
@@ -573,9 +600,22 @@ def TransectProfilesIDW(Folder,CoastTransectsShp,DTM,SwathDist):
             ZMean[i] = np.mean(ZLocal)
             ZStd[i] = np.std(ZLocal)
         
+        # Set up the mask from NDVs
+        Mask = ZIDW==-9999
+        ZIDW = ma.masked_where(Mask,ZIDW)
+        ZMin = ma.masked_where(Mask,ZMin)
+        ZMax = ma.masked_where(Mask,ZMax)
+        Z16 = ma.masked_where(Mask,Z16)
+        Z50 = ma.masked_where(Mask,Z50)
+        Z84 = ma.masked_where(Mask,Z84)
+        ZMean = ma.masked_where(Mask,ZMean)
+        ZStd = ma.masked_where(Mask,ZStd)
+        
         # Calculate Slope and Curvature of IDW profile
         Slope = np.gradient(ZIDW,DTM_Resolution)
+        Slope = ma.masked_where(Mask,Slope)
         Curvature = np.gradient(Slope,DTM_Resolution)
+        Curvature = ma.masked_where(Mask,Curvature)
         
         # Write results to text file using pandas (easier) for each profile
         DF = pd.DataFrame({"X": XLine, "Y": YLine, "DistAlong": DistAlongLine,
@@ -584,7 +624,7 @@ def TransectProfilesIDW(Folder,CoastTransectsShp,DTM,SwathDist):
                            "ZMean": ZMean, "ZStd": ZStd,
                            "Slope": Slope, "Curvature": Curvature})
     
-        DF.to_csv(ProfsFolder+"Profile_"+str(l)+".csv")
+        DF.to_pickle(ProfsFolder+"Profile_"+str(l)+".pkl")
 
 def PlotProfiles(Folder,CoastTransectsShp):
     
@@ -604,68 +644,91 @@ def PlotProfiles(Folder,CoastTransectsShp):
     
     for l, ShapeRec in enumerate(ShapeRecs):
         
-        # load transect csv file
-        DF = pd.read_csv(ProfsFolder+"Profile_"+str(l)+".csv")
+        # load transect pkl file
+        DF = pd.read_pickle(ProfsFolder+"Profile_"+str(l)+".pkl")
         
         # create figure
         fig = plt.figure(1,figsize=(8,10))
         
         # create 4 subplots
-        ax1 = fig.add_subplot(411)
-        ax2 = fig.add_subplot(412)
-        ax3 = fig.add_subplot(413)
-        ax4 = fig.add_subplot(414)
+        ax1 = plt.subplot2grid((5,1),(0,0),rowspan=2)
+        ax2 = plt.subplot2grid((5,1),(2,0))
+        ax3 = plt.subplot2grid((5,1),(3,0))
+        ax4 = plt.subplot2grid((5,1),(4,0))
         
         # plot profile
-        ax1.plot(DF["DistAlong"], DF["ZIDW"],'k-')
-        plt.ylabel("Elevation (m)")
+        ax1.plot(DF["DistAlong"], DF["ZIDW"],'k-',lw=1.5)
+        
+        # plot range
+        DistFill = np.concatenate((DF["DistAlong"].values,DF["DistAlong"].values[::-1]))
+        ZFill = np.concatenate((DF["ZMax"].values,DF["ZMin"].values[::-1]))
+        ax1.fill(DistFill,ZFill,c=[0.8,0.8,0.8])
+        ax1.set_ylabel("Elevation (m)")
+        ax1.xaxis.set_ticks_position('top')
+        ax1.xaxis.set_ticks_position('both')
+        ax1.xaxis.set_label_position('top')
+        ax1.set_xlabel("Distance (m)")
         
         # plot slope
-        ax2.plot(DF["DistAlong"],DF["Slope"],'b-')
-        plt.ylabel("Slope (m/m)")
-        
+        ax2.plot(DF["DistAlong"],DF["Slope"],'b-',lw=1.5)
+        ax2.set_ylabel("Slope (m/m)")
+        ax2.xaxis.set_ticklabels([])
+                
         # plot curvature
-        ax3.plot(DF["DistAlong"],DF["Curvature"],'r-')
-        plt.ylabel("Curvature (1/m)")
+        ax3.plot(DF["DistAlong"],DF["Curvature"],'r-',lw=1.5)
+        ax3.set_ylabel("Curvature (1/m)")
+        ax3.xaxis.set_ticklabels([])
         
         # plot roughness
-        ax4.plot(DF["DistAlong"],DF["ZStd"],'m-')
-        plt.xlabel("Distance (m)")
-        plt.ylabel("Roughness (m/m)")
+        ax4.plot(DF["DistAlong"],DF["ZStd"],'m-',lw=1.5)
+        ax4.set_xlabel("Distance (m)")
+        ax4.set_ylabel("Roughness [Z$_{std}$] (m/m)")
         
-        plt.savefig(ProfsFolder+"Profile_"+str(l)+".png")
-        raise SystemExit
+        plt.savefig(ProfsFolder+"Profile_"+str(l)+".png", dpi=300)
+
+def FindBarrier(Folder,CoastTransectsShp):
+    
           
 if __name__ == "__main__":
     
     # declare folder name for storing results
-    Folder = "D:/NCCA2/StAndrews/CoastalMorphology/"
+    Folder = "D:/NCCA2/Tiree/CoastalMorphology/"
     if os.path.exists(Folder) is False:
         os.mkdir(Folder)
         
     # declare some file names
-    CoastLineShp = "D:/NCCA2/StAndrews/MHWS/MHWS_2018_Dissolve.shp"
-    MergedCoastLineShp = "D:/NCCA2/StAndrews/MHWS/MHWS_2018_Merged.shp"
-    SmoothCoastLineShp = "D:/NCCA2/StAndrews/MHWS/MHWS_2018_Smooth.shp"
-    CoastTransectsShp = "D:/NCCA2/StAndrews/MHWS/MHWS_2018_Smooth_transects.shp"
-    DTM = "D:/NCCA2/StAndrews/DTM/StAn_2018_DTM.tif"
+    CoastLineShp = "D:/NCCA2/Tiree/MHWS/OS_MHWS_dissolve.shp"
+    MergedCoastLineShp = "D:/NCCA2/Tiree/MHWS/MHWS_Merged.shp"
+    SmoothCoastLineShp = "D:/NCCA2/Tiree/MHWS/MHWS_Smooth.shp"
+    CoastTransectsShp = "D:/NCCA2/Tiree/MHWS/MHWS_Smooth_transects.shp"
+    DTM = "D:/NCCA2/Tiree/DTM/Tiree_25cm_DTM_Clip.tif"
+    
+#    CoastLineShp = "D:/NCCA2/StAndrews/MHWS/MHWS_2018_Dissolve.shp"
+#    MergedCoastLineShp = "D:/NCCA2/StAndrews/MHWS/MHWS_2018_Merged.shp"
+#    SmoothCoastLineShp = "D:/NCCA2/StAndrews/MHWS/MHWS_2018_Smooth.shp"
+#    CoastTransectsShp = "D:/NCCA2/StAndrews/MHWS/MHWS_2018_Smooth_transects.shp"
+#    DTM = "D:/NCCA2/StAndrews/DTM/StAn_2018_DTM.tif"
     
     # launch merging
     #MergeCoastline(Folder,CoastLineShp, MergedCoastLineShp)
     
     # launch smoothing
-    #SmoothCoastline(CoastLineShp,SmoothCoastLineShp)
+    #WindowSize = 1001 # St Andrews
+    #WindowSize = 201 #Tiree
+    #SmoothCoastline(CoastLineShp,SmoothCoastLineShp,WindowSize)
     
     # generate normals
     #GenerateCoastalNormals(SmoothCoastLineShp,50.,200.,50.)
     
     # extract swath profiles
-    SwathDist = 2. # 1/2 width of swath profile in map units (probably metres)
+    #SwathDist = 2. # 1/2 width of swath profile in map units (probably metres)
     #ExtractSwathProfiles(Folder,CoastTransectsShp,DTM,SwathDist)
     
     # analyse swath profiles to create transect porfiles
     #TransectProfilesIDW(Folder,CoastTransectsShp,DTM,SwathDist)
     
     # plot the resulting profiles
-    PlotProfiles(Folder,CoastTransectsShp)
+    #PlotProfiles(Folder,CoastTransectsShp)
+    
+    # analyse barrier morphology
     
