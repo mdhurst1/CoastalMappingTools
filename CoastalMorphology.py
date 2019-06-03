@@ -357,6 +357,9 @@ def GenerateCoastalNormals(CoastLineShp,ProfSpacing,l2sea = 1500.0,l2land = 200.
     f = open(CoastTransectsShp.rstrip("shp")+"prj","w")
     f.write(Projection)
     f.close()
+    
+    # return number of transects
+    return TransectCount
 
 def ExtractSwathProfiles(Folder,CoastTransectsShp,DTM,SwathDist):
     

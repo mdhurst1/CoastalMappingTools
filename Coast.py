@@ -9,7 +9,7 @@ Febraury 2019
 
 # import modules
 import numpy as np
-import pyshp
+import shapefile
 
 class Coast:
     """
@@ -17,17 +17,30 @@ class Coast:
 
     """
 
-    def __init__(self,arg1,arg2):
-        self.coastnodes = -9999.
-        self. normals = -9999.
+    def __init__(self,CoastShp):
+        self.CoastShp = CoastShp
+        self.CoastNodes = []
+        self.Projection = ""
 
     # read coast from a shapefile
-    def ReadCoastShp(self,Shapefile):
+    def ReadCoastShp(self,CoastShp):
 
-        # create the reader object containing shapefile geometries and records
-        CoastShp = shpreader(Shapefile)
-
-        # 
+        # Open coast polyline file for reading
+        SF = shapefile.Reader(CoastShp)
+        Shapes = SF.shapes()
+        Fields = SF.fields
+        Records = SF.records()
+        NoShapes = len(Shapes)
+        print("\tCoast.ReadCoastShp: Read Coastline, no of segments is", NoShapes)
+    
+        # get projection strings
+        f = open(CoastShp.rstrip("shp")+"prj")
+        self.Projection = f.read()
+        f.close()
+        
+        # reduce to single smoothed coastline
+    
+    return Shapes, Fields, Records, NoShapes, Projection 
 
 
 
