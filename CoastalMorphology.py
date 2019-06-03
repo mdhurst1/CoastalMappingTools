@@ -245,7 +245,7 @@ def GenerateCoastalNormals(CoastLineShp,ProfSpacing,l2sea = 1500.0,l2land = 200.
     CoastTransectsShp = CoastLineShp.rsplit(".")[0]+"_transects.shp"
     
     # Replace  Fields
-    Fields = [('DeletionFlag','C',1,0),['Transect_ID', 'C', 3, 0]]
+    Fields = [('DeletionFlag','C',1,0),['Transect_ID', 'C', 3, 0],['Shape_ID', 'C', 3, 0],['Segment_ID','C', 3, 0]]
     
     # open writer object for polyline and assign fields
     WP = shapefile.Writer(PointsShp, shapeType=shapefile.POINT)
@@ -261,12 +261,12 @@ def GenerateCoastalNormals(CoastLineShp,ProfSpacing,l2sea = 1500.0,l2land = 200.
     # Loop through each row in the shapefile, obtain the name of the associated grid tile from the
     # NG_GRID_RE field and use this to get the NextMap tile from the S drive
     # field = "TILE_NAME"
-    for i in range(0, NoShapes):
+    for j in range(0, NoShapes):
         
-        Shape = Shapes[i]
+        Shape = Shapes[j]
         NoSegs = len(Shape.points)-1
         
-        print("\tShape number: " + str(i) + "; number of segments: " + str(NoSegs))
+        print("\tShape number: " + str(j) + "; number of segments: " + str(NoSegs))
         # Parameters for tracing along length
         cum_length = 0.0
         next_point = ProfSpacing
@@ -330,7 +330,7 @@ def GenerateCoastalNormals(CoastLineShp,ProfSpacing,l2sea = 1500.0,l2land = 200.
                 end_point_y = point_y - l2land * np.cos( np.radians( TransectOrientation ) )
 
                 # Create the record
-                Record = [str(TransectCount)]
+                Record = [str(TransectCount),str(j),str(i)]
                 
                 # add the line and record
                 WP.point(point_x,point_y)
@@ -361,6 +361,35 @@ def GenerateCoastalNormals(CoastLineShp,ProfSpacing,l2sea = 1500.0,l2land = 200.
     # return number of transects
     return TransectCount
 
+def CoastalNormalTopology(CoastLineShp, CoastTransectsShp):
+    
+    """
+    
+    Function to check the topology of each coastal transect
+    
+    Martin Hurst, June 2019
+    University of Glasgow
+    
+    """
+    
+    print("GenerateCoastalNormals: Generating Transects perpendicular to the coast")
+
+    # Read coastline shapes and records
+    CoastShapes, CoastFields, CoastRecords, NoSegments, Projection = ReadCoastlineShp(CoastLineShp)
+    
+    # Open transects file and read shapes and records
+    TransectShapes, TransectFields, TransectRecords, NoTransects, Projection = ReadCoastlineShp(CoastTransectsShp)
+    
+    # Loop through transects and count no of intersections with the coastline
+    for i in range(0, NoTransects):
+
+        # get transect line ends        
+        X1,Y1 = TransectShapes[i].points[0]
+        X2,Y2 = TransectShapes[i].points[1]
+        
+        # find nearest point on coast
+        
+    
 def ExtractSwathProfiles(Folder,CoastTransectsShp,DTM,SwathDist):
     
     """
@@ -487,7 +516,7 @@ def ExtractSwathProfiles(Folder,CoastTransectsShp,DTM,SwathDist):
         
         # Write results to text file using pandas (easier) for each profile
         DF = pd.DataFrame({"X": X, "Y": Y, "Z": Z, "DistAlong": DistAlong, "DistTo": DistTo})
-        DF.to_pickle(SwathProfsFolder+"Swath_"+str(l)+".pkl")
+        DF.to_pickle(SwathProfsFolder+"Swath_"+str(l)+".csv")
 
 def TransectProfilesIDW(Folder,CoastTransectsShp,DTM,SwathDist):
     
@@ -535,8 +564,8 @@ def TransectProfilesIDW(Folder,CoastTransectsShp,DTM,SwathDist):
     
     for l, ShapeRec in enumerate(ShapeRecs):
         
-        # load transect pkl file
-        DF = pd.read_pickle(SwathProfsFolder+"Swath_"+str(l)+".pkl")
+        # load transect csv file
+        DF = pd.read_csv(SwathProfsFolder+"Swath_"+str(l)+".csv")
         DistAlong = DF['DistAlong'].values
         DistTo = DF['DistTo'].values
         Z = DF['Z'].values
@@ -627,7 +656,7 @@ def TransectProfilesIDW(Folder,CoastTransectsShp,DTM,SwathDist):
                            "ZMean": ZMean, "ZStd": ZStd,
                            "Slope": Slope, "Curvature": Curvature})
     
-        DF.to_pickle(ProfsFolder+"Profile_"+str(l)+".pkl")
+        DF.to_pickle(ProfsFolder+"Profile_"+str(l)+".csv")
 
 def PlotProfiles(Folder,CoastTransectsShp):
     
@@ -647,8 +676,8 @@ def PlotProfiles(Folder,CoastTransectsShp):
     
     for l, ShapeRec in enumerate(ShapeRecs):
         
-        # load transect pkl file
-        DF = pd.read_pickle(ProfsFolder+"Profile_"+str(l)+".pkl")
+        # load transect csv file
+        DF = pd.read_csv(ProfsFolder+"Profile_"+str(l)+".csv")
         
         # create figure
         fig = plt.figure(1,figsize=(8,10))
@@ -707,10 +736,14 @@ def FindBarrierPosition(Folder,CoastTransectsShp):
     NoTransects = len(ShapeRecs)
     RL.close()
         
-    for i in range(25,58):
+    for i in range(0,NoTransects):
         
-        # load transect pkl file
-        DF = pd.read_pickle(ProfsFolder+"Profile_"+str(i)+".pkl")
+        print(i)
+        
+        # load transect csv file
+        DF = pd.read_csv(ProfsFolder+"Profile_"+str(i)+".csv")
+        
+        print(DF.head())
         
         #Run through sorted profile and remove data below sea level
         DF = DF[DF.ZIDW > 0]
@@ -770,8 +803,7 @@ def FindBarrierPosition(Folder,CoastTransectsShp):
         ax.plot(DF.DistAlong[BackTopInd],DF.ZIDW[BackTopInd],'ko')
         ax.plot(DF.DistAlong[BackToeInd],DF.ZIDW[BackToeInd],'ko')
         ax.set_xlabel("Distance (m)")
-        ax.set_ylabel("Elevation (m)")
-        
+        ax.set_ylabel("Elevation (m)")        
         
         fig.savefig(ProfsFolder + "barrier" + str(i) + ".png", dpi=300, bbox_inches="tight")
         plt.clf()        
