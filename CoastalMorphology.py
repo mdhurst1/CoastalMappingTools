@@ -11,6 +11,7 @@ Febraury 2019
 
 # system level
 import os
+from pathlib import Path
 
 # numerical and statistical packages
 import numpy as np
@@ -246,7 +247,6 @@ def GenerateCoastalNormals(CoastLineShp,ProfSpacing,l2sea = 1500.0,l2land = 200.
     
     # Replace  Fields
     Fields = [('DeletionFlag','C',1,0),['Transect_ID', 'C', 3, 0],['Shape_ID', 'C', 3, 0],['Segment_ID','C', 3, 0]]
-    
     # open writer object for polyline and assign fields
     WP = shapefile.Writer(PointsShp, shapeType=shapefile.POINT)
     WP.fields = Fields[1:]
@@ -254,7 +254,6 @@ def GenerateCoastalNormals(CoastLineShp,ProfSpacing,l2sea = 1500.0,l2land = 200.
      # open writer object for polyline and assign fields
     WL = shapefile.Writer(CoastTransectsShp, shapeType=shapefile.POLYLINE)
     WL.fields = Fields[1:]
-    
     # Give each transect unique ID
     TransectCount = 0
     
@@ -331,7 +330,7 @@ def GenerateCoastalNormals(CoastLineShp,ProfSpacing,l2sea = 1500.0,l2land = 200.
 
                 # Create the record
                 Record = [str(TransectCount),str(j),str(i)]
-                
+                                
                 # add the line and record
                 WP.point(point_x,point_y)
                 WP.record(*Record)
@@ -372,23 +371,96 @@ def CoastalNormalTopology(CoastLineShp, CoastTransectsShp):
     
     """
     
-    print("GenerateCoastalNormals: Generating Transects perpendicular to the coast")
+    print("CheckingCoastalNormals: Topological checks on Coastal Normals")
 
     # Read coastline shapes and records
     CoastShapes, CoastFields, CoastRecords, NoSegments, Projection = ReadCoastlineShp(CoastLineShp)
     
     # Open transects file and read shapes and records
     TransectShapes, TransectFields, TransectRecords, NoTransects, Projection = ReadCoastlineShp(CoastTransectsShp)
+        
+    # open transects shapefile for editing
+    SF = shapefile.Writer(CoastTransectsShp)
+    
+    # Generate output file names
+    EditedCoastTransectsShp = CoastTransectsShp.rsplit(".")[0]+"_corrected.shp"
+    
+    # open writer object for polyline and assign fields
+    WL = shapefile.Writer(EditedCoastTransectsShp, shapeType=shapefile.POLYLINE)
+    WL.fields = TransectFields[1:]
     
     # Loop through transects and count no of intersections with the coastline
-    for i in range(0, NoTransects):
+    # delete transects that interesect the coastline more than once?
+    for i in range(0, 1): #NoTransects):
 
         # get transect line ends        
         X1,Y1 = TransectShapes[i].points[0]
         X2,Y2 = TransectShapes[i].points[1]
+        dX12 = X2-X1
+        dY12 = Y2-Y1
         
-        # find nearest point on coast
+        # get coastline shape number and segment number 
+        TransectNo = int(TransectRecords[i][0])
+        ShapeNo = int(TransectRecords[i][1])
+        SegmentNo = int(TransectRecords[i][2])
+        print(ShapeNo)
         
+        # find nearest point on coast for each end
+        Shape = CoastShapes[ShapeNo]
+        NoSegments = len(Shape.points)-1
+        IntersectionCounter = 0
+        
+        for j in range(0, NoSegments):
+            X3,Y3 = Shape.points[j]
+            X4,Y4 = Shape.points[j+1]
+            dX34 = X4-X3
+            dY34 = Y4-Y3
+        
+            #Find the cross product of the two vectors
+            XProd = dX12*dY34 - dX34*dY12
+			
+            if (XProd != 0):
+                if (XProd > 0):
+                    XProdPos = 1
+                else:
+                    XProdPos = 0
+				
+				#assign third test segment
+                dX31 = X1-X3
+                dY31 = Y1-Y3
+				
+				#get cross products
+                S = dX12*dY31 - dY12*dX31;
+                T = dX34*dY31 - dY34*dX31;
+				
+                #logic for collision occurence
+                if ((S < 0) == XProdPos):
+                    continue
+                elif ((T < 0) == XProdPos):
+                    continue
+                elif ((S > XProd) == XProdPos):
+                    continue
+                elif ((T > XProd) == XProdPos):
+                    continue
+                else:
+                    IntersectionCounter += 1
+                    
+        
+        if (IntersectionCounter > 1):
+            
+            print("Transect ID is", TransectNo, "No Intersections is", IntersectionCounter)
+            
+        else:
+            # add the line and record
+            WL.line(TransectShapes[i])
+            WL.record(TransectRecords[i])
+    
+    WL.close()
+
+    # create the projection file    
+    f = open(EditedCoastTransectsShp.rstrip("shp")+"prj","w")
+    f.write(Projection)
+    f.close()
     
 def ExtractSwathProfiles(Folder,CoastTransectsShp,DTM,SwathDist):
     
@@ -811,43 +883,57 @@ def FindBarrierPosition(Folder,CoastTransectsShp):
 if __name__ == "__main__":
     
     # declare folder name for storing results
-    Folder = "D:/NCCA2/Tiree/CoastalMorphology/"
-    if os.path.exists(Folder) is False:
-        os.mkdir(Folder)
+    Folder = "D:/NCCA2/StAndrews/"
+    MHWS_Folder = Folder+"MHWS/"
+    DTM_Folder = Folder+"DTM/"
+    ResultsFolder = Folder+"CoastalMorphology/"
+    
+    #if os.path.exists(Folder) is False:
+    #    os.mkdir(Folder)
         
-    # declare some file names
-    CoastLineShp = "D:/NCCA2/Tiree/MHWS/OS_MHWS_dissolve.shp"
-    MergedCoastLineShp = "D:/NCCA2/Tiree/MHWS/MHWS_Merged.shp"
-    SmoothCoastLineShp = "D:/NCCA2/Tiree/MHWS/MHWS_Smooth.shp"
-    CoastTransectsShp = "D:/NCCA2/Tiree/MHWS/MHWS_Smooth_transects.shp"
-    DTM = "D:/NCCA2/Tiree/DTM/Tiree_25cm_DTM_Clip.tif"
+    # declare some file names for representing the coast
+    CoastLineShp = MHWS_Folder + "MHWS_2018_Dissolve.shp"
+    MergedCoastLineShp = MHWS_Folder + "MHWS_2018_Merged.shp"
+    SmoothCoastLineShp = MHWS_Folder + "MHWS_2018_Smooth.shp"
+    CoastTransectsShp = MHWS_Folder + "MHWS_2018_Smooth_transects.shp"
     
-#    CoastLineShp = "D:/NCCA2/StAndrews/MHWS/MHWS_2018_Dissolve.shp"
-#    MergedCoastLineShp = "D:/NCCA2/StAndrews/MHWS/MHWS_2018_Merged.shp"
-#    SmoothCoastLineShp = "D:/NCCA2/StAndrews/MHWS/MHWS_2018_Smooth.shp"
-#    CoastTransectsShp = "D:/NCCA2/StAndrews/MHWS/MHWS_2018_Smooth_transects.shp"
-#    DTM = "D:/NCCA2/StAndrews/DTM/StAn_2018_DTM.tif"
+    # declare the DTM
+    DTM = DTM_Folder+"StAn_2018_DTM.tif"
     
-    # launch merging
-    #MergeCoastline(Folder,CoastLineShp, MergedCoastLineShp)
+    # merge the coastline line segments shapefile to produce a single line segment
+    if not Path(MergedCoastLineShp).is_file():
+        MergeCoastline(CoastLineShp, MergedCoastLineShp)
     
-    # launch smoothing
-    #WindowSize = 1001 # St Andrews
-    #WindowSize = 201 #Tiree
-    #SmoothCoastline(CoastLineShp,SmoothCoastLineShp,WindowSize)
+    # launch smoothing of coastline
+    WindowSize = 1001 # St Andrews
+    if not Path(SmoothCoastLineShp).is_file():
+        SmoothCoastline(MergedCoastLineShp,SmoothCoastLineShp,WindowSize)
     
-    # generate normals
-    #GenerateCoastalNormals(SmoothCoastLineShp,50.,200.,50.)
+    # generate coastal normals
+    Spacing = 50.
+    Dist2Sea = 50.
+    Dist2Land = 200.
+    if not Path(CoastTransectsShp).is_file():
+        NoTransects = GenerateCoastalNormals(SmoothCoastLineShp,Spacing,Dist2Land,Dist2Sea)
     
+    #NoTransects = GenerateCoastalNormals(SmoothCoastLineShp,Spacing,Dist2Land,Dist2Sea)
+    #CoastalNormalTopology(SmoothCoastLineShp, CoastTransectsShp)
+        
     # extract swath profiles
-    #SwathDist = 2. # 1/2 width of swath profile in map units (probably metres)
-    #ExtractSwathProfiles(Folder,CoastTransectsShp,DTM,SwathDist)
+    SwathDist = 1. # 1/2 width of swath profile in map units (probably metres)
+    LastSwath = ResultsFolder + "SwathProfs/" + "Swath_"+str(NoTransects-1)+".csv"
+    if not Path(LastSwath).is_file():
+        ExtractSwathProfiles(Folder,CoastTransectsShp,DTM,SwathDist)
     
-    # analyse swath profiles to create transect porfiles
-    #TransectProfilesIDW(Folder,CoastTransectsShp,DTM,SwathDist)
+    # analyse swath profiles to create transect profiles
+    LastProf = ResultsFolder + "Profiles/" + "Profile_"+str(NoTransects-1)+".csv"
+    if not Path(LastProf).is_file():
+        TransectProfilesIDW(Folder,CoastTransectsShp,DTM,SwathDist)
     
     # plot the resulting profiles
-    #PlotProfiles(Folder,CoastTransectsShp)
+    LastProf = ResultsFolder + "Profiles/" + "Profile_"+str(NoTransects-1)+".png"
+    if not Path(LastProf).is_file():
+        PlotProfiles(Folder,CoastTransectsShp)
     
     # analyse barrier morphology
-    FindBarrierPosition(Folder,CoastTransectsShp)
+    #FindBarrierPosition(ResultsFolder,CoastTransectsShp)
