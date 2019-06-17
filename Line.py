@@ -17,8 +17,23 @@ class Line:
 
     """
 
-    def __init__(self):
+    def __init__(self, X, Y, ID):
         self.ID = ""
         self.NoNodes = 0
         self.Nodes = []
         self.Projection = ""
+
+    def SmoothLine(self, WindowSize):
+        """
+        Description goes here
+        """
+
+        # Get X and Y vectors from Nodes
+
+        # smooth X and Y individually with Savitzky Golay filter
+        # window size and polyorder must be integers you idiot!
+        PolyOrder = 4
+        XSmooth = savgol_filter(X,WindowSize,PolyOrder, mode="nearest")
+        YSmooth = savgol_filter(Y,WindowSize,PolyOrder, mode="nearest")
+
+        # Write new X and Y vectors to Nodes
