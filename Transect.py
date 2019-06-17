@@ -1,22 +1,19 @@
-# -*- coding: utf-8 -*-
 """
-Created on Mon Jun 10 16:41:01 2019
+Description of file goes here
 
-@author: mh322u
+Martin D. Hurst
+University of Glasgow
+June 2019
+
 """
 
 import numpy as np
-
-class Node:
-    
-    def __init__(self, ID, X, Y):
-        
-        self.ID = ID
-        self.X = X
-        self.Y = Y
         
 class Transect:
-    
+    """
+    Description of object goes here
+
+    """
     def __init__(self, ID, X1, Y1, X2, Y2):
         
         self.ID = ID
