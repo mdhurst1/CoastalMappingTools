@@ -33,4 +33,5 @@ print(ThisLine)
 
 TESTFILE = "D:\\NCCA2\\StAndrews\\MHWS\\MHWS_2018.shp"
 ThisCoast = Coast(TESTFILE)
+ThisCoast.MergeCoastlines()
 print(ThisCoast)

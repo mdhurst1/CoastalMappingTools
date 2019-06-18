@@ -65,7 +65,7 @@ class Coast:
 
             # append to list of coast lines
             self.CoastLines.append(ThisLine)
-
+            
         # get projection strings
         f = open(CoastShp.rstrip("shp")+"prj")
         self.Projection = f.read()
@@ -85,31 +85,47 @@ class Coast:
 
         print("Coast: Merging coastlines")
 
-        for i in range(0, self.NoCoastLines):
+        NewShapes = []
+        NewRecords = []
+        NewCoastLines = [] 
+        ID = 0
+        for i, CoastLine in enumerate(self.CoastLines):
                             
             # get X and Y coordinates of both Lines
             # segment 1 only needs defining first time round as will be dynamic
             if i == 0:
-                X1, Y1 = self.CoastLines[i].get_XY()
+                X1, Y1 = CoastLine.get_XY()
         
             # only define second segment and test if not at the end of the file
-            if i < self.NoCoastLines-1:
-                X2, Y2 = self.CoastLines[i+1].get_XY()
+            else:
+                X2, Y2 = CoastLine.get_XY()
 
-            # check for a match
-            if ((X1[-1] == X2[0]) and (Y1[-1] == Y2[0])):
-                X1 = np.concatenate((X1,X2[1:]))
-                Y1 = np.concatenate((Y1,Y2[1:]))
+                # check for a match
+                if ((X1[-1] == X2[0]) and (Y1[-1] == Y2[0])):
+                    X1 = np.concatenate((X1,X2[1:]))
+                    Y1 = np.concatenate((Y1,Y2[1:]))
 
-                # write new line and delete second segment
-                self.CoastLines[i] = Line(X1, Y1, str(i))
-                self.CoastLines.pop(i+1)
+                    # write new line, and update shape and records lists
+                    NewCoastLines.append(Line(str(ID), X1, Y1))
+                    NewShapes.append(np.column_stack([X1,Y1]).tolist())
+                    NewRecords.append([str(ID)])
+                    
+                    # update X1 and Y1 for next iteration
+                    X1 = X2
+                    Y1 = Y2
 
-                # update shapefile lists and delete second segment (this will need testing)
-                self.Shapes[i] = np.column_stack([X1,Y1]).tolist()
-                self.Shapes.pop(i+1)
-                self.Records.pop(i+1)
+                    # iterate ID
+                    ID += 1
 
+        # update object properties with merged geometries
+        self.CoastLines = NewCoastLines
+        self.Shapes = NewShapes
+        self.Records = NewRecords
+
+        # update number of shapes
+        if len(self.CoastLines) != len(self.Shapes):
+            sys.exit("Coast.MergeCoastlines(ERROR): Number of shapes and number of lines doesn't match!")
+        self.NoCoastLines = len(self.CoastLines)
 
     def SmoothCoastlines(self, WindowSize):
         """
