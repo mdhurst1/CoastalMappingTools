@@ -10,20 +10,20 @@ June 2019
 # import modules
 import sys
 import numpy as np
-import shapefile
 from scipy.signal import savgol_filter
 import Transect
-import Node
+from Node import *
+from Transect import *
 
 class Line:
     
     """
     """
 
-    def __init__(self, X, Y, ID):
+    def __init__(self, ID, X, Y):
         """
         """
-        self.ID = ""
+        self.ID = ID
         self.NoNodes = 0
         self.Nodes = []
         self.Projection = ""
@@ -31,15 +31,23 @@ class Line:
         self.SegmentLength = []
         self.TotalLength = 0
 
-        self.GenerateNodes(X,Y)
+        self.GenerateNodes(X, Y)
+
+    def __str__(self):
+        """
+        """
+        String = "Line Object:\nID: %s\nNoNodes: %d\nLength: %.2f" % (str(self.ID), self.NoNodes, self.TotalLength)
+        return String
 
     def GenerateNodes(self, X, Y):
         """
         Function to convert X and Y data into Nodes
         """
         # check X and Y are same length
+        
         if len(X) != len(Y):
-            sys.exit("Line.GenerateNodes(ERROR): X and Y vectors are not same length.")
+            sys.exit("Line.GenerateNodes(ERROR): X and Y vectors are not same length.\n\t" \
+                        "length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
         # set the number of nodes on the line
         self.NoNodes = len(X)
@@ -98,7 +106,7 @@ class Line:
         Savitzky and Golay (1964) smoothing filter
             
         Savitzky, A. and Golay, M. J.: Smoothing and differentiation of data
-            by simplified least squares procedures, Anal. Chem., 36, 1627–
+            by simplified least squares procedures, Anal. Chem., 36, 1627-
             1639, 1964.
         """
 
@@ -207,8 +215,8 @@ class Line:
         """
         X = []
         Y = []
-        for i in range(0,NoNodes):
-            X.append(Nodes[i].X)
-            Y.append(Nodes[i].Y)
+        for Node in self.Nodes:
+            X.append(Node.X)
+            Y.append(Node.Y)
         
         return np.array(X), np.array(Y)

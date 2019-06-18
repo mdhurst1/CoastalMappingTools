@@ -10,7 +10,7 @@ June 2019
 # import modules
 import numpy as np
 import shapefile
-import Line
+from Line import *
 
 class Coast:
     """
@@ -18,7 +18,7 @@ class Coast:
 
     """
 
-    def __init__(self,CoastShp=""):
+    def __init__(self, CoastShp=""):
         """
         MDH, June 2019
         """
@@ -37,6 +37,10 @@ class Coast:
         else:
             print("Coast: Generating empty coast object")
 
+    def __str__(self):
+        String = "Coast Object:\n\tFile: %s\n\tNumber of Coastlines:%d\n\t" % (str(self.CoastShp), self.NoCoastLines)
+        return String
+
     # read coast from a shapefile
     def ReadCoastShp(self,CoastShp):
 
@@ -47,17 +51,17 @@ class Coast:
         self.Records = SF.records()
 
         # Get number of coast segments to work on
-        self.NoCoastLines = len(Shapes)
+        self.NoCoastLines = len(self.Shapes)
         print("\tCoast.ReadCoastShp: Read Coastline, no of coast segments is", self.NoCoastLines)
     
         # Generate coast nodes for each segment
         for i in range(0,self.NoCoastLines):
             
             # get X and Y coordinates of segment
-            X, Y = np.array(Shapes[i].points).T
+            X, Y = np.array(self.Shapes[i].points).T
             
             # Set up a line object for each
-            ThisLine = Line(X, Y, str(i))
+            ThisLine = Line(str(i), X, Y)
 
             # append to list of coast lines
             self.CoastLines.append(ThisLine)
@@ -86,11 +90,11 @@ class Coast:
             # get X and Y coordinates of both Lines
             # segment 1 only needs defining first time round as will be dynamic
             if i == 0:
-                X1, Y1 = self.Lines[i].get_XY()
+                X1, Y1 = self.CoastLines[i].get_XY()
         
             # only define second segment and test if not at the end of the file
             if i < self.NoCoastLines-1:
-                X2, Y2 = self.Lines[i+1].get_XY())
+                X2, Y2 = self.CoastLines[i+1].get_XY()
 
             # check for a match
             if ((X1[-1] == X2[0]) and (Y1[-1] == Y2[0])):
@@ -98,8 +102,8 @@ class Coast:
                 Y1 = np.concatenate((Y1,Y2[1:]))
 
                 # write new line and delete second segment
-                self.Lines[i] = Line(X, Y, str(i))
-                Lines.pop(i+1)
+                self.CoastLines[i] = Line(X1, Y1, str(i))
+                self.CoastLines.pop(i+1)
 
                 # update shapefile lists and delete second segment (this will need testing)
                 self.Shapes[i] = np.column_stack([X1,Y1]).tolist()
@@ -122,7 +126,7 @@ class Coast:
 
         print("Coast: Smoothing coastlines")
 
-        for i, Line in enumerate(self.Lines):
+        for i, Line in enumerate(self.CoastLines):
 
             # smooth the line
             Line.SmoothLine(WindowSize)
@@ -141,7 +145,7 @@ class Coast:
         """
         print("Coast: Generating coastline normals")
 
-        for i, Line in enumerate(self.Lines):
+        for Line in self.CoastLines:
 
             # smooth the line
             Line.GenerateTransects()

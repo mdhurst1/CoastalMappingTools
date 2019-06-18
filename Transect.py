@@ -8,8 +8,8 @@ June 2019
 """
 
 import numpy as np
-import Node
-        
+from Node import *
+
 class Transect:
     """
     Description of object goes here
@@ -27,6 +27,14 @@ class Transect:
         self.Distance = None
         self.Elevation = None
     
+    def __str__(self):
+        String = "Transect Object:\nID: %s\n" % (str(self.ID))
+        String += "StartNode: "
+        String += self.StartNode.__str__()
+        String += "EndNode: "
+        String += self.EndNode.__str__()
+        return String
+
     def CalculateOrientation(self, Node1, Node2):
         
         """
