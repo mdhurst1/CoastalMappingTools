@@ -7,9 +7,8 @@ June 2019
 
 """
 
-import numpy as np
-
 class Node:
+    
     """
     Description of object goes here
 

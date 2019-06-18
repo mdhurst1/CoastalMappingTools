@@ -8,6 +8,7 @@ June 2019
 """
 
 import numpy as np
+import Node
         
 class Transect:
     """
