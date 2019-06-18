@@ -72,8 +72,38 @@ class Coast:
         f.close()
         
         # reduce to single smoothed coastline
-    
+        print((self.Shapes[0]))
 
+    def WriteCoastShp(self,CoastShp):
+        """
+        Writes the contents of a Coast object to polyline shape file
+
+        MDH, June 2019
+
+        """
+
+        # open new shapefile        
+        WL = shapefile.Writer(CoastShp,shapeType=shapefile.POLYLINE)
+        WL.fields = self.Fields[1:]
+        print(WL.fields)
+        
+        for Record, Line in zip( self.Records, self.CoastLines):
+            
+            # get line node positions
+            X, Y = Line.get_XY()
+            WriteLine = [np.column_stack([X,Y]).tolist()]
+            
+            # write line and record
+            WL.line(WriteLine)
+            WL.record(*Record) ####### ISSUE WITH RECORDS NEEDS FIXING ########
+        
+        # close the shapefiles and clean up
+        WL.close()
+            
+        # create the projection file    
+        f = open(CoastShp.rstrip("shp")+"prj","w")
+        f.write(self.Projection)
+        f.close()
 
     def MergeCoastlines(self):
         """
@@ -126,6 +156,8 @@ class Coast:
         if len(self.CoastLines) != len(self.Shapes):
             sys.exit("Coast.MergeCoastlines(ERROR): Number of shapes and number of lines doesn't match!")
         self.NoCoastLines = len(self.CoastLines)
+
+        print(self.Records[0])
 
     def SmoothCoastlines(self, WindowSize):
         """
