@@ -111,17 +111,67 @@ class Line:
         YSmooth = savgol_filter(Y,WindowSize,PolyOrder, mode="nearest")
 
         # Write new X and Y vectors to Nodes
-        GenerateNodes(X,Y)
+        self.GenerateNodes(X,Y)
     
-    def GenerateBuffer(self,Dist1,Dist2):
+    def GenerateBuffer(self, Dist1, Dist2):
         
         """
         Description goes here
 
         MDH, June 2019
+
         """
 
+        # empty lists for new nodes
+        BufferNodesLeft = []
+        BufferNodesRight = []
 
+        # Orientation increments by 1 degree when rounding required
+        OrientationInc = 1.
+
+        # Node Counter to give each node a unique ID
+        NodeCounter = 0
+
+        # loop through nodes 
+        for i, ThisNode in enumerate(self.NoNodes):
+            
+            # check if line is convex/concave left
+            if not self.Orientation[i] < self.Orientation[i-1]:
+                        
+                # find point perpendicular to orientation on left side
+                TempOrientation = self.Orientation[i]
+                XL = ThisNode.X + Dist1 * np.sin( np.radians (TempOrientation-90.) )
+                YL = ThisNode.Y + Dist1 * np.cos( np.radians (TempOrientation-90.) )
+                BufferNodesLeft.append(Node(i, XL, YL))
+                NodeCounter += 1
+
+                # increment orientation to complete radius
+                while TempOrientation < self.Orientation[i+1]:
+                    TempOrientation += OrientationInc
+                    XL = ThisNode.X + Dist1 * np.sin( np.radians (TempOrientation-90.) )
+                    YL = ThisNode.Y + Dist1 * np.cos( np.radians (TempOrientation-90.) )
+                    BufferNodesLeft.append(Node(i, XL, YL))
+                    NodeCounter += 1
+
+
+            
+            XR = 
+            YR = 
+
+            self.Orientation[i]
+
+            #Create cross section line
+                #Get line orientation
+                if Orientation < 0:
+                    TransectOrientation = Orientation + 90.0
+                else:
+                    TransectOrientation = Orientation - 90.0
+
+            #Calculate start and end nodes
+                x = point_x + l2sea * np.sin( np.radians( TransectOrientation ) )
+                y = point_y + l2sea * np.cos( np.radians( TransectOrientation ) )
+                end_point_x = point_x - l2land * np.sin( np.radians( TransectOrientation ) )
+                end_point_y = point_y - l2land * np.cos( np.radians( TransectOrientation ) )
 
 
         
@@ -133,15 +183,7 @@ class Line:
         MDH, June 2019
         """
 
-        # Get X and Y vectors from Nodes
-
-        # smooth X and Y individually with Savitzky Golay filter
-        # window size and polyorder must be integers you idiot!
-        PolyOrder = 4
-        XSmooth = savgol_filter(X,WindowSize,PolyOrder, mode="nearest")
-        YSmooth = savgol_filter(Y,WindowSize,PolyOrder, mode="nearest")
-
-        # Write new X and Y vectors to Nodes
+        
 
     def get_XY(self):
         """
