@@ -135,6 +135,9 @@ class Line:
         # loop through nodes 
         for i, ThisNode in enumerate(self.NoNodes):
             
+            # this section of code could definately be more efficient
+            # or better written but will do for now
+
             # check if line is convex/concave left
             if not self.Orientation[i] < self.Orientation[i-1]:
                         
@@ -142,7 +145,7 @@ class Line:
                 TempOrientation = self.Orientation[i]
                 XL = ThisNode.X + Dist1 * np.sin( np.radians (TempOrientation-90.) )
                 YL = ThisNode.Y + Dist1 * np.cos( np.radians (TempOrientation-90.) )
-                BufferNodesLeft.append(Node(i, XL, YL))
+                BufferNodesLeft.append(Node(NodeCounter, XL, YL))
                 NodeCounter += 1
 
                 # increment orientation to complete radius
@@ -150,31 +153,42 @@ class Line:
                     TempOrientation += OrientationInc
                     XL = ThisNode.X + Dist1 * np.sin( np.radians (TempOrientation-90.) )
                     YL = ThisNode.Y + Dist1 * np.cos( np.radians (TempOrientation-90.) )
-                    BufferNodesLeft.append(Node(i, XL, YL))
+                    BufferNodesLeft.append(Node(NodeCounter, XL, YL))
                     NodeCounter += 1
 
+                # find point on right perpendicular to mean orientation
+                TempOrientation = np.mean(self.Orientation[i-1:i+1])
+                XR = ThisNode.X + Dist2 * np.sin( np.radians (TempOrientation+90.) )
+                YR = ThisNode.X + Dist2 * np.sin( np.radians (TempOrientation+90.) )
+                BufferNodesRight.append(Node(NodeCounter, XR, YR))
+                NodeCounter += 1
 
-            
-            XR = 
-            YR = 
+            else:
 
-            self.Orientation[i]
+                # find point perpendicular to orientation on right side
+                TempOrientation = self.Orientation[i]
+                XR = ThisNode.X + Dist2 * np.sin( np.radians (TempOrientation+90.) )
+                YR = ThisNode.Y + Dist2 * np.cos( np.radians (TempOrientation+90.) )
+                BufferNodesRight.append(Node(NodeCounter, XR, YR))
+                NodeCounter += 1
 
-            #Create cross section line
-                #Get line orientation
-                if Orientation < 0:
-                    TransectOrientation = Orientation + 90.0
-                else:
-                    TransectOrientation = Orientation - 90.0
+                # increment orientation to complete radius
+                while TempOrientation < self.Orientation[i+1]:
+                    TempOrientation += OrientationInc
+                    XR = ThisNode.X + Dist2 * np.sin( np.radians (TempOrientation+90.) )
+                    YR = ThisNode.Y + Dist2 * np.cos( np.radians (TempOrientation+90.) )
+                    BufferNodesRight.append(Node(NodeCounter, XR, YR))
+                    NodeCounter += 1
 
-            #Calculate start and end nodes
-                x = point_x + l2sea * np.sin( np.radians( TransectOrientation ) )
-                y = point_y + l2sea * np.cos( np.radians( TransectOrientation ) )
-                end_point_x = point_x - l2land * np.sin( np.radians( TransectOrientation ) )
-                end_point_y = point_y - l2land * np.cos( np.radians( TransectOrientation ) )
+                # find point on right perpendicular to mean orientation
+                TempOrientation = np.mean(self.Orientation[i-1:i+1])
+                XL = ThisNode.X + Dist1 * np.sin( np.radians (TempOrientation-90.) )
+                YL = ThisNode.X + Dist1 * np.sin( np.radians (TempOrientation-90.) )
+                BufferNodesLeft.append(Node(NodeCounter, XL, YL))
+                NodeCounter += 1
 
+        return Line(XL,YL,"LeftBuffer"), Line(XL,YL,"RightBuffer")
 
-        
 
     def GenerateTransects(self,Args):
         """
