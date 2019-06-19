@@ -53,8 +53,8 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         self.NoNodes = len(X)
 
         # loop through and create node list
-        for i in range(0,self.NoNodes):
-            self.Nodes.append(Node(i,X[i],Y[i]))
+        for x, y in zip(X, Y):
+            self.Nodes.append(Node(x,y))
         
         self.CalculateGeometry()
 

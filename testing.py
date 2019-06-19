@@ -25,14 +25,17 @@ JoinedList = np.zeros(len(StartNodes),dtype=int)-9999
 
 for i, EndNode in enumerate(EndNodes):
     for j, StartNode in enumerate(StartNodes):
+        #print(i, EndNode.X, EndNode.Y, j, StartNode.X, StartNode.Y)
+        print([i for i, x in enumerate(StartNodes) if x==StartNode])
         if StartNode == EndNode:
             JoinsList[i] = j
             JoinedList[j] = i
-            
-print(JoinsList)
-print(JoinedList)
-StartList = np.where(JoinedList < 0)
-print(StartList)
+
+#print(i, for i,)            
+#print(JoinsList)
+#print(JoinedList)
+#StartList = np.where(JoinedList < 0)
+#print(StartList)
 #mask = JoinList > -1
 #sorted_indices = np.argsort(JoinList)
 #sorted_filter = sorted_indices[mask]

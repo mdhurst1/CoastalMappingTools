@@ -111,7 +111,7 @@ class Coast:
         Identifies individual coast Lines that are touching at one end 
         and combines them into a single Line
 
-        THIS NEEDS MORE WORK AS CURRENTLY SEGMENTS NOT IN ORDER DOWN COAST
+        THIS NEEDS MORE WORK AS CURRENTLY SEGMENTS CAN GO IN EITHER DIRECTION ALONG COAST
 
         MDH, June 2019
         """
@@ -124,33 +124,36 @@ class Coast:
         NewRecords = []
 
         # create list of joins
-        JoinList = np.zeros(NoCoastLines,dtype=int)-9999
-        JoinedList = np.zeros(NoCoastLines,dtype=int)-9999
+        JoinsList = np.zeros(self.NoCoastLines,dtype=int)-9999
+        JoinedByList = np.zeros(self.NoCoastLines,dtype=int)-9999
         
         # get start and end nodes from line sections
-        StartNodes = [CoastLine.Nodes[0] for CoastLine in CoastLines]
-        EndNodes = [CoastLine.Nodes[-1] for CoastLine in CoastLines]
-        
+        StartNodes = [CoastLine.Nodes[0] for CoastLine in self.CoastLines]
+        print(StartNodes)
+        EndNodes = [CoastLine.Nodes[-1] for CoastLine in self.CoastLines]
+        print(EndNodes)
+
         # compare start nodes and end nodes to populate join list
         # this could probably be done better!
         for i, EndNode in enumerate(EndNodes):
             for j, StartNode in enumerate(StartNodes):
                 if StartNode == EndNode:
-                    JoinList[i] = j
-                    JoinedList[j] = i
+                    JoinsList[i] = j
+                    JoinedByList[j] = i
         
         # get list of line sections to start at
-        StartList = np.where(JoinedList < 0)
+        StartList = np.where(JoinedByList < 0)[0]
 
-        for i, StartNode in enumerate(StartList):
+        for StartLine in StartList:
             
             # get vector of line section
-            X1, Y1 = self.CoastLines[StartNode].get_XY()
+            print("StartLine is ", StartLine)
+            X1, Y1 = self.CoastLines[StartLine].get_XY()
             
             # get first line section to join
-            JoinLine = JoinList[StartNode]
+            JoinLine = JoinsList[StartLine]
 
-            while JoinNode > -1:
+            while JoinLine > -1:
                 
                 # get next line
                 X2, Y2 = self.CoastLines[JoinLine].get_XY()
@@ -160,12 +163,12 @@ class Coast:
                 Y1 = np.concatenate((Y1,Y2[1:]))
 
                 # get next n
-                JoinLine = JoinList[JoinLine]
+                JoinLine = JoinsList[JoinLine]
 
             # write new line, and update shape and records lists
-            NewCoastLines.append(Line(str(ID), X1, Y1))
+            NewCoastLines.append(Line(self.CoastLines[StartLine].ID, X1, Y1))
             NewShapes.append(np.column_stack([X1,Y1]).tolist())
-            NewRecords.append(Record[i])
+            NewRecords.append(self.Records[StartLine])
                 
         # update object properties with merged geometries
         self.CoastLines = NewCoastLines
