@@ -13,24 +13,27 @@ from Coast import *
 
 TESTFILE = "D:\\NCCA2\\StAndrews\\MHWS\\MHWS_2018.shp"
 ThisCoast = Coast(TESTFILE)
-#ThisCoast.MergeCoastlines()
-#TESTFILE2 = "D:\\NCCA2\\StAndrews\\MHWS\\MHWS_2018_TEST.shp"
-#ThisCoast.WriteCoastShp(TESTFILE2)
+ThisCoast.MergeCoastLines()
+TESTFILE2 = "D:\\NCCA2\\StAndrews\\MHWS\\MHWS_2018_TEST.shp"
+ThisCoast.WriteCoastShp(TESTFILE2)
 
-StartNodes = [CoastLine.Nodes[0] for CoastLine in ThisCoast.CoastLines]
-EndNodes = [CoastLine.Nodes[-1] for CoastLine in ThisCoast.CoastLines]
+#StartNodes = [CoastLine.Nodes[0] for CoastLine in ThisCoast.CoastLines]
+#EndNodes = [CoastLine.Nodes[-1] for CoastLine in ThisCoast.CoastLines]#
 
-JoinsList = np.zeros(len(StartNodes),dtype=int)-9999
-JoinedList = np.zeros(len(StartNodes),dtype=int)-9999
+#JoinsList = np.zeros(len(StartNodes),dtype=int)-9999
+#JoinedList = np.zeros(len(StartNodes),dtype=int)-9999
 
-for i, EndNode in enumerate(EndNodes):
-    for j, StartNode in enumerate(StartNodes):
-        #print(i, EndNode.X, EndNode.Y, j, StartNode.X, StartNode.Y)
-        print([i for i, x in enumerate(StartNodes) if x==StartNode])
-        if StartNode == EndNode:
-            JoinsList[i] = j
-            JoinedList[j] = i
-
+#for i, EndNode in enumerate(EndNodes):
+#    for j, StartNode in enumerate(StartNodes):
+#        #print(i, EndNode.X, EndNode.Y, j, StartNode.X, StartNode.Y)
+#        if i == j:
+#            continue
+#        
+#        if StartNode == EndNode:
+#            JoinsList[i] = j
+#            JoinedList[j] = i##
+#
+#        (i [i for i, x in enumerate(StartNodes) if x==StartNode]
 #print(i, for i,)            
 #print(JoinsList)
 #print(JoinedList)

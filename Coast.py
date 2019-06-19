@@ -106,79 +106,100 @@ class Coast:
         f.write(self.Projection)
         f.close()
 
-    def MergeCoastlines(self):
+    def MergeCoastLines(self):
         """
         Identifies individual coast Lines that are touching at one end 
         and combines them into a single Line
 
-        THIS NEEDS MORE WORK AS CURRENTLY SEGMENTS CAN GO IN EITHER DIRECTION ALONG COAST
+        Reversal of line directions might cause bugs, works so far
 
         MDH, June 2019
         """
 
         print("Coast: Merging coastlines")
 
-        # Empty lists to populate with new shapes and records
-        NewCoastLines = []
-        NewShapes = []
-        NewRecords = []
+        # set up Flag for lines being flipped
+        FlagReverse = 1
 
-        # create list of joins
-        JoinsList = np.zeros(self.NoCoastLines,dtype=int)-9999
-        JoinedByList = np.zeros(self.NoCoastLines,dtype=int)-9999
-        
-        # get start and end nodes from line sections
-        StartNodes = [CoastLine.Nodes[0] for CoastLine in self.CoastLines]
-        print(StartNodes)
-        EndNodes = [CoastLine.Nodes[-1] for CoastLine in self.CoastLines]
-        print(EndNodes)
+        while FlagReverse:
 
-        # compare start nodes and end nodes to populate join list
-        # this could probably be done better!
-        for i, EndNode in enumerate(EndNodes):
-            for j, StartNode in enumerate(StartNodes):
-                if StartNode == EndNode:
-                    JoinsList[i] = j
-                    JoinedByList[j] = i
-        
-        # get list of line sections to start at
-        StartList = np.where(JoinedByList < 0)[0]
+            # Update Flag
+            FlagReverse = 0
 
-        for StartLine in StartList:
+            # Empty lists to populate with new shapes and records
+            NewCoastLines = []
+            NewShapes = []
+            NewRecords = []
+
+            # create list of joins
+            JoinsList = np.zeros(self.NoCoastLines,dtype=int)-9999
+            JoinedByList = np.zeros(self.NoCoastLines,dtype=int)-9999
+            ReversedList = []
             
-            # get vector of line section
-            print("StartLine is ", StartLine)
-            X1, Y1 = self.CoastLines[StartLine].get_XY()
+            # get start and end nodes from line sections
+            StartNodes = [CoastLine.Nodes[0] for CoastLine in self.CoastLines]
+            EndNodes = [CoastLine.Nodes[-1] for CoastLine in self.CoastLines]
             
-            # get first line section to join
-            JoinLine = JoinsList[StartLine]
+            # compare start nodes and end nodes to populate join list
+            # this could probably be done better!
+            for i, StartNode in enumerate(StartNodes):
+                for j, EndNode in enumerate(EndNodes):
+                    if i == j:
+                        continue
+                    elif StartNode == EndNode:
+                        JoinsList[j] = i
+                        JoinedByList[i] = j
 
-            while JoinLine > -1:
+                # check for line direction reversals
+                for k, TestNode in enumerate(StartNodes):
+                    if i == k:
+                        continue
+                    elif StartNode == TestNode:
+                        if not i in ReversedList:
+                            ReversedList.append(k)
+                            FlagReverse = 1
+            
+            # get list of line sections to start at
+            StartList = np.where(JoinedByList < 0)[0]
+            for StartLine in StartList:
                 
-                # get next line
-                X2, Y2 = self.CoastLines[JoinLine].get_XY()
-
-                # join the lines
-                X1 = np.concatenate((X1,X2[1:]))
-                Y1 = np.concatenate((Y1,Y2[1:]))
-
-                # get next n
-                JoinLine = JoinsList[JoinLine]
-
-            # write new line, and update shape and records lists
-            NewCoastLines.append(Line(self.CoastLines[StartLine].ID, X1, Y1))
-            NewShapes.append(np.column_stack([X1,Y1]).tolist())
-            NewRecords.append(self.Records[StartLine])
+                # get vector of line section
+                X1, Y1 = self.CoastLines[StartLine].get_XY()
                 
-        # update object properties with merged geometries
-        self.CoastLines = NewCoastLines
-        self.Shapes = NewShapes
-        self.Records = NewRecords
+                # get first line section to join
+                JoinLine = JoinsList[StartLine]
 
-        # update number of shapes
-        if len(self.CoastLines) != len(self.Shapes):
-            sys.exit("Coast.MergeCoastlines(ERROR): Number of shapes and number of lines doesn't match!")
-        self.NoCoastLines = len(self.CoastLines)
+                while JoinLine > -1:
+                    
+                    # get next line
+                    X2, Y2 = self.CoastLines[JoinLine].get_XY()
+
+                    # join the lines
+                    X1 = np.concatenate((X1,X2[1:]))
+                    Y1 = np.concatenate((Y1,Y2[1:]))
+
+                    # get next n
+                    JoinLine = JoinsList[JoinLine]
+
+                # reverse any vectors needing reversing
+                if StartLine in ReversedList:
+                    X1 = X1[::-1]
+                    Y1 = Y1[::-1]
+
+                # write new line, and update shape and records lists
+                NewCoastLines.append(Line(self.CoastLines[StartLine].ID, X1, Y1))
+                NewShapes.append(np.column_stack([X1,Y1]).tolist())
+                NewRecords.append(self.Records[StartLine])
+                    
+            # update object properties with merged geometries
+            self.CoastLines = NewCoastLines
+            self.Shapes = NewShapes
+            self.Records = NewRecords
+
+            # update number of shapes
+            if len(self.CoastLines) != len(self.Shapes):
+                sys.exit("Coast.MergeCoastlines(ERROR): Number of shapes and number of lines doesn't match!")
+            self.NoCoastLines = len(self.CoastLines)
 
     def SmoothCoastlines(self, WindowSize):
         """
