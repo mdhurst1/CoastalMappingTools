@@ -44,10 +44,12 @@ class Line:
         Function to convert X and Y data into Nodes
         """
         # check X and Y are same length
-        
         if len(X) != len(Y):
             sys.exit("Line.GenerateNodes(ERROR): X and Y vectors are not same length.\n\t \
 length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
+
+        # reset node list
+        self.Nodes = []
 
         # set the number of nodes on the line
         self.NoNodes = len(X)
@@ -100,7 +102,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             #Update the cumulative length of the line
             self.TotalLength += self.SegmentLength[i]
 
-    def SmoothLine(self, WindowSize=1000, PolyOrder=4):
+    def SmoothLine(self, WindowSize=1001, PolyOrder=4):
         
         """
         Savitzky and Golay (1964) smoothing filter
@@ -112,14 +114,15 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
         # Get X and Y vectors from Nodes
         X, Y = self.get_XY()
-
+        
         # smooth X and Y individually with Savitzky Golay filter
         # window size and polyorder must be integers you idiot!
         XSmooth = savgol_filter(X,WindowSize,PolyOrder, mode="nearest")
         YSmooth = savgol_filter(Y,WindowSize,PolyOrder, mode="nearest")
-
+        
         # Write new X and Y vectors to Nodes
-        self.GenerateNodes(X,Y)
+        self.GenerateNodes(XSmooth,YSmooth)
+        self.CalculateGeometry()
     
     def GenerateBuffer(self, Dist1, Dist2):
         

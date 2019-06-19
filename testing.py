@@ -14,8 +14,11 @@ from Coast import *
 TESTFILE = "D:\\NCCA2\\StAndrews\\MHWS\\MHWS_2018.shp"
 ThisCoast = Coast(TESTFILE)
 ThisCoast.MergeCoastLines()
-TESTFILE2 = "D:\\NCCA2\\StAndrews\\MHWS\\MHWS_2018_TEST.shp"
+TESTFILE2 = "D:\\NCCA2\\StAndrews\\MHWS\\MHWS_2018_Merge.shp"
 ThisCoast.WriteCoastShp(TESTFILE2)
+ThisCoast.SmoothCoastlines()
+TESTFILE3 = "D:\\NCCA2\\StAndrews\\MHWS\\MHWS_2018_Smooth.shp"
+ThisCoast.WriteCoastShp(TESTFILE3)
 
 #StartNodes = [CoastLine.Nodes[0] for CoastLine in ThisCoast.CoastLines]
 #EndNodes = [CoastLine.Nodes[-1] for CoastLine in ThisCoast.CoastLines]#

@@ -107,6 +107,7 @@ class Coast:
         f.close()
 
     def MergeCoastLines(self):
+
         """
         Identifies individual coast Lines that are touching at one end 
         and combines them into a single Line
@@ -201,9 +202,12 @@ class Coast:
                 sys.exit("Coast.MergeCoastlines(ERROR): Number of shapes and number of lines doesn't match!")
             self.NoCoastLines = len(self.CoastLines)
 
-    def SmoothCoastlines(self, WindowSize):
+    def SmoothCoastlines(self, WindowSize=1001, PolyOrder=4):
+        
         """
+        Smooths the CoastLines contained in Coast object
         Wrapper to the function in the Line object
+        Calls scipy.signal.savgol_filter
 
         Savitzky and Golay (1964) smoothing filter
     
@@ -211,15 +215,27 @@ class Coast:
         by simplified least squares procedures, Anal. Chem., 36, 1627–
         1639, 1964.
 
+        https://docs.scipy.org/doc/scipy-0.15.1/reference/generated/scipy.signal.savgol_filter.html
+
         MDH, June 2019
+
+        Parameters
+        ----------
+        WindowLength : int
+            The length of the filter window (i.e. the number of coefficients). 
+            WindowLength must be a positive odd integer.
+        PolyOrder : int
+            The order of the polynomial used to fit the samples. 
+            PolyOrder must be less than window_length.
+        
         """
 
-        print("Coast: Smoothing coastlines")
+        print("Coast: Smoothing CoastLines")
 
         for i, Line in enumerate(self.CoastLines):
-
+            
             # smooth the line
-            Line.SmoothLine(WindowSize)
+            Line.SmoothLine(WindowSize, PolyOrder)
 
             # update the shape object list
             X, Y = Line.get_XY()
