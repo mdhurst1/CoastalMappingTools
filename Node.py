@@ -13,12 +13,14 @@ class Node:
     Description of object goes here
 
     """
-    def __init__(self, ID, X, Y):
+    def __init__(self, X, Y):
         
-        self.ID = ID
         self.X = X
         self.Y = Y
 
+    def __eq__(self,other):
+        return self.__dict__ == other.__dict__
+        
     def __str__(self):
-        String = "Node Object\nID: %s\nX: %.2f\nY: %.2f\n" %(str(self.ID), self.X, self.Y)
+        String = "Node Object\nX: %.2f\nY: %.2f\n" %(self.X, self.Y)
         return String

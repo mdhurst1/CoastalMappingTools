@@ -46,8 +46,8 @@ class Line:
         # check X and Y are same length
         
         if len(X) != len(Y):
-            sys.exit("Line.GenerateNodes(ERROR): X and Y vectors are not same length.\n\t" \
-                        "length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
+            sys.exit("Line.GenerateNodes(ERROR): X and Y vectors are not same length.\n\t \
+length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
         # set the number of nodes on the line
         self.NoNodes = len(X)

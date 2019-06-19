@@ -10,6 +10,7 @@ June 2019
 # import modules
 import numpy as np
 import shapefile
+import itertools
 from Line import *
 
 class Coast:
@@ -74,6 +75,7 @@ class Coast:
         # reduce to single smoothed coastline
         print((self.Shapes[0]))
 
+ 
     def WriteCoastShp(self,CoastShp):
         """
         Writes the contents of a Coast object to polyline shape file
@@ -85,9 +87,8 @@ class Coast:
         # open new shapefile        
         WL = shapefile.Writer(CoastShp,shapeType=shapefile.POLYLINE)
         WL.fields = self.Fields[1:]
-        print(WL.fields)
-        
-        for Record, Line in zip( self.Records, self.CoastLines):
+                
+        for Record, Line in zip(self.Records, self.CoastLines):
             
             # get line node positions
             X, Y = Line.get_XY()
@@ -110,43 +111,62 @@ class Coast:
         Identifies individual coast Lines that are touching at one end 
         and combines them into a single Line
 
+        THIS NEEDS MORE WORK AS CURRENTLY SEGMENTS NOT IN ORDER DOWN COAST
+
         MDH, June 2019
         """
 
         print("Coast: Merging coastlines")
 
+        # Empty lists to populate with new shapes and records
+        NewCoastLines = []
         NewShapes = []
         NewRecords = []
-        NewCoastLines = [] 
-        ID = 0
-        for i, CoastLine in enumerate(self.CoastLines):
-                            
-            # get X and Y coordinates of both Lines
-            # segment 1 only needs defining first time round as will be dynamic
-            if i == 0:
-                X1, Y1 = CoastLine.get_XY()
+
+        # create list of joins
+        JoinList = np.zeros(NoCoastLines,dtype=int)-9999
+        JoinedList = np.zeros(NoCoastLines,dtype=int)-9999
         
-            # only define second segment and test if not at the end of the file
-            else:
-                X2, Y2 = CoastLine.get_XY()
+        # get start and end nodes from line sections
+        StartNodes = [CoastLine.Nodes[0] for CoastLine in CoastLines]
+        EndNodes = [CoastLine.Nodes[-1] for CoastLine in CoastLines]
+        
+        # compare start nodes and end nodes to populate join list
+        # this could probably be done better!
+        for i, EndNode in enumerate(EndNodes):
+            for j, StartNode in enumerate(StartNodes):
+                if StartNode == EndNode:
+                    JoinList[i] = j
+                    JoinedList[j] = i
+        
+        # get list of line sections to start at
+        StartList = np.where(JoinedList < 0)
 
-                # check for a match
-                if ((X1[-1] == X2[0]) and (Y1[-1] == Y2[0])):
-                    X1 = np.concatenate((X1,X2[1:]))
-                    Y1 = np.concatenate((Y1,Y2[1:]))
+        for i, StartNode in enumerate(StartList):
+            
+            # get vector of line section
+            X1, Y1 = self.CoastLines[StartNode].get_XY()
+            
+            # get first line section to join
+            JoinLine = JoinList[StartNode]
 
-                    # write new line, and update shape and records lists
-                    NewCoastLines.append(Line(str(ID), X1, Y1))
-                    NewShapes.append(np.column_stack([X1,Y1]).tolist())
-                    NewRecords.append([str(ID)])
-                    
-                    # update X1 and Y1 for next iteration
-                    X1 = X2
-                    Y1 = Y2
+            while JoinNode > -1:
+                
+                # get next line
+                X2, Y2 = self.CoastLines[JoinLine].get_XY()
 
-                    # iterate ID
-                    ID += 1
+                # join the lines
+                X1 = np.concatenate((X1,X2[1:]))
+                Y1 = np.concatenate((Y1,Y2[1:]))
 
+                # get next n
+                JoinLine = JoinList[JoinLine]
+
+            # write new line, and update shape and records lists
+            NewCoastLines.append(Line(str(ID), X1, Y1))
+            NewShapes.append(np.column_stack([X1,Y1]).tolist())
+            NewRecords.append(Record[i])
+                
         # update object properties with merged geometries
         self.CoastLines = NewCoastLines
         self.Shapes = NewShapes
@@ -156,8 +176,6 @@ class Coast:
         if len(self.CoastLines) != len(self.Shapes):
             sys.exit("Coast.MergeCoastlines(ERROR): Number of shapes and number of lines doesn't match!")
         self.NoCoastLines = len(self.CoastLines)
-
-        print(self.Records[0])
 
     def SmoothCoastlines(self, WindowSize):
         """
