@@ -33,6 +33,9 @@ class Coast:
         self.NoCoastLines = 0
         self.CoastLines = []
         self.Projection = ""
+        self.TransectsSpacing = 10.
+        self.TransectsLength2Sea = 200.
+        self.TransectsLength2Land = 1000.
 
         if CoastShp:
             self.ReadCoastShp(CoastShp)
@@ -317,7 +320,9 @@ class Coast:
         is always that which results in the water being on the left as you look
         down the coastal vector.
 
-        This might be buggy as anything and need lots more work
+        This might be buggy as anything and need lots more work. Should be run
+        after MergeCoast and SmoothCoast but before Transects are built, though 
+        if Transects have been built they will get rebuilt
 
         MDH, June 2019
 
@@ -328,6 +333,61 @@ class Coast:
             Cardinal direction
             e.g. "E", "east", "East"
         """
+
+        # get start nodes and end nodes of each line
+        StartNodes = []
+        EndNodes = []
+
+        for Line in self.CoastLines:
+
+            # check line is oriented in the correct order
+            StartNode = Line.Nodes[0]
+            EndNode = Line.Nodes[-1]
+
+            if Direction2OpenWater.lower[0] == "e":
+                
+                # reverse the line and update start and end nodes if required
+                if StartNode.Y < EndNode.Y:
+                    Line.ReverseLine()
+                    StartNode = Line.Nodes[0]
+                    EndNode = Line.Nodes[-1]
+                
+            elif Direction2OpenWater.lower[0] == "s":
+                ErrorString = "Coast.ReconfigureCoastLine (ERROR): " \ 
+                    "This direction top open water [s] has not been implemented yet"
+                sys.exit(ErrorString)
+
+            elif Direction2OpenWater.lower[0] == "w":
+                ErrorString = "Coast.ReconfigureCoastLine (ERROR): " \ 
+                    "This direction top open water [w] has not been implemented yet"
+                sys.exit(ErrorString)
+
+            elif Direction2OpenWater.lower[0] == "n":
+                ErrorString = "Coast.ReconfigureCoastLine (ERROR): " \ 
+                    "This direction top open water [n] has not been implemented yet"
+                sys.exit(ErrorString)
+
+            else:
+                ErrorString = "Coast.ReconfigureCoastLine (ERROR): " \ 
+                    "The string representing direction to open water not recognised; " \
+                    "\n\tshould be [e]ast, [s]outh, [w]est or [n]orth"
+                sys.exit(ErrorString)
+
+            StartNodes.append(Line.Nodes[0])
+            EndNodes.append(Line.Nodes[-1])
+        
+        # check the lines are organised in the correct order
+        if Direction2OpenWater.lower[0] == "e":
+            # sort the lines based on Y or their start node
+            DescendingIndices = np.argsort(-[Node.Y for Node in self.StartNodes])
+            # here comes some bullshit to convert list to numpy array 
+            # in order to sort and then turn back into a list :(
+            self.CoastLines = list(np.array(self.CoastLines)[DescendingIndices])
+            self.Records = list(np.array(self.Records)[DescendingIndices])
+
+
+        if len(self.CoastLines[0].Transects) != 0:
+            self.GenerateNormals(self.TransectsSpacing, self.TransectsLength2Sea, self.TransectsLength2Land)
 
     # function to do something    
     def GenerateNormals(self, TransectSpacing, TransectLength2Sea, TransectLength2Land):
@@ -354,7 +414,11 @@ class Coast:
         """
         print("Coast: Generating CoastLine transects perpendicular to the coast")
 
+        self.TransectsSpacing = TransectSpacing
+        self.TransectsLength2Sea = TransectLength2Sea
+        self.TransectsLength2Land = TransectLength2Land
+
         for Line in self.CoastLines:
 
-            # smooth the line
+            # generate transects along each line
             Line.GenerateTransects(TransectSpacing, TransectLength2Sea, TransectLength2Land)

@@ -225,6 +225,10 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
         print("Line: Generating Transects perpendicular to the coast")
         
+        # if rewriting Transects, empty the Transects list
+        if len(self.Transects) != 0:
+            self.Transects = []
+
         # Give each transect unique ID
         TransectCount = 0
         
@@ -270,6 +274,16 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
                 # update to find next transect
                 TransectCount += 1
                 NextPosition += Spacing        
+
+    def ReverseLine(self):
+        """
+        Reverses the order of a line object
+        
+        MDH, June 2019
+        """
+
+        X, Y = self.get_XY()
+        self.GenerateNodes(X[::-1], Y[::-1])
 
     def get_XY(self):
         """
