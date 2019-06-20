@@ -30,6 +30,7 @@ class Line:
         self.Orientation = []
         self.SegmentLength = []
         self.TotalLength = 0
+        self.Transects = []
 
         self.GenerateNodes(X, Y)
 
@@ -201,14 +202,71 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         return Line(XL,YL,"LeftBuffer"), Line(XL,YL,"RightBuffer")
 
 
-    def GenerateTransects(self,Args):
+    def GenerateTransects(self, Spacing, TransectLength2Sea, TransectLength2Land):
         """
-        Description goes here
+        Generates transects perpendicular to the coastline
 
         MDH, June 2019
+
+        Parameters
+        ----------
+        TransectSpacing : float
+            The distance between consecutive transects along the CoastLines
+            in map units, spatial units depend on units of the CoastLine read in,
+            Should be [m]
+        TransectLength2Sea : float
+            The length of the transect in the direction of sea in map units, 
+            spatial units depend on units of the CoastLine read in, Should be [m]
+        TransectLength2Land : float
+            The length of the transect in the direction of land in map units, 
+            spatial units depend on units of the CoastLine read in, Should be [m]
+        
         """
 
+        print("Line: Generating Transects perpendicular to the coast")
         
+        # Give each transect unique ID
+        TransectCount = 0
+        
+        # Parameters for tracing along length
+        CumulativeLength = 0.0
+        NextPosition = Spacing
+
+        # Track spacing and generate profile at desired distances
+        for i in range(0, NoNodes):
+
+            #Update the cumulative length of the line
+            CumulativeLength += Length[i]
+
+            # Test to see if we're going to create a cross section
+            while CumulativeLength > NextPosition:
+
+                #calculate point for section
+                DistanceToStepBack = CumulativeLength - NextPosition
+                dX = DistanceToStepBack * np.sin( np.radians( Orientation[i] ) )
+                dY = DistanceToStepBack * np.cos( np.radians( Orientation[i] ) )
+                
+                # find the point for the transect along the line
+                PointX = self.Nodes[i+1].X - dX
+                PointY = self.Nodes[i+1].Y - dY
+
+                #Create cross section line
+                #Get line orientation
+                if Orientation[i] < 0:
+                    TransectOrientation = Orientation[i] + 90.0
+                else:
+                    TransectOrientation = Orientation[i] - 90.0
+
+                #Calculate start and end nodes and generate Transect
+                X1 = PointX + TransectLength2Sea * np.sin( np.radians( TransectOrientation ) )
+                Y1 = PointY + TransectLength2Sea * np.cos( np.radians( TransectOrientation ) )
+                X2 = PointX - TransectLength2Land * np.sin( np.radians( TransectOrientation ) )
+                Y2 = PointY - TransectLength2Land * np.cos( np.radians( TransectOrientation ) )
+                self.Transects.append( Transect( str(TransectCount), Node(X1, Y1), Node(X2, Y2) ) )
+
+                # update to find next transect
+                TransectCount += 1
+                NextPosition += ProfSpacing        
 
     def get_XY(self):
         """

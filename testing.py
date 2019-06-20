@@ -19,6 +19,7 @@ ThisCoast.WriteCoastShp(TESTFILE2)
 ThisCoast.SmoothCoastlines()
 TESTFILE3 = "D:\\NCCA2\\StAndrews\\MHWS\\MHWS_2018_Smooth.shp"
 ThisCoast.WriteCoastShp(TESTFILE3)
+ThisCoast.GenerateNormals()
 
 #StartNodes = [CoastLine.Nodes[0] for CoastLine in ThisCoast.CoastLines]
 #EndNodes = [CoastLine.Nodes[-1] for CoastLine in ThisCoast.CoastLines]#

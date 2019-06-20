@@ -15,11 +15,11 @@ class Transect:
     Description of object goes here
 
     """
-    def __init__(self, ID, X1, Y1, X2, Y2):
+    def __init__(self, ID, StartNode, EndNode):
         
         self.ID = ID
-        self.StartNode = Node(ID, X1, Y1)
-        self.EndNode = Node(ID, X2, Y2)
+        self.StartNode = StartNode
+        self.EndNode = EndNode
         
         self.Orientation = self.CalculateOrientation(self.StartNode, self.EndNode)
         self.Length = self.CalculateLength(self.StartNode, self.EndNode)

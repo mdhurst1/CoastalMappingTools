@@ -243,13 +243,29 @@ class Coast:
 
 
     # function to do something    
-    def GenerateNormals(self):
+    def GenerateNormals(self, TransectSpacing, TransectLength2Sea, TransectLength2Land):
         """
         Wrapper to the function in the Line object
 
         Generates transects perpendicular to the coastline
+
+        MDH, June 2019
+
+        Parameters
+        ----------
+        TransectSpacing : float
+            The distance between consecutive transects along the CoastLines
+            in map units, spatial units depend on units of the CoastLine read in,
+            Should be [m]
+        TransectLength2Sea : float
+            The length of the transect in the direction of sea in map units, 
+            spatial units depend on units of the CoastLine read in, Should be [m]
+        TransectLength2Land : float
+            The length of the transect in the direction of land in map units, 
+            spatial units depend on units of the CoastLine read in, Should be [m]
+                    
         """
-        print("Coast: Generating coastline normals")
+        print("Coast: Generating CoastLine transects perpendicular to the coast")
 
         for Line in self.CoastLines:
 
