@@ -28,3 +28,6 @@ class Node:
     def __str__(self):
         String = "Node Object\nX: %.2f\nY: %.2f\n" %(self.X, self.Y)
         return String
+
+    def get_XY(self):
+        return self.X, self.Y

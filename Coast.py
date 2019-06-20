@@ -9,8 +9,10 @@ June 2019
 
 # import modules
 import numpy as np
+import numpy.ma as ma
 import shapefile
 import itertools
+import rasterio
 from Line import *
 
 class Coast:
@@ -432,3 +434,175 @@ class Coast:
 
             # generate transects along each line
             Line.GenerateTransects(TransectSpacing, TransectLength2Sea, TransectLength2Land)
+
+    def ExtractTransectTopography(self, DEMFile, SwathDistance):
+        """
+        Profile to populate transects with topographic data
+        Uses swath profile routine to collect elevations within a certain distance
+        of each transect line then takes IDW values for the transect topography
+
+        MDH, June 2019
+        
+        Parameters
+        ----------
+        DEMFile : str
+            Name of DEM File, must be a *.tif
+
+        SwathDistance : float
+            Distance away from transect line to sample elevations in DEM
+
+        """
+        
+        # load the DTM and get its properties
+        DTM_Dataset = rasterio.open(DEMFile)
+        DTMArray = DTM_Dataset.read(1)
+        NCols = DTM_Dataset.width
+        NRows = DTM_Dataset.height
+        NDV = DTM_Dataset.nodata
+        Resolutions = DTM_Dataset.res
+
+        # check for square pixels
+        if Resolutions[0] == Resolutions[1]:
+            DTM_Resolution = Resolutions[0]
+            
+        else:
+            raise SystemExit("DTM has non-square cells")
+        
+        # get extent of DTM
+        XMin = DTM_Dataset.bounds[0]
+        XMax = DTM_Dataset.bounds[2]
+        YMin = DTM_Dataset.bounds[1]
+        YMax = DTM_Dataset.bounds[3]
+
+        # Get vectors of X and Y coordinates, NB reversal of Y in line with 
+        # DTM indexing from top left
+        XVector = XMin+np.arange(0,NCols)*DTM_Resolution+0.5*DTM_Resolution
+        YVector = YMin+DTM_Resolution*np.arange(0,NRows)[::-1]+0.5*DTM_Resolution
+
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                
+                #Get line points
+                X1, Y1 = Transect.StartNode.get_XY()
+                X2, Y2 = Transect.EndNode.get_XY()
+
+                #find indices for bounding box
+                #need to be careful with reverse indexing
+                iStart = np.argmin(np.abs(YVector-np.max([Y1,Y2])))-1
+                iEnd = np.argmin(np.abs(YVector-np.min([Y1,Y2])))+1
+                jStart = np.argmin(np.abs(XVector-np.min([X1,X2])))-1
+                jEnd = np.argmin(np.abs(XVector-np.max([X1,X2])))+1
+
+                #Get Vector X and Y
+                dX12 = X2-X1
+                dY12 = Y2-Y1
+
+                #Declare list holders for profile data
+                X = []
+                Y = []
+                Z = []
+                DistAlong = []
+                DistTo = []
+                
+                for i in range(iStart,iEnd):
+
+                    #get Y position
+                    YNode = YMax-DTM_Resolution*i-0.5*DTM_Resolution
+
+                    for j in range(jStart,jEnd):
+                        
+                        #get X position
+                        XNode = XMin + j*DTM_Resolution + 0.5*DTM_Resolution;
+
+                        #Get 2nd Vector Properties in Array
+                        dX13 = XNode-X1
+                        dY13 = YNode-Y1
+
+                        #Find Dot Product
+                        DotProduct = dX12*dX13 + dY12*dY13;
+
+                        #calculate fraction of distance along line
+                        t = DotProduct/(dX12*dX12 + dY12*dY12)
+                        if ((t < 0.) or (t > 1.)):
+                            continue
+                    
+                        #Find point along line
+                        XLine = X1 + t*dX12
+                        YLine = Y1 + t*dY12
+                        DistanceAlongLine = t*np.sqrt(dX12*dX12 + dY12*dY12)
+
+                        #find distance to point
+                        DistanceToLine = np.sqrt((XLine-XNode)*(XLine-XNode) + (YLine-YNode)*(YLine-YNode))
+
+                        if ((DistanceToLine < SwathDist) and (DTMArray[i][j] != NDV)):
+                            X.append(XNode)
+                            Y.append(YNode)
+                            DistAlong.append(DistanceAlongLine)
+                            DistTo.append(DistanceToLine)
+                            Z.append(DTMArray[i][j])
+                                
+                #Sort by distance along line, need to convert to numpy arrays as we go to sort
+                Sortedi = np.argsort(DistAlong)
+                X = np.asarray(X)[Sortedi]
+                Y = np.asarray(Y)[Sortedi]
+                DistAlong = np.asarray(DistAlong)[Sortedi]
+                DistTo = np.asarray(DistTo)[Sortedi]
+                Z = np.asarray(Z)[Sortedi]
+                
+                #if (WriteSwathDataFlag):
+                    # Write results to text file using pandas (easier) for each profile
+                    #DF = pd.DataFrame({"X": X, "Y": Y, "Z": Z, "DistAlong": DistAlong, "DistTo": DistTo})
+                    #DF.to_pickle(SwathProfsFolder+"Swath_"+str(Transect.ID)+".pkl")
+                
+                #Create a line for interpolating to
+                LineLength = np.sqrt((X2-X1)**2 + (Y2-Y1)**2)
+                NoPoints = (int)(LineLength/(DTM_Resolution*2.))
+                XLine = np.linspace(X1,X2,NoPoints)
+                YLine = np.linspace(Y1,Y2,NoPoints)
+                DistAlongLine = np.zeros(len(XLine))
+                ZIDW = np.zeros(len(XLine))
+                ZMin = np.zeros(len(XLine))
+                ZMax = np.zeros(len(XLine))
+                                
+                #Loop along line
+                for i in range(0,NoPoints):
+                    
+                    #Calculate distance along the line
+                    DistAlongLine[i] = i*DTM_Resolution*2.
+                    
+                    # Sample a reduced array here i.e. a neighbourhood to reduce computation time
+                    Neighbourhood = np.abs(DistAlongLine[i]-DistAlong) < DTM_Resolution*2.
+                    ZLocal = Z[Neighbourhood]
+                    
+                    if len(ZLocal) == 0:
+                        
+                        # Set to NDV
+                        ZIDW[i] = NDV
+                        ZMin[i] = NDV
+                        ZMax[i] = NDV
+                        continue
+                    
+                    # Do IDW
+                    # Create a distance vector
+                    Dist = np.sqrt(DistAlong[Neighbourhood]**2. + DistTo[Neighbourhood]**2.)
+                    
+                    # Weights are inverse
+                    Weights = 1./Dist**2.
+                    
+                    # Interpolate Z
+                    ZIDW[i]  = np.sum(Z[Neighbourhood]*Weights)/np.sum(Weights)
+                    
+                    # Other Z Values
+                    ZMin[i] = np.min(ZLocal)
+                    ZMax[i] = np.max(ZLocal)
+                    
+                # Set up the mask from NDVs
+                Mask = ZIDW == -9999
+                ZIDW = ma.masked_where(Mask,ZIDW)
+                ZMin = ma.masked_where(Mask,ZMin)
+                ZMax = ma.masked_where(Mask,ZMax)
+                
+                Transect.Distance = DistanceAlongLine
+                Transect.Z = ZIDW
+                Transect.ZMin = ZMin
+                Transect.ZMax = ZMax
