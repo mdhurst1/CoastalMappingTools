@@ -14,12 +14,15 @@ from Coast import *
 TESTFILE = "D:\\NCCA2\\StAndrews\\MHWS\\MHWS_2018.shp"
 ThisCoast = Coast(TESTFILE)
 ThisCoast.MergeCoastLines()
-ThisCoast.SmoothCoastlines()
+ThisCoast.SmoothCoastLines()
+ThisCoast.ReconfigureCoastLines("E")
+TESTFILE2 = "D:\\NCCA2\\StAndrews\\MHWS\\coast.shp"
+ThisCoast.WriteCoastShp(TESTFILE2)
 ThisCoast.GenerateNormals(10.,200.,1000.)
-TESTFILE2 = "D:\\NCCA2\\StAndrews\\MHWS\\transects.shp"
-ThisCoast.WriteTransectsShp(TESTFILE2)
-TESTFILE3 = "D:\\NCCA2\\StAndrews\\MHWS\\transect_points.shp"
-ThisCoast.WritePointsShp(TESTFILE3)
+TESTFILE3 = "D:\\NCCA2\\StAndrews\\MHWS\\transects.shp"
+ThisCoast.WriteTransectsShp(TESTFILE3)
+TESTFILE4 = "D:\\NCCA2\\StAndrews\\MHWS\\transect_points.shp"
+ThisCoast.WritePointsShp(TESTFILE4)
 
 #StartNodes = [CoastLine.Nodes[0] for CoastLine in ThisCoast.CoastLines]
 #EndNodes = [CoastLine.Nodes[-1] for CoastLine in ThisCoast.CoastLines]#

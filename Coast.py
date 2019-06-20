@@ -87,14 +87,20 @@ class Coast:
 
         # open new shapefile        
         WL = shapefile.Writer(CoastShp,shapeType=shapefile.POLYLINE)
-        WL.fields = self.Fields[1:]
-                
-        for Record, Line in zip(self.Records, self.CoastLines):
+       
+        # Create Fields
+        self.Fields = [('DeletionFlag','C',1,0),['Line_ID', 'C', 3, 0]]
+        WL.fields = self.Fields[1:] 
+
+        for Line in self.CoastLines:
             
             # get line node positions
             X, Y = Line.get_XY()
             WriteLine = [np.column_stack([X,Y]).tolist()]
             
+            # generate record
+            Record = [str(Line.ID)]
+
             # write line and record
             WL.line(WriteLine)
             WL.record(*Record) ####### ISSUE WITH RECORDS NEEDS FIXING ########
@@ -120,7 +126,7 @@ class Coast:
         WL = shapefile.Writer(TransectsShp,shapeType=shapefile.POLYLINE)
         
         # Create Fields
-        Fields = [('DeletionFlag','C',1,0),['Shape_ID', 'C', 3, 0],['Transect_ID', 'C', 3, 0]] #['Segment_ID','C', 3, 0], might add
+        Fields = [('DeletionFlag','C',1,0),['Line_ID', 'C', 3, 0],['Transect_ID', 'C', 3, 0]] #['Segment_ID','C', 3, 0], might add
         WL.fields = Fields[1:]
 
         for Line in self.CoastLines:
@@ -157,7 +163,7 @@ class Coast:
         WP = shapefile.Writer(PointsShp, shapeType=shapefile.POINT)
         
         # Create Fields
-        Fields = [('DeletionFlag','C',1,0),['Shape_ID', 'C', 3, 0],['Transect_ID', 'C', 3, 0]] #['Segment_ID','C', 3, 0], might add 
+        Fields = [('DeletionFlag','C',1,0),['Line_ID', 'C', 3, 0],['Transect_ID', 'C', 3, 0]] #['Segment_ID','C', 3, 0], might add 
         WP.fields = Fields[1:]
 
         for Line in self.CoastLines:
@@ -274,7 +280,7 @@ class Coast:
                 sys.exit("Coast.MergeCoastlines(ERROR): Number of shapes and number of lines doesn't match!")
             self.NoCoastLines = len(self.CoastLines)
 
-    def SmoothCoastlines(self, WindowSize=1001, PolyOrder=4):
+    def SmoothCoastLines(self, WindowSize=1001, PolyOrder=4):
         
         """
         Smooths the CoastLines contained in Coast object
@@ -313,7 +319,7 @@ class Coast:
             X, Y = Line.get_XY()
             self.Shapes[i] = np.column_stack([X,Y]).tolist()
 
-    def ReconfigureCoastlines(self, Direction2OpenWater):
+    def ReconfigureCoastLines(self, Direction2OpenWater):
         """
         Function to arrange coastline so that lines are ordered along the coast
         and line segments progress along the coast. The "along coast" direction
@@ -344,7 +350,7 @@ class Coast:
             StartNode = Line.Nodes[0]
             EndNode = Line.Nodes[-1]
 
-            if Direction2OpenWater.lower[0] == "e":
+            if str(Direction2OpenWater).lower()[0] == "e":
                 
                 # reverse the line and update start and end nodes if required
                 if StartNode.Y < EndNode.Y:
@@ -352,39 +358,43 @@ class Coast:
                     StartNode = Line.Nodes[0]
                     EndNode = Line.Nodes[-1]
                 
-            elif Direction2OpenWater.lower[0] == "s":
-                ErrorString = "Coast.ReconfigureCoastLine (ERROR): " \ 
-                    "This direction top open water [s] has not been implemented yet"
+            elif Direction2OpenWater.lower()[0] == "s":
+                ErrorString = ("Coast.ReconfigureCoastLine (ERROR): "
+                    "This direction top open water [s] has not been implemented yet")
                 sys.exit(ErrorString)
 
-            elif Direction2OpenWater.lower[0] == "w":
-                ErrorString = "Coast.ReconfigureCoastLine (ERROR): " \ 
-                    "This direction top open water [w] has not been implemented yet"
+            elif Direction2OpenWater.lower()[0] == "w":
+                ErrorString = ("Coast.ReconfigureCoastLine (ERROR): "
+                    "This direction top open water [w] has not been implemented yet")
                 sys.exit(ErrorString)
 
-            elif Direction2OpenWater.lower[0] == "n":
-                ErrorString = "Coast.ReconfigureCoastLine (ERROR): " \ 
-                    "This direction top open water [n] has not been implemented yet"
+            elif Direction2OpenWater.lower()[0] == "n":
+                ErrorString = ("Coast.ReconfigureCoastLine (ERROR): "
+                    "This direction top open water [n] has not been implemented yet")
                 sys.exit(ErrorString)
 
             else:
-                ErrorString = "Coast.ReconfigureCoastLine (ERROR): " \ 
-                    "The string representing direction to open water not recognised; " \
-                    "\n\tshould be [e]ast, [s]outh, [w]est or [n]orth"
+                ErrorString = ("Coast.ReconfigureCoastLine (ERROR): "
+                    "The string representing direction to open water not recognised; "
+                    "\n\tshould be [e]ast, [s]outh, [w]est or [n]orth")
                 sys.exit(ErrorString)
 
             StartNodes.append(Line.Nodes[0])
             EndNodes.append(Line.Nodes[-1])
         
         # check the lines are organised in the correct order
-        if Direction2OpenWater.lower[0] == "e":
+        if Direction2OpenWater.lower()[0] == "e":
+            
             # sort the lines based on Y or their start node
-            DescendingIndices = np.argsort(-[Node.Y for Node in self.StartNodes])
+            # needs to be an array to apply negative sign in order to get descending order
+            DescendingIndices = np.argsort(-np.array([Node.Y for Node in StartNodes]))
+            
             # here comes some bullshit to convert list to numpy array 
             # in order to sort and then turn back into a list :(
             self.CoastLines = list(np.array(self.CoastLines)[DescendingIndices])
             self.Records = list(np.array(self.Records)[DescendingIndices])
-
+            for i, Line in enumerate(self.CoastLines):
+                Line.ID = str(i)
 
         if len(self.CoastLines[0].Transects) != 0:
             self.GenerateNormals(self.TransectsSpacing, self.TransectsLength2Sea, self.TransectsLength2Land)
