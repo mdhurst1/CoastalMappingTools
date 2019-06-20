@@ -23,6 +23,9 @@ class Coast:
         """
         MDH, June 2019
         """
+
+        print("Coast: Initialising Coast object")
+
         self.CoastShp = CoastShp
         self.Shapes = []
         self.Fields = []
@@ -32,7 +35,6 @@ class Coast:
         self.Projection = ""
 
         if CoastShp:
-            print("Coast: Reading coast from " + CoastShp)
             self.ReadCoastShp(CoastShp)
 
         else:
@@ -53,7 +55,7 @@ class Coast:
 
         # Get number of coast segments to work on
         self.NoCoastLines = len(self.Shapes)
-        print("\tCoast.ReadCoastShp: Read Coastline, no of coast segments is", self.NoCoastLines)
+        print("Coast.ReadCoastShp: Read Coastline, no of coast segments is", self.NoCoastLines)
     
         # Generate coast nodes for each segment
         for i in range(0,self.NoCoastLines):
@@ -71,10 +73,6 @@ class Coast:
         f = open(CoastShp.rstrip("shp")+"prj")
         self.Projection = f.read()
         f.close()
-        
-        # reduce to single smoothed coastline
-        print((self.Shapes[0]))
-
  
     def WriteCoastShp(self,CoastShp):
         """
@@ -106,7 +104,7 @@ class Coast:
         f.write(self.Projection)
         f.close()
 
-    def WriteTransectsShp(TransectsShp):
+    def WriteTransectsShp(self, TransectsShp):
 
         """
         Writes the transects of a Coast object to polyline shape file
@@ -123,7 +121,7 @@ class Coast:
         WL.fields = Fields[1:]
 
         for Line in self.CoastLines:
-            for Transect in Line:
+            for Transect in Line.Transects:
 
                 # get transect node positions
                 X, Y = Transect.get_XY()
@@ -145,14 +143,14 @@ class Coast:
         f.close()
 
 
-    def WritePointsShp(PointsShp):
+    def WritePointsShp(self, PointsShp):
         """
         Function to write transect points to a point shape file
 
         MDH, June 2019
         
         """
-        
+
         WP = shapefile.Writer(PointsShp, shapeType=shapefile.POINT)
         
         # Create Fields
@@ -160,7 +158,7 @@ class Coast:
         WP.fields = Fields[1:]
 
         for Line in self.CoastLines:
-            for Transect in Line:
+            for Transect in Line.Transects:
                 
                 # Create the record
                 Record = [str(Line.ID), str(Transect.ID)]
@@ -312,6 +310,24 @@ class Coast:
             X, Y = Line.get_XY()
             self.Shapes[i] = np.column_stack([X,Y]).tolist()
 
+    def ReconfigureCoastlines(self, Direction2OpenWater):
+        """
+        Function to arrange coastline so that lines are ordered along the coast
+        and line segments progress along the coast. The "along coast" direction
+        is always that which results in the water being on the left as you look
+        down the coastal vector.
+
+        This might be buggy as anything and need lots more work
+
+        MDH, June 2019
+
+        Parameters
+        ----------
+        Direction2OpenWater: str
+            Text-based description of the general direction to open water
+            Cardinal direction
+            e.g. "E", "east", "East"
+        """
 
     # function to do something    
     def GenerateNormals(self, TransectSpacing, TransectLength2Sea, TransectLength2Land):
@@ -341,4 +357,4 @@ class Coast:
         for Line in self.CoastLines:
 
             # smooth the line
-            Line.GenerateTransects()
+            Line.GenerateTransects(TransectSpacing, TransectLength2Sea, TransectLength2Land)

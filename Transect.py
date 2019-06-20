@@ -81,9 +81,9 @@ class Transect:
         
         return np.sqrt(dx**2 + dy**2.)
 
-    def get_XY():
+    def get_XY(self):
         
-        X = [StartNode.X, EndNode.X]
-        Y = [StartNode.Y, EndNode.Y]
+        X = [self.StartNode.X, self.EndNode.X]
+        Y = [self.StartNode.Y, self.EndNode.Y]
         
         return np.array(X), np.array(Y)

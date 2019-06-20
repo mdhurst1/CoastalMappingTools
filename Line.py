@@ -233,18 +233,21 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         NextPosition = Spacing
 
         # Track spacing and generate profile at desired distances
-        for i in range(0, NoNodes):
+        for i in range(0, self.NoNodes):
 
             #Update the cumulative length of the line
-            CumulativeLength += Length[i]
+            CumulativeLength += self.SegmentLength[i]
+
+            # get orientation
+            TransectOrientation = self.Orientation[i]
 
             # Test to see if we're going to create a cross section
             while CumulativeLength > NextPosition:
 
                 #calculate point for section
                 DistanceToStepBack = CumulativeLength - NextPosition
-                dX = DistanceToStepBack * np.sin( np.radians( Orientation[i] ) )
-                dY = DistanceToStepBack * np.cos( np.radians( Orientation[i] ) )
+                dX = DistanceToStepBack * np.sin( np.radians( TransectOrientation ) )
+                dY = DistanceToStepBack * np.cos( np.radians( TransectOrientation ) )
                 
                 # find the point for the transect along the line
                 PointX = self.Nodes[i+1].X - dX
@@ -252,10 +255,10 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
                 #Create cross section line
                 #Get line orientation
-                if Orientation[i] < 0:
-                    TransectOrientation = Orientation[i] + 90.0
+                if TransectOrientation < 0:
+                    TransectOrientation += 90.
                 else:
-                    TransectOrientation = Orientation[i] - 90.0
+                    TransectOrientation -= 90.
 
                 #Calculate start and end nodes and generate Transect
                 X1 = PointX + TransectLength2Sea * np.sin( np.radians( TransectOrientation ) )
@@ -266,7 +269,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
                 # update to find next transect
                 TransectCount += 1
-                NextPosition += ProfSpacing        
+                NextPosition += Spacing        
 
     def get_XY(self):
         """
