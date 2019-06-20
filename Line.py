@@ -262,7 +262,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
                 Y1 = PointY + TransectLength2Sea * np.cos( np.radians( TransectOrientation ) )
                 X2 = PointX - TransectLength2Land * np.sin( np.radians( TransectOrientation ) )
                 Y2 = PointY - TransectLength2Land * np.cos( np.radians( TransectOrientation ) )
-                self.Transects.append( Transect( str(TransectCount), Node(X1, Y1), Node(X2, Y2) ) )
+                self.Transects.append( Transect( str(TransectCount), Node(PointX, PointY), Node(X1, Y1), Node(X2, Y2) ) )
 
                 # update to find next transect
                 TransectCount += 1

@@ -15,9 +15,10 @@ class Transect:
     Description of object goes here
 
     """
-    def __init__(self, ID, StartNode, EndNode):
+    def __init__(self, ID, CoastNode, StartNode, EndNode):
         
         self.ID = ID
+        self.CoastNode = CoastNode
         self.StartNode = StartNode
         self.EndNode = EndNode
         
@@ -79,3 +80,10 @@ class Transect:
         dy = Node2.Y - Node1.Y
         
         return np.sqrt(dx**2 + dy**2.)
+
+    def get_XY():
+        
+        X = [StartNode.X, EndNode.X]
+        Y = [StartNode.Y, EndNode.Y]
+        
+        return np.array(X), np.array(Y)

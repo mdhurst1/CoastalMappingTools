@@ -106,6 +106,77 @@ class Coast:
         f.write(self.Projection)
         f.close()
 
+    def WriteTransectsShp(TransectsShp):
+
+        """
+        Writes the transects of a Coast object to polyline shape file
+
+        MDH, June 2019
+
+        """
+
+        # open new shapefile        
+        WL = shapefile.Writer(TransectsShp,shapeType=shapefile.POLYLINE)
+        
+        # Create Fields
+        Fields = [('DeletionFlag','C',1,0),['Shape_ID', 'C', 3, 0],['Transect_ID', 'C', 3, 0]] #['Segment_ID','C', 3, 0], might add
+        WL.fields = Fields[1:]
+
+        for Line in self.CoastLines:
+            for Transect in Line:
+
+                # get transect node positions
+                X, Y = Transect.get_XY()
+                WriteTransect = [np.column_stack([X,Y]).tolist()]
+
+                # Create the record
+                Record = [str(Line.ID), str(Transect.ID)]
+
+                # write transect and record
+                WL.line(WriteTransect)
+                WL.record(*Record) 
+        
+        # close the shapefiles and clean up
+        WL.close()
+            
+        # create the projection file    
+        f = open(TransectsShp.rstrip("shp")+"prj","w")
+        f.write(self.Projection)
+        f.close()
+
+
+    def WritePointsShp(PointsShp):
+        """
+        Function to write transect points to a point shape file
+
+        MDH, June 2019
+        
+        """
+        
+        WP = shapefile.Writer(PointsShp, shapeType=shapefile.POINT)
+        
+        # Create Fields
+        Fields = [('DeletionFlag','C',1,0),['Shape_ID', 'C', 3, 0],['Transect_ID', 'C', 3, 0]] #['Segment_ID','C', 3, 0], might add 
+        WP.fields = Fields[1:]
+
+        for Line in self.CoastLines:
+            for Transect in Line:
+                
+                # Create the record
+                Record = [str(Line.ID), str(Transect.ID)]
+
+                # add the line and record
+                WP.point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                WP.record(*Record)
+
+        # close the shapefiles and clean up
+        WP.close()
+            
+        # create the projection file    
+        f = open(PointsShp.rstrip("shp")+"prj","w")
+        f.write(self.Projection)
+        f.close()
+
     def MergeCoastLines(self):
 
         """
