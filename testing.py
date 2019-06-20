@@ -18,7 +18,7 @@ ThisCoast.SmoothCoastLines()
 ThisCoast.ReconfigureCoastLines("E")
 TESTFILE2 = "D:\\NCCA2\\StAndrews\\MHWS\\coast.shp"
 ThisCoast.WriteCoastShp(TESTFILE2)
-ThisCoast.GenerateNormals(10.,200.,1000.)
+ThisCoast.GenerateNormals(10.,100.,500.)
 TESTFILE3 = "D:\\NCCA2\\StAndrews\\MHWS\\transects.shp"
 ThisCoast.WriteTransectsShp(TESTFILE3)
 TESTFILE4 = "D:\\NCCA2\\StAndrews\\MHWS\\transect_points.shp"
