@@ -12,17 +12,13 @@ from Line import *
 from Coast import *
 
 TESTFILE = "D:\\NCCA2\\StAndrews\\MHWS\\MHWS_2018.shp"
+DEM = "D:\\NCCA2\\StAndrews\\DTM\\StAn_2018_DTM.tif"
 ThisCoast = Coast(TESTFILE)
 ThisCoast.MergeCoastLines()
 ThisCoast.SmoothCoastLines()
 ThisCoast.ReconfigureCoastLines("E")
-TESTFILE2 = "D:\\NCCA2\\StAndrews\\MHWS\\coast.shp"
-ThisCoast.WriteCoastShp(TESTFILE2)
 ThisCoast.GenerateNormals(10.,100.,500.)
-TESTFILE3 = "D:\\NCCA2\\StAndrews\\MHWS\\transects.shp"
-ThisCoast.WriteTransectsShp(TESTFILE3)
-TESTFILE4 = "D:\\NCCA2\\StAndrews\\MHWS\\transect_points.shp"
-ThisCoast.WritePointsShp(TESTFILE4)
+ThisCoast.ExtractTransectTopography()
 
 #StartNodes = [CoastLine.Nodes[0] for CoastLine in ThisCoast.CoastLines]
 #EndNodes = [CoastLine.Nodes[-1] for CoastLine in ThisCoast.CoastLines]#

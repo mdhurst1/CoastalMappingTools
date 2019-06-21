@@ -435,7 +435,7 @@ class Coast:
             # generate transects along each line
             Line.GenerateTransects(TransectSpacing, TransectLength2Sea, TransectLength2Land)
 
-    def ExtractTransectTopography(self, DEMFile, SwathDistance):
+    def ExtractTransectTopography(self, DEMFile, SwathDistance=-9999):
         """
         Profile to populate transects with topographic data
         Uses swath profile routine to collect elevations within a certain distance
@@ -450,9 +450,11 @@ class Coast:
 
         SwathDistance : float
             Distance away from transect line to sample elevations in DEM
+            Default is 2 times the resolution of the DTM
 
         """
         
+        print("Coast.EstractTransectTopography: Sampling the DTM for each transect")
         # load the DTM and get its properties
         DTM_Dataset = rasterio.open(DEMFile)
         DTMArray = DTM_Dataset.read(1)
@@ -468,6 +470,9 @@ class Coast:
         else:
             raise SystemExit("DTM has non-square cells")
         
+        if SwathDist < 0:
+            SwathDist = DTM_Resolution*2.
+
         # get extent of DTM
         XMin = DTM_Dataset.bounds[0]
         XMax = DTM_Dataset.bounds[2]
@@ -479,9 +484,15 @@ class Coast:
         XVector = XMin+np.arange(0,NCols)*DTM_Resolution+0.5*DTM_Resolution
         YVector = YMin+DTM_Resolution*np.arange(0,NRows)[::-1]+0.5*DTM_Resolution
 
+        # Track progress
+        NoTransects = np.sum([Line.NoTransects for Line in self.CoastLines])
+        CurrentTransect = 0
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 
+                # print progress to screen
+                print("Transect %d / %d" % (CurrentTransect, NoTransects) end="\r")
+
                 #Get line points
                 X1, Y1 = Transect.StartNode.get_XY()
                 X2, Y2 = Transect.EndNode.get_XY()
@@ -606,3 +617,6 @@ class Coast:
                 Transect.Z = ZIDW
                 Transect.ZMin = ZMin
                 Transect.ZMax = ZMax
+
+                # update transect no
+                CurrentTransect += 1

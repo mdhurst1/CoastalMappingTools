@@ -31,6 +31,7 @@ class Line:
         self.SegmentLength = []
         self.TotalLength = 0
         self.Transects = []
+        self.NoTransects = 0
 
         self.GenerateNodes(X, Y)
 
@@ -273,7 +274,10 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
                 # update to find next transect
                 TransectCount += 1
-                NextPosition += Spacing        
+                NextPosition += Spacing
+        
+        # record number of transects
+        self.NoTransects = TransectCount        
 
     def ReverseLine(self):
         """
