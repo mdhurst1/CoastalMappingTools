@@ -97,6 +97,8 @@ class Transect:
         MaxInd = np.argmax(self.Elevation)
                     
         #Get Angle to detrend towards the coast
+        print(self.Distance)
+        print(self.Elevation)
         Angle = np.degrees(np.arctan((self.Elevation[MaxInd]-self.Elevation[-1]) 
                                         / (self.Distance[MaxInd]-self.Distance[-1])))
             
@@ -142,7 +144,7 @@ class Transect:
         self.BackHeight = self.BackTopNode.Y-self.BackToeNode.Y
                 
         # Calculate Barrier Width, top and bottom
-        self.BottomWidth = self.FrontToeNode.X-self.BackToeNode.X
+        self.ToeWidth = self.FrontToeNode.X-self.BackToeNode.X
         self.TopWidth = self.FrontTopNode.X-self.BackTopNode.X
 
         # Calculate Slope, front and back

@@ -35,6 +35,7 @@ class Coast:
         self.NoCoastLines = 0
         self.CoastLines = []
         self.Projection = ""
+        self.OverallOrientation = 0.
         self.TransectsSpacing = 10.
         self.TransectsLength2Sea = 200.
         self.TransectsLength2Land = 1000.
@@ -282,7 +283,7 @@ class Coast:
                 sys.exit("Coast.MergeCoastlines(ERROR): Number of shapes and number of lines doesn't match!")
             self.NoCoastLines = len(self.CoastLines)
 
-    def SmoothCoastLines(self, WindowSize=1001, PolyOrder=4):
+    def SmoothCoastLines(self, WindowSize=101, PolyOrder=4):
         
         """
         Smooths the CoastLines contained in Coast object
@@ -400,6 +401,24 @@ class Coast:
 
         if len(self.CoastLines[0].Transects) != 0:
             self.GenerateNormals(self.TransectsSpacing, self.TransectsLength2Sea, self.TransectsLength2Land)
+
+        # calculate overall orientation
+        StartNode = self.CoastLines[0].Nodes[0]
+        EndNode = self.CoastLines[-1].Nodes[-1]
+
+        #calculate the spatial change
+        dx = EndNode.X - StartNode.X
+        dy = EndNode.Y - StartNode.Y
+
+        #Calculate the orientation of the line from ThisNode to NextNode
+        if dx > 0 and dy > 0:
+            self.OverallOrientation = np.degrees( np.arctan( dx / dy ) )
+        elif dx > 0 and dy < 0:
+            self.OverallOrientation = 180.0 + np.degrees( np.arctan( dx / dy ) )
+        elif dx < 0 and dy < 0:
+            self.OverallOrientation = 180.0 + np.degrees( np.arctan( dx / dy ) )
+        elif dx < 0 and dy > 0:
+            self.OverallOrientation = 360 + np.degrees( np.arctan( dx / dy ) )
 
     # function to do something    
     def GenerateNormals(self, TransectSpacing, TransectLength2Sea, TransectLength2Land):
@@ -576,7 +595,7 @@ class Coast:
                 NoPoints = (int)(LineLength/(DTM_Resolution*2.))
                 XLine = np.linspace(X1,X2,NoPoints)
                 YLine = np.linspace(Y1,Y2,NoPoints)
-                DistAlongLine = np.zeros(len(XLine))
+                DistAlongTransect = np.zeros(len(XLine))
                 ZIDW = np.zeros(len(XLine))
                 ZMin = np.zeros(len(XLine))
                 ZMax = np.zeros(len(XLine))
@@ -585,10 +604,10 @@ class Coast:
                 for i in range(0,NoPoints):
                     
                     #Calculate distance along the line
-                    DistAlongLine[i] = i*DTM_Resolution*2.
+                    DistAlongTransect[i] = i*DTM_Resolution*2.
                     
                     # Sample a reduced array here i.e. a neighbourhood to reduce computation time
-                    Neighbourhood = np.abs(DistAlongLine[i]-DistAlong) < DTM_Resolution*2.
+                    Neighbourhood = np.abs(DistAlongTransect[i]-DistAlong) < DTM_Resolution*2.
                     ZLocal = Z[Neighbourhood]
                     
                     if len(ZLocal) == 0:
@@ -619,7 +638,7 @@ class Coast:
                 ZMin = ma.masked_where(Mask,ZMin)
                 ZMax = ma.masked_where(Mask,ZMax)
                 
-                Transect.Distance = DistanceAlongLine
+                Transect.Distance = DistAlongTransect
                 Transect.Elevation = ZIDW
                 Transect.ElevationMin = ZMin
                 Transect.ElevationMax = ZMax
@@ -646,4 +665,25 @@ class Coast:
                 Transect.AnalyseMorphology()
 
             
+    def PlotBarrierProperties(PlotFolder):
+        """
+        """
+
+        #import figure plotting stuff here not globally!
+        import matplotlib
+        matplotlib.use('agg')
+        import matplotlib.pyplot as plt
+
+        # set up a figure
+        # in time might want to automatically adjust figure for coast orientation
+        fig, ax = plt.figure(1,figsize=(8,4))
         
+        for Line in self.Coastlines:
+            
+            # get property to plot
+            W  = [Transect.ToeWidth for Transect in Line.Transects]
+            plt.plot(W,range(0,len(W)),'k-',lw=2)
+        
+        plt.xlabel("Barrier Width at Toe (m)")
+        plt.ylabel("Transect ID")
+        plt.savefig(PlotFolder + "BarrierWidth.png")

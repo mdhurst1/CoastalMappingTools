@@ -4,25 +4,25 @@ Testing.py
 MDH, June 2019
 """
 
-import pickle
+import numpy as np
+import itertools
+from Node import *
+from Transect import *
+from Line import *
 from Coast import *
 
-# define files
-MHWS = "D:\\NCCA2\\StAndrews\\MHWS\\MHWS_2018.shp"
-DEM = "D:\\NCCA2\\StAndrews\\DTM\\StAn_2018_DTM.tif"
-
-# run analysis
-ThisCoast = Coast(MHWS)
+TESTFILE = "D:\\NCCA2\\StAndrews\\MHWS\\MHWS_2018.shp"
+ThisCoast = Coast(TESTFILE)
 ThisCoast.MergeCoastLines()
 ThisCoast.SmoothCoastLines()
 ThisCoast.ReconfigureCoastLines("E")
+TESTFILE2 = "D:\\NCCA2\\StAndrews\\MHWS\\coast.shp"
+ThisCoast.WriteCoastShp(TESTFILE2)
 ThisCoast.GenerateNormals(10.,100.,500.)
-ThisCoast.ExtractTransectTopography(DEM)
-
-Filename2SaveCoast = "d:\\NCCA2\\StAndrews\\Coast.pydata"
-with open(Filename2SaveCoast, 'wb') as PFile:
-    pickle.dump(ThisCoast, PFile)
-    
+TESTFILE3 = "D:\\NCCA2\\StAndrews\\MHWS\\transects.shp"
+ThisCoast.WriteTransectsShp(TESTFILE3)
+TESTFILE4 = "D:\\NCCA2\\StAndrews\\MHWS\\transect_points.shp"
+ThisCoast.WritePointsShp(TESTFILE4)
 
 #StartNodes = [CoastLine.Nodes[0] for CoastLine in ThisCoast.CoastLines]
 #EndNodes = [CoastLine.Nodes[-1] for CoastLine in ThisCoast.CoastLines]#

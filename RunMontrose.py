@@ -12,25 +12,43 @@ from Coast import *
 Folder = "D:\\NCCA2\\"
 Site = "Montrose"
 SiteFolder = Folder+Site+"\\"
+PlotFolder = SiteFolder+"Plots\\" 
 LineShp = "Montrose_CoastTrend.shp"
 DTM = "DTM_1m.tif"
 
-# SET UP THE COAST
-ThisCoast = Coast(SiteFolder+LineShp)
-
-# SIMPLIFY COASTLINE
-ThisCoast.MergeCoastLines()
-ThisCoast.SmoothCoastLines()
-ThisCoast.ReconfigureCoastLines("E")
-
-# WRITE COASTLINE TO SHAPEFILE
-ThisCoast.WriteCoastShp(SiteFolder+"Coast.shp")
-
-# GENERATE TRANSECTS
-ThisCoast.GenerateNormals(10.,100.,500.)
-ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
-ThisCoast.ExtractTransectTopography(DTM)
-
+# set up a file name to save the coast object
 Filename2SaveCoast = SiteFolder+ "Coast.pydata"
-with open(Filename2SaveCoast, 'wb') as PFile:
-    pickle.dump(ThisCoast, PFile)
+
+# this checks to see whether coast object already exists
+try:
+    ThisCoast = pickle.load( open( Filename2SaveCoast, "rb" ) )
+    print("Loaded Coast Object " + Filename2SaveCoast)
+
+except:
+    
+    # SET UP THE COAST
+    ThisCoast = Coast(SiteFolder+LineShp)
+    
+    # SIMPLIFY COASTLINE
+    ThisCoast.MergeCoastLines()
+    ThisCoast.SmoothCoastLines(WindowSize=51)
+    ThisCoast.ReconfigureCoastLines("E")
+    
+    # WRITE COASTLINE TO SHAPEFILE
+    ThisCoast.WriteCoastShp(SiteFolder+"Coast.shp")
+    
+    # GENERATE TRANSECTS
+    ThisCoast.GenerateNormals(10.,200.,500.)
+    ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
+    ThisCoast.ExtractTransectTopography(SiteFolder+DTM)
+    
+    # SAVE ENTIRE COAST OBJECT
+    
+    with open(Filename2SaveCoast, 'wb') as PFile:
+        pickle.dump(ThisCoast, PFile)
+
+# now do more stuff here once we have a coast object with transects and topo
+#ThisCoast.AnalyseTransectMorphology()
+
+
+#ThisCoast.PlotBarrierProperties
