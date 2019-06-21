@@ -469,6 +469,9 @@ class Coast:
         # check for square pixels
         if not DTM_Dataset.res[0] == DTM_Dataset.res[1]:
             raise SystemExit("DTM has non-square cells")
+        
+        # get resolution
+        DTM_Resolution = DTM_Dataset.res[0]
 
         # check swath distance
         if SwathDistance < 0:

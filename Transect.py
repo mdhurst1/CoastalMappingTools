@@ -127,8 +127,8 @@ class Transect:
         #Find Minimum and Maximum Ztrend
         BackTopInd = np.argmax(ElevDetrendBack)
         BackToeInd = np.argmin(ElevDetrendBack)
-        self.BackTopNode = Node(Distance[BackTopInd], Elevation[BackTopInd])
-        self.BackToeNode = Node(Distance[BackToeInd], Elevation[BackToeInd])
+        self.BackTopNode = Node(self.Distance[BackTopInd], self.Elevation[BackTopInd])
+        self.BackToeNode = Node(self.Distance[BackToeInd], self.Elevation[BackToeInd])
                 
         #Check top is not at the end, bottom is ok to be at end
         # again not sure what this is acheiving
@@ -154,12 +154,14 @@ class Transect:
         self.BarrierVolume += (self.BackTopNode.X * self.FrontTopNode.Y - self.FrontTopNode.X * self.BackTopNode.Y)
         self.BarrierVolume += (self.FrontTopNode.X * self.FrontToeNode.Y - self.FrontToeNode.X * self.FrontTopNode.Y)
         self.BarrierVolume += (self.FrontToeNode.X * self.BackToeNode.Y - self.BackToeNode.X * self.FrontToeNode.Y)
-        self.BarrierVolme /= 2
+        self.BarrierVolume /= 2
 
     def ExtractBarrierWidth(self, Elev):
 
         """
-        Extract barrier width 
+        Extract barrier width at a given elevation (e.g. extreme water level)
+
+        MDH, June 2019
         """
 
 

@@ -9,17 +9,28 @@ import pickle
 from Coast import *
 
 # define file names for analysis
-LineShp = "D:\\NCCA2\\Montrose\\Montrose_CoastTrend.shp"
-DTM = "D:\\NCCA2\\Montrose\\DTM_1m.tif"
+Folder = "D:\\NCCA2\\"
+Site = "Montrose"
+SiteFolder = Folder+Site+"\\"
+LineShp = "Montrose_CoastTrend.shp"
+DTM = "DTM_1m.tif"
 
-# run analysis
-ThisCoast = Coast(LineShp)
+# SET UP THE COAST
+ThisCoast = Coast(SiteFolder+LineShp)
+
+# SIMPLIFY COASTLINE
 ThisCoast.MergeCoastLines()
 ThisCoast.SmoothCoastLines()
 ThisCoast.ReconfigureCoastLines("E")
+
+# WRITE COASTLINE TO SHAPEFILE
+ThisCoast.WriteCoastShp(SiteFolder+"Coast.shp")
+
+# GENERATE TRANSECTS
 ThisCoast.GenerateNormals(10.,100.,500.)
+ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
 ThisCoast.ExtractTransectTopography(DTM)
 
-Filename2SaveCoast = "d:\\NCCA2\\StAndrews\\Coast.pydata"
+Filename2SaveCoast = SiteFolder+ "Coast.pydata"
 with open(Filename2SaveCoast, 'wb') as PFile:
     pickle.dump(ThisCoast, PFile)
