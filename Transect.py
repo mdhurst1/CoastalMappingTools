@@ -27,6 +27,10 @@ class Transect:
         
         self.Distance = None
         self.Elevation = None
+        self.ElevationMin = None
+        self.ElevationMax = None
+
+        self.Barrier = True
     
     def __str__(self):
         String = "Transect Object:\nID: %s\n" % (str(self.ID))
@@ -81,8 +85,89 @@ class Transect:
         
         return np.sqrt(dx**2 + dy**2.)
 
+    def AnalyseMorphology(self):
+        
+        """
+
+        MDH, June 2019
+
+        """
+
+        #Find the highest point of the barrier Zmax
+        MaxInd = np.argmax(self.Elevation)
+                    
+        #Get Angle to detrend towards the coast
+        Angle = np.degrees(np.arctan((self.Elevation[MaxInd]-self.Elevation[-1]) 
+                                        / (self.Distance[MaxInd]-self.Distance[-1])))
+            
+        #Get detrended elevation
+        ElevDetrendFront = (self.Elevation+(self.Distance[-1]-self.Distance)*np.tan(np.radians(Angle)))
+        ElevDetrendFront[0:MaxInd] = np.nan
+            
+        #Find Minimum and Maximum Ztrend
+        FrontTopInd = np.argmax(ElevDetrendFront)
+        FrontToeInd = np.argmin(ElevDetrendFront)
+        self.FrontTopNode = Node(Distance[FrontTopInd], Elevation[FrontTopInd])
+        self.FrontToeNode = Node(Distance[FrontToeInd], Elevation[FrontToeInd])
+            
+        #Check top is not at the end, bottom is ok to be at end
+        if not FrontTopInd > FrontToeInd:
+            self.Barrier = False
+            print("NOT A BARRIER")
+            return
+        
+        # Not sure why this is needed
+        # TopInd = MaxInd
+            
+        #Get Angle to detrend towards away from the coast
+        Angle = np.degrees(np.arctan((self.Elevation[MaxInd]-self.Elevation[0])
+                                        / (self.Distance[MaxInd]-self.Distance[0])))
+        
+        #Get detrended elevation
+        ElevDetrendBack = (self.Elevation+(self.Distance[0]-self.Distance)*np.tan(np.radians(Angle)))
+        ElevDetrendBack[MaxInd+1:] = np.nan
+        
+        #Find Minimum and Maximum Ztrend
+        BackTopInd = np.argmax(ElevDetrendBack)
+        BackToeInd = np.argmin(ElevDetrendBack)
+        self.BackTopNode = Node(Distance[BackTopInd], Elevation[BackTopInd])
+        self.BackToeNode = Node(Distance[BackToeInd], Elevation[BackToeInd])
+                
+        #Check top is not at the end, bottom is ok to be at end
+        # again not sure what this is acheiving
+        if BackTopInd < BackToeInd:
+            self.Barrier = False
+            print("NOT A BARRIER")
+            return
+            
+        # Calculate Barrier Height, front and back
+        self.FrontHeight = self.FrontTopNode.Y-self.FrontToeNode.Y
+        self.BackHeight = self.BackTopNode.Y-self.BackToeNode.Y
+                
+        # Calculate Barrier Width, top and bottom
+        self.BottomWidth = self.FrontToeNode.X-self.BackToeNode.X
+        self.TopWidth = self.FrontTopNode.X-self.BackTopNode.X
+
+        # Calculate Slope, front and back
+        self.FrontSlope = self.FrontHeight/(self.FrontTopNode.X-self.FrontToeNode.X)
+        self.BackSlope = self.BackHeight/(self.BackTopNode.X-self.BackToeNode.X)
+
+        # Volume m3/m
+        self.BarrierVolume =  (self.BackToeNode.X * self.BackTopNode.Y - self.BackTopNode.X * self.BackToeNode.Y) 
+        self.BarrierVolume += (self.BackTopNode.X * self.FrontTopNode.Y - self.FrontTopNode.X * self.BackTopNode.Y)
+        self.BarrierVolume += (self.FrontTopNode.X * self.FrontToeNode.Y - self.FrontToeNode.X * self.FrontTopNode.Y)
+        self.BarrierVolume += (self.FrontToeNode.X * self.BackToeNode.Y - self.BackToeNode.X * self.FrontToeNode.Y)
+        self.BarrierVolme /= 2
+
     def get_XY(self):
         
+        """
+        Returns X and Y coordinates of start and end nodes
+
+        MDH, June 2019
+        
+        """
+
         X = [self.StartNode.X, self.EndNode.X]
         Y = [self.StartNode.Y, self.EndNode.Y]
         

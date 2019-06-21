@@ -13,6 +13,7 @@ class Node:
     Description of object goes here
 
     """
+    
     def __init__(self, X, Y):
         
         self.X = X

@@ -292,7 +292,7 @@ class Coast:
         Savitzky and Golay (1964) smoothing filter
     
         Savitzky, A. and Golay, M. J.: Smoothing and differentiation of data
-        by simplified least squares procedures, Anal. Chem., 36, 1627–
+        by simplified least squares procedures, Anal. Chem., 36, 1627-
         1639, 1964.
 
         https://docs.scipy.org/doc/scipy-0.15.1/reference/generated/scipy.signal.savgol_filter.html
@@ -455,23 +455,24 @@ class Coast:
         """
         
         print("Coast.EstractTransectTopography: Sampling the DTM for each transect")
+        
         # load the DTM and get its properties
+        print("\tLoading DTM... ", end="")
         DTM_Dataset = rasterio.open(DEMFile)
         DTMArray = DTM_Dataset.read(1)
         NCols = DTM_Dataset.width
         NRows = DTM_Dataset.height
         NDV = DTM_Dataset.nodata
         Resolutions = DTM_Dataset.res
+        print("Done")
 
         # check for square pixels
-        if Resolutions[0] == Resolutions[1]:
-            DTM_Resolution = Resolutions[0]
-            
-        else:
+        if not DTM_Dataset.res[0] == DTM_Dataset.res[1]:
             raise SystemExit("DTM has non-square cells")
-        
-        if SwathDist < 0:
-            SwathDist = DTM_Resolution*2.
+
+        # check swath distance
+        if SwathDistance < 0:
+            SwathDistance = DTM_Resolution*2.
 
         # get extent of DTM
         XMin = DTM_Dataset.bounds[0]
@@ -490,8 +491,10 @@ class Coast:
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 
+                # pass DTM
+
                 # print progress to screen
-                print("Transect %d / %d" % (CurrentTransect, NoTransects) end="\r")
+                print("\tTransect %d / %d" % (CurrentTransect, NoTransects), end="\r", flush=True)
 
                 #Get line points
                 X1, Y1 = Transect.StartNode.get_XY()
@@ -545,7 +548,7 @@ class Coast:
                         #find distance to point
                         DistanceToLine = np.sqrt((XLine-XNode)*(XLine-XNode) + (YLine-YNode)*(YLine-YNode))
 
-                        if ((DistanceToLine < SwathDist) and (DTMArray[i][j] != NDV)):
+                        if ((DistanceToLine < SwathDistance) and (DTMArray[i][j] != NDV)):
                             X.append(XNode)
                             Y.append(YNode)
                             DistAlong.append(DistanceAlongLine)
@@ -614,9 +617,30 @@ class Coast:
                 ZMax = ma.masked_where(Mask,ZMax)
                 
                 Transect.Distance = DistanceAlongLine
-                Transect.Z = ZIDW
-                Transect.ZMin = ZMin
-                Transect.ZMax = ZMax
+                Transect.Elevation = ZIDW
+                Transect.ElevationMin = ZMin
+                Transect.ElevationMax = ZMax
 
                 # update transect no
                 CurrentTransect += 1
+
+    def AnalyseTransectMorphology(self):
+
+        """
+
+        Barrier focus for now
+
+        MDH, June 2019
+
+        """
+
+        print("Coast.AnalyseTransectMorphology: Finding barrier positions and calculating metrics")
+
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+
+                # do something or call something
+                Transect.AnalyseMorphology()
+
+            
+        
