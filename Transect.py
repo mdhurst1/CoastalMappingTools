@@ -109,11 +109,11 @@ class Transect:
 
         #Find the highest point of the barrier Zmax
         MaxInd = np.argmax(self.Elevation)
-                    
+        
         #Get Angle to detrend towards the coast
-        Angle = np.degrees(np.arctan((self.Elevation[MaxInd]-self.Elevation[-1]) 
-                                        / (self.Distance[MaxInd]-self.Distance[-1])))
-            
+        Angle = np.degrees(np.arctan((self.Elevation[MaxInd]-self.Elevation[0]) 
+                                        / (self.Distance[MaxInd]-self.Distance[0])))
+        
         #Get detrended elevation
         ElevDetrendFront = (self.Elevation+(self.Distance[-1]-self.Distance)*np.tan(np.radians(Angle)))
         ElevDetrendFront[0:MaxInd] = np.nan
@@ -121,18 +121,19 @@ class Transect:
         #Find Minimum and Maximum Ztrend
         self.FrontTopInd = np.argmax(ElevDetrendFront)
         self.FrontToeInd = np.argmin(ElevDetrendFront)
-        self.FrontTopNode = Node(Distance[self.FrontTopInd], Elevation[self.FrontTopInd])
-        self.FrontToeNode = Node(Distance[self.FrontToeInd], Elevation[self.FrontToeInd])
+        self.FrontTopNode = Node(self.Distance[self.FrontTopInd], self.Elevation[self.FrontTopInd])
+        self.FrontToeNode = Node(self.Distance[self.FrontToeInd], self.Elevation[self.FrontToeInd])
             
         #Check top is not at the end, bottom is ok to be at end
         if not self.FrontTopInd > self.FrontToeInd:
             self.Barrier = False
-            print("NOT A BARRIER")
+            print(self.FrontTopInd, self.FrontToeInd)
+            print("NOT A BARRIER 1")
             return
         
         #Get Angle to detrend towards away from the coast
-        Angle = np.degrees(np.arctan((self.Elevation[FrontTopInd]-self.Elevation[0])
-                                        / (self.Distance[FrontTopInd]-self.Distance[0])))
+        Angle = np.degrees(np.arctan((self.Elevation[self.FrontTopInd]-self.Elevation[0])
+                                        / (self.Distance[self.FrontTopInd]-self.Distance[0])))
         
         #Get detrended elevation
         ElevDetrendBack = (self.Elevation+(self.Distance[0]-self.Distance)*np.tan(np.radians(Angle)))
@@ -146,9 +147,9 @@ class Transect:
                 
         #Check top is not at the end, bottom is ok to be at end
         # again not sure what this is acheiving
-        if BackTopInd < BackToeInd:
+        if self.BackTopInd < self.BackToeInd:
             self.Barrier = False
-            print("NOT A BARRIER")
+            print("NOT A BARRIER 2")
             return
             
         # Calculate Barrier Height, front and back

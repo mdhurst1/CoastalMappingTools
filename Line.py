@@ -104,6 +104,11 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             #Update the cumulative length of the line
             self.TotalLength += self.SegmentLength[i]
 
+        # Properties of last node
+        self.Orientation[-1] = self.Orientation[-2]
+        self.SegmentLength[-1] = 0
+        self.TotalLength[-1] = self.TotalLength[-2]
+        
     def SmoothLine(self, WindowSize=1001, PolyOrder=4):
         
         """

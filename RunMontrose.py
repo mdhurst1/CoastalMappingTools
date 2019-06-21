@@ -48,7 +48,8 @@ except:
         pickle.dump(ThisCoast, PFile)
 
 # now do more stuff here once we have a coast object with transects and topo
-#ThisCoast.AnalyseTransectMorphology()
+print(ThisCoast.CoastLines[0].Orientation)
+
 
 
 #ThisCoast.PlotBarrierProperties
