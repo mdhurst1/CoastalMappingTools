@@ -116,16 +116,13 @@ class Transect:
             print("NOT A BARRIER")
             return
         
-        # Not sure why this is needed
-        # TopInd = MaxInd
-            
         #Get Angle to detrend towards away from the coast
-        Angle = np.degrees(np.arctan((self.Elevation[MaxInd]-self.Elevation[0])
-                                        / (self.Distance[MaxInd]-self.Distance[0])))
+        Angle = np.degrees(np.arctan((self.Elevation[FrontTopInd]-self.Elevation[0])
+                                        / (self.Distance[FrontTopInd]-self.Distance[0])))
         
         #Get detrended elevation
         ElevDetrendBack = (self.Elevation+(self.Distance[0]-self.Distance)*np.tan(np.radians(Angle)))
-        ElevDetrendBack[MaxInd+1:] = np.nan
+        ElevDetrendBack[FrontTopInd+1:] = np.nan
         
         #Find Minimum and Maximum Ztrend
         BackTopInd = np.argmax(ElevDetrendBack)
@@ -158,6 +155,15 @@ class Transect:
         self.BarrierVolume += (self.FrontTopNode.X * self.FrontToeNode.Y - self.FrontToeNode.X * self.FrontTopNode.Y)
         self.BarrierVolume += (self.FrontToeNode.X * self.BackToeNode.Y - self.BackToeNode.X * self.FrontToeNode.Y)
         self.BarrierVolme /= 2
+
+    def ExtractBarrierWidth(self, Elev):
+
+        """
+        Extract barrier width 
+        """
+
+
+
 
     def get_XY(self):
         
