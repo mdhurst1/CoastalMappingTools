@@ -14,6 +14,7 @@ import shapefile
 import itertools
 import rasterio
 from Line import *
+from IPython.display import clear_output
 
 class Coast:
     """
@@ -516,7 +517,8 @@ class Coast:
                 # pass DTM
 
                 # print progress to screen
-                print("\tTransect %d / %d" % (CurrentTransect, NoTransects), end="\r", flush=True)
+                print("\tTransect %d / %d" % (CurrentTransect, NoTransects), end="\r")
+                clear_output()
 
                 #Get line points
                 X1, Y1 = Transect.StartNode.get_XY()

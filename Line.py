@@ -107,7 +107,6 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         # Properties of last node
         self.Orientation[-1] = self.Orientation[-2]
         self.SegmentLength[-1] = 0
-        self.TotalLength[-1] = self.TotalLength[-2]
         
     def SmoothLine(self, WindowSize=1001, PolyOrder=4):
         
@@ -249,15 +248,15 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             CumulativeLength += self.SegmentLength[i]
 
             # get orientation
-            TransectOrientation = self.Orientation[i]
-
+            TempOrientation = self.Orientation[i]
+            
             # Test to see if we're going to create a cross section
             while CumulativeLength > NextPosition:
 
                 #calculate point for section
                 DistanceToStepBack = CumulativeLength - NextPosition
-                dX = DistanceToStepBack * np.sin( np.radians( TransectOrientation ) )
-                dY = DistanceToStepBack * np.cos( np.radians( TransectOrientation ) )
+                dX = DistanceToStepBack * np.sin( np.radians( TempOrientation ) )
+                dY = DistanceToStepBack * np.cos( np.radians( TempOrientation ) )
                 
                 # find the point for the transect along the line
                 PointX = self.Nodes[i+1].X - dX
@@ -265,10 +264,10 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
                 #Create cross section line
                 #Get line orientation
-                if TransectOrientation < 0:
-                    TransectOrientation += 90.
+                if TempOrientation < 0:
+                    TransectOrientation = TempOrientation + 90.
                 else:
-                    TransectOrientation -= 90.
+                    TransectOrientation = TempOrientation - 90.
 
                 #Calculate start and end nodes and generate Transect
                 X1 = PointX + TransectLength2Sea * np.sin( np.radians( TransectOrientation ) )

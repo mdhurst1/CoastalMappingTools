@@ -25,7 +25,7 @@ try:
     print("Loaded Coast Object " + Filename2SaveCoast)
 
 except:
-    
+    print("Creating New Coast Object")
     # SET UP THE COAST
     ThisCoast = Coast(SiteFolder+LineShp)
     
@@ -43,13 +43,9 @@ except:
     ThisCoast.ExtractTransectTopography(SiteFolder+DTM)
     
     # SAVE ENTIRE COAST OBJECT
-    
+    print("Saving Coast Object as " + Filename2SaveCoast)
     with open(Filename2SaveCoast, 'wb') as PFile:
         pickle.dump(ThisCoast, PFile)
-
-# now do more stuff here once we have a coast object with transects and topo
-print(ThisCoast.CoastLines[0].Orientation)
-
 
 
 #ThisCoast.PlotBarrierProperties
