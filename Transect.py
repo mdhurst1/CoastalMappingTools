@@ -30,6 +30,20 @@ class Transect:
         self.ElevationMin = None
         self.ElevationMax = None
 
+        self.FrontHeight = None
+        self.FrontTopNode = None
+        self.FrontToeNode = None
+        self.BackHeight = None
+        self.BackTopNode = None
+        self.BackToeNode = None
+                
+        self.ToeWidth = None
+        self.TopWidth = None
+
+        self.FrontSlope = None
+        self.BackSlope = None
+
+
         self.Barrier = True
     
     def __str__(self):
@@ -97,8 +111,6 @@ class Transect:
         MaxInd = np.argmax(self.Elevation)
                     
         #Get Angle to detrend towards the coast
-        print(self.Distance)
-        print(self.Elevation)
         Angle = np.degrees(np.arctan((self.Elevation[MaxInd]-self.Elevation[-1]) 
                                         / (self.Distance[MaxInd]-self.Distance[-1])))
             
@@ -107,13 +119,13 @@ class Transect:
         ElevDetrendFront[0:MaxInd] = np.nan
             
         #Find Minimum and Maximum Ztrend
-        FrontTopInd = np.argmax(ElevDetrendFront)
-        FrontToeInd = np.argmin(ElevDetrendFront)
-        self.FrontTopNode = Node(Distance[FrontTopInd], Elevation[FrontTopInd])
-        self.FrontToeNode = Node(Distance[FrontToeInd], Elevation[FrontToeInd])
+        self.FrontTopInd = np.argmax(ElevDetrendFront)
+        self.FrontToeInd = np.argmin(ElevDetrendFront)
+        self.FrontTopNode = Node(Distance[self.FrontTopInd], Elevation[self.FrontTopInd])
+        self.FrontToeNode = Node(Distance[self.FrontToeInd], Elevation[self.FrontToeInd])
             
         #Check top is not at the end, bottom is ok to be at end
-        if not FrontTopInd > FrontToeInd:
+        if not self.FrontTopInd > self.FrontToeInd:
             self.Barrier = False
             print("NOT A BARRIER")
             return
@@ -124,13 +136,13 @@ class Transect:
         
         #Get detrended elevation
         ElevDetrendBack = (self.Elevation+(self.Distance[0]-self.Distance)*np.tan(np.radians(Angle)))
-        ElevDetrendBack[FrontTopInd+1:] = np.nan
+        ElevDetrendBack[self.FrontTopInd+1:] = np.nan
         
         #Find Minimum and Maximum Ztrend
-        BackTopInd = np.argmax(ElevDetrendBack)
-        BackToeInd = np.argmin(ElevDetrendBack)
-        self.BackTopNode = Node(self.Distance[BackTopInd], self.Elevation[BackTopInd])
-        self.BackToeNode = Node(self.Distance[BackToeInd], self.Elevation[BackToeInd])
+        self.BackTopInd = np.argmax(ElevDetrendBack)
+        self.BackToeInd = np.argmin(ElevDetrendBack)
+        self.BackTopNode = Node(self.Distance[self.BackTopInd], self.Elevation[self.BackTopInd])
+        self.BackToeNode = Node(self.Distance[self.BackToeInd], self.Elevation[self.BackToeInd])
                 
         #Check top is not at the end, bottom is ok to be at end
         # again not sure what this is acheiving
@@ -165,8 +177,6 @@ class Transect:
 
         MDH, June 2019
         """
-
-
 
 
     def get_XY(self):

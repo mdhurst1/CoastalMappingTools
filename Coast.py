@@ -664,7 +664,52 @@ class Coast:
                 # do something or call something
                 Transect.AnalyseMorphology()
 
+    def PlotTransects(PlotFolder):
+        
+        """
+        """
+
+        #import figure plotting stuff here not globally!
+        import matplotlib
+        matplotlib.use('agg')
+        import matplotlib.pyplot as plt
+
+        # loop through lines and plot profiles #
+        
+        for Transect in [Line.Transects for Line in self.CoastLines]:
             
+            # create figure
+            fig = plt.figure(1,figsize=(6,4))
+            
+            # create 4 subplots
+            ax = plt.subplot(111)
+            
+            # plot profile
+            ax.plot(Transect.Distance, Transect.Elevation,'k-',lw=1.5)
+            
+            # plot range
+            DistFill = np.concatenate((Transect.Distance, Transect.Distance[::-1]))
+            ElevFill = np.concatenate((Transect.ZMax, Transect.ZMin[::-1]))
+            ax.fill(DistFill, ZFill, c=[0.8,0.8,0.8], zorder=10)
+            ax.set_ylabel("Elevation (m)")
+            ax.set_xlabel("Distance (m)")
+            
+            # create array for filling in geometry
+            DistFill = Transect.Distance[Transect.BackToeInd:Transect.FrontToeInd]
+            ElevFill = Transect.Elevation[Transect.BackToeInd:Transect.FrontToeInd]
+            
+            DistFill = np.concatenate((DistFill,[DistFill[0],]))
+            ElevFill = np.concatenate((ElevFill,[ElevFill[0],]))
+            
+            #plot the profile and points
+            ax.fill(DistFill, ElevFill, c=[1.0,0.7,0.7], zorder=9)
+            ax.plot(Transect.Distance[self.FrontTopInd],Transect.Elevation[self.FrontTopInd],'ko')
+            ax.plot(Transect.Distance[self.FrontToeInd],Transect.Elevation[self.FrontToeInd],'ko')
+            ax.plot(Transect.Distance[self.BackTopInd],Transect.Elevation[self.BackTopInd],'ko')
+            ax.plot(Transect.Distance[self.BackToeInd],Transect.Elevation[self.BackToeInd],'ko')
+            
+            plt.savefig(PlotFolder+"Profile_"+str(Transect.ID)+".png", dpi=300)
+
     def PlotBarrierProperties(PlotFolder):
         """
         """
