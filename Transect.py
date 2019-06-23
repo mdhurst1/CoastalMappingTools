@@ -26,6 +26,7 @@ class Transect:
         self.Length = self.CalculateLength(self.StartNode, self.EndNode)
         
         self.NoValues = None
+        self.DistanceSpacing = None
         self.Distance = None
         self.Elevation = None
         self.ElevationMin = None
@@ -193,6 +194,7 @@ class Transect:
         # count and record locations of intersection
         IntersectionCounter = 0
         IntesectionIndices = []
+        InterpolateFraction = []
 
         for i in range(0,self.NoNodes):
 
@@ -234,10 +236,18 @@ class Transect:
                     continue
                 else:
                     IntersectionCounter += 1
-                    IntersectionList.append(i)
+                    IntersectionIndices.append(i)
+                    InterpolateFraction.append(T)
 
-        return IntersectionCounter, IntersectionList    
+        # calculate width and volume at this elevation
+        if InterectionCounter > 1:
+            
+            # Calculate Wdith
+            self.CustomWidth = Distance[IntersectionIndices[1]] + InterpoateFraction[1]*self.DistanceSpacing
+                     - Distance[IntersectionIndices[0]] + InterpoateFraction[0]*self.DistanceSpacing
 
+            # Calculate Volume
+            self.CustomVolume = np.sum(self.Elevation[IntersectionIndices[0:2]]-Elev)*self.DistanceSpacing
 
     def get_XY(self):
         
