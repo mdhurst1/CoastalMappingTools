@@ -25,6 +25,7 @@ class Transect:
         self.Orientation = self.CalculateOrientation(self.StartNode, self.EndNode)
         self.Length = self.CalculateLength(self.StartNode, self.EndNode)
         
+        self.NoValues = None
         self.Distance = None
         self.Elevation = None
         self.ElevationMin = None
@@ -43,8 +44,8 @@ class Transect:
         self.FrontSlope = None
         self.BackSlope = None
 
-
         self.Barrier = True
+        self.BarrierVolume = None
     
     def __str__(self):
         String = "Transect Object:\nID: %s\n" % (str(self.ID))
@@ -178,6 +179,64 @@ class Transect:
 
         MDH, June 2019
         """
+
+        # check barrier analysis has been conducted
+        if not self.BarrierVolume:
+            self.AnalyseMorphology()
+        
+        # vector at fixed elevation running the length of the transect
+        X1, Y1 = self.Distance[0], Elev
+        X2, Y2 = self.Distance[-1], Elev
+        dX12 = X2-X1
+        dY12 = Y2-Y1
+        
+        # count and record locations of intersection
+        IntersectionCounter = 0
+        IntesectionIndices = []
+
+        for i in range(0,self.NoNodes):
+
+            # cut and paste interesction analysis
+            # do we want this to be a separate function somewhere?
+            # Loop through transects and count no of intersections with the coastline
+            # get transect line ends        
+            X3,Y3 = self.Distance[i], self.Elevation[i]
+            X4,Y4 = self.Distance[i+1], self.Elevation[i+1]
+            
+            dX34 = X4-X3
+            dY34 = Y4-Y3
+            
+            #Find the cross product of the two vectors
+            XProd = dX12*dY34 - dX34*dY12
+                
+            if (XProd != 0):
+                if (XProd > 0):
+                    XProdPos = 1
+                else:
+                    XProdPos = 0
+                    
+                #assign third test segment
+                dX31 = X1-X3
+                dY31 = Y1-Y3
+                    
+                #get cross products
+                S = dX12*dY31 - dY12*dX31;
+                T = dX34*dY31 - dY34*dX31;
+                
+                #logic for collision occurence
+                if ((S < 0) == XProdPos):
+                    continue
+                elif ((T < 0) == XProdPos):
+                    continue
+                elif ((S > XProd) == XProdPos):
+                    continue
+                elif ((T > XProd) == XProdPos):
+                    continue
+                else:
+                    IntersectionCounter += 1
+                    IntersectionList.append(i)
+
+        return IntersectionCounter, IntersectionList    
 
 
     def get_XY(self):

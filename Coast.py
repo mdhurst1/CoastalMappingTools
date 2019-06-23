@@ -515,6 +515,8 @@ class Coast:
             for Transect in Line.Transects:
                 
                 # pass DTM
+                # this needs to be changed to pass to transect object
+                # fix this later
 
                 # print progress to screen
                 print("\tTransect %d / %d" % (CurrentTransect, NoTransects), end="\r")
