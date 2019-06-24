@@ -14,10 +14,11 @@ class Node:
 
     """
     
-    def __init__(self, X, Y):
+    def __init__(self, X, Y, Z=None):
         
         self.X = X
         self.Y = Y
+        self.Z = Z
 
     def __eq__(self,other):
         if (self.X == other.X) and (self.Y == other.Y):
@@ -32,3 +33,7 @@ class Node:
 
     def get_XY(self):
         return self.X, self.Y
+    
+    def get_XZ(self):
+        return self.X, self.Z
+        

@@ -8,6 +8,14 @@ June 2019
 """
 
 import numpy as np
+import numpy.ma as ma
+
+#import figure plotting stuff here not globally!
+import matplotlib
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
+
+# import other custom classes
 from Node import *
 
 class Transect:
@@ -45,7 +53,7 @@ class Transect:
         self.FrontSlope = None
         self.BackSlope = None
 
-        self.Barrier = True
+        self.Barrier = False
         self.BarrierVolume = None
     
     def __str__(self):
@@ -173,6 +181,9 @@ class Transect:
         self.BarrierVolume += (self.FrontToeNode.X * self.BackToeNode.Y - self.BackToeNode.X * self.FrontToeNode.Y)
         self.BarrierVolume /= 2
 
+        # switch flag to indicate a barrier has been found
+        self.Barrier = True
+
     def ExtractBarrierWidth(self, Elev):
 
         """
@@ -243,8 +254,8 @@ class Transect:
         if InterectionCounter > 1:
             
             # Calculate Wdith
-            self.CustomWidth = Distance[IntersectionIndices[1]] + InterpoateFraction[1]*self.DistanceSpacing
-                     - Distance[IntersectionIndices[0]] + InterpoateFraction[0]*self.DistanceSpacing
+            self.CustomWidth = self.Distance[IntersectionIndices[1]] + InterpolateFraction[1]*self.DistanceSpacing \
+                                - self.Distance[IntersectionIndices[0]] + InterpolateFraction[0]*self.DistanceSpacing
 
             # Calculate Volume
             self.CustomVolume = np.sum(self.Elevation[IntersectionIndices[0:2]]-Elev)*self.DistanceSpacing
@@ -262,3 +273,50 @@ class Transect:
         Y = [self.StartNode.Y, self.EndNode.Y]
         
         return np.array(X), np.array(Y)
+
+    def Plot(self, PlotFolder):
+        """
+        
+        MDH, June 2019
+
+        """
+        # create figure
+        fig = plt.figure(1,figsize=(6,3))
+                
+        # create 4 subplots
+        ax = plt.subplot(111)
+                
+        # temp fix to masked array legacy problem
+        self.Distance = ma.masked_where(self.Elevation.mask,self.Distance)
+
+        # plot raw data
+        ax.plot(self.Distance, self.Elevation,'k-',lw=1.,zorder=11)
+                
+        # plot range
+        # DistFill = np.concatenate((self.Distance, self.Distance[::-1]))
+        # ElevFill = np.concatenate((self.ElevationMax, self.ElevationMin[::-1]))
+        ax.fill_between(self.Distance, self.ElevationMin, self.ElevationMax, color=[0.8,0.8,0.8], zorder=10)
+        
+        # add barrier details here
+        if self.Barrier:
+        
+            # create array for filling in geometry
+            DistFill = self.Distance[self.BackToeInd:self.FrontToeInd]
+            ElevFill = self.Elevation[self.BackToeInd:self.FrontToeInd]
+        
+            DistFill = np.concatenate((DistFill,[DistFill[0],]))
+            ElevFill = np.concatenate((ElevFill,[ElevFill[0],]))
+        
+            # plot the profile and points
+            ax.fill(DistFill, ElevFill, c=[1.0,0.7,0.7], zorder=9)
+            ax.plot(self.Distance[self.FrontTopInd], self.Elevation[self.FrontTopInd], 'ko')
+            ax.plot(self.Distance[self.FrontToeInd], self.Elevation[self.FrontToeInd], 'ko')
+            ax.plot(self.Distance[self.BackTopInd], self.Elevation[self.BackTopInd], 'ko')
+            ax.plot(self.Distance[self.BackToeInd], self.Elevation[self.BackToeInd], 'ko')
+        
+        # label axes
+        ax.set_aspect(4.)
+        ax.set_ylabel("Elevation (m)")
+        ax.set_xlabel("Distance (m)")
+        
+        plt.savefig(PlotFolder+"Transect_"+str(self.ID)+".png", dpi=300)

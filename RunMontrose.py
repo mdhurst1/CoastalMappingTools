@@ -6,6 +6,7 @@ Created on Fri Jun 21 11:25:01 2019
 """
 
 import pickle
+import pathlib
 from Coast import *
 
 # define file names for analysis
@@ -15,6 +16,10 @@ SiteFolder = Folder+Site+"\\"
 PlotFolder = SiteFolder+"Plots\\" 
 LineShp = "Montrose_CoastTrend.shp"
 DTM = "DTM_1m.tif"
+
+# make folder for plots if it doesnt already exist
+p = pathlib.Path(PlotFolder)
+p.mkdir(parents=True, exist_ok=True)
 
 # set up a file name to save the coast object
 Filename2SaveCoast = SiteFolder+ "Coast.pydata"
@@ -48,4 +53,4 @@ except:
         pickle.dump(ThisCoast, PFile)
 
 
-#ThisCoast.PlotBarrierProperties
+ThisCoast.PlotTransects(PlotFolder)
