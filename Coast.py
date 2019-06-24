@@ -700,14 +700,17 @@ class Coast:
 
         # set up a figure
         # in time might want to automatically adjust figure for coast orientation
-        fig, ax = plt.figure(1,figsize=(8,4))
+        fig, ax = plt.figure(figsize=(8,4))
         
         for Line in self.Coastlines:
             
             # get property to plot
             W  = [Transect.ToeWidth for Transect in Line.Transects]
-            plt.plot(W,range(0,len(W)),'k-',lw=2)
+            ax.plot(W,range(0,len(W)),'k-',lw=2)
         
-        plt.xlabel("Barrier Width at Toe (m)")
-        plt.ylabel("Transect ID")
-        plt.savefig(PlotFolder + "BarrierWidth.png")
+        ax.set_xlabel("Barrier Width at Toe (m)")
+        ax.set_ylabel("Transect ID")
+        fig.savefig(PlotFolder + "BarrierWidth.png")
+
+        fig.clear()
+        plt.close(fig)

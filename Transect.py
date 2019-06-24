@@ -293,8 +293,6 @@ class Transect:
         ax.plot(self.Distance, self.Elevation,'k-',lw=1.,zorder=11)
                 
         # plot range
-        # DistFill = np.concatenate((self.Distance, self.Distance[::-1]))
-        # ElevFill = np.concatenate((self.ElevationMax, self.ElevationMin[::-1]))
         ax.fill_between(self.Distance, self.ElevationMin, self.ElevationMax, color=[0.8,0.8,0.8], zorder=10)
         
         # add barrier details here
@@ -318,5 +316,9 @@ class Transect:
         ax.set_aspect(4.)
         ax.set_ylabel("Elevation (m)")
         ax.set_xlabel("Distance (m)")
-        
-        plt.savefig(PlotFolder+"Transect_"+str(self.ID)+".png", dpi=300)
+
+        # save the figure        
+        fig.savefig(PlotFolder+"Transect_"+str(self.ID)+".png", dpi=300)
+
+        # close the figure
+        plt.close(fig)
