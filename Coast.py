@@ -668,6 +668,7 @@ class Coast:
 
                 # do something or call something
                 Transect.AnalyseMorphology()
+                sys.exit()
 
     def PlotTransects(self, PlotFolder):
         

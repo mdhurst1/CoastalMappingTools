@@ -9,10 +9,11 @@ June 2019
 
 import numpy as np
 import numpy.ma as ma
+import sys
 
 #import figure plotting stuff here not globally!
 import matplotlib
-matplotlib.use('agg')
+#matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
 # import other custom classes
@@ -117,37 +118,67 @@ class Transect:
 
         """
 
-        #Find the highest point of the barrier Zmax
+        # Find the highest point of the barrier Zmax
         MaxInd = np.argmax(self.Elevation)
         
-        #Get Angle to detrend towards the coast
-        Angle = np.degrees(np.arctan((self.Elevation[MaxInd]-self.Elevation[0]) 
-                                        / (self.Distance[MaxInd]-self.Distance[0])))
+        # Find first real elevation location in masked array
+        FirstInd = np.transpose(self.Elevation.nonzero())[0][0]
         
-        #Get detrended elevation
-        ElevDetrendFront = (self.Elevation+(self.Distance[-1]-self.Distance)*np.tan(np.radians(Angle)))
-        ElevDetrendFront[0:MaxInd] = np.nan
-            
-        #Find Minimum and Maximum Ztrend
+        # Get Angle to detrend towards the coast
+        Angle = np.degrees(np.arctan((self.Elevation[MaxInd]-self.Elevation[FirstInd]) 
+                                        / (self.Distance[MaxInd]-self.Distance[FirstInd])))
+        
+        # Get detrended elevation
+        ElevDetrendFront = (self.Elevation+(self.Distance[FirstInd]-self.Distance)*np.tan(np.radians(Angle)))
+
+        # mask values beyond the peak
+        Mask = self.Elevation.mask
+        Mask[MaxInd:] = True
+        ElevDetrendFront = ma.masked_where(Mask,ElevDetrendFront)
+                            
+        # Find Minimum and Maximum Ztrend
         self.FrontTopInd = np.argmax(ElevDetrendFront)
         self.FrontToeInd = np.argmin(ElevDetrendFront)
         self.FrontTopNode = Node(self.Distance[self.FrontTopInd], self.Elevation[self.FrontTopInd])
         self.FrontToeNode = Node(self.Distance[self.FrontToeInd], self.Elevation[self.FrontToeInd])
-            
-        #Check top is not at the end, bottom is ok to be at end
+
+        # Check if found a cliff
+        self.FrontHeight = self.FrontTopNode.Y-self.FrontToeNode.Y
+        self.FrontSlope = self.FrontHeight/(self.FrontTopNode.X-self.FrontToeNode.X)
+        
+        print(self.FrontHeight, self.FrontSlope)
+        print(self.FrontTopNode.X, self.FrontToeNode.X)
+        
+        if self.FrontSlope > 1.:
+            print("Steeper than 45 degrees, therefore likely a cliff!")
+            self.Cliff = True
+        
+        elif self.FrontHeight > 10.:
+            print("Higher than 10 m, therefore likely a cliff!")
+            self.Cliff = True
+        
+        # Check top is not at the end, bottom is ok to be at end
         if not self.FrontTopInd > self.FrontToeInd:
             self.Barrier = False
             print(self.FrontTopInd, self.FrontToeInd)
             print("NOT A BARRIER 1")
             return
         
-        #Get Angle to detrend towards away from the coast
-        Angle = np.degrees(np.arctan((self.Elevation[self.FrontTopInd]-self.Elevation[0])
-                                        / (self.Distance[self.FrontTopInd]-self.Distance[0])))
         
-        #Get detrended elevation
-        ElevDetrendBack = (self.Elevation+(self.Distance[0]-self.Distance)*np.tan(np.radians(Angle)))
-        ElevDetrendBack[self.FrontTopInd+1:] = np.nan
+        # Find last real elevation location in masked array
+        LastInd = np.transpose(self.Elevation.nonzero())[-1][0]
+
+        # Get Angle to detrend towards away from the coast
+        Angle = np.degrees(np.arctan((self.Elevation[LastInd]-self.Elevation[self.FrontTopInd])
+                                        / (self.Distance[LastInd]-self.Distance[self.FrontTopInd])))
+        
+        # Get detrended elevation
+        ElevDetrendBack = (self.Elevation+(self.Distance[self.FrontTopInd]-self.Distance)*np.tan(np.radians(Angle)))
+        
+        # mask values up to the peak
+        Mask = self.Elevation.mask
+        Mask[FirstInd:self.FrontTopInd] = True
+        ElevDetrendBack = ma.masked_where(Mask,ElevDetrendBack)
         
         #Find Minimum and Maximum Ztrend
         self.BackTopInd = np.argmax(ElevDetrendBack)

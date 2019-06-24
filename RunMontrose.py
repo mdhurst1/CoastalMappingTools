@@ -53,4 +53,5 @@ except:
         pickle.dump(ThisCoast, PFile)
 
 
-ThisCoast.PlotTransects(PlotFolder)
+#ThisCoast.PlotTransects(PlotFolder)
+ThisCoast.AnalyseTransectMorphology()
