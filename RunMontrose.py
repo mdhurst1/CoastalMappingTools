@@ -47,6 +47,9 @@ except:
     ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
     ThisCoast.ExtractTransectTopography(SiteFolder+DTM)
     
+    # FIND CLIFFS
+    ThisCoast.AnalyseTransectMorphology()
+    
     # SAVE ENTIRE COAST OBJECT
     print("Saving Coast Object as " + Filename2SaveCoast)
     with open(Filename2SaveCoast, 'wb') as PFile:

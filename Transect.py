@@ -476,8 +476,8 @@ class Transect:
             sys.exit("Transect.get_CliffPosition: Not a cliff!")
 
         # calculate X and Y
-        CliffTopDist = Distance[self.CliffTopInd]
-        CliffToeDist = Distance[self.CliffToeInd]
+        CliffTopDist = self.Distance[self.CliffTopInd]
+        CliffToeDist = self.Distance[self.CliffToeInd]
         
         # Calculate position of cliff top
         X1 = self.StartNode.X + CliffTopDist * np.sin( np.radians( self.Orientation ) )

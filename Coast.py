@@ -709,21 +709,31 @@ class Coast:
             # find transects with cliffs
             CliffBool = [Transect.Cliff for Transect in Line.Transects]
             CliffBool.insert(0, False)
+            CliffBool = np.array(CliffBool).astype(int)
+            print(np.shape(CliffBool))
 
             # get a list of the start and end points of contiguous cliff lines
-            StartEndFlags = np.diff(np.array(CliffBool).astype(int))
-            StartList = np.argwhere(StartEndFlags == 1)
-            EndList = np.argwhere(StartEndFlags == -1)
+            StartEndFlags = np.diff(CliffBool)
+            print(np.shape(CliffBool))
+            StartList = np.argwhere(StartEndFlags == 1).flatten()
+            print(np.shape(StartList))
+            EndList = np.argwhere(StartEndFlags == -1).flatten()
             if not len(StartList) == len(EndList):
                 print("Start and End lists not the same length")
 
+            print(StartList)
+            print(EndList)
+
             for i in range(0,len(StartList)):
+                
+                print(StartList[i], EndList[i])
                 
                 # create empty lists for storing clifftop and clifftoe nodes
                 CliffTopList = []
                 CliffToeList = []
 
                 # loop through transects and get top and toe positions
+                
                 for Transect in Line.Transects[StartList[i]:EndList[i]]:
                     TempTop, TempToe = Transect.get_CliffPosition()
                     CliffTopList.append(TempTop)
