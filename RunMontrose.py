@@ -10,7 +10,7 @@ import pathlib
 from Coast import *
 
 # define file names for analysis
-Folder = "D:\\NCCA2\\"
+Folder = "C:\\Users\\mh322u\\OneDrive - University of Glasgow\\Projects\\DynamicCoast2\\WP1_TopographicAnalysis\\"
 Site = "Montrose"
 SiteFolder = Folder+Site+"\\"
 PlotFolder = SiteFolder+"Plots\\" 
