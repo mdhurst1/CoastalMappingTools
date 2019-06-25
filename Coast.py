@@ -8,6 +8,7 @@ June 2019
 """
 
 # import modules
+import sys, time
 import numpy as np
 import numpy.ma as ma
 import shapefile
@@ -663,14 +664,28 @@ class Coast:
 
         print("Coast.AnalyseTransectMorphology: Finding barrier positions and calculating metrics")
 
+        # Track progress
+        NoTransects = np.sum([Line.NoTransects for Line in self.CoastLines])-1
+        CurrentTransect = 0
+
         for Line in self.CoastLines:
             for Transect in Line.Transects:
 
-                # do something or call something
+                # print progress to screen
+                print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
+                
+                # Call analyses
                 Transect.FindCliff()
-                #Transect.AnalyseMorphology()
-                sys.exit()
+                #Transect.AnalyseMorphology()                
 
+                # update transect progress no
+                CurrentTransect += 1
+                
+
+    def GetCliffLines(self):
+        """
+        """
+        
     def PlotTransects(self, PlotFolder):
         
         """
@@ -689,6 +704,7 @@ class Coast:
                     
                 # call plotting function
                 Transect.Plot(PlotFolder)
+                return
 
 
     def PlotBarrierProperties(self, PlotFolder):
