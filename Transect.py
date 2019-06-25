@@ -27,13 +27,15 @@ class Transect:
     def __init__(self, ID, CoastNode, StartNode, EndNode):
         
         self.ID = ID
+        
+        # transect positioning
         self.CoastNode = CoastNode
         self.StartNode = StartNode
         self.EndNode = EndNode
-        
         self.Orientation = self.CalculateOrientation(self.StartNode, self.EndNode)
         self.Length = self.CalculateLength(self.StartNode, self.EndNode)
         
+        # transect data
         self.NoValues = None
         self.DistanceSpacing = None
         self.Distance = None
@@ -41,20 +43,25 @@ class Transect:
         self.ElevationMin = None
         self.ElevationMax = None
 
+        # cliff metrics
+        self.Cliff = None
+        self.CliffTopInd = None
+        self.CliffToeInd = None
+        self.CliffHeight = None
+        self.CliffSlope = None
+
+        # barrier metrics
+        self.Barrier = None
         self.FrontHeight = None
         self.FrontTopNode = None
         self.FrontToeNode = None
         self.BackHeight = None
         self.BackTopNode = None
         self.BackToeNode = None
-                
         self.ToeWidth = None
         self.TopWidth = None
-
         self.FrontSlope = None
         self.BackSlope = None
-
-        self.Barrier = False
         self.BarrierVolume = None
     
     def __str__(self):
@@ -109,6 +116,88 @@ class Transect:
         dy = Node2.Y - Node1.Y
         
         return np.sqrt(dx**2 + dy**2.)
+
+    def FindCliff(self):
+
+        """
+
+        Function to identify whether the coastal transect has a cliff
+        and find the position of a cliff on a coastal transect
+        records the position of the cliff top and cliff toe
+
+        MDH, June 2019
+
+        """
+        
+        # Find the highest point on the Transect
+        MaxInd = np.argmax(self.Elevation)
+    
+        # Find first real elevation location in masked array
+        MinInd = np.transpose(self.Elevation.nonzero())[0][0]
+        CliffToeInd = MinInd
+
+        # flag for changing position
+        CliffPositionChangeFlag = True
+
+        while CliffPositionChangeFlag:
+
+            # reset flag
+            CliffPositionChangeFlag = False
+
+            # FIRST CLIFF TOP
+
+            # Get Angle to detrend towards the coast
+            Angle = np.degrees(np.arctan((self.Elevation[MaxInd]-self.Elevation[self.CliffToeInd]) 
+                                        / (self.Distance[MaxInd]-self.Distance[self.CliffToeInd])))
+        
+            # Get detrended elevation
+            ElevDetrend = (self.Elevation+(self.Distance[self.CliffToeInd]-self.Distance)*np.tan(np.radians(Angle)))
+
+            # mask values beyond the peak
+            Mask = self.Elevation.mask
+            Mask[MaxInd:] = True
+            ElevDetrend = ma.masked_where(Mask,ElevDetrend)
+                            
+            # Find Maximum Ztrend
+            if not np.argmax(ElevDetrend) == self.CliffTopInd:
+                self.CliffTopInd = np.argmax(ElevDetrend)
+                CliffPositionChangeFlag = True
+
+            # THEN CLIFF TOE
+
+            # Get Angle to detrend towards the coast
+            Angle = np.degrees(np.arctan((self.Elevation[self.CliffTopInd]-self.Elevation[MinInd]) 
+                                        / (self.Distance[self.CliffTopInd]-self.Distance[MinInd])))
+        
+            # Get detrended elevation
+            ElevDetrend = (self.Elevation+(self.Distance[MinInd]-self.Distance[MinInd:self.CliffTopInd])*np.tan(np.radians(Angle)))
+
+            # mask values beyond the peak
+            Mask = self.Elevation.mask
+            Mask[self.CliffTopInd:] = True
+            ElevDetrend = ma.masked_where(Mask, ElevDetrend)
+                            
+            # Find Minimum detrended elevation
+            if not np.argmin(ElevDetrend) == self.CliffToeInd:
+                self.CliffToeInd = np.argmin(ElevDetrend)
+                CliffPositionChangeFlag = True
+
+        # Check if found a cliff
+        self.CliffHeight = self.Y[self.CliffTopInd]-self.Y[self.CliffToeInd]
+        self.CliffSlope = self.CliffHeight/(self.X[self.CliffTopInd-self.X[self.CliffToeInd])
+        
+        print(self.CliffHeight, self.CliffSlope)
+        
+        if self.FrontSlope > 1.:
+            print("Steeper than 45 degrees, therefore likely a cliff!")
+            self.Cliff = True
+        
+        elif self.FrontHeight > 10.:
+            print("Higher than 10 m, therefore likely a cliff!")
+            self.Cliff = True
+        
+        else:
+            self.Cliff = False
 
     def AnalyseMorphology(self):
         
