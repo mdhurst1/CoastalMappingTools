@@ -131,10 +131,11 @@ class Transect:
         
         # Find the highest point on the Transect
         MaxInd = np.argmax(self.Elevation)
+        self.CliffTopInd = MaxInd
     
         # Find first real elevation location in masked array
         MinInd = np.transpose(self.Elevation.nonzero())[0][0]
-        CliffToeInd = MinInd
+        self.CliffToeInd = MinInd
 
         # flag for changing position
         CliffPositionChangeFlag = True
@@ -170,7 +171,7 @@ class Transect:
                                         / (self.Distance[self.CliffTopInd]-self.Distance[MinInd])))
         
             # Get detrended elevation
-            ElevDetrend = (self.Elevation+(self.Distance[MinInd]-self.Distance[MinInd:self.CliffTopInd])*np.tan(np.radians(Angle)))
+            ElevDetrend = (self.Elevation + (self.Distance[MinInd] - self.Distance) * np.tan(np.radians(Angle)))
 
             # mask values beyond the peak
             Mask = self.Elevation.mask
@@ -183,20 +184,21 @@ class Transect:
                 CliffPositionChangeFlag = True
 
         # Check if found a cliff
-        self.CliffHeight = self.Y[self.CliffTopInd]-self.Y[self.CliffToeInd]
-        self.CliffSlope = self.CliffHeight/(self.X[self.CliffTopInd-self.X[self.CliffToeInd])
+        self.CliffHeight = self.Elevation[self.CliffTopInd]-self.Elevation[self.CliffToeInd]
+        self.CliffSlope = self.CliffHeight/(self.Distance[self.CliffTopInd]-self.Distance[self.CliffToeInd])
         
         print(self.CliffHeight, self.CliffSlope)
         
-        if self.FrontSlope > 1.:
+        if self.CliffSlope > 1.:
             print("Steeper than 45 degrees, therefore likely a cliff!")
             self.Cliff = True
         
-        elif self.FrontHeight > 10.:
+        elif self.CliffHeight > 10.:
             print("Higher than 10 m, therefore likely a cliff!")
             self.Cliff = True
         
         else:
+            print("Not a cliff")
             self.Cliff = False
 
     def AnalyseMorphology(self):

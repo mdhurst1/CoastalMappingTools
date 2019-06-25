@@ -667,7 +667,8 @@ class Coast:
             for Transect in Line.Transects:
 
                 # do something or call something
-                Transect.AnalyseMorphology()
+                Transect.FindCliff()
+                #Transect.AnalyseMorphology()
                 sys.exit()
 
     def PlotTransects(self, PlotFolder):
