@@ -520,8 +520,7 @@ class Coast:
                 # fix this later
 
                 # print progress to screen
-                print("\tTransect %d / %d" % (CurrentTransect, NoTransects), end="\r")
-                clear_output()
+                print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
 
                 #Get line points
                 X1, Y1 = Transect.StartNode.get_XY()
@@ -651,6 +650,8 @@ class Coast:
 
                 # update transect no
                 CurrentTransect += 1
+        
+        print("")
 
     def AnalyseTransectMorphology(self):
 
@@ -680,12 +681,29 @@ class Coast:
 
                 # update transect progress no
                 CurrentTransect += 1
-                
+        
+        print("")
 
     def GetCliffLines(self):
-        """
-        """
         
+        """
+
+        Generate line objects from cliff top and cliff toe positions on transects
+
+        MDH, June 2019
+
+        """
+
+        # loop through transects and get contiguous cliff lines
+        for Line in self.CoastLines:
+            CliffBool = [Transect.Cliff for Transect in Line.Transects]
+            CliffInd = 0
+            for i in range(0,len(CliffBool)):
+                
+                X = [Transect.get_CliffPosition for Transect in Line.Transects]
+                Y = [Transect.y for Transect in Line.Transects]
+
+
     def PlotTransects(self, PlotFolder):
         
         """
@@ -701,11 +719,14 @@ class Coast:
         # loop through lines and plot profiles #
         for Line in self.CoastLines:
             for Transect in Line.Transects:
-                    
+                
+                # print progress to screen
+                print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
+
                 # call plotting function
                 Transect.Plot(PlotFolder)
-                return
-
+        
+        print("")
 
     def PlotBarrierProperties(self, PlotFolder):
         """

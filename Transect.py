@@ -402,20 +402,6 @@ class Transect:
             # Calculate Volume
             self.CustomVolume = np.sum(self.Elevation[IntersectionIndices[0:2]]-Elev)*self.DistanceSpacing
 
-    def get_XY(self):
-        
-        """
-        Returns X and Y coordinates of start and end nodes
-
-        MDH, June 2019
-        
-        """
-
-        X = [self.StartNode.X, self.EndNode.X]
-        Y = [self.StartNode.Y, self.EndNode.Y]
-        
-        return np.array(X), np.array(Y)
-
     def Plot(self, PlotFolder):
         """
         
@@ -472,3 +458,36 @@ class Transect:
 
         # close the figure
         plt.close(fig)
+
+        def get_XY(self):
+        
+        """
+        Returns X and Y coordinates of start and end nodes
+
+        MDH, June 2019
+        
+        """
+
+        X = [self.StartNode.X, self.EndNode.X]
+        Y = [self.StartNode.Y, self.EndNode.Y]
+        
+        return np.array(X), np.array(Y)
+
+    def get_CliffPosition(self):
+
+        if not self.Cliff:
+            sys.exit("Transect.get_CliffPosition: Not a cliff!")
+
+        # calculate X and Y
+        CliffTopDist = Distance[self.CliffTopInd]
+        CliffToeDist = Distance[self.CliffToeInd]
+        
+        # Calculate position of cliff top
+        X1 = self.StartNode.X + CliffTopDist * np.sin( np.radians( self.Orientation ) )
+        Y1 = self.StartNode.Y + CliffTopDist * np.cos( np.radians( self.Orientation ) )
+
+        # Calculate position of cliff toe
+        X2 = self.StartNode.X + CliffToeDist * np.sin( np.radians( self.Orientation ) )
+        Y2 = self.StartNode.Y + CliffToeDist * np.cos( np.radians( self.Orientation ) )
+        
+        return X1, Y1, X2, Y2

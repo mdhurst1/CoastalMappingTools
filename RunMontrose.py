@@ -52,6 +52,7 @@ except:
     with open(Filename2SaveCoast, 'wb') as PFile:
         pickle.dump(ThisCoast, PFile)
 
-ThisCoast.AnalyseTransectMorphology()
-        
-#ThisCoast.PlotTransects(PlotFolder)
+#ThisCoast.AnalyseTransectMorphology()
+
+    
+ThisCoast.GetCliffLines()
