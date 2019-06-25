@@ -36,6 +36,12 @@ class Coast:
         self.Records = []
         self.NoCoastLines = 0
         self.CoastLines = []
+        self.CliffTopLines = []
+        self.CliffToeLines = []
+        self.BarrierFrontTopLines = []
+        self.BarrierFrontToeLines = []
+        self.BarrierBackTopLines = []
+        self.BarrierBackToeLines = []
         self.Projection = ""
         self.OverallOrientation = 0.
         self.TransectsSpacing = 10.
@@ -694,14 +700,47 @@ class Coast:
 
         """
 
+        # keep track of no of cliffs for IDs
+        CliffCount = 0
+
         # loop through transects and get contiguous cliff lines
         for Line in self.CoastLines:
+            
+            # find transects with cliffs
             CliffBool = [Transect.Cliff for Transect in Line.Transects]
-            CliffInd = 0
-            for i in range(0,len(CliffBool)):
+            CliffBool.insert(0, False)
+
+            # get a list of the start and end points of contiguous cliff lines
+            StartEndFlags = np.diff(np.array(CliffBool).astype(int))
+            StartList = np.argwhere(StartEndFlags == 1)
+            EndList = np.argwhere(StartEndFlags == -1)
+            if not len(StartList) == len(EndList):
+                print("Start and End lists not the same length")
+
+            for i in range(0,len(StartList)):
                 
-                X = [Transect.get_CliffPosition for Transect in Line.Transects]
-                Y = [Transect.y for Transect in Line.Transects]
+                # create empty lists for storing clifftop and clifftoe nodes
+                CliffTopList = []
+                CliffToeList = []
+
+                # loop through transects and get top and toe positions
+                for Transect in Line.Transects[StartList[i]:EndList[i]]:
+                    TempTop, TempToe = Transect.get_CliffPosition()
+                    CliffTopList.append(TempTop)
+                    CliffToeList.append(TempToe)
+                
+                # create new line object for top
+                X = [TempTop.X for TempTop in CliffTopList]
+                Y = [TempTop.Y for TempTop in CliffTopList]
+                self.CliffTopLines.append(Line("Cliff_"+str(CliffCount), X, Y))
+                
+                # create new line object for toe
+                X = [TempToe.X for TempToe in CliffToeList]
+                Y = [TempToe.Y for TempToe in CliffToeList]
+                self.CliffToeLines.append(Line("Cliff_"+str(CliffCount), X, Y))
+
+                # update counter
+                CliffCount += 1
 
 
     def PlotTransects(self, PlotFolder):

@@ -212,12 +212,9 @@ class Transect:
         self.CliffHeight = self.Elevation[self.CliffTopInd]-self.Elevation[self.CliffToeInd]
         self.CliffSlope = self.CliffHeight/(self.Distance[self.CliffTopInd]-self.Distance[self.CliffToeInd])
         
-        if self.CliffSlope > 1.:
+        if (self.CliffSlope > 1.) or (self.CliffHeight > 10.):
             self.Cliff = True
-        
-        elif self.CliffHeight > 10.:
-            self.Cliff = True
-        
+                    
         else:
             self.Cliff = False
 
@@ -459,7 +456,7 @@ class Transect:
         # close the figure
         plt.close(fig)
 
-        def get_XY(self):
+    def get_XY(self):
         
         """
         Returns X and Y coordinates of start and end nodes
@@ -490,4 +487,4 @@ class Transect:
         X2 = self.StartNode.X + CliffToeDist * np.sin( np.radians( self.Orientation ) )
         Y2 = self.StartNode.Y + CliffToeDist * np.cos( np.radians( self.Orientation ) )
         
-        return X1, Y1, X2, Y2
+        return Node(X1, Y1), Node(X2, Y2)
