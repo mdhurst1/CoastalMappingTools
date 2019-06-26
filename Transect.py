@@ -252,6 +252,11 @@ class Transect:
         Mask = self.Elevation.mask.copy()
         if self.Cliff:
             Mask[self.CliffToeInd:] = True
+
+        # mask below sea level
+        Mask[self.Elevation < 0] = True
+
+        # apply mask
         ElevMasked = ma.masked_where(Mask, self.Elevation)
         DistanceMasked = ma.masked_where(Mask, self.Distance)
 
@@ -303,7 +308,7 @@ class Transect:
 
             # Must be positive to be considered a change in cliff top position
             elif ((np.argmax(ElevDetrend) < self.FrontTopInd) and (ElevDetrend[np.argmax(ElevDetrend)] > 0.001)):
-                # print("\nBarrier front top change from", self.Distance[self.FrontTopInd], "to", self.Distance[np.argmax(ElevDetrend)])
+                #print("\nBarrier front top change from", self.Distance[self.FrontTopInd], "to", self.Distance[np.argmax(ElevDetrend)])
                 self.FrontTopInd = np.argmax(ElevDetrend)
                 BarrierPositionChangeFlag = True
                 
@@ -358,7 +363,10 @@ class Transect:
         
         # default back barrier positions
         self.BackTopInd = self.FrontTopInd
-        self.BackToeInd = LastInd
+        Mask = ElevMasked.mask.copy()
+        Mask[0:self.FrontTopInd] = True
+        MinInd = np.argmin(ma.masked_where(Mask, ElevMasked))
+        self.BackToeInd = MinInd
 
         # flag for changing position
         BarrierPositionChangeFlag = True
@@ -371,17 +379,11 @@ class Transect:
             # Get Angle to detrend towards away from the coast
             # catch divide by zero
             if DistanceMasked[self.BackToeInd] == DistanceMasked[self.FrontTopInd]:
-                # print("")
-                # print(self.ID)
-                # print(self.FrontTopInd, self.Distance[self.FrontTopInd])
-                # plt.plot(DistanceMasked,ElevMasked)
-                # plt.plot(DistanceMasked[self.FrontTopInd],ElevMasked[self.FrontTopInd],'ko')
-                # plt.show()
                 print("Divide by zero getting toe!")
                 sys.exit()
 
-            Angle = np.degrees(np.arctan((ElevMasked[LastInd]-ElevMasked[self.FrontTopInd])
-                                        / (DistanceMasked[LastInd]-DistanceMasked[self.FrontTopInd])))
+            Angle = np.degrees(np.arctan((ElevMasked[MinInd]-ElevMasked[self.FrontTopInd])
+                                        / (DistanceMasked[MinInd]-DistanceMasked[self.FrontTopInd])))
            
             # Get detrended elevation
             ElevDetrend = ((ElevMasked-ElevMasked[self.FrontTopInd])+(DistanceMasked[self.FrontTopInd]-DistanceMasked) \
@@ -407,8 +409,8 @@ class Transect:
                 print("Divide by zero getting toe!")
                 sys.exit()
 
-            Angle = np.degrees(np.arctan((ElevMasked[LastInd]-ElevMasked[self.BackTopInd]) 
-                                        / (DistanceMasked[LastInd]-DistanceMasked[self.BackTopInd])))
+            Angle = np.degrees(np.arctan((ElevMasked[MinInd]-ElevMasked[self.BackTopInd]) 
+                                        / (DistanceMasked[MinInd]-DistanceMasked[self.BackTopInd])))
             if np.isnan(Angle):
                 print("\nAngle is a NaN")
 
@@ -431,10 +433,13 @@ class Transect:
         # again not sure what this is acheiving
         if self.BackTopInd > self.BackToeInd:
             self.Barrier = False
+            print("")
+            print(self.BackTopInd, self.BackToeInd)
             print("NOT A BARRIER 2")
+            sys.exit()
             return
 
-        # if (self.ID == str("504")):
+        # if (self.ID == str("1")):
         #     plt.plot(self.Distance,self.Elevation)
         #     plt.plot(self.Distance[self.FrontTopInd],self.Elevation[self.FrontTopInd],'ks',ms=10)
         #     plt.plot(self.Distance[self.FrontToeInd],self.Elevation[self.FrontToeInd],'ks',ms=10)
@@ -442,7 +447,6 @@ class Transect:
         #     plt.plot(self.Distance[self.BackToeInd],self.Elevation[self.BackToeInd],'ro',ms=5)
         #     plt.show()
         #     sys.exit()
-
 
         # Calculate Barrier Height, front and back
         self.FrontHeight = self.Elevation[self.FrontTopInd]-self.Elevation[self.FrontToeInd]
@@ -571,26 +575,26 @@ class Transect:
         if self.Cliff:
             
             # plot top to toe
-            ax.plot(self.Distance[self.CliffToeInd:self.CliffTopInd], self.Elevation[self.CliffToeInd:self.CliffTopInd], '-', c=[0.6,0.4,0.1], zorder=12)
-            ax.plot(self.Distance[self.CliffTopInd], self.Elevation[self.CliffTopInd], 'ko', mfc=[0.6,0.4,0.1], zorder=13)
-            ax.plot(self.Distance[self.CliffToeInd], self.Elevation[self.CliffToeInd], 'ko', mfc=[0.6,0.4,0.1], zorder=13)
+            CliffColour = [0.6,0.4,0.1]
+            ax.plot(self.Distance[self.CliffToeInd:self.CliffTopInd], self.Elevation[self.CliffToeInd:self.CliffTopInd], '-', c=CliffColour, zorder=12)
+            ax.plot(self.Distance[self.CliffTopInd], self.Elevation[self.CliffTopInd], 'ko', mfc=CliffColour, zorder=13)
+            ax.plot(self.Distance[self.CliffToeInd], self.Elevation[self.CliffToeInd], 'ko', mfc=CliffColour, zorder=13)
             
         # # add barrier details here
-        # if self.Barrier:
+        if self.Barrier:
         
-        #     # create array for filling in geometry
-        #     DistFill = self.Distance[self.BackToeInd:self.FrontToeInd]
-        #     ElevFill = self.Elevation[self.BackToeInd:self.FrontToeInd]
+            # create array for filling in geometry
+            DistFill = self.Distance[self.FrontToeInd:self.BackToeInd]
+            ElevFill = self.Elevation[self.FrontToeInd:self.BackToeInd]
+            LowerFill = np.linspace(ElevFill[0],ElevFill[-1],len(ElevFill)) 
         
-        #     DistFill = np.concatenate((DistFill,[DistFill[0],]))
-        #     ElevFill = np.concatenate((ElevFill,[ElevFill[0],]))
-        
-        #     # plot the profile and points
-        #     ax.fill(DistFill, ElevFill, c=[1.0,0.7,0.7], zorder=9)
-        #     ax.plot(self.Distance[self.FrontTopInd], self.Elevation[self.FrontTopInd], 'ko')
-        #     ax.plot(self.Distance[self.FrontToeInd], self.Elevation[self.FrontToeInd], 'ko')
-        #     ax.plot(self.Distance[self.BackTopInd], self.Elevation[self.BackTopInd], 'ko')
-        #     ax.plot(self.Distance[self.BackToeInd], self.Elevation[self.BackToeInd], 'ko')
+            # plot the barrier profile and points
+            ax.fill_between(DistFill, ElevFill, LowerFill, color=[1.0,0.7,0.7], zorder=9)
+            ax.plot(DistFill, ElevFill, 'r-', zorder=12)
+            ax.plot(self.Distance[self.FrontTopInd], self.Elevation[self.FrontTopInd], 'ro', ms=5, zorder=13)
+            ax.plot(self.Distance[self.FrontToeInd], self.Elevation[self.FrontToeInd], 'ro', ms=5, zorder=13)
+            ax.plot(self.Distance[self.BackTopInd], self.Elevation[self.BackTopInd], 'ro', ms=5, zorder=13)
+            ax.plot(self.Distance[self.BackToeInd], self.Elevation[self.BackToeInd], 'ro', ms=5, zorder=13)
         
         # label axes
         ax.set_aspect(4.)
