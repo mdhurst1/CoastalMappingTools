@@ -111,6 +111,9 @@ class Coast:
         CliffToeShp = CliffShp.split(".")[0]+"_Toe.shp"
         self.WriteLinesShp("CliffTopLines", CliffTopShp)
         self.WriteLinesShp("CliffToeLines", CliffToeShp)
+        self.WriteCliffPatchesShp(CliffShp)
+
+    def WriteBarrierShp():
 
     def WriteLinesShp(self, DictionaryKey, CoastShp):
         
@@ -149,9 +152,62 @@ class Coast:
         f.write(self.Projection)
         f.close()
     
-    def WritePatchesShp(self,DictionaryKey,PatchShp):
-        
+    def WriteCliffPatchesShp(self, CliffPatchShp):
+                
+        """
+        Writes the contents of a list of cliff line top and toe objects to polygon shapefile
+        by creating a patch between the two
 
+        MDH, June 2019
+
+        """
+
+        self.WritePatchesShp("CliffTopLines", "CliffToeLines", CliffPatchShp)
+
+    def WritePatchesShp(self, DictionaryKey1, DictionaryKey2, PatchShp):
+
+        """
+
+        Writes polygon patches between two lines to a polygon shapefile
+
+        Dictionary Key refers
+
+        MDH, June 2019
+
+        """
+
+        # open new shapefile        
+        WS = shapefile.Writer(PatchShp,shapeType=shapefile.POLYGON)
+       
+        # Create Fields
+        self.Fields = [('DeletionFlag','C',1,0),['Poly_ID', 'C', 3, 0]]
+        WS.fields = self.Fields[1:] 
+
+        for Line1, Line2 in zip(self.__dict__[DictionaryKey1],self.__dict__[DictionaryKey2]):
+            
+            # get line node positions for cliff top and toe lines
+            X1, Y1 = Line1.get_XY()
+            X2, Y2 = Line2.get_XY()
+
+            # combine, reversing the order of the second line to make a patch
+            X = np.concatenate((X1,X2[::-1]))
+            Y = np.concatenate((Y1,Y2[::-1]))
+            WritePoly = [np.column_stack([X,Y]).tolist()]
+            
+            # generate record
+            Record = [str(Line1.ID)]
+
+            # write line and record
+            WS.poly(WritePoly)
+            WS.record(*Record) 
+        
+        # close the shapefiles and clean up
+        WS.close()
+            
+        # create the projection file    
+        f = open(PatchShp.rstrip("shp")+"prj","w")
+        f.write(self.Projection)
+        f.close()
 
     def WriteTransectsShp(self, TransectsShp):
 
