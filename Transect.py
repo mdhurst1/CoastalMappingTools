@@ -686,3 +686,32 @@ class Transect:
         Y2 = self.StartNode.Y + CliffToeDist * np.cos( np.radians( self.Orientation ) )
         
         return Node(X1, Y1), Node(X2, Y2)
+
+    def get_BarrierPosition(self):
+
+        if not self.Barrier:
+            sys.exit("Transect.get_BarrierPosition: Not a barrier!")
+
+        # get distances
+        BarrierFrontTopDist = self.Distance[self.FrontTopInd]
+        BarrierFrontToeDist = self.Distance[self.FrontToeInd]
+        BarrierBackTopDist = self.Distance[self.BackTopInd]
+        BarrierBackToeDist = self.Distance[self.BackToeInd]
+        
+        # Calculate position of barrier front top
+        X1 = self.StartNode.X + BarrierFrontTopDist * np.sin( np.radians( self.Orientation ) )
+        Y1 = self.StartNode.Y + BarrierFrontTopDist * np.cos( np.radians( self.Orientation ) )
+
+        # Calculate position of barrier front toe
+        X2 = self.StartNode.X + BarrierFrontToeDist * np.sin( np.radians( self.Orientation ) )
+        Y2 = self.StartNode.Y + BarrierFrontToeDist * np.cos( np.radians( self.Orientation ) )
+
+        # Calculate position of barrier back top
+        X3 = self.StartNode.X + BarrierBackTopDist * np.sin( np.radians( self.Orientation ) )
+        Y3 = self.StartNode.Y + BarrierBackTopDist * np.cos( np.radians( self.Orientation ) )
+
+        # Calculate position of barrier back toe
+        X4 = self.StartNode.X + BarrierBackToeDist * np.sin( np.radians( self.Orientation ) )
+        Y4 = self.StartNode.Y + BarrierBackToeDist * np.cos( np.radians( self.Orientation ) )
+        
+        return Node(X1, Y1), Node(X2, Y2), Node(X3, Y3), Node(X4, Y4)

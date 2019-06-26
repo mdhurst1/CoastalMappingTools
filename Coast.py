@@ -189,6 +189,9 @@ class Coast:
 
         """
 
+        if len(self.__dict__[DictionaryKey1]) == 0:
+            print("Coast.WritePatchesShp (Error): Trying to write from empty list of lines", DictionaryKey1, DictionaryKey2)
+
         # open new shapefile        
         WS = shapefile.Writer(PatchShp,shapeType=shapefile.POLYGON)
        
@@ -819,15 +822,10 @@ class Coast:
 
             # get a list of the start and end points of contiguous cliff lines
             StartEndFlags = np.diff(CliffBool)
-            print(np.shape(CliffBool))
             StartList = np.argwhere(StartEndFlags == 1).flatten()
-            print(np.shape(StartList))
             EndList = np.argwhere(StartEndFlags == -1).flatten()
             if not len(StartList) == len(EndList):
                 print("Start and End lists not the same length")
-
-            print(StartList)
-            print(EndList)
 
             for i in range(0,len(StartList)):
                 
@@ -865,6 +863,97 @@ class Coast:
                 # update counter
                 CliffCount += 1
 
+    def GetBarrierLines(self):
+        
+        """
+
+        Generate line objects from cliff top and cliff toe positions on transects
+
+        MDH, June 2019
+
+        """
+
+        # keep track of no of cliffs for IDs
+        BarrierCount = 0
+
+        # loop through transects and get contiguous cliff lines
+        for CoastLine in self.CoastLines:
+            
+            # find transects with cliffs
+            BarrierBool = [Transect.Barrier for Transect in CoastLine.Transects]
+            BarrierBool.insert(0, False)
+            BarrierBool = np.array(BarrierBool).astype(int)
+            
+            # get a list of the start and end points of contiguous cliff lines
+            StartEndFlags = np.diff(BarrierBool)
+            
+            # if last line finishes on a barrier flag the last element as the end of the barrier
+            if StartEndFlags[StartEndFlags.nonzero()[0][-1]] == 1:
+                StartEndFlags[-1] = -1
+                
+            StartList = np.argwhere(StartEndFlags == 1).flatten()
+            EndList = np.argwhere(StartEndFlags == -1).flatten()
+
+            print(len(StartList), len(EndList))
+            if not len(StartList) == len(EndList):
+                print("Start and End lists not the same length")
+
+            for i in range(0,len(StartList)):
+                
+                # catch single node cliff lines and ignore
+                if (EndList[i]-StartList[i]<2):
+                    continue
+
+                print(StartList[i], EndList[i])
+                
+                # create empty lists for storing barrier front and back top and toe nodes
+                """
+                THIS WHOLE THING COULD PROBABLY BE SIMPLIFIED MASSIVELY BY USING __DICT__
+                """
+                BarrierFrontTopList = []
+                BarrierFrontToeList = []
+                BarrierBackTopList = []
+                BarrierBackToeList = []
+
+                # loop through transects and get top and toe positions
+                
+                for Transect in CoastLine.Transects[StartList[i]:EndList[i]]:
+                    TempFrontTop, TempFrontToe, TempBackTop, TempBackToe = Transect.get_BarrierPosition()
+                    BarrierFrontTopList.append(TempFrontTop)
+                    BarrierFrontToeList.append(TempFrontToe)
+                    BarrierBackTopList.append(TempBackTop)
+                    BarrierBackToeList.append(TempBackToe)
+                
+                # create new line object for front top
+                X = [TempTop.X for TempTop in BarrierFrontTopList]
+                Y = [TempTop.Y for TempTop in BarrierFrontTopList]
+                
+                TempLine = Line("Barrier_"+str(BarrierCount), X, Y)
+                self.BarrierFrontTopLines.append(TempLine)
+                
+                # create new line object for front toe
+                X = [TempToe.X for TempToe in BarrierFrontToeList]
+                Y = [TempToe.Y for TempToe in BarrierFrontToeList]
+                
+                TempLine = Line("Barrier_"+str(BarrierCount), X, Y)
+                self.BarrierFrontToeLines.append(TempLine)
+
+                # create new line object for back top
+                X = [TempTop.X for TempTop in BarrierBackTopList]
+                Y = [TempTop.Y for TempTop in BarrierBackTopList]
+                
+                TempLine = Line("Barrier_"+str(BarrierCount), X, Y)
+                self.BarrierBackTopLines.append(TempLine)
+                
+                # create new line object for back toe
+                X = [TempToe.X for TempToe in BarrierBackToeList]
+                Y = [TempToe.Y for TempToe in BarrierBackToeList]
+                
+                TempLine = Line("Barrier_"+str(BarrierCount), X, Y)
+                self.BarrierBackToeLines.append(TempLine)
+
+                # update counter
+                BarrierCount += 1
 
     def PlotTransects(self, PlotFolder):
         
