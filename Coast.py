@@ -88,9 +88,32 @@ class Coast:
         self.Projection = f.read()
         f.close()
  
-    def WriteCoastShp(self,CoastShp):
+    def WriteCoastShp(self, CoastShp):
+        
         """
-        Writes the contents of a Coast object to polyline shape file
+        Writes the contents of a list of coast line objects to polyline shape file
+
+        MDH, June 2019
+
+        """
+
+        WriteLinesShp("CoastLines", CoastShp)
+
+    def WriteCliffShp(self, CliffShp):
+        
+        """
+        Writes the contents of a list of cliff line objects to polyline shape file
+
+        MDH, June 2019
+
+        """
+        
+        WriteLinesShp("CliffLines", CliffShp)
+
+    def WriteLinesShp(self, DictionaryKey, CoastShp):
+        
+        """
+        Writes the contents of a list of line objects to polyline shape file
 
         MDH, June 2019
 
@@ -103,7 +126,7 @@ class Coast:
         self.Fields = [('DeletionFlag','C',1,0),['Line_ID', 'C', 3, 0]]
         WL.fields = self.Fields[1:] 
 
-        for Line in self.CoastLines:
+        for Line in self.__dict__[DictionaryKey]:
             
             # get line node positions
             X, Y = Line.get_XY()
@@ -688,6 +711,7 @@ class Coast:
                 #    plt.plot(Transect.Distance[Transect.CliffTopInd],Transect.Elevation[Transect.CliffTopInd],'ko')
                 #    plt.plot(Transect.Distance[Transect.CliffToeInd],Transect.Elevation[Transect.CliffToeInd],'ko')
                 #    plt.show()
+                #if Transect.ID == str(46):
                 Transect.FindCliff()
                 Transect.FindBarrier()
                 

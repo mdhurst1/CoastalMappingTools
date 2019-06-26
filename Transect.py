@@ -231,7 +231,14 @@ class Transect:
         self.CliffHeight = self.Elevation[self.CliffTopInd]-self.Elevation[self.CliffToeInd]
         self.CliffSlope = self.CliffHeight/(self.Distance[self.CliffTopInd]-self.Distance[self.CliffToeInd])
         
-        if (self.CliffSlope > 0.55) or (self.CliffHeight > 15.):
+        # if cliff top is highest point, not a cliff, likely a barrier
+        if self.CliffTopInd == MaxInd:
+            self.Cliff = False
+
+        elif np.abs(self.Distance[self.CliffTopInd]-self.Distance[MaxInd]) < 10.:
+            self.Cliff = False
+
+        elif (self.CliffSlope > 0.6) or (self.CliffHeight > 15.):
             self.Cliff = True
                     
         else:
@@ -263,6 +270,7 @@ class Transect:
         # check that the whole topography has not been masked
         # this would indicate there is no barrier
         if ElevMasked.mask.all():
+            print("Not a barrier 1")
             self.Barrier = False
             return
 
@@ -312,7 +320,13 @@ class Transect:
             
             # Find Maximum detrended elevation. 
             # if at end of transect then not a barrier
-            if (np.argmax(ElevDetrend) == LastInd) or (MaxInd == LastInd):
+            if (np.argmax(ElevDetrend) == LastInd):
+                # print("Not a barrier 2")
+                #plt.subplot(211)
+                #plt.plot(DistanceMasked,ElevMasked)
+                #plt.subplot(212)
+                #plt.plot(DistanceMasked,ElevDetrend)
+                #plt.show()
                 self.Barrier = False
                 return
 
@@ -355,8 +369,8 @@ class Transect:
         self.FrontHeight = self.Elevation[self.FrontTopInd]-self.Elevation[self.FrontToeInd]
         self.FrontSlope = self.FrontHeight/(self.Distance[self.FrontTopInd]-self.Distance[self.FrontToeInd])
         
-        if self.FrontSlope > 0.55:
-            print("\nSteeper than 35 degrees, therefore likely a cliff!")
+        if self.FrontSlope > 0.6:
+            print("\nSteeper than 40 degrees, therefore likely a cliff!")
             #self.Cliff = True
         
         elif self.FrontHeight > 15.:
@@ -366,7 +380,7 @@ class Transect:
         if not self.FrontTopInd > self.FrontToeInd:
             self.Barrier = False
             print(self.FrontTopInd, self.FrontToeInd)
-            print("NOT A BARRIER 1")
+            print("Not a barrier 3")
             return
 
         # NOW DEFINE THE BACK BARRIER
@@ -381,6 +395,7 @@ class Transect:
         # catch where Minimum Elevation coincides with "barrier" front
         # when looking for a "back barrier"2
         if MinInd == self.FrontTopInd:
+            #print("Not a barrier 4")
             self.Barrier = False
             return
 
@@ -411,11 +426,18 @@ class Transect:
             # mask values up to the peak
             Mask = ElevMasked.mask.copy()
             Mask[0:self.FrontTopInd] = True
+            Mask[MinInd:] = True
             ElevDetrend = ma.masked_where(Mask,ElevDetrend)
 
             # Find Maximum detrended elevation. Must be positive to be considered a change in barrier back top position
             if ((np.argmax(ElevDetrend) > self.BackTopInd) and (ElevDetrend[np.argmax(ElevDetrend)] > 0.001)):
                 #print("barrier back top change from", self.Distance[self.BackTopInd], "to", self.Distance[np.argmax(ElevDetrend)])
+                #plt.subplot(211)
+                #plt.plot(DistanceMasked,ElevMasked)
+                #plt.subplot(212)
+                #plt.plot(DistanceMasked,ElevDetrend)
+                #plt.show()
+                
                 self.BackTopInd = np.argmax(ElevDetrend)
                 BarrierPositionChangeFlag = True
                 
@@ -424,9 +446,9 @@ class Transect:
             # Get Angle to detrend towards the coast
             # catch divide by zero
             if DistanceMasked[MinInd] == DistanceMasked[self.BackTopInd]:
-                print(MinInd, self.BackTopInd)
-                print(DistanceMasked[MinInd],DistanceMasked[self.BackTopInd])
-                print(self.ID)
+                #print(MinInd, self.BackTopInd)
+                #print(DistanceMasked[MinInd],DistanceMasked[self.BackTopInd])
+                #print(self.ID)
                 print("Divide by zero getting toe!")
                 sys.exit()
 
@@ -455,7 +477,10 @@ class Transect:
         # this could be a problem in future
         if self.BackTopInd > self.BackToeInd:
             self.Barrier = False
+            print("Not a barrier 5")
             #print("")
+            #print(self.FrontTopInd, self.FrontToeInd)
+            #print(self.Distance[self.FrontTopInd], self.Distance[self.FrontToeInd])
             #print(self.BackTopInd, self.BackToeInd)
             #print(self.Distance[self.BackTopInd], self.Distance[self.BackToeInd])
             #print("NOT A BARRIER 2")

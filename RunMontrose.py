@@ -59,6 +59,6 @@ print("Saving Coast Object as " + Filename2SaveCoast)
 with open(Filename2SaveCoast, 'wb') as PFile:
     pickle.dump(ThisCoast, PFile)
         
-#ThisCoast.PlotTransects(PlotFolder)
+ThisCoast.PlotTransects(PlotFolder)
     
 #ThisCoast.GetCliffLines()
