@@ -52,13 +52,14 @@ except:
     with open(Filename2SaveCoast, 'wb') as PFile:
         pickle.dump(ThisCoast, PFile)
 
-ThisCoast.AnalyseTransectMorphology()
+#ThisCoast.AnalyseTransectMorphology()
 
 # SAVE ENTIRE COAST OBJECT
-print("Saving Coast Object as " + Filename2SaveCoast)
-with open(Filename2SaveCoast, 'wb') as PFile:
-    pickle.dump(ThisCoast, PFile)
+#print("Saving Coast Object as " + Filename2SaveCoast)
+#with open(Filename2SaveCoast, 'wb') as PFile:
+#    pickle.dump(ThisCoast, PFile)
         
-ThisCoast.PlotTransects(PlotFolder)
+#ThisCoast.PlotTransects(PlotFolder)
     
-#ThisCoast.GetCliffLines()
+ThisCoast.GetCliffLines()
+ThisCoast.WriteCliffShp(SiteFolder+"Cliffs.shp")

@@ -107,8 +107,10 @@ class Coast:
         MDH, June 2019
 
         """
-        
-        self.WriteLinesShp("CliffLines", CliffShp)
+        CliffTopShp = CliffShp.split(".")[0]+"_Top.shp"
+        CliffToeShp = CliffShp.split(".")[0]+"_Toe.shp"
+        self.WriteLinesShp("CliffTopLines", CliffTopShp)
+        self.WriteLinesShp("CliffToeLines", CliffToeShp)
 
     def WriteLinesShp(self, DictionaryKey, CoastShp):
         
@@ -146,6 +148,10 @@ class Coast:
         f = open(CoastShp.rstrip("shp")+"prj","w")
         f.write(self.Projection)
         f.close()
+    
+    def WritePatchesShp(self,DictionaryKey,PatchShp):
+        
+
 
     def WriteTransectsShp(self, TransectsShp):
 
@@ -734,10 +740,10 @@ class Coast:
         CliffCount = 0
 
         # loop through transects and get contiguous cliff lines
-        for Line in self.CoastLines:
+        for CoastLine in self.CoastLines:
             
             # find transects with cliffs
-            CliffBool = [Transect.Cliff for Transect in Line.Transects]
+            CliffBool = [Transect.Cliff for Transect in CoastLine.Transects]
             CliffBool.insert(0, False)
             CliffBool = np.array(CliffBool).astype(int)
             print(np.shape(CliffBool))
@@ -756,6 +762,10 @@ class Coast:
 
             for i in range(0,len(StartList)):
                 
+                # catch single node cliff lines and ignore
+                if (EndList[i]-StartList[i]<2):
+                    continue
+
                 print(StartList[i], EndList[i])
                 
                 # create empty lists for storing clifftop and clifftoe nodes
@@ -764,7 +774,7 @@ class Coast:
 
                 # loop through transects and get top and toe positions
                 
-                for Transect in Line.Transects[StartList[i]:EndList[i]]:
+                for Transect in CoastLine.Transects[StartList[i]:EndList[i]]:
                     TempTop, TempToe = Transect.get_CliffPosition()
                     CliffTopList.append(TempTop)
                     CliffToeList.append(TempToe)
@@ -772,12 +782,16 @@ class Coast:
                 # create new line object for top
                 X = [TempTop.X for TempTop in CliffTopList]
                 Y = [TempTop.Y for TempTop in CliffTopList]
-                self.CliffTopLines.append(Line("Cliff_"+str(CliffCount), X, Y))
+                
+                TempLine = Line("Cliff_"+str(CliffCount), X, Y)
+                self.CliffTopLines.append(TempLine)
                 
                 # create new line object for toe
                 X = [TempToe.X for TempToe in CliffToeList]
                 Y = [TempToe.Y for TempToe in CliffToeList]
-                self.CliffToeLines.append(Line("Cliff_"+str(CliffCount), X, Y))
+                
+                TempLine = Line("Cliff_"+str(CliffCount), X, Y)
+                self.CliffToeLines.append(TempLine)
 
                 # update counter
                 CliffCount += 1
