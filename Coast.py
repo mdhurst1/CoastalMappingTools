@@ -111,9 +111,34 @@ class Coast:
         CliffToeShp = CliffShp.split(".")[0]+"_Toe.shp"
         self.WriteLinesShp("CliffTopLines", CliffTopShp)
         self.WriteLinesShp("CliffToeLines", CliffToeShp)
-        self.WriteCliffPatchesShp(CliffShp)
+        self.WritePatchesShp("CliffTopLines", "CliffToeLines", CliffShp)
 
-    def WriteBarrierShp():
+    def WriteBarrierShp(self, BarrierShp):
+
+        """
+        Writes the contents of a list of barrier line objects to polyline shape file
+
+        MDH, June 2019
+
+        """
+
+        # set up individual file names
+        BarrierFrontTopShp = BarrierShp.split(".")[0]+"_Front_Top.shp"
+        BarrierFrontToeShp = BarrierShp.split(".")[0]+"_Front_Toe.shp"
+        BarrierBackTopShp = BarrierShp.split(".")[0]+"_Back_Top.shp"
+        BarrierBackToeShp = BarrierShp.split(".")[0]+"_Back_Toe.shp"
+        BarrierTopPatchesShp = BarrierShp.split(".")[0]+"_Top.shp"
+        BarrierToePatchesShp = BarrierShp.split(".")[0]+"_Toe.shp"
+                
+        # launch polyline shapefile writer
+        self.WriteLinesShp("BarrierFrontTopLines", BarrierFrontTopShp)
+        self.WriteLinesShp("BarrierFrontToeLines", BarrierFrontToeShp)
+        self.WriteLinesShp("BarrierBackTopLines", BarrierBackTopShp)
+        self.WriteLinesShp("BarrierBackToeLines", BarrierBackToeShp)
+
+        # launch polygon patches shapefile writer
+        self.WritePatchesShp("BarrierFrontTopLines", "BarrierBackTopLines", BarrierTopPatchesShp)
+        self.WritePatchesShp("BarrierFrontToeLines", "BarrierBackToeLines", BarrierToePatchesShp)
 
     def WriteLinesShp(self, DictionaryKey, CoastShp):
         
@@ -152,18 +177,6 @@ class Coast:
         f.write(self.Projection)
         f.close()
     
-    def WriteCliffPatchesShp(self, CliffPatchShp):
-                
-        """
-        Writes the contents of a list of cliff line top and toe objects to polygon shapefile
-        by creating a patch between the two
-
-        MDH, June 2019
-
-        """
-
-        self.WritePatchesShp("CliffTopLines", "CliffToeLines", CliffPatchShp)
-
     def WritePatchesShp(self, DictionaryKey1, DictionaryKey2, PatchShp):
 
         """
