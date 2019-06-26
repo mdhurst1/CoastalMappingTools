@@ -253,12 +253,22 @@ class Transect:
         if self.Cliff:
             Mask[self.CliffToeInd:] = True
 
-        # mask below sea level
+        # mask below sea level, including tide, in future
         Mask[self.Elevation < 0] = True
 
         # apply mask
         ElevMasked = ma.masked_where(Mask, self.Elevation)
         DistanceMasked = ma.masked_where(Mask, self.Distance)
+
+        # check that the whole topography has not been masked
+        # this would indicate there is no barrier
+        if ElevMasked.mask.all():
+            self.Barrier = False
+            return
+
+        # print(ElevMasked)
+        # plt.plot(DistanceMasked,ElevMasked)
+        # plt.show()
 
         # Find the highest point of the barrier
         MaxInd = np.argmax(ElevMasked)
@@ -315,11 +325,11 @@ class Transect:
             
             # THEN Barrier TOE
 
-
             # Get Angle to detrend towards the coast
             # catch divide by zero
             if DistanceMasked[self.FrontTopInd] == DistanceMasked[FirstInd]:
                 print(self.ID)
+                print(DistanceMasked[self.FrontTopInd], DistanceMasked[FirstInd])
                 print("Divide by zero getting toe!")
                 sys.exit()
 
@@ -367,6 +377,12 @@ class Transect:
         Mask[0:self.FrontTopInd] = True
         MinInd = np.argmin(ma.masked_where(Mask, ElevMasked))
         self.BackToeInd = MinInd
+        
+        # catch where Minimum Elevation coincides with "barrier" front
+        # when looking for a "back barrier"2
+        if MinInd == self.FrontTopInd:
+            self.Barrier = False
+            return
 
         # flag for changing position
         BarrierPositionChangeFlag = True
@@ -378,9 +394,12 @@ class Transect:
 
             # Get Angle to detrend towards away from the coast
             # catch divide by zero
-            if DistanceMasked[self.BackToeInd] == DistanceMasked[self.FrontTopInd]:
-                print("Divide by zero getting toe!")
+            if DistanceMasked[MinInd] == DistanceMasked[self.FrontTopInd]:
+                print("Divide by zero getting top!")
+                print(MinInd, self.FrontTopInd)
+                print(DistanceMasked[MinInd],DistanceMasked[self.FrontTopInd])
                 sys.exit()
+
 
             Angle = np.degrees(np.arctan((ElevMasked[MinInd]-ElevMasked[self.FrontTopInd])
                                         / (DistanceMasked[MinInd]-DistanceMasked[self.FrontTopInd])))
@@ -404,7 +423,9 @@ class Transect:
 
             # Get Angle to detrend towards the coast
             # catch divide by zero
-            if DistanceMasked[self.BackTopInd] == DistanceMasked[FirstInd]:
+            if DistanceMasked[MinInd] == DistanceMasked[self.BackTopInd]:
+                print(MinInd, self.BackTopInd)
+                print(DistanceMasked[MinInd],DistanceMasked[self.BackTopInd])
                 print(self.ID)
                 print("Divide by zero getting toe!")
                 sys.exit()
@@ -431,12 +452,13 @@ class Transect:
             
         #Check top is not at the end, bottom is ok to be at end
         # again not sure what this is acheiving
+        # this could be a problem in future
         if self.BackTopInd > self.BackToeInd:
             self.Barrier = False
-            print("")
-            print(self.BackTopInd, self.BackToeInd)
-            print("NOT A BARRIER 2")
-            sys.exit()
+            #print("")
+            #print(self.BackTopInd, self.BackToeInd)
+            #print(self.Distance[self.BackTopInd], self.Distance[self.BackToeInd])
+            #print("NOT A BARRIER 2")
             return
 
         # if (self.ID == str("1")):
