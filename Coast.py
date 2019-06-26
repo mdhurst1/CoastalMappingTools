@@ -669,7 +669,7 @@ class Coast:
 
         """
 
-        print("Coast.AnalyseTransectMorphology: Finding barrier positions and calculating metrics")
+        print("Coast.AnalyseTransectMorphology: Finding cliff and barrier positions and calculating metrics")
 
         # Track progress
         NoTransects = np.sum([Line.NoTransects for Line in self.CoastLines])-1
@@ -681,7 +681,13 @@ class Coast:
                 # print progress to screen
                 print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
                 
-                # Call analyses
+                # # Call analyses
+                # if Transect.ID == str(272):
+                #    Transect.FindCliff()
+                #    plt.plot(Transect.Distance,Transect.Elevation)
+                #    plt.plot(Transect.Distance[Transect.CliffTopInd],Transect.Elevation[Transect.CliffTopInd],'ko')
+                #    plt.plot(Transect.Distance[Transect.CliffToeInd],Transect.Elevation[Transect.CliffToeInd],'ko')
+                #    plt.show()
                 Transect.FindCliff()
                 #Transect.FindBarrier()
                 
@@ -763,7 +769,17 @@ class Coast:
 
         """
 
+        #import figure plotting stuff here not globally!
+        import matplotlib
+        matplotlib.use('agg')
+        import matplotlib.pyplot as plt
+
+
         print("Coast.PlotTransects: Plotting each transect topographic profile")
+
+        # Track progress
+        NoTransects = np.sum([Line.NoTransects for Line in self.CoastLines])-1
+        CurrentTransect = 0
 
         # loop through lines and plot profiles #
         for Line in self.CoastLines:
@@ -774,7 +790,9 @@ class Coast:
 
                 # call plotting function
                 Transect.Plot(PlotFolder)
-        
+
+                CurrentTransect += 1
+
         print("")
 
     def PlotBarrierProperties(self, PlotFolder):

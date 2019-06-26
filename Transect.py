@@ -163,21 +163,29 @@ class Transect:
                                         / (self.Distance[MaxInd]-self.Distance[self.CliffToeInd])))
             
             # Get detrended elevation
-            ElevDetrend = (self.Elevation+(self.Distance[self.CliffToeInd]-self.Distance)*np.tan(np.radians(Angle)))
+            ElevDetrend = ((self.Elevation-self.Elevation[self.CliffToeInd])+(self.Distance[self.CliffToeInd]-self.Distance) \
+                            * np.tan(np.radians(Angle)))
 
             # mask values beyond the peak elevation and seaward of the toe
             Mask = self.Elevation.mask.copy()
             Mask[0:self.CliffToeInd] = True
             Mask[MaxInd:] = True
             ElevDetrend = ma.masked_where(Mask,ElevDetrend)
-                            
+            
             # Find Maximum detrended elevation. Must be positive to be considered a change in cliff top position
-            if ((np.argmax(ElevDetrend) != self.CliffTopInd) and (ElevDetrend[np.argmax(ElevDetrend)] > 0)):
+            if ((np.argmax(ElevDetrend) < self.CliffTopInd) and (ElevDetrend[np.argmax(ElevDetrend)] > 0)):
                 #print("Cliff Position change from", self.Distance[self.CliffTopInd], "to", self.Distance[np.argmax(ElevDetrend)])
                 self.CliffTopInd = np.argmax(ElevDetrend)
                 CliffPositionChangeFlag = True
-                
-                # if self.CliffTopInd == 0:
+                # if self.CliffTopInd == 290:
+                #     print("Angle is", Angle)
+                #     plt.subplot(211)
+                #     plt.plot(self.Distance[np.invert(Mask)],self.Elevation[np.invert(Mask)])
+                #     plt.subplot(212)
+                #     plt.plot(self.Distance,ElevDetrend)
+                #     plt.show()
+                #     sys.exit()
+                # # if self.CliffTopInd == 0:
                 #     print(Angle)
                 #     print(ElevDetrend)
                 #     sys.exit()
@@ -195,7 +203,8 @@ class Transect:
                                         / (self.Distance[self.CliffTopInd]-self.Distance[MinInd])))
             
             # Get detrended elevation
-            ElevDetrend = (self.Elevation + (self.Distance[MinInd] - self.Distance) * np.tan(np.radians(Angle)))
+            ElevDetrend = ((self.Elevation-self.Elevation[MinInd]) + (self.Distance[MinInd] - self.Distance) \
+                            * np.tan(np.radians(Angle)))
 
             # mask values beyond the cliff top
             Mask = self.Elevation.mask.copy()
@@ -203,16 +212,26 @@ class Transect:
             ElevDetrend = ma.masked_where(Mask, ElevDetrend)
                             
             # Find Minimum detrended elevation, must be negative to be considered a low (probably never a worry)
-            if ((np.argmin(ElevDetrend) != self.CliffToeInd) and (ElevDetrend[np.argmin(ElevDetrend)] < 0)):
+            if ((np.argmin(ElevDetrend) > self.CliffToeInd) and (ElevDetrend[np.argmin(ElevDetrend)] < 0)):
                 #print("Cliff Toe change from", self.Distance[self.CliffToeInd],"to", self.Distance[np.argmin(ElevDetrend)])
                 self.CliffToeInd = np.argmin(ElevDetrend)
                 CliffPositionChangeFlag = True
-                
+            
+            # else:
+            #     print("")
+            #     print(self.CliffToeInd, np.argmin(ElevDetrend))
+            #     plt.subplot(211)
+            #     plt.plot(self.Distance[np.invert(Mask)],self.Elevation[np.invert(Mask)])
+            #     plt.subplot(212)
+            #     plt.plot(self.Distance,ElevDetrend)
+            #     plt.show()
+            #     sys.exit()
+
         # Check if found a cliff
         self.CliffHeight = self.Elevation[self.CliffTopInd]-self.Elevation[self.CliffToeInd]
         self.CliffSlope = self.CliffHeight/(self.Distance[self.CliffTopInd]-self.Distance[self.CliffToeInd])
         
-        if (self.CliffSlope > 1.) or (self.CliffHeight > 10.):
+        if (self.CliffSlope > 1.) or (self.CliffHeight > 15.):
             self.Cliff = True
                     
         else:
