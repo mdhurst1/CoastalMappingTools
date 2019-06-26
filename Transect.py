@@ -173,7 +173,7 @@ class Transect:
             ElevDetrend = ma.masked_where(Mask,ElevDetrend)
             
             # Find Maximum detrended elevation. Must be positive to be considered a change in cliff top position
-            if ((np.argmax(ElevDetrend) < self.CliffTopInd) and (ElevDetrend[np.argmax(ElevDetrend)] > 0)):
+            if ((np.argmax(ElevDetrend) < self.CliffTopInd) and (ElevDetrend[np.argmax(ElevDetrend)] > 0.001)):
                 #print("Cliff Position change from", self.Distance[self.CliffTopInd], "to", self.Distance[np.argmax(ElevDetrend)])
                 self.CliffTopInd = np.argmax(ElevDetrend)
                 CliffPositionChangeFlag = True
@@ -212,7 +212,7 @@ class Transect:
             ElevDetrend = ma.masked_where(Mask, ElevDetrend)
                             
             # Find Minimum detrended elevation, must be negative to be considered a low (probably never a worry)
-            if ((np.argmin(ElevDetrend) > self.CliffToeInd) and (ElevDetrend[np.argmin(ElevDetrend)] < 0)):
+            if ((np.argmin(ElevDetrend) > self.CliffToeInd) and (ElevDetrend[np.argmin(ElevDetrend)] < -0.001)):
                 #print("Cliff Toe change from", self.Distance[self.CliffToeInd],"to", self.Distance[np.argmin(ElevDetrend)])
                 self.CliffToeInd = np.argmin(ElevDetrend)
                 CliffPositionChangeFlag = True
@@ -302,23 +302,18 @@ class Transect:
                 return
 
             # Must be positive to be considered a change in cliff top position
-            elif ((np.argmax(ElevDetrend) < self.FrontTopInd) and (ElevDetrend[np.argmax(ElevDetrend)] > 0)):
-                #print("Barrier front top change from", self.Distance[self.FrontTopInd], "to", self.Distance[np.argmax(ElevDetrend)])
+            elif ((np.argmax(ElevDetrend) < self.FrontTopInd) and (ElevDetrend[np.argmax(ElevDetrend)] > 0.001)):
+                # print("\nBarrier front top change from", self.Distance[self.FrontTopInd], "to", self.Distance[np.argmax(ElevDetrend)])
                 self.FrontTopInd = np.argmax(ElevDetrend)
                 BarrierPositionChangeFlag = True
-                # plt.subplot(211)
-                # plt.plot(DistanceMasked[np.invert(Mask)], ElevMasked[np.invert(Mask)])
-                # plt.subplot(212)
-                # plt.plot(DistanceMasked[np.invert(Mask)], ElevDetrendFront[np.invert(Mask)])
-                # plt.plot(DistanceMasked[self.FrontTopInd], ElevDetrendFront[self.FrontTopInd])
-                # plt.show()
-                # sys.exit()
+                
             
             # THEN Barrier TOE
 
+
             # Get Angle to detrend towards the coast
             # catch divide by zero
-            if DistanceMasked[self.CliffTopInd] == DistanceMasked[FirstInd]:
+            if DistanceMasked[self.FrontTopInd] == DistanceMasked[FirstInd]:
                 print(self.ID)
                 print("Divide by zero getting toe!")
                 sys.exit()
@@ -336,7 +331,7 @@ class Transect:
             ElevDetrend = ma.masked_where(Mask, ElevDetrend)
             
             # Find Minimum detrended elevation, must be negative to be considered a low (probably never a worry)
-            if ((np.argmin(ElevDetrend) > self.FrontToeInd) and (ElevDetrend[np.argmin(ElevDetrend)] < 0)):
+            if ((np.argmin(ElevDetrend) > self.FrontToeInd) and (ElevDetrend[np.argmin(ElevDetrend)] < -0.001)):
                 #print("barrier front toe change from", self.Distance[self.FrontToeInd],"to", self.Distance[np.argmin(ElevDetrend)])
                 self.FrontToeInd = np.argmin(ElevDetrend)
                 BarrierPositionChangeFlag = True
@@ -346,16 +341,13 @@ class Transect:
         self.FrontSlope = self.FrontHeight/(self.Distance[self.FrontTopInd]-self.Distance[self.FrontToeInd])
         
         if self.FrontSlope > 0.55:
-            print("Steeper than 35 degrees, therefore likely a cliff!")
+            print("\nSteeper than 35 degrees, therefore likely a cliff!")
             #self.Cliff = True
         
         elif self.FrontHeight > 15.:
-            print("Higher than 15 m, therefore likely a cliff!")
+            print("\nHigher than 15 m, therefore likely a cliff!")
             #self.Cliff = True
         
-        # Check top is not at the end
-        if self.FrontTopInd == MaxInd:
-            print("uh oh")
         if not self.FrontTopInd > self.FrontToeInd:
             self.Barrier = False
             print(self.FrontTopInd, self.FrontToeInd)
@@ -401,12 +393,11 @@ class Transect:
             ElevDetrend = ma.masked_where(Mask,ElevDetrend)
 
             # Find Maximum detrended elevation. Must be positive to be considered a change in barrier back top position
-            if ((np.argmax(ElevDetrend) > self.BackTopInd) and (ElevDetrend[np.argmax(ElevDetrend)] > 0)):
+            if ((np.argmax(ElevDetrend) > self.BackTopInd) and (ElevDetrend[np.argmax(ElevDetrend)] > 0.001)):
                 #print("barrier back top change from", self.Distance[self.BackTopInd], "to", self.Distance[np.argmax(ElevDetrend)])
                 self.BackTopInd = np.argmax(ElevDetrend)
                 BarrierPositionChangeFlag = True
                 
-            
             # THEN Barrier TOE
 
             # Get Angle to detrend towards the coast
@@ -418,7 +409,9 @@ class Transect:
 
             Angle = np.degrees(np.arctan((ElevMasked[LastInd]-ElevMasked[self.BackTopInd]) 
                                         / (DistanceMasked[LastInd]-DistanceMasked[self.BackTopInd])))
-            
+            if np.isnan(Angle):
+                print("\nAngle is a NaN")
+
             # Get detrended elevation
             ElevDetrend = ((ElevMasked-ElevMasked[self.BackTopInd]) + (DistanceMasked[self.BackTopInd] - DistanceMasked) \
                             * np.tan(np.radians(Angle)))
@@ -429,7 +422,7 @@ class Transect:
             ElevDetrend = ma.masked_where(Mask, ElevDetrend)
                             
             # Find Minimum detrended elevation, must be negative to be considered a low (probably never a worry)
-            if ((np.argmin(ElevDetrend) < self.BackToeInd) and (ElevDetrend[np.argmin(ElevDetrend)] < 0)):
+            if ((np.argmin(ElevDetrend) < self.BackToeInd) and (ElevDetrend[np.argmin(ElevDetrend)] < -0.001)):
                 #print("barrier back toe change from", self.Distance[self.BackToeInd],"to", self.Distance[np.argmin(ElevDetrend)])
                 self.BackToeInd = np.argmin(ElevDetrend)
                 BarrierPositionChangeFlag = True
@@ -441,14 +434,14 @@ class Transect:
             print("NOT A BARRIER 2")
             return
 
-        if (self.ID == str("0")):
-            plt.plot(self.Distance,self.Elevation)
-            plt.plot(self.Distance[self.FrontTopInd],self.Elevation[self.FrontTopInd],'ko')
-            plt.plot(self.Distance[self.FrontToeInd],self.Elevation[self.FrontToeInd],'ko')
-            plt.plot(self.Distance[self.BackTopInd],self.Elevation[self.BackTopInd],'ro')
-            plt.plot(self.Distance[self.BackToeInd],self.Elevation[self.BackToeInd],'ro')
-            plt.show()
-            sys.exit()
+        # if (self.ID == str("504")):
+        #     plt.plot(self.Distance,self.Elevation)
+        #     plt.plot(self.Distance[self.FrontTopInd],self.Elevation[self.FrontTopInd],'ks',ms=10)
+        #     plt.plot(self.Distance[self.FrontToeInd],self.Elevation[self.FrontToeInd],'ks',ms=10)
+        #     plt.plot(self.Distance[self.BackTopInd],self.Elevation[self.BackTopInd],'ro',ms=5)
+        #     plt.plot(self.Distance[self.BackToeInd],self.Elevation[self.BackToeInd],'ro',ms=5)
+        #     plt.show()
+        #     sys.exit()
 
 
         # Calculate Barrier Height, front and back
@@ -582,22 +575,22 @@ class Transect:
             ax.plot(self.Distance[self.CliffTopInd], self.Elevation[self.CliffTopInd], 'ko', mfc=[0.6,0.4,0.1], zorder=13)
             ax.plot(self.Distance[self.CliffToeInd], self.Elevation[self.CliffToeInd], 'ko', mfc=[0.6,0.4,0.1], zorder=13)
             
-        # add barrier details here
-        if self.Barrier:
+        # # add barrier details here
+        # if self.Barrier:
         
-            # create array for filling in geometry
-            DistFill = self.Distance[self.BackToeInd:self.FrontToeInd]
-            ElevFill = self.Elevation[self.BackToeInd:self.FrontToeInd]
+        #     # create array for filling in geometry
+        #     DistFill = self.Distance[self.BackToeInd:self.FrontToeInd]
+        #     ElevFill = self.Elevation[self.BackToeInd:self.FrontToeInd]
         
-            DistFill = np.concatenate((DistFill,[DistFill[0],]))
-            ElevFill = np.concatenate((ElevFill,[ElevFill[0],]))
+        #     DistFill = np.concatenate((DistFill,[DistFill[0],]))
+        #     ElevFill = np.concatenate((ElevFill,[ElevFill[0],]))
         
-            # plot the profile and points
-            ax.fill(DistFill, ElevFill, c=[1.0,0.7,0.7], zorder=9)
-            ax.plot(self.Distance[self.FrontTopInd], self.Elevation[self.FrontTopInd], 'ko')
-            ax.plot(self.Distance[self.FrontToeInd], self.Elevation[self.FrontToeInd], 'ko')
-            ax.plot(self.Distance[self.BackTopInd], self.Elevation[self.BackTopInd], 'ko')
-            ax.plot(self.Distance[self.BackToeInd], self.Elevation[self.BackToeInd], 'ko')
+        #     # plot the profile and points
+        #     ax.fill(DistFill, ElevFill, c=[1.0,0.7,0.7], zorder=9)
+        #     ax.plot(self.Distance[self.FrontTopInd], self.Elevation[self.FrontTopInd], 'ko')
+        #     ax.plot(self.Distance[self.FrontToeInd], self.Elevation[self.FrontToeInd], 'ko')
+        #     ax.plot(self.Distance[self.BackTopInd], self.Elevation[self.BackTopInd], 'ko')
+        #     ax.plot(self.Distance[self.BackToeInd], self.Elevation[self.BackToeInd], 'ko')
         
         # label axes
         ax.set_aspect(4.)

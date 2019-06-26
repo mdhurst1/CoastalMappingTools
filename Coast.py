@@ -688,7 +688,7 @@ class Coast:
                 #    plt.plot(Transect.Distance[Transect.CliffTopInd],Transect.Elevation[Transect.CliffTopInd],'ko')
                 #    plt.plot(Transect.Distance[Transect.CliffToeInd],Transect.Elevation[Transect.CliffToeInd],'ko')
                 #    plt.show()
-                #Transect.FindCliff()
+                Transect.FindCliff()
                 Transect.FindBarrier()
                 
                 # update transect progress no
