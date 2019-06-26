@@ -134,7 +134,7 @@ class Transect:
             self.Cliff = False
             return
 
-        # Find the highest point on the Transect
+        # Find the last point on the Transect
         MaxInd = np.transpose(self.Elevation.nonzero())[-1][0]
         self.CliffTopInd = MaxInd
             
@@ -172,7 +172,7 @@ class Transect:
             ElevDetrend = ma.masked_where(Mask,ElevDetrend)
                             
             # Find Maximum detrended elevation. Must be positive to be considered a change in cliff top position
-            if ((np.argmax(ElevDetrend) != self.CliffTopInd) and (ElevDetrend[self.CliffTopInd] > 0)):
+            if ((np.argmax(ElevDetrend) != self.CliffTopInd) and (ElevDetrend[np.argmax(ElevDetrend)] > 0)):
                 #print("Cliff Position change from", self.Distance[self.CliffTopInd], "to", self.Distance[np.argmax(ElevDetrend)])
                 self.CliffTopInd = np.argmax(ElevDetrend)
                 CliffPositionChangeFlag = True
@@ -203,7 +203,7 @@ class Transect:
             ElevDetrend = ma.masked_where(Mask, ElevDetrend)
                             
             # Find Minimum detrended elevation, must be negative to be considered a low (probably never a worry)
-            if ((np.argmin(ElevDetrend) != self.CliffToeInd) and (ElevDetrend[self.CliffToeInd] < 0)):
+            if ((np.argmin(ElevDetrend) != self.CliffToeInd) and (ElevDetrend[np.argmin(ElevDetrend)] < 0)):
                 #print("Cliff Toe change from", self.Distance[self.CliffToeInd],"to", self.Distance[np.argmin(ElevDetrend)])
                 self.CliffToeInd = np.argmin(ElevDetrend)
                 CliffPositionChangeFlag = True
@@ -218,44 +218,87 @@ class Transect:
         else:
             self.Cliff = False
 
-    def AnalyseMorphology(self):
+    def FindBarrier(self):
         
         """
+
+        Description goes here
 
         MDH, June 2019
 
         """
 
-        # Find the highest point of the barrier Zmax
-        MaxInd = np.argmax(self.Elevation)
-        
+        # Check if a cliff is present and only analyse topography up to the cliff toe
+        # when looking for a barrier
+        Mask = self.Elevation.mask.copy()
+        if self.Cliff:
+            Mask[self.CliffToeInd:] = True
+        ElevMasked = ma.masked_where(Mask, self.Elevation)
+        DistanceMasked = ma.masked_where(Mask, self.Distance)
+
+        # Find the highest point of the barrier
+        MaxInd = np.argmax(ElevMasked)
+        self.FrontTopInd = MaxInd
+
         # Find first real elevation location in masked array
-        FirstInd = np.transpose(self.Elevation.nonzero())[0][0]
+        FirstInd = np.transpose(ElevMasked.nonzero())[0][0]
+        self.FrontToeInd = FirstInd
         
-        # Get Angle to detrend towards the coast
-        Angle = np.degrees(np.arctan((self.Elevation[MaxInd]-self.Elevation[FirstInd]) 
-                                        / (self.Distance[MaxInd]-self.Distance[FirstInd])))
-        
-        # Get detrended elevation
-        ElevDetrendFront = (self.Elevation+(self.Distance[FirstInd]-self.Distance)*np.tan(np.radians(Angle)))
+        # flag for changing position
+        BarrierPositionChangeFlag = True
 
-        # mask values beyond the peak
-        Mask = self.Elevation.mask
-        Mask[MaxInd:] = True
-        ElevDetrendFront = ma.masked_where(Mask,ElevDetrendFront)
+        while BarrierPositionChangeFlag:
+
+            # reset flag
+            BarrierPositionChangeFlag = False
+
+            # Get Angle to detrend towards the coast
+            Angle = np.degrees(np.arctan((ElevMasked[MaxInd]-ElevMasked[self.FrontTopInd]) 
+                                        / (DistanceMasked[MaxInd]-DistanceMasked[self.FrontTopInd])))
+        
+            # Get detrended elevation
+            ElevDetrendFront = (ElevMasked+(DistanceMasked[FirstInd]-DistanceMasked)*np.tan(np.radians(Angle)))
+
+            # mask values beyond the peak
+            Mask = ElevMasked.mask
+            Mask[MaxInd:] = True
+            ElevDetrendFront = ma.masked_where(Mask,ElevDetrendFront)
+
+            # Find Maximum detrended elevation. Must be positive to be considered a change in cliff top position
+            if ((np.argmax(ElevDetrendFront) != self.FrontTopInd) and (ElevDetrendFront[np.argmax(ElevDetrendFront)] > 0)):
+                #print("Cliff Position change from", self.Distance[self.CliffTopInd], "to", self.Distance[np.argmax(ElevDetrend)])
+                self.FrontTopInd = np.argmax(ElevDetrendFront)
+                BarrierPositionChangeFlag = True
+
+            # THEN Barrier TOE
+
+            # Get Angle to detrend towards the coast
+            # catch divide by zero
+            if DistanceMasked[self.CliffTopInd] == DistanceMasked[FirstInd]:
+                print(self.ID)
+                print("Divide by zero getting toe!")
+                sys.exit()
+
+            Angle = np.degrees(np.arctan((ElevMasked[self.FrontTopInd]-ElevMasked[FirstInd]) 
+                                        / (DistanceMasked[self.FrontTopInd]-DistanceMasked[FirstInd])))
+            
+            # Get detrended elevation
+            ElevDetrend = (ElevMasked + (DistanceMasked[FirstInd] - DistanceMasked) * np.tan(np.radians(Angle)))
+
+            # mask values beyond the barrier front top
+            Mask = ElevMasked.mask.copy()
+            Mask[self.FrontTopInd:] = True
+            ElevDetrend = ma.masked_where(Mask, ElevDetrend)
                             
-        # Find Minimum and Maximum Ztrend
-        self.FrontTopInd = np.argmax(ElevDetrendFront)
-        self.FrontToeInd = np.argmin(ElevDetrendFront)
-        self.FrontTopNode = Node(self.Distance[self.FrontTopInd], self.Elevation[self.FrontTopInd])
-        self.FrontToeNode = Node(self.Distance[self.FrontToeInd], self.Elevation[self.FrontToeInd])
+            # Find Minimum detrended elevation, must be negative to be considered a low (probably never a worry)
+            if ((np.argmin(ElevDetrend) != self.FrontToeInd) and (ElevDetrend[np.argmin(ElevDetrend)] < 0)):
+                #print("Cliff Toe change from", self.Distance[self.CliffToeInd],"to", self.Distance[np.argmin(ElevDetrend)])
+                self.FrontToeInd = np.argmin(ElevDetrend)
+                BarrierPositionChangeFlag = True
 
-        # Check if found a cliff
-        self.FrontHeight = self.FrontTopNode.Y-self.FrontToeNode.Y
-        self.FrontSlope = self.FrontHeight/(self.FrontTopNode.X-self.FrontToeNode.X)
-        
-        print(self.FrontHeight, self.FrontSlope)
-        print(self.FrontTopNode.X, self.FrontToeNode.X)
+        # Check if found a cliff by mistake
+        self.FrontHeight = self.Elevation[self.FrontTopInd]-self.Elevation[self.FrontToeInd]
+        self.FrontSlope = self.FrontHeight/(self.Distance[self.FrontTopInd]-self.Distance[self.FrontToeInd])
         
         if self.FrontSlope > 1.:
             print("Steeper than 45 degrees, therefore likely a cliff!")
@@ -271,29 +314,68 @@ class Transect:
             print(self.FrontTopInd, self.FrontToeInd)
             print("NOT A BARRIER 1")
             return
-        
-        
-        # Find last real elevation location in masked array
-        LastInd = np.transpose(self.Elevation.nonzero())[-1][0]
 
-        # Get Angle to detrend towards away from the coast
-        Angle = np.degrees(np.arctan((self.Elevation[LastInd]-self.Elevation[self.FrontTopInd])
-                                        / (self.Distance[LastInd]-self.Distance[self.FrontTopInd])))
+        # NOW DEFINE THE BACK BARRIER
+
+        # Find last real elevation location in masked array
+        LastInd = np.transpose(ElevMasked.nonzero())[-1][0]
+
+        # default back barrier positions
+        self.BackTopInd = self.FrontTopInd
+        self.BackToeInd = LastInd
+
+        # flag for changing position
+        BarrierPositionChangeFlag = True
+
+        while BarrierPositionChangeFlag:
+
+            # reset flag
+            BarrierPositionChangeFlag = False
+
+            # Get Angle to detrend towards away from the coast
+            Angle = np.degrees(np.arctan((ElevMasked[self.BackToeInd]-ElevMasked[self.FrontTopInd])
+                                        / (DistanceMasked[self.BackToeInd]-DistanceMasked[self.FrontTopInd])))
         
-        # Get detrended elevation
-        ElevDetrendBack = (self.Elevation+(self.Distance[self.FrontTopInd]-self.Distance)*np.tan(np.radians(Angle)))
+            # Get detrended elevation
+            ElevDetrend = (ElevMasked+(DistanceMasked[self.FrontTopInd]-DistanceMasked)*np.tan(np.radians(Angle)))
         
-        # mask values up to the peak
-        Mask = self.Elevation.mask
-        Mask[FirstInd:self.FrontTopInd] = True
-        ElevDetrendBack = ma.masked_where(Mask,ElevDetrendBack)
-        
-        #Find Minimum and Maximum Ztrend
-        self.BackTopInd = np.argmax(ElevDetrendBack)
-        self.BackToeInd = np.argmin(ElevDetrendBack)
-        self.BackTopNode = Node(self.Distance[self.BackTopInd], self.Elevation[self.BackTopInd])
-        self.BackToeNode = Node(self.Distance[self.BackToeInd], self.Elevation[self.BackToeInd])
-                
+            # mask values up to the peak
+            Mask = ElevMasked.mask
+            Mask[self.FrontTopInd:self.BackToeInd] = True
+            ElevDetrend = ma.masked_where(Mask,ElevDetrend)
+
+            # Find Maximum detrended elevation. Must be positive to be considered a change in barrier back top position
+            if ((np.argmax(ElevDetrend) != self.BackTopInd) and (ElevDetrend[np.argmax(ElevDetrend)] > 0)):
+                #print("Cliff Position change from", self.Distance[self.CliffTopInd], "to", self.Distance[np.argmax(ElevDetrend)])
+                self.FrontTopInd = np.argmax(ElevDetrendFront)
+                BarrierPositionChangeFlag = True
+            
+            # THEN Barrier TOE
+
+            # Get Angle to detrend towards the coast
+            # catch divide by zero
+            if DistanceMasked[self.BackTopInd] == DistanceMasked[FirstInd]:
+                print(self.ID)
+                print("Divide by zero getting toe!")
+                sys.exit()
+
+            Angle = np.degrees(np.arctan((ElevMasked[LastInd]-ElevMasked[self.BackTopInd]) 
+                                        / (DistanceMasked[LastInd]-DistanceMasked[self.BackTopInd])))
+            
+            # Get detrended elevation
+            ElevDetrend = (ElevMasked + (DistanceMasked[self.BackTopInd] - DistanceMasked) * np.tan(np.radians(Angle)))
+
+            # mask values beyond the barrier front top
+            Mask = ElevMasked.mask.copy()
+            Mask[0:self.BackTopInd] = True
+            ElevDetrend = ma.masked_where(Mask, ElevDetrend)
+                            
+            # Find Minimum detrended elevation, must be negative to be considered a low (probably never a worry)
+            if ((np.argmin(ElevDetrend) != self.BackToeInd) and (ElevDetrend[np.argmin(ElevDetrend)] < 0)):
+                #print("Cliff Toe change from", self.Distance[self.CliffToeInd],"to", self.Distance[np.argmin(ElevDetrend)])
+                self.BackToeInd = np.argmin(ElevDetrend)
+                BarrierPositionChangeFlag = True
+            
         #Check top is not at the end, bottom is ok to be at end
         # again not sure what this is acheiving
         if self.BackTopInd < self.BackToeInd:
@@ -302,23 +384,27 @@ class Transect:
             return
             
         # Calculate Barrier Height, front and back
-        self.FrontHeight = self.FrontTopNode.Y-self.FrontToeNode.Y
-        self.BackHeight = self.BackTopNode.Y-self.BackToeNode.Y
+        self.FrontHeight = self.Elevation[self.FrontTopInd]-self.Elevation[self.FrontToeInd]
+        self.BackHeight = self.Elevation[self.BackTopInd]-self.Elevation[self.BackToeInd]
                 
         # Calculate Barrier Width, top and bottom
-        self.ToeWidth = self.FrontToeNode.X-self.BackToeNode.X
-        self.TopWidth = self.FrontTopNode.X-self.BackTopNode.X
+        self.ToeWidth = self.Distance[self.FrontToeInd]-self.Distance[self.BackToeInd]
+        self.TopWidth = self.Distance[self.FrontTopInd]-self.Distance[self.BackTopInd]
 
         # Calculate Slope, front and back
-        self.FrontSlope = self.FrontHeight/(self.FrontTopNode.X-self.FrontToeNode.X)
-        self.BackSlope = self.BackHeight/(self.BackTopNode.X-self.BackToeNode.X)
+        self.FrontSlope = self.FrontHeight/(self.Distance[self.FrontTopInd]-self.Distance[self.FrontToeInd])
+        self.BackSlope = self.BackHeight/(self.Distance[self.BackTopInd]-self.Distance[self.BackToeInd])
 
         # Volume m3/m
-        self.BarrierVolume =  (self.BackToeNode.X * self.BackTopNode.Y - self.BackTopNode.X * self.BackToeNode.Y) 
-        self.BarrierVolume += (self.BackTopNode.X * self.FrontTopNode.Y - self.FrontTopNode.X * self.BackTopNode.Y)
-        self.BarrierVolume += (self.FrontTopNode.X * self.FrontToeNode.Y - self.FrontToeNode.X * self.FrontTopNode.Y)
-        self.BarrierVolume += (self.FrontToeNode.X * self.BackToeNode.Y - self.BackToeNode.X * self.FrontToeNode.Y)
-        self.BarrierVolume /= 2
+        self.BarrierVolume =  (self.Distance[self.BackToeInd] * self.Elevation[self.BackTopInd] \
+                                     - self.Distance[self.BackTopInd] * self.Elevation[self.BackToeInd]) 
+        self.BarrierVolume += (self.Distance[self.BackTopInd] * self.Elevation[self.FrontTopInd] \
+                                    - self.Distance[self.FrontTopInd] * self.Elevation[self.BackTopInd])
+        self.BarrierVolume += (self.Distance[self.FrontTopInd] * self.Elevation[self.FrontToeInd] \
+                                    - self.Distance[self.FrontToeInd] * self.Elevation[self.FrontTopInd])
+        self.BarrierVolume += (self.Distance[self.FrontToeInd] * self.Elevation[self.BackToeInd] \
+                                    - self.Distance[self.BackToeInd] * self.Elevation[self.FrontToeInd])
+        self.BarrierVolume /= 2.
 
         # switch flag to indicate a barrier has been found
         self.Barrier = True

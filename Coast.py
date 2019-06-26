@@ -683,8 +683,8 @@ class Coast:
                 
                 # Call analyses
                 Transect.FindCliff()
-                #Transect.AnalyseMorphology()                
-
+                #Transect.FindBarrier()
+                
                 # update transect progress no
                 CurrentTransect += 1
         
