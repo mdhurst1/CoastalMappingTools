@@ -263,6 +263,9 @@ class Transect:
         FirstInd = np.transpose(ElevMasked.nonzero())[0][0]
         self.FrontToeInd = FirstInd
         
+        # Find last real elevation location in masked array
+        LastInd = np.transpose(ElevMasked.nonzero())[-1][0]
+
         # flag for changing position
         BarrierPositionChangeFlag = True
 
@@ -289,15 +292,28 @@ class Transect:
             # mask values beyond the peak
             Mask = ElevMasked.mask
             Mask[0:self.FrontToeInd] = True
-            Mask[MaxInd:] = True
+            Mask[MaxInd+1:] = True
             ElevDetrendFront = ma.masked_where(Mask, ElevDetrendFront)
 
-            # Find Maximum detrended elevation. Must be positive to be considered a change in cliff top position
-            if ((np.argmax(ElevDetrendFront) < self.FrontTopInd) and (ElevDetrendFront[np.argmax(ElevDetrendFront)] > 0)):
+            # Find Maximum detrended elevation. 
+            # if at end of transect then not a barrier
+            if (np.argmax(ElevDetrendFront) == LastInd):
+                self.Barrier = False
+                return
+                
+            # Must be positive to be considered a change in cliff top position
+            elif ((np.argmax(ElevDetrendFront) < self.FrontTopInd) and (ElevDetrendFront[np.argmax(ElevDetrendFront)] > 0)):
                 #print("Cliff Position change from", self.Distance[self.CliffTopInd], "to", self.Distance[np.argmax(ElevDetrend)])
                 self.FrontTopInd = np.argmax(ElevDetrendFront)
                 BarrierPositionChangeFlag = True
-
+                # plt.subplot(211)
+                # plt.plot(DistanceMasked[np.invert(Mask)], ElevMasked[np.invert(Mask)])
+                # plt.subplot(212)
+                # plt.plot(DistanceMasked[np.invert(Mask)], ElevDetrendFront[np.invert(Mask)])
+                # plt.plot(DistanceMasked[self.FrontTopInd], ElevDetrendFront[self.FrontTopInd])
+                # plt.show()
+                # sys.exit()
+            
             # THEN Barrier TOE
 
             # Get Angle to detrend towards the coast
@@ -337,7 +353,9 @@ class Transect:
             print("Higher than 15 m, therefore likely a cliff!")
             #self.Cliff = True
         
-        # Check top is not at the end, bottom is ok to be at end
+        # Check top is not at the end
+        if self.FrontTopInd == MaxInd:
+            print("uh oh")
         if not self.FrontTopInd > self.FrontToeInd:
             self.Barrier = False
             print(self.FrontTopInd, self.FrontToeInd)
@@ -345,9 +363,6 @@ class Transect:
             return
 
         # NOW DEFINE THE BACK BARRIER
-
-        # Find last real elevation location in masked array
-        LastInd = np.transpose(ElevMasked.nonzero())[-1][0]
 
         # default back barrier positions
         self.BackTopInd = self.FrontTopInd
@@ -364,7 +379,12 @@ class Transect:
             # Get Angle to detrend towards away from the coast
             # catch divide by zero
             if DistanceMasked[self.BackToeInd] == DistanceMasked[self.FrontTopInd]:
+                print("")
                 print(self.ID)
+                print(self.FrontTopInd, self.Distance[self.FrontTopInd])
+                plt.plot(DistanceMasked,ElevMasked)
+                plt.plot(DistanceMasked[self.FrontTopInd],ElevMasked[self.FrontTopInd],'ko')
+                plt.show()
                 print("Divide by zero getting toe!")
                 sys.exit()
 
