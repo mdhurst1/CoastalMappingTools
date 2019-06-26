@@ -97,7 +97,7 @@ class Coast:
 
         """
 
-        WriteLinesShp("CoastLines", CoastShp)
+        self.WriteLinesShp("CoastLines", CoastShp)
 
     def WriteCliffShp(self, CliffShp):
         
@@ -108,7 +108,7 @@ class Coast:
 
         """
         
-        WriteLinesShp("CliffLines", CliffShp)
+        self.WriteLinesShp("CliffLines", CliffShp)
 
     def WriteLinesShp(self, DictionaryKey, CoastShp):
         
