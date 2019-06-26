@@ -399,7 +399,7 @@ class Transect:
 
             # mask values up to the peak
             Mask = ElevMasked.mask.copy()
-            Mask[self.FrontTopInd:self.BackToeInd] = True
+            Mask[0:self.FrontTopInd] = True
             ElevDetrend = ma.masked_where(Mask,ElevDetrend)
 
             plt.subplot(211)
