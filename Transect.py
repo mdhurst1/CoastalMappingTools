@@ -63,6 +63,13 @@ class Transect:
         self.FrontSlope = None
         self.BackSlope = None
         self.BarrierVolume = None
+
+        # other barrier metrics for extreme water levels
+        self.Intersection = None
+        self.IntersectionIndices = None
+        self.InterpolateFractions = None
+        self.ExtremeWidth = None
+        self.ExtremeVolume = None
     
     def __str__(self):
         String = "Transect Object:\nID: %s\n" % (str(self.ID))
@@ -529,22 +536,24 @@ class Transect:
         MDH, June 2019
         """
 
-        # check barrier analysis has been conducted
-        if not self.BarrierVolume:
-            self.AnalyseMorphology()
-        
         # vector at fixed elevation running the length of the transect
         X1, Y1 = self.Distance[0], Elev
         X2, Y2 = self.Distance[-1], Elev
+        
         dX12 = X2-X1
         dY12 = Y2-Y1
         
         # count and record locations of intersection
         IntersectionCounter = 0
-        IntesectionIndices = []
-        InterpolateFraction = []
+        self.IntersectionIndices = []
+        self.InterpolateFractions = []
 
-        for i in range(0,self.NoNodes):
+        # temporary fix for no assignment, need a function for reading in transect topo
+        # rather than having it set externally?
+        self.NoValues = len(self.Distance)
+        self.DistanceSpacing = self.Distance[1]-self.Distance[0]
+
+        for i in range(0, self.NoValues-1):
 
             # cut and paste interesction analysis
             # do we want this to be a separate function somewhere?
@@ -570,8 +579,8 @@ class Transect:
                 dY31 = Y1-Y3
                     
                 #get cross products
-                S = dX12*dY31 - dY12*dX31;
-                T = dX34*dY31 - dY34*dX31;
+                S = dX12*dY31 - dY12*dX31
+                T = dX34*dY31 - dY34*dX31
                 
                 #logic for collision occurence
                 if ((S < 0) == XProdPos):
@@ -584,18 +593,39 @@ class Transect:
                     continue
                 else:
                     IntersectionCounter += 1
-                    IntersectionIndices.append(i)
-                    InterpolateFraction.append(T)
+                    self.IntersectionIndices.append(i)
+                    Fraction = np.abs((Elev-Y3)/dY34)
+                    self.InterpolateFractions.append(Fraction)
 
         # calculate width and volume at this elevation
-        if InterectionCounter > 1:
+        if IntersectionCounter > 1:
             
-            # Calculate Wdith
-            self.CustomWidth = self.Distance[IntersectionIndices[1]] + InterpolateFraction[1]*self.DistanceSpacing \
-                                - self.Distance[IntersectionIndices[0]] + InterpolateFraction[0]*self.DistanceSpacing
+            # Define Intersection Distance and Elevation by Interpolating
+            ExtremeDist1 = self.Distance[self.IntersectionIndices[0]] + self.InterpolateFractions[0]*self.DistanceSpacing
+            ExtremeDist2 = self.Distance[self.IntersectionIndices[1]] + self.InterpolateFractions[1]*self.DistanceSpacing
+
+            # Define Intersection X and Y coordinates by Interpolating
+            # Calculate position of front intersection
+            X1 = self.StartNode.X + ExtremeDist1 * np.sin( np.radians( self.Orientation ) )
+            Y1 = self.StartNode.Y + ExtremeDist1 * np.cos( np.radians( self.Orientation ) )
+
+            # Calculate position of back intersection
+            X2 = self.StartNode.X + ExtremeDist2 * np.sin( np.radians( self.Orientation ) )
+            Y2 = self.StartNode.Y + ExtremeDist2 * np.cos( np.radians( self.Orientation ) )
+
+            # Calculate Width
+            self.ExtremeWidth = self.Distance[self.IntersectionIndices[1]] + self.InterpolateFractions[1]*self.DistanceSpacing \
+                                - self.Distance[self.IntersectionIndices[0]] + self.InterpolateFractions[0]*self.DistanceSpacing
 
             # Calculate Volume
-            self.CustomVolume = np.sum(self.Elevation[IntersectionIndices[0:2]]-Elev)*self.DistanceSpacing
+            self.ExtremeVolume = np.sum(self.Elevation[self.IntersectionIndices[0:2]]-Elev)*self.DistanceSpacing
+        
+            # flag that an intersection has occurred
+            self.Intersection = True
+        
+        else:
+            self.Intersection = False
+
 
     def Plot(self, PlotFolder):
         """

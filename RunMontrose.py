@@ -31,6 +31,7 @@ try:
 
 except:
     print("Creating New Coast Object")
+    
     # SET UP THE COAST
     ThisCoast = Coast(SiteFolder+LineShp)
     
@@ -51,17 +52,30 @@ except:
     print("Saving Coast Object as " + Filename2SaveCoast)
     with open(Filename2SaveCoast, 'wb') as PFile:
         pickle.dump(ThisCoast, PFile)
+        
 
+# ANALYSE TRANSECTS
 #ThisCoast.AnalyseTransectMorphology()
+    
+# SAVE ENTIRE COAST OBJECT
+#print("Saving Coast Object as " + Filename2SaveCoast)
+#with open(Filename2SaveCoast, 'wb') as PFile:
+#    pickle.dump(ThisCoast, PFile)
+#        
 
-ThisCoast.GetBarrierLines()
+#ThisCoast.WriteCliffShp(SiteFolder+"Cliffs.shp")
+#ThisCoast.WriteBarrierShp(SiteFolder+"Barriers.shp")
+ThisCoast.AnalyseBarrierWidth(5.)
+
+#ThisCoast.GetBarrierLines()
 
 # SAVE ENTIRE COAST OBJECT
-print("Saving Coast Object as " + Filename2SaveCoast)
-with open(Filename2SaveCoast, 'wb') as PFile:
-    pickle.dump(ThisCoast, PFile)
+#print("Saving Coast Object as " + Filename2SaveCoast)
+#with open(Filename2SaveCoast, 'wb') as PFile:
+#    pickle.dump(ThisCoast, PFile)
         
 #ThisCoast.PlotTransects(PlotFolder)
-    
+#ThisCoast.WriteBarrierShp(SiteFolder+"Barriers.shp")
 
-ThisCoast.WriteBarrierShp(SiteFolder+"Barriers.shp")
+# barrier width at 5 m water
+#ThisCoast.ExtractBarrierWidth(5.)

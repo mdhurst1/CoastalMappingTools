@@ -42,6 +42,8 @@ class Coast:
         self.BarrierFrontToeLines = []
         self.BarrierBackTopLines = []
         self.BarrierBackToeLines = []
+        self.ExtremeFrontLines = []
+        self.ExtremeBackLines = []
         self.Projection = ""
         self.OverallOrientation = 0.
         self.TransectsSpacing = 10.
@@ -107,6 +109,10 @@ class Coast:
         MDH, June 2019
 
         """
+        
+        if len(self.CliffTopLines) == 0:
+            self.GetCliffLines()
+
         CliffTopShp = CliffShp.split(".")[0]+"_Top.shp"
         CliffToeShp = CliffShp.split(".")[0]+"_Toe.shp"
         self.WriteLinesShp("CliffTopLines", CliffTopShp)
@@ -121,6 +127,9 @@ class Coast:
         MDH, June 2019
 
         """
+
+        if len(self.BarrierFrontTopLines) == 0:
+            self.GetBarrierLines()
 
         # set up individual file names
         BarrierFrontTopShp = BarrierShp.split(".")[0]+"_Front_Top.shp"
@@ -798,6 +807,99 @@ class Coast:
         
         print("")
 
+    def AnalyseBarrierWidth(self, WaterElev):
+        
+        """
+        
+        Extracts barrier width at a given elevation e.g. high water
+
+        MDH, June 2019
+
+        """
+
+        print("Coast.AnalyseBarrierWidth: Finding barrier positions at a given elevation and calculating metrics")
+
+        # Track progress
+        NoTransects = np.sum([Line.NoTransects for Line in self.CoastLines])-1
+        CurrentTransect = 0
+
+        # loop through transects and get contiguous barrier lines
+        for CoastLine in self.CoastLines:
+            for Transect in CoastLine.Transects:
+                
+                # print progress to screen
+                print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
+                    
+                # extract barrier width
+                #if Transect.ID == str(183):
+                #    Transect.ExtractBarrierWidth(WaterElev)
+                Transect.ExtractBarrierWidth(WaterElev)
+
+                # update transect progress no
+                CurrentTransect += 1
+
+    def GetBarrierWidth(self):
+
+        """
+        
+        Gets barrier at a given elevation e.g. high water
+
+        MDH, June 2019
+
+        """
+        
+        # keep track of no of barrier locations for IDs
+        BarrierCount = 0
+
+        # loop through transects and get contiguous cliff lines
+        for CoastLine in self.CoastLines:
+            
+            # find transects with cliffs
+            BarrierBool = [Transect.Intersection for Transect in CoastLine.Transects]
+            BarrierBool.insert(0, False)
+            BarrierBool = np.array(BarrierBool).astype(int)
+            
+            # get a list of the start and end points of contiguous cliff lines
+            StartEndFlags = np.diff(BarrierBool)
+            StartList = np.argwhere(StartEndFlags == 1).flatten()
+            EndList = np.argwhere(StartEndFlags == -1).flatten()
+            if not len(StartList) == len(EndList):
+                print("Start and End lists not the same length")
+
+            for i in range(0,len(StartList)):
+                
+                # catch single node cliff lines and ignore
+                if (EndList[i]-StartList[i]<2):
+                    continue
+
+                # create empty lists for storing clifftop and clifftoe nodes
+                FrontList = []
+                BackList = []
+
+                # loop through transects and get top and toe positions
+                
+                for Transect in CoastLine.Transects[StartList[i]:EndList[i]]:
+                    FrontNode, BackNode = Transect.get_CliffPosition()
+                    FrontList.append(FrontNode)
+                    BackList.append(BackNode)
+                
+                # create new line object for front
+                X = [FrontNode.X for FrontNode in FrontList]
+                Y = [FrontNode.Y for FrontNode in FrontList]
+                
+                TempLine = Line("Front_"+str(BarrierCount), X, Y)
+                self.ExtremeFrontLines.append(TempLine)
+                
+                # create new line object for toe
+                X = [BackNode.X for BackNode in BackList]
+                Y = [BackNode.Y for BackNode in BackList]
+                
+                TempLine = Line("Back_"+str(BarrierCount), X, Y)
+                self.ExtremeBackLines.append(TempLine)
+
+                # update counter
+                BarrierCount += 1
+
     def GetCliffLines(self):
         
         """
@@ -818,8 +920,7 @@ class Coast:
             CliffBool = [Transect.Cliff for Transect in CoastLine.Transects]
             CliffBool.insert(0, False)
             CliffBool = np.array(CliffBool).astype(int)
-            print(np.shape(CliffBool))
-
+            
             # get a list of the start and end points of contiguous cliff lines
             StartEndFlags = np.diff(CliffBool)
             StartList = np.argwhere(StartEndFlags == 1).flatten()
@@ -833,8 +934,6 @@ class Coast:
                 if (EndList[i]-StartList[i]<2):
                     continue
 
-                print(StartList[i], EndList[i])
-                
                 # create empty lists for storing clifftop and clifftoe nodes
                 CliffTopList = []
                 CliffToeList = []
@@ -876,7 +975,7 @@ class Coast:
         # keep track of no of cliffs for IDs
         BarrierCount = 0
 
-        # loop through transects and get contiguous cliff lines
+        # loop through transects and get contiguous barrier lines
         for CoastLine in self.CoastLines:
             
             # find transects with cliffs
@@ -894,7 +993,6 @@ class Coast:
             StartList = np.argwhere(StartEndFlags == 1).flatten()
             EndList = np.argwhere(StartEndFlags == -1).flatten()
 
-            print(len(StartList), len(EndList))
             if not len(StartList) == len(EndList):
                 print("Start and End lists not the same length")
 
@@ -904,8 +1002,6 @@ class Coast:
                 if (EndList[i]-StartList[i]<2):
                     continue
 
-                print(StartList[i], EndList[i])
-                
                 # create empty lists for storing barrier front and back top and toe nodes
                 """
                 THIS WHOLE THING COULD PROBABLY BE SIMPLIFIED MASSIVELY BY USING __DICT__
