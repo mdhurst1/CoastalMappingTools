@@ -65,11 +65,16 @@ class Transect:
         self.BarrierVolume = None
 
         # other barrier metrics for extreme water levels
+        self.ExtremeWaterLevels = []
         self.Intersection = None
         self.IntersectionIndices = None
         self.InterpolateFractions = None
+        self.ExtremeFrontNodes = []
+        self.ExtremeBackNodes = []
         self.ExtremeWidth = None
-        self.ExtremeVolume = None
+        self.ExtremeWidths = []
+        self.ExtremeVolume = []
+        self.ExtremeVolumes = []
     
     def __str__(self):
         String = "Transect Object:\nID: %s\n" % (str(self.ID))
@@ -528,6 +533,32 @@ class Transect:
         # switch flag to indicate a barrier has been found
         self.Barrier = True
 
+    def ExtractBarrierWidths(self,Elevations=[0, 2.5, 5]):
+
+        """
+        Extract Barrier widths at all given elevations
+        e.g. variable extreme water or projected extreme water
+
+        MDH, June 2019
+        
+        """
+
+        # setup empty lists of the correct length
+        self.ExtremeWidths = np.zeros(len(Elevations))
+        self.ExtremeVolumes = np.zeros(len(Elevations))
+        self.ExtremeFrontNodes = np.zeros(len(Elevations))
+        self.ExtremeBackNodes = np.zeros(len(Elevations))
+
+        # loop across elevations and perform analysis
+        for i, Elevation in enumerate(Elevations):
+            self.ExtractBarrierWidth(Elevation)
+
+            # add results to array lists
+            self.ExtremeWidths[i] = self.ExtremeWidth
+            self.ExtremeVolumes[i] = self.ExtremeVolume
+            self.ExtremeFrontNodes[i] = self.FrontNode
+            self.ExtremeBackNodes[i] = self.BackNode
+
     def ExtractBarrierWidth(self, Elev):
 
         """
@@ -608,10 +639,12 @@ class Transect:
             # Calculate position of front intersection
             X1 = self.StartNode.X + ExtremeDist1 * np.sin( np.radians( self.Orientation ) )
             Y1 = self.StartNode.Y + ExtremeDist1 * np.cos( np.radians( self.Orientation ) )
+            self.FrontNode = Node(X1,Y1)
 
             # Calculate position of back intersection
             X2 = self.StartNode.X + ExtremeDist2 * np.sin( np.radians( self.Orientation ) )
             Y2 = self.StartNode.Y + ExtremeDist2 * np.cos( np.radians( self.Orientation ) )
+            self.BackNode = Node(X2,Y2)
 
             # Calculate Width
             self.ExtremeWidth = self.Distance[self.IntersectionIndices[1]] + self.InterpolateFractions[1]*self.DistanceSpacing \
