@@ -65,7 +65,9 @@ except:
 
 #ThisCoast.WriteCliffShp(SiteFolder+"Cliffs.shp")
 #ThisCoast.WriteBarrierShp(SiteFolder+"Barriers.shp")
-ThisCoast.AnalyseBarrierWidth(5.)
+
+ThisCoast.AnalyseBarrierWidths([4.,5.,6.])
+ThisCoast.PlotTransects(PlotFolder)
 
 #ThisCoast.GetBarrierLines()
 

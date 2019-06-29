@@ -15,9 +15,17 @@ import sys
 import matplotlib
 #matplotlib.use('agg')
 import matplotlib.pyplot as plt
+from matplotlib import rcParams, cm
 
 # import other custom classes
 from Node import *
+
+# Customise figure font style
+# Set up fonts for plots
+rcParams['font.family'] = 'sans-serif'
+rcParams['font.sans-serif'] = ['arial']
+rcParams['font.size'] = 10
+rcParams['text.usetex'] = True
 
 class Transect:
     """
@@ -69,11 +77,13 @@ class Transect:
         self.Intersection = None
         self.IntersectionIndices = None
         self.InterpolateFractions = None
+        self.FrontNode = None
+        self.BackNode = None
         self.ExtremeFrontNodes = []
         self.ExtremeBackNodes = []
         self.ExtremeWidth = None
         self.ExtremeWidths = []
-        self.ExtremeVolume = []
+        self.ExtremeVolume = None
         self.ExtremeVolumes = []
     
     def __str__(self):
@@ -543,6 +553,10 @@ class Transect:
         
         """
 
+        # check if WaterElevs is single value or list
+        if not isinstance(Elevations, list):
+            WaterElevs = [WaterElevs]
+
         # setup empty lists of the correct length
         self.ExtremeWidths = np.zeros(len(Elevations))
         self.ExtremeVolumes = np.zeros(len(Elevations))
@@ -666,6 +680,10 @@ class Transect:
         MDH, June 2019
 
         """
+
+        # grab colour map
+        ColourMap = cm.viridis
+
         # create figure
         fig = plt.figure(1,figsize=(6,3))
                 
@@ -679,7 +697,7 @@ class Transect:
         ax.plot(self.Distance, self.Elevation,'k-',lw=1.,zorder=11)
                 
         # plot range
-        ax.fill_between(self.Distance, self.ElevationMin, self.ElevationMax, color=[0.8,0.8,0.8], zorder=10)
+        #ax.fill_between(self.Distance, self.ElevationMin, self.ElevationMax, color=[0.8,0.8,0.8], zorder=10)
         
         # add cliff details here
         if self.Cliff:
@@ -699,13 +717,32 @@ class Transect:
             LowerFill = np.linspace(ElevFill[0],ElevFill[-1],len(ElevFill)) 
         
             # plot the barrier profile and points
-            ax.fill_between(DistFill, ElevFill, LowerFill, color=[1.0,0.7,0.7], zorder=9)
+            ax.fill_between(DistFill, ElevFill, LowerFill, color=[0.8,0.8,0.8], zorder=9)
             ax.plot(DistFill, ElevFill, 'r-', zorder=12)
-            ax.plot(self.Distance[self.FrontTopInd], self.Elevation[self.FrontTopInd], 'ro', ms=5, zorder=13)
-            ax.plot(self.Distance[self.FrontToeInd], self.Elevation[self.FrontToeInd], 'ro', ms=5, zorder=13)
-            ax.plot(self.Distance[self.BackTopInd], self.Elevation[self.BackTopInd], 'ro', ms=5, zorder=13)
-            ax.plot(self.Distance[self.BackToeInd], self.Elevation[self.BackToeInd], 'ro', ms=5, zorder=13)
+            ax.plot(self.Distance[self.FrontTopInd], self.Elevation[self.FrontTopInd], 'ko', ms=2, zorder=13)
+            ax.plot(self.Distance[self.FrontToeInd], self.Elevation[self.FrontToeInd], 'ko', ms=2, zorder=13)
+            ax.plot(self.Distance[self.BackTopInd], self.Elevation[self.BackTopInd], 'ko', ms=2, zorder=13)
+            ax.plot(self.Distance[self.BackToeInd], self.Elevation[self.BackToeInd], 'ko', ms=2, zorder=13)
         
+        # add extreme water lines and volumes
+        if len(self.ExtremeWidths > 0):
+
+            for i, WaterLevel in enumerate(self.ExtremeWaterLevels):
+                
+                # plot line
+                FrontNode = self.ExtremeFrontNodes[i]
+                BackNode = self.ExtremeBackNodes[i]
+                Colour = float(i)/(len(self.ExtremeWaterLevels)-1)
+                ax.plot([FrontNode.X,BackNode.X],[FrontNode.Y,BackNode.Y], '-', color=ColourMap(Colour), zorder=14)
+                
+                # colour in, this will have minor bug for now due to abs argmin returning either node before or node after
+                FrontInd = np.argmin(np.abs(self.Distance-FrontNode.X))
+                BackInd = np.argmin(np.abs(self.Distance-BackNode.X))
+                DistFill = np.concatenate((FrontNode.X,self.Distance[FrontInd:BackInd], BackNode.X))
+                ElevFill = np.concatenate((FrontNode.Y,self.Elevation[FrontInd:BackInd], BackNode.Y))
+                LowerFill = np.linspace(ElevFill[0],ElevFill[-1],len(ElevFill)) 
+                ax.fill_between(DistFill, ElevFill, LowerFill, color=ColourMap(Colour), alpha = 0.5, zorder=13)
+
         # label axes
         ax.set_aspect(4.)
         ax.set_ylabel("Elevation (m)")

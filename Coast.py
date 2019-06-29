@@ -807,17 +807,17 @@ class Coast:
         
         print("")
 
-    def AnalyseBarrierWidth(self, WaterElev):
+    def AnalyseBarrierWidths(self, WaterElevs):
         
         """
         
-        Extracts barrier width at a given elevation e.g. high water
+        Extracts barrier width at given elevations e.g. high water
 
         MDH, June 2019
 
         """
 
-        print("Coast.AnalyseBarrierWidth: Finding barrier positions at a given elevation and calculating metrics")
+        print("Coast.AnalyseBarrierWidth: Finding barrier positions at a given elevations and calculating metrics")
 
         # Track progress
         NoTransects = np.sum([Line.NoTransects for Line in self.CoastLines])-1
@@ -833,7 +833,7 @@ class Coast:
                 # extract barrier width
                 #if Transect.ID == str(183):
                 #    Transect.ExtractBarrierWidth(WaterElev)
-                Transect.ExtractBarrierWidth(WaterElev)
+                Transect.ExtractBarrierWidths(WaterElevs)
 
                 # update transect progress no
                 CurrentTransect += 1
@@ -851,7 +851,7 @@ class Coast:
         # keep track of no of barrier locations for IDs
         BarrierCount = 0
 
-        # loop through transects and get contiguous cliff lines
+        # loop through transects and get contiguous barrier lines
         for CoastLine in self.CoastLines:
             
             # find transects with cliffs
@@ -859,7 +859,7 @@ class Coast:
             BarrierBool.insert(0, False)
             BarrierBool = np.array(BarrierBool).astype(int)
             
-            # get a list of the start and end points of contiguous cliff lines
+            # get a list of the start and end points of contiguous barrier lines
             StartEndFlags = np.diff(BarrierBool)
             StartList = np.argwhere(StartEndFlags == 1).flatten()
             EndList = np.argwhere(StartEndFlags == -1).flatten()
@@ -1081,7 +1081,8 @@ class Coast:
                 print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
 
                 # call plotting function
-                Transect.Plot(PlotFolder)
+                if Transect.ID == "400":
+                    Transect.Plot(PlotFolder)
 
                 CurrentTransect += 1
 
