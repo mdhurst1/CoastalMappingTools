@@ -81,6 +81,10 @@ class Transect:
         self.BackNode = None
         self.ExtremeFrontNodes = []
         self.ExtremeBackNodes = []
+        self.ExtremeDistance = None
+        self.ExtremeIndices = []
+        self.ExtremeDistances = []
+        self.ExtremeInterpFractions = []
         self.ExtremeWidth = None
         self.ExtremeWidths = []
         self.ExtremeVolume = None
@@ -543,7 +547,7 @@ class Transect:
         # switch flag to indicate a barrier has been found
         self.Barrier = True
 
-    def ExtractBarrierWidths(self,Elevations=[0, 2.5, 5]):
+    def ExtractBarrierWidths(self,WaterElevations=[0, 2.5, 5]):
 
         """
         Extract Barrier widths at all given elevations
@@ -554,24 +558,28 @@ class Transect:
         """
 
         # check if WaterElevs is single value or list
-        if not isinstance(Elevations, list):
-            WaterElevs = [WaterElevs]
-
-        # setup empty lists of the correct length
-        self.ExtremeWidths = np.zeros(len(Elevations))
-        self.ExtremeVolumes = np.zeros(len(Elevations))
-        self.ExtremeFrontNodes = np.zeros(len(Elevations))
-        self.ExtremeBackNodes = np.zeros(len(Elevations))
+        if not isinstance(WaterElevations, list):
+            self.ExtremeWaterLevels = [WaterElevations]
+        else:
+            self.ExtremeWaterLevels = WaterElevations
+        
+        # setup empty lists
+        self.ExtremeWidths = []
+        self.ExtremeVolumes = []
+        self.ExtremeFrontNodes = []
+        self.ExtremeBackNodes = []
 
         # loop across elevations and perform analysis
-        for i, Elevation in enumerate(Elevations):
+        for i, Elevation in enumerate(self.ExtremeWaterLevels):
+            
             self.ExtractBarrierWidth(Elevation)
 
-            # add results to array lists
-            self.ExtremeWidths[i] = self.ExtremeWidth
-            self.ExtremeVolumes[i] = self.ExtremeVolume
-            self.ExtremeFrontNodes[i] = self.FrontNode
-            self.ExtremeBackNodes[i] = self.BackNode
+            # add results to  lists
+            self.ExtremeDistances.append(self.ExtremeDistance)
+            self.ExtremeWidths.append(self.ExtremeWidth)
+            self.ExtremeVolumes.append(self.ExtremeVolume)
+            self.ExtremeFrontNodes.append(self.FrontNode)
+            self.ExtremeBackNodes.append(self.BackNode)
 
     def ExtractBarrierWidth(self, Elev):
 
@@ -590,8 +598,8 @@ class Transect:
         
         # count and record locations of intersection
         IntersectionCounter = 0
-        self.IntersectionIndices = []
-        self.InterpolateFractions = []
+        IntersectionIndices = []
+        InterpolateFractions = []
 
         # temporary fix for no assignment, need a function for reading in transect topo
         # rather than having it set externally?
@@ -638,34 +646,39 @@ class Transect:
                     continue
                 else:
                     IntersectionCounter += 1
-                    self.IntersectionIndices.append(i)
+                    IntersectionIndices.append(i)
                     Fraction = np.abs((Elev-Y3)/dY34)
-                    self.InterpolateFractions.append(Fraction)
-
+                    InterpolateFractions.append(Fraction)
+        
         # calculate width and volume at this elevation
         if IntersectionCounter > 1:
             
             # Define Intersection Distance and Elevation by Interpolating
-            ExtremeDist1 = self.Distance[self.IntersectionIndices[0]] + self.InterpolateFractions[0]*self.DistanceSpacing
-            ExtremeDist2 = self.Distance[self.IntersectionIndices[1]] + self.InterpolateFractions[1]*self.DistanceSpacing
-
+            ExtremeDist1 = self.Distance[IntersectionIndices[0]] + InterpolateFractions[0]*self.DistanceSpacing
+            ExtremeDist2 = self.Distance[IntersectionIndices[1]] + InterpolateFractions[1]*self.DistanceSpacing
+            
+            # Record distances
+            self.ExtremeDistances.append([ExtremeDist1,ExtremeDist2])
+            self.ExtremeIndices.append([IntersectionIndices[0], IntersectionIndices[1]])
+            self.ExtremeInterpFractions.append([InterpolateFractions[0], InterpolateFractions[1]])
+            
             # Define Intersection X and Y coordinates by Interpolating
             # Calculate position of front intersection
             X1 = self.StartNode.X + ExtremeDist1 * np.sin( np.radians( self.Orientation ) )
             Y1 = self.StartNode.Y + ExtremeDist1 * np.cos( np.radians( self.Orientation ) )
-            self.FrontNode = Node(X1,Y1)
+            self.FrontNode = Node(X1,Y1,Elev)
 
             # Calculate position of back intersection
             X2 = self.StartNode.X + ExtremeDist2 * np.sin( np.radians( self.Orientation ) )
             Y2 = self.StartNode.Y + ExtremeDist2 * np.cos( np.radians( self.Orientation ) )
-            self.BackNode = Node(X2,Y2)
+            self.BackNode = Node(X2,Y2,Elev)
 
             # Calculate Width
-            self.ExtremeWidth = self.Distance[self.IntersectionIndices[1]] + self.InterpolateFractions[1]*self.DistanceSpacing \
-                                - self.Distance[self.IntersectionIndices[0]] + self.InterpolateFractions[0]*self.DistanceSpacing
+            self.ExtremeWidth = self.Distance[IntersectionIndices[1]] + InterpolateFractions[1]*self.DistanceSpacing \
+                                - self.Distance[IntersectionIndices[0]] + InterpolateFractions[0]*self.DistanceSpacing
 
             # Calculate Volume
-            self.ExtremeVolume = np.sum(self.Elevation[self.IntersectionIndices[0:2]]-Elev)*self.DistanceSpacing
+            self.ExtremeVolume = np.sum(self.Elevation[IntersectionIndices[0:2]]-Elev)*self.DistanceSpacing
         
             # flag that an intersection has occurred
             self.Intersection = True
@@ -725,21 +738,22 @@ class Transect:
             ax.plot(self.Distance[self.BackToeInd], self.Elevation[self.BackToeInd], 'ko', ms=2, zorder=13)
         
         # add extreme water lines and volumes
-        if len(self.ExtremeWidths > 0):
+        print(self.ExtremeWaterLevels)
+        if len(self.ExtremeWaterLevels) > 0:
+            
+            print(self.ExtremeWaterLevels)
 
             for i, WaterLevel in enumerate(self.ExtremeWaterLevels):
                 
+                # get colour
+                Colour = float(i+1)/(len(self.ExtremeWaterLevels))
+
                 # plot line
-                FrontNode = self.ExtremeFrontNodes[i]
-                BackNode = self.ExtremeBackNodes[i]
-                Colour = float(i)/(len(self.ExtremeWaterLevels)-1)
-                ax.plot([FrontNode.X,BackNode.X],[FrontNode.Y,BackNode.Y], '-', color=ColourMap(Colour), zorder=14)
+                ax.plot(self.ExtremeDistances[i],[WaterLevel,WaterLevel], '-', color=ColourMap(Colour), zorder=14)
                 
                 # colour in, this will have minor bug for now due to abs argmin returning either node before or node after
-                FrontInd = np.argmin(np.abs(self.Distance-FrontNode.X))
-                BackInd = np.argmin(np.abs(self.Distance-BackNode.X))
-                DistFill = np.concatenate((FrontNode.X,self.Distance[FrontInd:BackInd], BackNode.X))
-                ElevFill = np.concatenate((FrontNode.Y,self.Elevation[FrontInd:BackInd], BackNode.Y))
+                DistFill = np.insert(self.ExtremeDistances[i], 1, self.Distance[FrontInd:BackInd])
+                ElevFill = np.insert(np.array([WaterLevel, WaterLevel]), 1, self.Elevation[FrontInd:BackInd])
                 LowerFill = np.linspace(ElevFill[0],ElevFill[-1],len(ElevFill)) 
                 ax.fill_between(DistFill, ElevFill, LowerFill, color=ColourMap(Colour), alpha = 0.5, zorder=13)
 

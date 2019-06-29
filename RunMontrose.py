@@ -23,6 +23,7 @@ p.mkdir(parents=True, exist_ok=True)
 
 # set up a file name to save the coast object
 Filename2SaveCoast = SiteFolder+ "Coast.pydata"
+Filename2SaveCoast = SiteFolder+ "Coast.pydata_DUMMY"
 
 # this checks to see whether coast object already exists
 try:
@@ -49,9 +50,9 @@ except:
     ThisCoast.ExtractTransectTopography(SiteFolder+DTM)
     
     # SAVE ENTIRE COAST OBJECT
-    print("Saving Coast Object as " + Filename2SaveCoast)
-    with open(Filename2SaveCoast, 'wb') as PFile:
-        pickle.dump(ThisCoast, PFile)
+    #print("Saving Coast Object as " + Filename2SaveCoast)
+    #with open(Filename2SaveCoast, 'wb') as PFile:
+    #    pickle.dump(ThisCoast, PFile)
         
 
 # ANALYSE TRANSECTS

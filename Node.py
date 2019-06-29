@@ -14,11 +14,12 @@ class Node:
 
     """
     
-    def __init__(self, X, Y, Z=None):
+    def __init__(self, X, Y, Z=None, Dist=None):
         
         self.X = X
         self.Y = Y
         self.Z = Z
+        self.Dist = Dist
 
     def __eq__(self,other):
         if (self.X == other.X) and (self.Y == other.Y):

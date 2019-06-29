@@ -17,6 +17,9 @@ import rasterio
 from Line import *
 from IPython.display import clear_output
 
+# might do some multiprocessing?
+from multiprocessing import Pool
+
 class Coast:
     """
     Description of object goes here
@@ -792,13 +795,6 @@ class Coast:
                 print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
                 
                 # # Call analyses
-                # if Transect.ID == str(272):
-                #    Transect.FindCliff()
-                #    plt.plot(Transect.Distance,Transect.Elevation)
-                #    plt.plot(Transect.Distance[Transect.CliffTopInd],Transect.Elevation[Transect.CliffTopInd],'ko')
-                #    plt.plot(Transect.Distance[Transect.CliffToeInd],Transect.Elevation[Transect.CliffToeInd],'ko')
-                #    plt.show()
-                #if Transect.ID == str(46):
                 Transect.FindCliff()
                 Transect.FindBarrier()
                 
@@ -831,9 +827,9 @@ class Coast:
                 print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
                     
                 # extract barrier width
-                #if Transect.ID == str(183):
-                #    Transect.ExtractBarrierWidth(WaterElev)
-                Transect.ExtractBarrierWidths(WaterElevs)
+                if Transect.ID == "183":
+                    Transect.ExtractBarrierWidths(WaterElevs)
+                #Transect.ExtractBarrierWidths(WaterElevs)
 
                 # update transect progress no
                 CurrentTransect += 1
