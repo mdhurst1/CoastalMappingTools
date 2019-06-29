@@ -564,10 +564,14 @@ class Transect:
             self.ExtremeWaterLevels = WaterElevations
         
         # setup empty lists
+        self.ExtremeDistances = []
+        self.ExtremeIndices = []
+        self.ExtremeInterpFractions = []
         self.ExtremeWidths = []
         self.ExtremeVolumes = []
         self.ExtremeFrontNodes = []
         self.ExtremeBackNodes = []
+        self.Intersections = []
 
         # loop across elevations and perform analysis
         for i, Elevation in enumerate(self.ExtremeWaterLevels):
@@ -576,10 +580,13 @@ class Transect:
 
             # add results to  lists
             self.ExtremeDistances.append(self.ExtremeDistance)
+            self.ExtremeIndices.append(self.ExtremeIndex)
+            self.ExtremeInterpFractions.append(self.InterpolateFractions)
             self.ExtremeWidths.append(self.ExtremeWidth)
             self.ExtremeVolumes.append(self.ExtremeVolume)
             self.ExtremeFrontNodes.append(self.FrontNode)
             self.ExtremeBackNodes.append(self.BackNode)
+            self.Intersections.append(self.Intersection)
 
     def ExtractBarrierWidth(self, Elev):
 
@@ -601,6 +608,15 @@ class Transect:
         IntersectionIndices = []
         InterpolateFractions = []
 
+        # add results to  lists
+        self.ExtremeDistance = []
+        self.ExtremeIndex = []
+        self.InterpolateFractions = []
+        self.ExtremeWidth = []
+        self.ExtremeVolume = []
+        self.FrontNode = []
+        self.BackNode = []
+        
         # temporary fix for no assignment, need a function for reading in transect topo
         # rather than having it set externally?
         self.NoValues = len(self.Distance)
@@ -658,9 +674,9 @@ class Transect:
             ExtremeDist2 = self.Distance[IntersectionIndices[1]] + InterpolateFractions[1]*self.DistanceSpacing
             
             # Record distances
-            self.ExtremeDistances.append([ExtremeDist1,ExtremeDist2])
-            self.ExtremeIndices.append([IntersectionIndices[0], IntersectionIndices[1]])
-            self.ExtremeInterpFractions.append([InterpolateFractions[0], InterpolateFractions[1]])
+            self.ExtremeDistance = [ExtremeDist1,ExtremeDist2]
+            self.ExtremeIndex = [IntersectionIndices[0], IntersectionIndices[1]]
+            self.InterpolationFractions = [InterpolateFractions[0], InterpolateFractions[1]]
             
             # Define Intersection X and Y coordinates by Interpolating
             # Calculate position of front intersection
@@ -738,22 +754,22 @@ class Transect:
             ax.plot(self.Distance[self.BackToeInd], self.Elevation[self.BackToeInd], 'ko', ms=2, zorder=13)
         
         # add extreme water lines and volumes
-        print(self.ExtremeWaterLevels)
         if len(self.ExtremeWaterLevels) > 0:
             
-            print(self.ExtremeWaterLevels)
-
             for i, WaterLevel in enumerate(self.ExtremeWaterLevels):
                 
+                #if self.ExtremeWidths():
                 # get colour
                 Colour = float(i+1)/(len(self.ExtremeWaterLevels))
 
                 # plot line
+                print(self.ExtremeDistances)
                 ax.plot(self.ExtremeDistances[i],[WaterLevel,WaterLevel], '-', color=ColourMap(Colour), zorder=14)
                 
                 # colour in, this will have minor bug for now due to abs argmin returning either node before or node after
-                DistFill = np.insert(self.ExtremeDistances[i], 1, self.Distance[FrontInd:BackInd])
-                ElevFill = np.insert(np.array([WaterLevel, WaterLevel]), 1, self.Elevation[FrontInd:BackInd])
+                Inds = self.ExtremeIndices[i]
+                DistFill = np.insert(self.ExtremeDistances[i], 1, self.Distance[Inds[0]:Inds[1]])
+                ElevFill = np.insert(np.array([WaterLevel, WaterLevel]), 1, self.Elevation[Inds[0]:Inds[1]])
                 LowerFill = np.linspace(ElevFill[0],ElevFill[-1],len(ElevFill)) 
                 ax.fill_between(DistFill, ElevFill, LowerFill, color=ColourMap(Colour), alpha = 0.5, zorder=13)
 
