@@ -56,23 +56,23 @@ except:
         
 
 ## ANALYSE TRANSECTS
-ThisCoast.AnalyseTransectMorphology()
+#ThisCoast.AnalyseTransectMorphology()
 
 # SAVE ENTIRE COAST OBJECT
-print("Saving Coast Object as " + Filename2SaveCoast)
-with open(Filename2SaveCoast, 'wb') as PFile:
-    pickle.dump(ThisCoast, PFile)
+#print("Saving Coast Object as " + Filename2SaveCoast)
+#with open(Filename2SaveCoast, 'wb') as PFile:
+#    pickle.dump(ThisCoast, PFile)
     
 # ANALYSE EXTREME WATER LEVELS
-ThisCoast.AnalyseBarrierWidths([4.,5.,6.])
+#ThisCoast.AnalyseBarrierWidths([4.,5.,6.])
 
 # SAVE ENTIRE COAST OBJECT
-print("Saving Coast Object as " + Filename2SaveCoast)
-with open(Filename2SaveCoast, 'wb') as PFile:
-    pickle.dump(ThisCoast, PFile)
+#print("Saving Coast Object as " + Filename2SaveCoast)
+#with open(Filename2SaveCoast, 'wb') as PFile:
+#    pickle.dump(ThisCoast, PFile)
 #    
 # plot the results
-#ThisCoast.PlotTransects(PlotFolder)
+ThisCoast.PlotTransects(PlotFolder)
 
 
 

@@ -723,7 +723,7 @@ class Transect:
         self.Distance = ma.masked_where(self.Elevation.mask,self.Distance)
 
         # plot raw data
-        ax.plot(self.Distance, self.Elevation,'k-',lw=1.,zorder=11)
+        ax.plot(self.Distance, self.Elevation, '-', lw=1., c=[0.5,0.5,0.5], zorder=21)
                 
         # plot range
         #ax.fill_between(self.Distance, self.ElevationMin, self.ElevationMax, color=[0.8,0.8,0.8], zorder=10)
@@ -733,9 +733,9 @@ class Transect:
             
             # plot top to toe
             CliffColour = [0.6,0.4,0.1]
-            ax.plot(self.Distance[self.CliffToeInd:self.CliffTopInd], self.Elevation[self.CliffToeInd:self.CliffTopInd], '-', c=CliffColour, zorder=12)
-            ax.plot(self.Distance[self.CliffTopInd], self.Elevation[self.CliffTopInd], 'ko', mfc=CliffColour, zorder=13)
-            ax.plot(self.Distance[self.CliffToeInd], self.Elevation[self.CliffToeInd], 'ko', mfc=CliffColour, zorder=13)
+            ax.plot(self.Distance[self.CliffToeInd:self.CliffTopInd], self.Elevation[self.CliffToeInd:self.CliffTopInd], '-', c=CliffColour, lw=1., zorder=22)
+            ax.plot(self.Distance[self.CliffTopInd], self.Elevation[self.CliffTopInd], 'ko', mfc=CliffColour, zorder=31)
+            ax.plot(self.Distance[self.CliffToeInd], self.Elevation[self.CliffToeInd], 'ko', mfc=CliffColour, zorder=31)
             
         # # add barrier details here
         if self.Barrier:
@@ -746,12 +746,12 @@ class Transect:
             LowerFill = np.linspace(ElevFill[0],ElevFill[-1],len(ElevFill)) 
         
             # plot the barrier profile and points
-            ax.fill_between(DistFill, ElevFill, LowerFill, color=[0.8,0.8,0.8], zorder=9)
-            ax.plot(DistFill, ElevFill, 'r-', zorder=12)
-            ax.plot(self.Distance[self.FrontTopInd], self.Elevation[self.FrontTopInd], 'ko', ms=2, zorder=13)
-            ax.plot(self.Distance[self.FrontToeInd], self.Elevation[self.FrontToeInd], 'ko', ms=2, zorder=13)
-            ax.plot(self.Distance[self.BackTopInd], self.Elevation[self.BackTopInd], 'ko', ms=2, zorder=13)
-            ax.plot(self.Distance[self.BackToeInd], self.Elevation[self.BackToeInd], 'ko', ms=2, zorder=13)
+            ax.fill_between(DistFill, ElevFill, LowerFill, color=[0.8,0.8,0.8], zorder=10)
+            ax.plot(DistFill, ElevFill, 'k-', lw=1., zorder=22)
+            ax.plot(self.Distance[self.FrontTopInd], self.Elevation[self.FrontTopInd], 'ko', ms=2, zorder=32)
+            ax.plot(self.Distance[self.FrontToeInd], self.Elevation[self.FrontToeInd], 'ko', ms=2, zorder=32)
+            ax.plot(self.Distance[self.BackTopInd], self.Elevation[self.BackTopInd], 'ko', ms=2, zorder=32)
+            ax.plot(self.Distance[self.BackToeInd], self.Elevation[self.BackToeInd], 'ko', ms=2, zorder=32)
         
         # add extreme water lines and volumes
         if len(self.ExtremeWaterLevels) > 0:
@@ -760,23 +760,36 @@ class Transect:
                 
                 #if self.ExtremeWidths():
                 # get colour
-                Colour = float(i+1)/(len(self.ExtremeWaterLevels))
-
-                # plot line
-                print(self.ExtremeDistances)
-                ax.plot(self.ExtremeDistances[i],[WaterLevel,WaterLevel], '-', color=ColourMap(Colour), zorder=14)
+                Colour = 1.5*float(i)/(len(self.ExtremeWaterLevels))
+                LineColour = ColourMap(Colour)
+    
+                # plot line and extend seaward
+                LineDists = self.ExtremeDistances[i].copy()
+                LineDists[0] -= 20.
+                ax.plot(LineDists, [WaterLevel,WaterLevel], '-', lw=1., color=LineColour, zorder=20)
                 
                 # colour in, this will have minor bug for now due to abs argmin returning either node before or node after
                 Inds = self.ExtremeIndices[i]
                 DistFill = np.insert(self.ExtremeDistances[i], 1, self.Distance[Inds[0]:Inds[1]])
                 ElevFill = np.insert(np.array([WaterLevel, WaterLevel]), 1, self.Elevation[Inds[0]:Inds[1]])
-                LowerFill = np.linspace(ElevFill[0],ElevFill[-1],len(ElevFill)) 
-                ax.fill_between(DistFill, ElevFill, LowerFill, color=ColourMap(Colour), alpha = 0.5, zorder=13)
+                LowerFill = np.linspace(ElevFill[0],ElevFill[-1],len(ElevFill))
+                
+                # lighten the colour slightly
+                LighterColour = ColourMap(Colour+0.1)
+                
+                # and shade in the region above the extreme elevation
+                ax.fill_between(DistFill, ElevFill, LowerFill, color=LighterColour, zorder=11+i)
 
         # label axes
-        ax.set_aspect(4.)
+        ax.set_aspect(10.)
         ax.set_ylabel("Elevation (m)")
         ax.set_xlabel("Distance (m)")
+
+        # set axis limits 
+        ax.set_xlim([self.Distance[0],self.Distance[-1]])
+    
+        # add text
+        plt.title("Transect "+str(self.ID))
 
         # save the figure        
         fig.savefig(PlotFolder+"Transect_"+str(self.ID)+".png", dpi=300)
