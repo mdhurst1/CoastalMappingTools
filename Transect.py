@@ -61,11 +61,12 @@ class Transect:
         # barrier metrics
         self.Barrier = False
         self.FrontHeight = None
-        self.FrontTopNode = None
-        self.FrontToeNode = None
+        self.FrontTopInd = None
+        self.FrontToeInd = None
         self.BackHeight = None
-        self.BackTopNode = None
-        self.BackToeNode = None
+        self.BackTopInd = None
+        self.BackToeInd = None
+        self.CrestInd = None
         self.ToeWidth = None
         self.TopWidth = None
         self.FrontSlope = None
@@ -512,15 +513,13 @@ class Transect:
             #print("NOT A BARRIER 2")
             return
 
-        # if (self.ID == str("1")):
-        #     plt.plot(self.Distance,self.Elevation)
-        #     plt.plot(self.Distance[self.FrontTopInd],self.Elevation[self.FrontTopInd],'ks',ms=10)
-        #     plt.plot(self.Distance[self.FrontToeInd],self.Elevation[self.FrontToeInd],'ks',ms=10)
-        #     plt.plot(self.Distance[self.BackTopInd],self.Elevation[self.BackTopInd],'ro',ms=5)
-        #     plt.plot(self.Distance[self.BackToeInd],self.Elevation[self.BackToeInd],'ro',ms=5)
-        #     plt.show()
-        #     sys.exit()
-
+        # Get Barrier Crest
+        Mask = ElevMasked.mask.copy()
+        Mask[0:self.FrontTopInd] = True
+        Mask[self.BackTopInd] = True
+        ElevMasked = ma.masked_where(Mask,self.Elevation)
+        self.CrestInd = ma.argmax(ElevMasked)
+            
         # Calculate Barrier Height, front and back
         self.FrontHeight = self.Elevation[self.FrontTopInd]-self.Elevation[self.FrontToeInd]
         self.BackHeight = self.Elevation[self.BackTopInd]-self.Elevation[self.BackToeInd]
@@ -754,7 +753,7 @@ class Transect:
             ax.plot(self.Distance[self.BackToeInd], self.Elevation[self.BackToeInd], 'ko', ms=2, zorder=32)
         
         # add extreme water lines and volumes
-        if len(self.ExtremeWaterLevels) > 0:
+        if self.Intersection:
             
             for i, WaterLevel in enumerate(self.ExtremeWaterLevels):
                 
@@ -786,8 +785,9 @@ class Transect:
         ax.set_xlabel("Distance (m)")
 
         # set axis limits 
-        ax.set_xlim([self.Distance[0],self.Distance[-1]])
-    
+        Start, End = ma.notmasked_edges(self.Distance)
+        ax.set_xlim([self.Distance[Start],self.Distance[End]])
+        
         # add text
         plt.title("Transect "+str(self.ID))
 

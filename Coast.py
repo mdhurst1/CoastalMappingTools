@@ -1077,8 +1077,8 @@ class Coast:
                 print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
 
                 # call plotting function
-                if Transect.ID == "400":
-                    Transect.Plot(PlotFolder)
+                Transect.Plot(PlotFolder)
+                    
 
                 CurrentTransect += 1
 
