@@ -67,6 +67,7 @@ class Transect:
         self.BackTopInd = None
         self.BackToeInd = None
         self.CrestInd = None
+        self.CrestElevation = None
         self.ToeWidth = None
         self.TopWidth = None
         self.FrontSlope = None
@@ -74,22 +75,22 @@ class Transect:
         self.BarrierVolume = None
 
         # other barrier metrics for extreme water levels
-        self.ExtremeWaterLevels = []
+        self.ExtremeWaterLevels = ["","",""]
         self.Intersection = None
         self.IntersectionIndices = None
         self.InterpolateFractions = None
         self.FrontNode = None
         self.BackNode = None
-        self.ExtremeFrontNodes = []
-        self.ExtremeBackNodes = []
+        self.ExtremeFrontNodes = ["","",""]
+        self.ExtremeBackNodes = ["","",""]
         self.ExtremeDistance = None
-        self.ExtremeIndices = []
-        self.ExtremeDistances = []
-        self.ExtremeInterpFractions = []
+        self.ExtremeIndices = ["","",""]
+        self.ExtremeDistances = ["","",""]
+        self.ExtremeInterpFractions = ["","",""]
         self.ExtremeWidth = None
-        self.ExtremeWidths = []
+        self.ExtremeWidths = ["","",""]
         self.ExtremeVolume = None
-        self.ExtremeVolumes = []
+        self.ExtremeVolumes = ["","",""]
     
     def __str__(self):
         String = "Transect Object:\nID: %s\n" % (str(self.ID))
@@ -519,6 +520,7 @@ class Transect:
         Mask[self.BackToeInd] = True
         ElevMasked = ma.masked_where(Mask,self.Elevation)
         self.CrestInd = ma.argmax(ElevMasked)
+        self.CrestElevation = ElevMasked[self.CrestInd]
             
         # Calculate Barrier Height, front and back
         self.FrontHeight = self.Elevation[self.FrontTopInd]-self.Elevation[self.FrontToeInd]
@@ -557,14 +559,14 @@ class Transect:
             self.ExtremeWaterLevels = WaterElevations
         
         # setup empty lists
-        self.ExtremeDistances = []
-        self.ExtremeIndices = []
-        self.ExtremeInterpFractions = []
-        self.ExtremeWidths = []
-        self.ExtremeVolumes = []
-        self.ExtremeFrontNodes = []
-        self.ExtremeBackNodes = []
-        self.Intersections = []
+        self.ExtremeDistances = [[],[],[]]
+        self.ExtremeIndices = [[],[],[]]
+        self.ExtremeInterpFractions = [[],[],[]]
+        self.ExtremeWidths = [[],[],[]]
+        self.ExtremeVolumes = [[],[],[]]
+        self.ExtremeFrontNodes = [[],[],[]]
+        self.ExtremeBackNodes = [[],[],[]]
+        self.Intersections = [[],[],[]]
 
         # loop across elevations and perform analysis
         for i, Elevation in enumerate(self.ExtremeWaterLevels):
@@ -572,14 +574,14 @@ class Transect:
             self.ExtractBarrierWidth(Elevation)
 
             # add results to  lists
-            self.ExtremeDistances.append(self.ExtremeDistance)
-            self.ExtremeIndices.append(self.ExtremeIndex)
-            self.ExtremeInterpFractions.append(self.InterpolateFractions)
-            self.ExtremeWidths.append(self.ExtremeWidth)
-            self.ExtremeVolumes.append(self.ExtremeVolume)
-            self.ExtremeFrontNodes.append(self.FrontNode)
-            self.ExtremeBackNodes.append(self.BackNode)
-            self.Intersections.append(self.Intersection)
+            self.ExtremeDistances[i] = self.ExtremeDistance
+            self.ExtremeIndices[i] = self.ExtremeIndex
+            self.ExtremeInterpFractions[i] = self.InterpolateFractions
+            self.ExtremeWidths[i] = self.ExtremeWidth
+            self.ExtremeVolumes[i] = self.ExtremeVolume
+            self.ExtremeFrontNodes[i] = self.FrontNode
+            self.ExtremeBackNodes[i] = self.BackNode
+            self.Intersections[i] = self.Intersection
 
     def ExtractBarrierWidth(self, Elev):
 
@@ -831,6 +833,14 @@ class Transect:
 
     def get_BarrierPosition(self):
 
+        """
+        Calculates the position of nodes that define the barrier based on the top and toe
+        on the front and back side, plus the crest of the barrier
+
+        MDH, July 2019
+
+        """
+
         if not self.Barrier:
             sys.exit("Transect.get_BarrierPosition: Not a barrier!")
 
@@ -839,6 +849,7 @@ class Transect:
         BarrierFrontToeDist = self.Distance[self.FrontToeInd]
         BarrierBackTopDist = self.Distance[self.BackTopInd]
         BarrierBackToeDist = self.Distance[self.BackToeInd]
+        CrestDist = self.Distance[self.CrestInd]
         
         # Calculate position of barrier front top
         X1 = self.StartNode.X + BarrierFrontTopDist * np.sin( np.radians( self.Orientation ) )
@@ -856,4 +867,29 @@ class Transect:
         X4 = self.StartNode.X + BarrierBackToeDist * np.sin( np.radians( self.Orientation ) )
         Y4 = self.StartNode.Y + BarrierBackToeDist * np.cos( np.radians( self.Orientation ) )
         
-        return Node(X1, Y1), Node(X2, Y2), Node(X3, Y3), Node(X4, Y4)
+        # Calculate position of crest
+        X5 = self.StartNode.X + CrestDist * np.sin( np.radians( self.Orientation ) )
+        Y5 = self.StartNode.Y + CrestDist * np.cos( np.radians( self.Orientation ) )
+        Z5 = self.Elevation[self.CrestInd]
+
+        return Node(X1, Y1), Node(X2, Y2), Node(X3, Y3), Node(X4, Y4), Node(X5, Y5, Z5)
+
+    def get_CrestPosition(self):
+
+        """
+        MDH, July 2019
+        
+        """
+        if Barrier:
+
+            # Get Distance
+            CrestDistance = self.Distance[self.CrestInd]
+
+            # Calculate position of barrier front top
+            X = self.StartNode.X + CrestDistance * np.sin( np.radians( self.Orientation ) )
+            Y = self.StartNode.Y + CrestDistance * np.cos( np.radians( self.Orientation ) )
+            Z = self.Elevation[self.CrestInd]
+            return X, Y, Z
+        
+        else:
+            print("Transect.get_CrestPosition (Error): Not a barrier")

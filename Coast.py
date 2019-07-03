@@ -45,6 +45,7 @@ class Coast:
         self.BarrierFrontToeLines = []
         self.BarrierBackTopLines = []
         self.BarrierBackToeLines = []
+        self.CrestLines = []
         self.ExtremeFrontLines = []
         self.ExtremeBackLines = []
         self.Projection = ""
@@ -238,70 +239,6 @@ class Coast:
         f.write(self.Projection)
         f.close()
 
-    def WriteTransectsShp(self, TransectsShp):
-
-        """
-        Writes the transects of a Coast object to polyline shape file
-
-        builds a large attribute table with all transect properties
-
-        MDH, June 2019
-
-        """
-
-        # open new shapefile        
-        WL = shapefile.Writer(TransectsShp,shapeType=shapefile.POLYLINE)
-        
-        # Check length of extreme water levels
-        if len(self.ExtremeWaterLevels != 3):
-            print("Coast.WriteTransectsShp (Error): No extreme water levels info to write to attributes")
-            self.ExtremeWaterLevels = [[],[],[]]
-
-        # Create Fields
-        Fields = [('DeletionFlag','C',1,0), ['Line_ID', 'C', 3, 0], ['Transect_ID', 'C', 3, 0]
-        ['CliffHeight','N', 4, 2],['CliffSlope','N', 4, 2]
-        ['CrestElevation','N', 4, 2], 
-        ['BarrierFrontHeight','N', 4, 2], ['BarrierFrontSlope','N', 4, 2],
-        ['BarrierBackHeight','N', 4, 2], ['BarrierBackSlope','N', 4, 2],
-        ['BarrierToeWidth','N', 5, 2], ['BarrierTopWidth','N', 4, 2],
-        ['BarrierVolume','N', 6, 2],
-        ['ExtremeWidth_'+str(self.ExtremeWaterLevels[0]),'N', 5, 2], ['ExtremeVolume_'+str(self.ExtremeWaterLevels[0]),'N', 6, 2],
-        ['ExtremeWidth_'+str(self.ExtremeWaterLevels[1]),'N', 5, 2], ['ExtremeVolume_'+str(self.ExtremeWaterLevels[1]),'N', 6, 2],
-        ['ExtremeWidth_'+str(self.ExtremeWaterLevels[2]),'N', 5, 2], ['ExtremeVolume_'+str(self.ExtremeWaterLevels[2]),'N', 6, 2]]
-        
-        WL.fields = Fields[1:]
-
-        for Line in self.CoastLines:
-            for Transect in Line.Transects:
-
-                # get transect node positions
-                X, Y = Transect.get_XY()
-                WriteTransect = [np.column_stack([X,Y]).tolist()]
-
-                # Create the record
-                Record = [str(Line.ID), str(Transect.ID), Transect.CliffHeight, Transect.CliffSlope, 
-                            Transect.CrestElevation,
-                            Transect.BarrierFrontHeight, Transect.BarrierFrontSlope, 
-                            Transect.BarrierBackHeight, Transect.BarrierBackSlope,
-                            Transect.BarrierToeWidth, Transect.BarrierTopWidth,
-                            Transect.BarrierVolume,
-                            Transect.ExtremeWidths[0], Transect.ExtremeVolumes[0],
-                            Transect.ExtremeWidths[1], Transect.ExtremeVolumes[1],
-                            Transect.ExtremeWidths[2], Transect.ExtremeVolumes[2]]
-
-                # write transect and record
-                WL.line(WriteTransect)
-                WL.record(*Record) 
-        
-        # close the shapefiles and clean up
-        WL.close()
-            
-        # create the projection file    
-        f = open(TransectsShp.rstrip("shp")+"prj","w")
-        f.write(self.Projection)
-        f.close()
-
-
     def WritePointsShp(self, PointsShp):
         """
         Function to write transect points to a point shape file
@@ -333,6 +270,144 @@ class Coast:
         f = open(PointsShp.rstrip("shp")+"prj","w")
         f.write(self.Projection)
         f.close()
+
+    def WriteTransectsShp(self, TransectsShp):
+
+        """
+        Writes the transects of a Coast object to polyline shape file
+
+        builds a large attribute table with all transect properties
+
+        MDH, June 2019
+
+        """
+
+        # open new shapefile        
+        WL = shapefile.Writer(TransectsShp,shapeType=shapefile.POLYLINE)
+        
+        # Check length of extreme water levels
+        if len(self.ExtremeWaterLevels) != 3:
+            print("Coast.WriteTransectsShp (Error): No extreme water levels info to write to attributes")
+            self.ExtremeWaterLevels = [[],[],[]]
+
+        # Create Fields
+        Fields = [('DeletionFlag','C',1,0), ['Line_ID', 'C', 3, 0], ['Transect_ID', 'C', 3, 0], 
+        ['CliffHeight','N', 4, 2],['CliffSlope','N', 4, 2],
+        ['CrestElevation','N', 4, 2], 
+        ['BarrierFrontHeight','N', 4, 2], ['BarrierFrontSlope','N', 4, 2],
+        ['BarrierBackHeight','N', 4, 2], ['BarrierBackSlope','N', 4, 2],
+        ['BarrierToeWidth','N', 5, 2], ['BarrierTopWidth','N', 4, 2],
+        ['BarrierVolume','N', 6, 2],
+        ['ExtremeWidth_'+str(self.ExtremeWaterLevels[0]),'N', 5, 2], ['ExtremeVolume_'+str(self.ExtremeWaterLevels[0]),'N', 6, 2],
+        ['ExtremeWidth_'+str(self.ExtremeWaterLevels[1]),'N', 5, 2], ['ExtremeVolume_'+str(self.ExtremeWaterLevels[1]),'N', 6, 2],
+        ['ExtremeWidth_'+str(self.ExtremeWaterLevels[2]),'N', 5, 2], ['ExtremeVolume_'+str(self.ExtremeWaterLevels[2]),'N', 6, 2]]
+        
+        WL.fields = Fields[1:]
+
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+
+                # get transect node positions
+                X, Y = Transect.get_XY()
+                WriteTransect = [np.column_stack([X,Y]).tolist()]
+
+                # Create the record
+                Record = [str(Line.ID), str(Transect.ID), Transect.CliffHeight, Transect.CliffSlope, 
+                            Transect.CrestElevation,
+                            Transect.FrontHeight, Transect.FrontSlope, 
+                            Transect.BackHeight, Transect.BackSlope,
+                            Transect.ToeWidth, Transect.TopWidth,
+                            Transect.BarrierVolume,
+                            Transect.ExtremeWidths[0], Transect.ExtremeVolumes[0],
+                            Transect.ExtremeWidths[1], Transect.ExtremeVolumes[1],
+                            Transect.ExtremeWidths[2], Transect.ExtremeVolumes[2]]
+
+                # write transect and record
+                WL.line(WriteTransect)
+                WL.record(*Record) 
+        
+        # close the shapefiles and clean up
+        WL.close()
+            
+        # create the projection file    
+        f = open(TransectsShp.rstrip("shp")+"prj","w")
+        f.write(self.Projection)
+        f.close()
+    
+    def WriteCrestLinesShp(self, CrestLineShp):
+
+        """
+        Writes the crest line of barriers to shape file
+
+        MDH, July 2019
+
+        """
+
+        #for Line in self.CoastLines:
+        #self.WriteLinesShp()
+
+    def WriteCrestPointsShp(self, CrestPointsShp):
+
+        """
+        Writes the crest lines points of barriers to shape file
+
+        builds a large attribute table with all transect properties
+
+        MDH, July 2019
+
+        """
+
+        # open new shapefile        
+        WP = shapefile.Writer(CrestPointsShp,shapeType=shapefile.POINTZ)
+        
+        # Check length of extreme water levels
+        if len(self.ExtremeWaterLevels != 3):
+            print("Coast.WriteTransectsShp (Error): No extreme water levels info to write to attributes")
+            self.ExtremeWaterLevels = [[],[],[]]
+
+        # Create Fields
+        Fields = [('DeletionFlag','C',1,0), ['Line_ID', 'C', 3, 0], ['Transect_ID', 'C', 3, 0],
+        ['CliffHeight','N', 4, 2], ['CliffSlope','N', 4, 2],
+        ['CrestElevation','N', 4, 2], 
+        ['BarrierFrontHeight','N', 4, 2], ['BarrierFrontSlope','N', 4, 2],
+        ['BarrierBackHeight','N', 4, 2], ['BarrierBackSlope','N', 4, 2],
+        ['BarrierToeWidth','N', 5, 2], ['BarrierTopWidth','N', 4, 2],
+        ['BarrierVolume','N', 6, 2],
+        ['ExtremeWidth_'+str(self.ExtremeWaterLevels[0]),'N', 5, 2], ['ExtremeVolume_'+str(self.ExtremeWaterLevels[0]),'N', 6, 2],
+        ['ExtremeWidth_'+str(self.ExtremeWaterLevels[1]),'N', 5, 2], ['ExtremeVolume_'+str(self.ExtremeWaterLevels[1]),'N', 6, 2],
+        ['ExtremeWidth_'+str(self.ExtremeWaterLevels[2]),'N', 5, 2], ['ExtremeVolume_'+str(self.ExtremeWaterLevels[2]),'N', 6, 2]]
+        
+        WP.fields = Fields[1:]
+
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+
+                # get crest position
+                X, Y, Z = Transect.get_CrestPosition()
+                
+                # Create the record
+                Record = [str(Line.ID), str(Transect.ID), Transect.CliffHeight, Transect.CliffSlope, 
+                            Transect.CrestElevation,
+                            Transect.BarrierFrontHeight, Transect.BarrierFrontSlope, 
+                            Transect.BarrierBackHeight, Transect.BarrierBackSlope,
+                            Transect.BarrierToeWidth, Transect.BarrierTopWidth,
+                            Transect.BarrierVolume,
+                            Transect.ExtremeWidths[0], Transect.ExtremeVolumes[0],
+                            Transect.ExtremeWidths[1], Transect.ExtremeVolumes[1],
+                            Transect.ExtremeWidths[2], Transect.ExtremeVolumes[2]]
+
+                # write transect and record
+                WP.point(X, Y, Z)
+                WP.record(*Record) 
+        
+        # close the shapefiles and clean up
+        WP.close()
+            
+        # create the projection file    
+        f = open(CrestPointsShp.rstrip("shp")+"prj","w")
+        f.write(self.Projection)
+        f.close()
+  
 
     def MergeCoastLines(self):
 
@@ -991,7 +1066,8 @@ class Coast:
         
         """
 
-        Generate line objects from cliff top and cliff toe positions on transects
+        Generate line objects from cliff top and cliff toe positions on transects,
+        Also get crest line
 
         MDH, June 2019
 
@@ -1035,15 +1111,17 @@ class Coast:
                 BarrierFrontToeList = []
                 BarrierBackTopList = []
                 BarrierBackToeList = []
+                CrestList = []
 
                 # loop through transects and get top and toe positions
                 
                 for Transect in CoastLine.Transects[StartList[i]:EndList[i]]:
-                    TempFrontTop, TempFrontToe, TempBackTop, TempBackToe = Transect.get_BarrierPosition()
+                    TempFrontTop, TempFrontToe, TempBackTop, TempBackToe, TempCrest = Transect.get_BarrierPosition()
                     BarrierFrontTopList.append(TempFrontTop)
                     BarrierFrontToeList.append(TempFrontToe)
                     BarrierBackTopList.append(TempBackTop)
                     BarrierBackToeList.append(TempBackToe)
+                    CrestList.append(TempCrest)
                 
                 # create new line object for front top
                 X = [TempTop.X for TempTop in BarrierFrontTopList]
@@ -1072,6 +1150,13 @@ class Coast:
                 
                 TempLine = Line("Barrier_"+str(BarrierCount), X, Y)
                 self.BarrierBackToeLines.append(TempLine)
+
+                # create new line object for crest
+                X = [TempCrest.X for TempCrest in CrestList]
+                Y = [TempCrest.Y for TempCrest in CrestList]
+                
+                TempLine = Line("Crest_"+str(BarrierCount), X, Y)
+                self.CrestLines.append(TempLine)
 
                 # update counter
                 BarrierCount += 1
