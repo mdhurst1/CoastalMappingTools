@@ -55,22 +55,20 @@ except:
         pickle.dump(ThisCoast, PFile)
         
 ## ANALYSE TRANSECTS
-#ThisCoast.AnalyseTransectMorphology()
+#ThisCoast.PlotTransects(PlotFolder)
+ThisCoast.AnalyseTransectMorphology()
+#ThisCoast.AnalyseBarrierWidths([4.,5.,6.])
 
 # SAVE ENTIRE COAST OBJECT
 #print("Saving Coast Object as " + Filename2SaveCoast)
 #with open(Filename2SaveCoast, 'wb') as PFile:
- #   pickle.dump(ThisCoast, PFile)
-
-#ThisCoast.AnalyseBarrierWidths([4.,5.,6.])
-
-
+#   pickle.dump(ThisCoast, PFile)
 
 # write transects
 #ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
     
 # plot the results
-ThisCoast.PlotTransects(PlotFolder)
+
 
 
 
