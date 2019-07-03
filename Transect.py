@@ -534,7 +534,7 @@ class Transect:
 
         # Volume m3/m
         self.BarrierVolume = np.sum(ElevMasked)*self.DistanceSpacing
-        self.BarrierVolume -= 0.5 * (ElevMasked[self.FrontToeInd] + ElevMasked[self.BackToeInd])
+        self.BarrierVolume -= 0.5 * (ElevMasked[self.FrontToeInd] + ElevMasked[self.BackToeInd]) \
                                  * (self.Distance[self.BackToeInd] - self.Distance[self.FrontToeInd])
 
         # switch flag to indicate a barrier has been found
@@ -749,9 +749,13 @@ class Transect:
         # add extreme water lines and volumes
         if self.Intersection:
             
+            print(self.Intersection)
+            print(self.ExtremeDistances)
             for i, WaterLevel in enumerate(self.ExtremeWaterLevels):
                 
-                #if self.ExtremeWidths():
+                if len(self.ExtremeDistances[i]) == 0:
+                    continue
+
                 # get colour
                 Colour = 1.5*float(i)/(len(self.ExtremeWaterLevels))
                 LineColour = ColourMap(Colour)
@@ -784,6 +788,9 @@ class Transect:
         
         # add text
         plt.title("Transect "+str(self.ID))
+
+        # tight layout!
+        plt.tight_layout()
 
         # save the figure        
         fig.savefig(PlotFolder+"Transect_"+str(self.ID)+".png", dpi=300)

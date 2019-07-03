@@ -1078,7 +1078,6 @@ class Coast:
 
                 # call plotting function
                 Transect.Plot(PlotFolder)
-                    
 
                 CurrentTransect += 1
 
