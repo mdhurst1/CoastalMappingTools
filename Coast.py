@@ -291,18 +291,21 @@ class Coast:
             self.ExtremeWaterLevels = [[],[],[]]
 
         # Create Fields
-        Fields = [('DeletionFlag','C',1,0), ['Line_ID', 'C', 3, 0], ['Transect_ID', 'C', 3, 0], 
-        ['CliffHeight','N', 4, 2],['CliffSlope','N', 4, 2],
-        ['CrestElevation','N', 4, 2], 
-        ['BarrierFrontHeight','N', 4, 2], ['BarrierFrontSlope','N', 4, 2],
-        ['BarrierBackHeight','N', 4, 2], ['BarrierBackSlope','N', 4, 2],
-        ['BarrierToeWidth','N', 5, 2], ['BarrierTopWidth','N', 4, 2],
-        ['BarrierVolume','N', 6, 2],
-        ['ExtremeWidth_'+str(self.ExtremeWaterLevels[0]),'N', 5, 2], ['ExtremeVolume_'+str(self.ExtremeWaterLevels[0]),'N', 6, 2],
-        ['ExtremeWidth_'+str(self.ExtremeWaterLevels[1]),'N', 5, 2], ['ExtremeVolume_'+str(self.ExtremeWaterLevels[1]),'N', 6, 2],
-        ['ExtremeWidth_'+str(self.ExtremeWaterLevels[2]),'N', 5, 2], ['ExtremeVolume_'+str(self.ExtremeWaterLevels[2]),'N', 6, 2]]
+        Fields = [('DeletionFlag','C',1,0), ['LineID', 'C', 3, 0], ['TransectID', 'C', 3, 0], 
+        ['Cliff_H','N', 4, 2],['Cliff_S','N', 4, 2],
+        ['Crest_Elev','N', 4, 2], 
+        ['Bar_FH','N', 4, 2], ['Bar_FS','N', 4, 2],
+        ['Bar_BH','N', 4, 2], ['Bar_BS','N', 4, 2],
+        ['Bar_ToeW','N', 5, 2], ['Bar_TopW','N', 4, 2],
+        ['Bar_Volume','N', 6, 2],
+        ['Ext_W_low','N', 5, 2], ['Ext_V_low','N', 6, 2],
+        ['Ext_W_med','N', 5, 2], ['Ext_V_med','N', 6, 2],
+        ['Ext_W_high','N', 5, 2], ['Ext_V_high','N', 6, 2]]
         
         WL.fields = Fields[1:]
+
+        print(Fields)
+        print(len(WL.fields))
 
         for Line in self.CoastLines:
             for Transect in Line.Transects:
@@ -324,8 +327,18 @@ class Coast:
 
                 # write transect and record
                 WL.line(WriteTransect)
-                WL.record(*Record) 
+                try:
+                    WL.record(*Record) 
+                except:
+                    print(Record)
+                    print(Transect.ExtremeWidths)
+                    sys.exit()
+                
+                break
         
+        print(Record)
+        print(len(Record))
+
         # close the shapefiles and clean up
         WL.close()
             
@@ -366,16 +379,16 @@ class Coast:
             self.ExtremeWaterLevels = [[],[],[]]
 
         # Create Fields
-        Fields = [('DeletionFlag','C',1,0), ['Line_ID', 'C', 3, 0], ['Transect_ID', 'C', 3, 0],
-        ['CliffHeight','N', 4, 2], ['CliffSlope','N', 4, 2],
-        ['CrestElevation','N', 4, 2], 
-        ['BarrierFrontHeight','N', 4, 2], ['BarrierFrontSlope','N', 4, 2],
-        ['BarrierBackHeight','N', 4, 2], ['BarrierBackSlope','N', 4, 2],
-        ['BarrierToeWidth','N', 5, 2], ['BarrierTopWidth','N', 4, 2],
-        ['BarrierVolume','N', 6, 2],
-        ['ExtremeWidth_'+str(self.ExtremeWaterLevels[0]),'N', 5, 2], ['ExtremeVolume_'+str(self.ExtremeWaterLevels[0]),'N', 6, 2],
-        ['ExtremeWidth_'+str(self.ExtremeWaterLevels[1]),'N', 5, 2], ['ExtremeVolume_'+str(self.ExtremeWaterLevels[1]),'N', 6, 2],
-        ['ExtremeWidth_'+str(self.ExtremeWaterLevels[2]),'N', 5, 2], ['ExtremeVolume_'+str(self.ExtremeWaterLevels[2]),'N', 6, 2]]
+        Fields = [('DeletionFlag','C',1,0), ['LineID', 'C', 3, 0], ['TransectID', 'C', 3, 0], 
+        ['Cliff_H','N', 4, 2],['Cliff_S','N', 4, 2],
+        ['Crest_Elev','N', 4, 2], 
+        ['Bar_FH','N', 4, 2], ['Bar_FS','N', 4, 2],
+        ['Bar_BH','N', 4, 2], ['Bar_BS','N', 4, 2],
+        ['Bar_ToeW','N', 5, 2], ['Bar_TopW','N', 4, 2],
+        ['Bar_Volume','N', 6, 2],
+        ['Ext_W_'+str(self.ExtremeWaterLevels[0]),'N', 5, 2], ['Ext_V_'+str(self.ExtremeWaterLevels[0]),'N', 6, 2],
+        ['Ext_W_'+str(self.ExtremeWaterLevels[1]),'N', 5, 2], ['Ext_V_'+str(self.ExtremeWaterLevels[1]),'N', 6, 2],
+        ['Ext_W_'+str(self.ExtremeWaterLevels[2]),'N', 5, 2], ['Ext_V_'+str(self.ExtremeWaterLevels[2]),'N', 6, 2]]
         
         WP.fields = Fields[1:]
 
@@ -864,6 +877,7 @@ class Coast:
                 ZMax = ma.masked_where(Mask,ZMax)
                 
                 Transect.Distance = DistAlongTransect
+                Transect.DistanceSpacing = DistAlongTransect[1]-DistAlongTransect[0]
                 Transect.Elevation = ZIDW
                 Transect.ElevationMin = ZMin
                 Transect.ElevationMax = ZMax
@@ -896,6 +910,7 @@ class Coast:
                 print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
                 
                 # # Call analyses
+                #if Transect.ID == "1":
                 Transect.FindCliff()
                 Transect.FindBarrier()
                 

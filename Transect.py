@@ -443,6 +443,9 @@ class Transect:
                 print(DistanceMasked[MinInd],DistanceMasked[self.FrontTopInd])
                 sys.exit()
 
+            #################################################################################################
+            # !!!!!!!!!!!!!!!!!!might change this to look to back toe ind incrementally!!!!!!!!!!!!!!!!!!!!!!
+            #################################################################################################
 
             Angle = np.degrees(np.arctan((ElevMasked[MinInd]-ElevMasked[self.FrontTopInd])
                                         / (DistanceMasked[MinInd]-DistanceMasked[self.FrontTopInd])))
@@ -525,19 +528,24 @@ class Transect:
         # Calculate Barrier Height, front and back
         self.FrontHeight = self.Elevation[self.FrontTopInd]-self.Elevation[self.FrontToeInd]
         self.BackHeight = self.Elevation[self.BackTopInd]-self.Elevation[self.BackToeInd]
-                
+        
         # Calculate Barrier Width, top and bottom
-        self.ToeWidth = self.Distance[self.FrontToeInd]-self.Distance[self.BackToeInd]
-        self.TopWidth = self.Distance[self.FrontTopInd]-self.Distance[self.BackTopInd]
-
+        self.ToeWidth = np.abs(self.Distance[self.FrontToeInd]-self.Distance[self.BackToeInd])
+        self.TopWidth = np.abs(self.Distance[self.FrontTopInd]-self.Distance[self.BackTopInd])
+        
         # Calculate Slope, front and back
         self.FrontSlope = self.FrontHeight/(self.Distance[self.FrontTopInd]-self.Distance[self.FrontToeInd])
         self.BackSlope = self.BackHeight/(self.Distance[self.BackTopInd]-self.Distance[self.BackToeInd])
-
+        
         # Volume m3/m
-        self.BarrierVolume = np.sum(ElevMasked)*self.DistanceSpacing
-        self.BarrierVolume -= 0.5 * (ElevMasked[self.FrontToeInd] + ElevMasked[self.BackToeInd]) \
-                                 * (self.Distance[self.BackToeInd] - self.Distance[self.FrontToeInd])
+        Start, End = ma.notmasked_edges(self.Distance)
+        self.DistanceSpacing = self.Distance[Start+1]-self.Distance[Start] # temporary fix
+        
+        self.BarrierVolume = ma.sum(ElevMasked)*self.DistanceSpacing
+        
+        self.BarrierVolume -= 0.5 * (ElevMasked[self.FrontToeInd] + ElevMasked[self.BackToeInd-1]) \
+                                 * np.abs(self.Distance[self.BackToeInd-1] - self.Distance[self.FrontToeInd])
+        
 
         # switch flag to indicate a barrier has been found
         self.Barrier = True
@@ -559,21 +567,21 @@ class Transect:
             self.ExtremeWaterLevels = WaterElevations
         
         # setup empty lists
-        self.ExtremeDistances = [[],[],[]]
-        self.ExtremeIndices = [[],[],[]]
-        self.ExtremeInterpFractions = [[],[],[]]
-        self.ExtremeWidths = [[],[],[]]
-        self.ExtremeVolumes = [[],[],[]]
-        self.ExtremeFrontNodes = [[],[],[]]
-        self.ExtremeBackNodes = [[],[],[]]
-        self.Intersections = [[],[],[]]
+        self.ExtremeDistances = ["","",""]
+        self.ExtremeIndices = ["","",""]
+        self.ExtremeInterpFractions = ["","",""]
+        self.ExtremeWidths = ["","",""]
+        self.ExtremeVolumes = ["","",""]
+        self.ExtremeFrontNodes = ["","",""]
+        self.ExtremeBackNodes = ["","",""]
+        self.Intersections = ["","",""]
 
         # loop across elevations and perform analysis
         for i, Elevation in enumerate(self.ExtremeWaterLevels):
             
             self.ExtractBarrierWidth(Elevation)
 
-            # add results to  lists
+            # add results to lists
             self.ExtremeDistances[i] = self.ExtremeDistance
             self.ExtremeIndices[i] = self.ExtremeIndex
             self.ExtremeInterpFractions[i] = self.InterpolateFractions
@@ -582,7 +590,7 @@ class Transect:
             self.ExtremeFrontNodes[i] = self.FrontNode
             self.ExtremeBackNodes[i] = self.BackNode
             self.Intersections[i] = self.Intersection
-
+        
     def ExtractBarrierWidth(self, Elev):
 
         """
@@ -604,13 +612,13 @@ class Transect:
         InterpolateFractions = []
 
         # add results to  lists
-        self.ExtremeDistance = []
-        self.ExtremeIndex = []
-        self.InterpolateFractions = []
-        self.ExtremeWidth = []
-        self.ExtremeVolume = []
-        self.FrontNode = []
-        self.BackNode = []
+        self.ExtremeDistance = None
+        self.ExtremeIndex = None
+        self.InterpolateFractions = None
+        self.ExtremeWidth = None
+        self.ExtremeVolume = None
+        self.FrontNode = None
+        self.BackNode = None
         
         # temporary fix for no assignment, need a function for reading in transect topo
         # rather than having it set externally?
@@ -753,7 +761,7 @@ class Transect:
             
             for i, WaterLevel in enumerate(self.ExtremeWaterLevels):
                 
-                if len(self.ExtremeDistances[i]) == 0:
+                if self.ExtremeWidths[i] is None:
                     continue
 
                 # get colour
