@@ -447,8 +447,8 @@ class Transect:
             # !!!!!!!!!!!!!!!!!!might change this to look to back toe ind incrementally!!!!!!!!!!!!!!!!!!!!!!
             #################################################################################################
 
-            Angle = np.degrees(np.arctan((ElevMasked[MinInd]-ElevMasked[self.FrontTopInd])
-                                        / (DistanceMasked[MinInd]-DistanceMasked[self.FrontTopInd])))
+            Angle = np.degrees(np.arctan((ElevMasked[self.BackToeInd]-ElevMasked[self.FrontTopInd])
+                                        / (DistanceMasked[self.BackToeInd]-DistanceMasked[self.FrontTopInd])))
            
             # Get detrended elevation
             ElevDetrend = ((ElevMasked-ElevMasked[self.FrontTopInd])+(DistanceMasked[self.FrontTopInd]-DistanceMasked) \
@@ -457,7 +457,7 @@ class Transect:
             # mask values up to the peak
             Mask = ElevMasked.mask.copy()
             Mask[0:self.FrontTopInd] = True
-            Mask[MinInd:] = True
+            Mask[self.BackToeInd:] = True
             ElevDetrend = ma.masked_where(Mask,ElevDetrend)
 
             # Find Maximum detrended elevation. Must be positive to be considered a change in barrier back top position
@@ -483,18 +483,18 @@ class Transect:
                 print("Divide by zero getting toe!")
                 sys.exit()
 
-            Angle = np.degrees(np.arctan((ElevMasked[MinInd]-ElevMasked[self.BackTopInd]) 
-                                        / (DistanceMasked[MinInd]-DistanceMasked[self.BackTopInd])))
+            Angle = np.degrees(np.arctan((ElevMasked[self.BackToeInd]-ElevMasked[self.FrontTopInd]) 
+                                        / (DistanceMasked[self.BackToeInd]-DistanceMasked[self.FrontTopInd])))
             if np.isnan(Angle):
                 print("\nAngle is a NaN")
 
             # Get detrended elevation
-            ElevDetrend = ((ElevMasked-ElevMasked[self.BackTopInd]) + (DistanceMasked[self.BackTopInd] - DistanceMasked) \
+            ElevDetrend = ((ElevMasked-ElevMasked[self.FrontkTopInd]) + (DistanceMasked[self.FrontTopInd] - DistanceMasked) \
                             * np.tan(np.radians(Angle)))
 
             # mask values beyond the barrier front top
             Mask = ElevMasked.mask.copy()
-            Mask[0:self.BackTopInd] = True
+            Mask[0:self.FrontTopInd] = True
             ElevDetrend = ma.masked_where(Mask, ElevDetrend)
                             
             # Find Minimum detrended elevation, must be negative to be considered a low (probably never a worry)
@@ -744,8 +744,8 @@ class Transect:
         if self.Barrier:
         
             # create array for filling in geometry
-            DistFill = self.Distance[self.FrontToeInd:self.BackToeInd]
-            ElevFill = self.Elevation[self.FrontToeInd:self.BackToeInd]
+            DistFill = self.Distance[self.FrontToeInd:self.BackToeInd+1]
+            ElevFill = self.Elevation[self.FrontToeInd:self.BackToeInd+1]
             LowerFill = np.linspace(ElevFill[0],ElevFill[-1],len(ElevFill)) 
         
             # plot the barrier profile and points
@@ -792,7 +792,13 @@ class Transect:
 
         # set axis limits 
         Start, End = ma.notmasked_edges(self.Distance)
-        ax.set_xlim([self.Distance[Start],self.Distance[End]])
+        if self.BackToeInd == None:
+            ax.set_xlim([self.Distance[Start],self.Distance[End]])
+        else:
+            ax.set_xlim([self.Distance[Start],self.Distance[self.BackToeInd]])
+            ax.set_ylim(ma.min(self.Elevation[Start:self.BackToeInd])-1.,ma.max(self.Elevation[Start:self.BackToeInd])+1.)
+        
+            
         
         # add text
         plt.title("Transect "+str(self.ID))

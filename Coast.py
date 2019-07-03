@@ -292,21 +292,19 @@ class Coast:
 
         # Create Fields
         Fields = [('DeletionFlag','C',1,0), ['LineID', 'C', 3, 0], ['TransectID', 'C', 3, 0], 
-        ['Cliff_H','N', 4, 2],['Cliff_S','N', 4, 2],
-        ['Crest_Elev','N', 4, 2], 
-        ['Bar_FH','N', 4, 2], ['Bar_FS','N', 4, 2],
-        ['Bar_BH','N', 4, 2], ['Bar_BS','N', 4, 2],
-        ['Bar_ToeW','N', 5, 2], ['Bar_TopW','N', 4, 2],
-        ['Bar_Volume','N', 6, 2],
-        ['Ext_W_low','N', 5, 2], ['Ext_V_low','N', 6, 2],
-        ['Ext_W_med','N', 5, 2], ['Ext_V_med','N', 6, 2],
-        ['Ext_W_high','N', 5, 2], ['Ext_V_high','N', 6, 2]]
+        ['Cliff_H','N', 5, 2],['Cliff_S','N', 5, 2],
+        ['Crest_Elev','N', 5, 2], 
+        ['Bar_FH','N', 5, 2], ['Bar_FS','N', 5, 2],
+        ['Bar_BH','N', 5, 2], ['Bar_BS','N', 5, 2],
+        ['Bar_ToeW','N', 6, 2], ['Bar_TopW','N', 6, 2],
+        ['Bar_Volume','N', 7, 2],
+        ['Ext_W_low','N', 6, 2], ['Ext_V_low','N', 7, 2],
+        ['Ext_W_med','N', 6, 2], ['Ext_V_med','N', 7, 2],
+        ['Ext_W_high','N', 6, 2], ['Ext_V_high','N', 7, 2]]
         
         WL.fields = Fields[1:]
 
-        print(Fields)
-        print(len(WL.fields))
-
+        
         for Line in self.CoastLines:
             for Transect in Line.Transects:
 
@@ -334,11 +332,7 @@ class Coast:
                     print(Transect.ExtremeWidths)
                     sys.exit()
                 
-                break
         
-        print(Record)
-        print(len(Record))
-
         # close the shapefiles and clean up
         WL.close()
             
