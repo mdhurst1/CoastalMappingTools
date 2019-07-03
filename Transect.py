@@ -515,8 +515,8 @@ class Transect:
 
         # Get Barrier Crest
         Mask = ElevMasked.mask.copy()
-        Mask[0:self.FrontTopInd] = True
-        Mask[self.BackTopInd] = True
+        Mask[0:self.FrontToeInd] = True
+        Mask[self.BackToeInd] = True
         ElevMasked = ma.masked_where(Mask,self.Elevation)
         self.CrestInd = ma.argmax(ElevMasked)
             
@@ -533,15 +533,9 @@ class Transect:
         self.BackSlope = self.BackHeight/(self.Distance[self.BackTopInd]-self.Distance[self.BackToeInd])
 
         # Volume m3/m
-        self.BarrierVolume =  (self.Distance[self.BackToeInd] * self.Elevation[self.BackTopInd] \
-                                     - self.Distance[self.BackTopInd] * self.Elevation[self.BackToeInd]) 
-        self.BarrierVolume += (self.Distance[self.BackTopInd] * self.Elevation[self.FrontTopInd] \
-                                    - self.Distance[self.FrontTopInd] * self.Elevation[self.BackTopInd])
-        self.BarrierVolume += (self.Distance[self.FrontTopInd] * self.Elevation[self.FrontToeInd] \
-                                    - self.Distance[self.FrontToeInd] * self.Elevation[self.FrontTopInd])
-        self.BarrierVolume += (self.Distance[self.FrontToeInd] * self.Elevation[self.BackToeInd] \
-                                    - self.Distance[self.BackToeInd] * self.Elevation[self.FrontToeInd])
-        self.BarrierVolume /= 2.
+        self.BarrierVolume = np.sum(ElevMasked)*self.DistanceSpacing
+        self.BarrierVolume -= 0.5 * (ElevMasked[self.FrontToeInd] + ElevMasked[self.BackToeInd])
+                                 * (self.Distance[self.BackToeInd] - self.Distance[self.FrontToeInd])
 
         # switch flag to indicate a barrier has been found
         self.Barrier = True
