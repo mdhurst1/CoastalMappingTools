@@ -52,6 +52,7 @@ class Coast:
         self.TransectsSpacing = 10.
         self.TransectsLength2Sea = 200.
         self.TransectsLength2Land = 1000.
+        self.ExtremeWaterLevels = []
 
         if CoastShp:
             self.ReadCoastShp(CoastShp)
@@ -242,6 +243,8 @@ class Coast:
         """
         Writes the transects of a Coast object to polyline shape file
 
+        builds a large attribute table with all transect properties
+
         MDH, June 2019
 
         """
@@ -249,8 +252,23 @@ class Coast:
         # open new shapefile        
         WL = shapefile.Writer(TransectsShp,shapeType=shapefile.POLYLINE)
         
+        # Check length of extreme water levels
+        if len(self.ExtremeWaterLevels != 3):
+            print("Coast.WriteTransectsShp (Error): No extreme water levels info to write to attributes")
+            self.ExtremeWaterLevels = [[],[],[]]
+
         # Create Fields
-        Fields = [('DeletionFlag','C',1,0),['Line_ID', 'C', 3, 0],['Transect_ID', 'C', 3, 0]] #['Segment_ID','C', 3, 0], might add
+        Fields = [('DeletionFlag','C',1,0), ['Line_ID', 'C', 3, 0], ['Transect_ID', 'C', 3, 0]
+        ['CliffHeight','N', 4, 2],['CliffSlope','N', 4, 2]
+        ['CrestElevation','N', 4, 2], 
+        ['BarrierFrontHeight','N', 4, 2], ['BarrierFrontSlope','N', 4, 2],
+        ['BarrierBackHeight','N', 4, 2], ['BarrierBackSlope','N', 4, 2],
+        ['BarrierToeWidth','N', 5, 2], ['BarrierTopWidth','N', 4, 2],
+        ['BarrierVolume','N', 6, 2],
+        ['ExtremeWidth_'+str(self.ExtremeWaterLevels[0]),'N', 5, 2], ['ExtremeVolume_'+str(self.ExtremeWaterLevels[0]),'N', 6, 2],
+        ['ExtremeWidth_'+str(self.ExtremeWaterLevels[1]),'N', 5, 2], ['ExtremeVolume_'+str(self.ExtremeWaterLevels[1]),'N', 6, 2],
+        ['ExtremeWidth_'+str(self.ExtremeWaterLevels[2]),'N', 5, 2], ['ExtremeVolume_'+str(self.ExtremeWaterLevels[2]),'N', 6, 2]]
+        
         WL.fields = Fields[1:]
 
         for Line in self.CoastLines:
@@ -261,7 +279,15 @@ class Coast:
                 WriteTransect = [np.column_stack([X,Y]).tolist()]
 
                 # Create the record
-                Record = [str(Line.ID), str(Transect.ID)]
+                Record = [str(Line.ID), str(Transect.ID), Transect.CliffHeight, Transect.CliffSlope, 
+                            Transect.CrestElevation,
+                            Transect.BarrierFrontHeight, Transect.BarrierFrontSlope, 
+                            Transect.BarrierBackHeight, Transect.BarrierBackSlope,
+                            Transect.BarrierToeWidth, Transect.BarrierTopWidth,
+                            Transect.BarrierVolume,
+                            Transect.ExtremeWidths[0], Transect.ExtremeVolumes[0],
+                            Transect.ExtremeWidths[1], Transect.ExtremeVolumes[1],
+                            Transect.ExtremeWidths[2], Transect.ExtremeVolumes[2]]
 
                 # write transect and record
                 WL.line(WriteTransect)
@@ -814,6 +840,9 @@ class Coast:
         """
 
         print("Coast.AnalyseBarrierWidth: Finding barrier positions at a given elevations and calculating metrics")
+
+        # update extreme water levels
+        self.ExtremeWaterLevels = WaterElevs
 
         # Track progress
         NoTransects = np.sum([Line.NoTransects for Line in self.CoastLines])-1

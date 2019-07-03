@@ -749,8 +749,6 @@ class Transect:
         # add extreme water lines and volumes
         if self.Intersection:
             
-            print(self.Intersection)
-            print(self.ExtremeDistances)
             for i, WaterLevel in enumerate(self.ExtremeWaterLevels):
                 
                 if len(self.ExtremeDistances[i]) == 0:

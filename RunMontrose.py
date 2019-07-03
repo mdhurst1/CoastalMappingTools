@@ -72,7 +72,7 @@ except:
 #    pickle.dump(ThisCoast, PFile)
 #    
 # plot the results
-ThisCoast.PlotTransects(PlotFolder)
+#ThisCoast.PlotTransects(PlotFolder)
 
 
 
