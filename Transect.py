@@ -272,7 +272,7 @@ class Transect:
         else:
             self.Cliff = False
 
-def FindBarrier(self):
+    def FindBarrier(self):
         
         """
         Description goes here
@@ -546,7 +546,7 @@ def FindBarrier(self):
 
         # switch flag to indicate a barrier has been found
         self.Barrier = True
-
+        
     def ExtractBarrierWidths(self,WaterElevations=[0, 2.5, 5]):
 
         """

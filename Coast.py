@@ -103,6 +103,8 @@ class Coast:
         MDH, June 2019
 
         """
+        # print action to screen
+        print("Coast.WriteCoastShp: Writing coast line to a shapefile")
 
         self.WriteLinesShp("CoastLines", CoastShp)
 
@@ -115,6 +117,9 @@ class Coast:
 
         """
         
+        # print action to screen
+        print("Coast.WriteCliffShp: Writing cliffs to shapefiles")
+
         if len(self.CliffTopLines) == 0:
             self.GetCliffLines()
 
@@ -132,6 +137,9 @@ class Coast:
         MDH, June 2019
 
         """
+
+        # print action to screen
+        print("Coast.WriteBarrierShp: Writing barrier line objects to polyline a shapefile")
 
         if len(self.BarrierFrontTopLines) == 0:
             self.GetBarrierLines()
@@ -162,6 +170,9 @@ class Coast:
         MDH, June 2019
 
         """
+
+        # print action to screen
+        print("Coast.WriteLinesShp: Writing a list of lines to a polyline shapefile")
 
         # open new shapefile        
         WL = shapefile.Writer(CoastShp,shapeType=shapefile.POLYLINE)
@@ -202,6 +213,9 @@ class Coast:
         MDH, June 2019
 
         """
+
+        # print action to screen
+        print("Coast.WritePathchesShp: Writing patch between two lines to a polygon shapefile")
 
         if len(self.__dict__[DictionaryKey1]) == 0:
             print("Coast.WritePatchesShp (Error): Trying to write from empty list of lines", DictionaryKey1, DictionaryKey2)
@@ -247,6 +261,9 @@ class Coast:
         
         """
 
+        # print action to screen
+        print("Coast.WritePointsShp: Writing points to a shapefile")
+
         WP = shapefile.Writer(PointsShp, shapeType=shapefile.POINT)
         
         # Create Fields
@@ -281,6 +298,9 @@ class Coast:
         MDH, June 2019
 
         """
+
+        # print action to screen
+        print("Coast.WriteTransectShp: Writing coastal transects and attributes to a shapefile")
 
         # open new shapefile        
         WL = shapefile.Writer(TransectsShp,shapeType=shapefile.POLYLINE)
