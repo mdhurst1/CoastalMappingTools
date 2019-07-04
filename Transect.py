@@ -597,8 +597,9 @@ class Transect:
         """
 
         # vector at fixed elevation running the length of the transect
-        X1, Y1 = self.Distance[0], Elev
-        X2, Y2 = self.Distance[-1], Elev
+        Start, End = ma.notmasked_edges(self.Distance)
+        X1, Y1 = self.Distance[Start], Elev
+        X2, Y2 = self.Distance[End], Elev
         
         dX12 = X2-X1
         dY12 = Y2-Y1
@@ -789,12 +790,13 @@ class Transect:
 
         # set axis limits 
         Start, End = ma.notmasked_edges(self.Distance)
-        if self.BackToeInd == None:
-            ax.set_xlim([self.Distance[Start],self.Distance[End]])
-        else:
+        
+        try:
             ax.set_xlim([self.Distance[Start],self.Distance[self.CliffToeInd]])
             ax.set_ylim(ma.min(self.Elevation[Start:self.BackToeInd])-1.,ma.max(self.Elevation[Start:self.CliffToeInd])+1.)
         
+        except:
+            ax.set_xlim([self.Distance[Start],self.Distance[End]])
             
         #ax.set_xlim([self.Distance[Start],self.Distance[End]])
 
