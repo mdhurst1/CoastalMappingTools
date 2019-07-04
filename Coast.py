@@ -193,7 +193,6 @@ class Coast:
             # launch polygon patches shapefile writer
             self.WritePatchesShp("ExtFrontLines_"+Level, "ExtBackLines_"+Level, ExtPatchesShp)
 
-
     def WriteLinesShp(self, DictionaryKey, CoastShp):
         
         """
@@ -1234,19 +1233,6 @@ class Coast:
 
         """
 
-        # set up individual file names
-            ExtFrontShp = ExtremeShp.split(".")[0]+"_"+Level+"_Front.shp"
-            ExtBackShp = ExtremeShp.split(".")[0]+"_"+Level+"_Back.shp"
-            ExtPatchesShp = ExtremeShp.split(".")[0]+"_"+Level+".shp"
-                
-            # launch polyline shapefile writer
-            self.WriteLinesShp("ExtFrontLines_"+Level, ExtFrontShp)
-            self.WriteLinesShp("ExtBackLines_"+Level, ExtBackShp)
-            
-            # launch polygon patches shapefile writer
-            self.WritePatchesShp("ExtFrontLines_"+Level, "ExtBackLines_"+Level, ExtPatchesShp)
-
-
         # loop through extreme water levels
         for i, Level in enumerate(["Low", "Med","High"]):
             
@@ -1256,61 +1242,61 @@ class Coast:
             # loop through transects and get contiguous extreme lines
             for CoastLine in self.CoastLines:
             
-            # find transects with cliffs
-            Widths = [Transect.ExtremeWidths[i] for Transect in CoastLine.Transects]
-            ExtremeBool = Widths > 0
-            ExtremeBool.insert(0, False)
-            ExtremeBool = np.array(ExtremeBool).astype(int)
-            
-            # get a list of the start and end points of contiguous cliff lines
-            StartEndFlags = np.diff(ExtremeBool)
-            
-            # if last line finishes on a barrier flag the last element as the end of the barrier
-            if StartEndFlags[StartEndFlags.nonzero()[0][-1]] == 1:
-                StartEndFlags[-1] = -1
+                # find transects with cliffs
+                Widths = [Transect.ExtremeWidths[i] for Transect in CoastLine.Transects]
+                ExtremeBool = Widths > 0
+                ExtremeBool.insert(0, False)
+                ExtremeBool = np.array(ExtremeBool).astype(int)
                 
-            StartList = np.argwhere(StartEndFlags == 1).flatten()
-            EndList = np.argwhere(StartEndFlags == -1).flatten()
-
-            if not len(StartList) == len(EndList):
-                print("Start and End lists not the same length")
-
-            for j in range(0,len(StartList)):
+                # get a list of the start and end points of contiguous cliff lines
+                StartEndFlags = np.diff(ExtremeBool)
                 
-                # catch single node cliff lines and ignore
-                if (EndList[j]-StartList[j]<2):
-                    continue
-
-                # create empty lists for storing barrier front and back top and toe nodes
-                """
-                THIS WHOLE THING COULD PROBABLY BE SIMPLIFIED MASSIVELY BY USING __DICT__
-                """
-                ExtremeFrontList = []
-                ExtremeBackList = []
-                
-                # loop through transects and get front and back positions
-                
-                for Transect in CoastLine.Transects[StartList[j]:EndList[j]]:
-                    TempFront, TempBack  = Transect.get_ExtremePosition(i)
-                    ExtremeFrontList,append(TempFront)
-                    ExtremeBackList.append(ExtremeBack)
+                # if last line finishes on a barrier flag the last element as the end of the barrier
+                if StartEndFlags[StartEndFlags.nonzero()[0][-1]] == 1:
+                    StartEndFlags[-1] = -1
                     
-                # create new line object for front 
-                X = [TempFront.X for TempFront in ExtremeFrontList]
-                Y = [TempFront.Y for TempFront in ExtremeFrontList]
-                
-                TempLine = Line("Ext_"+Level+str(Count), X, Y)
-                self.__dict__["ExtFrontLines_"+Level].append(TempLine)
-                
-                # create new line object for back
-                X = [TempBack.X for TempBack in ExtremeBackList]
-                Y = [TempBack.Y for TempBack in ExtremeBackList]
-                
-                TempLine = Line("Ext_"+Level+str(Count), X, Y)
-                self.__dict__["ExtBackLines_"+Level].append(TempLine)
+                StartList = np.argwhere(StartEndFlags == 1).flatten()
+                EndList = np.argwhere(StartEndFlags == -1).flatten()
 
-                # update counter
-                Count += 1
+                if not len(StartList) == len(EndList):
+                    print("Start and End lists not the same length")
+
+                for j in range(0,len(StartList)):
+                    
+                    # catch single node cliff lines and ignore
+                    if (EndList[j]-StartList[j]<2):
+                        continue
+
+                    # create empty lists for storing barrier front and back top and toe nodes
+                    """
+                    THIS WHOLE THING COULD PROBABLY BE SIMPLIFIED MASSIVELY BY USING __DICT__
+                    """
+                    ExtremeFrontList = []
+                    ExtremeBackList = []
+                    
+                    # loop through transects and get front and back positions
+                    
+                    for Transect in CoastLine.Transects[StartList[j]:EndList[j]]:
+                        TempFront, TempBack  = Transect.get_ExtremePosition(i)
+                        ExtremeFrontList,append(TempFront)
+                        ExtremeBackList.append(ExtremeBack)
+                        
+                    # create new line object for front 
+                    X = [TempFront.X for TempFront in ExtremeFrontList]
+                    Y = [TempFront.Y for TempFront in ExtremeFrontList]
+                    
+                    TempLine = Line("Ext_"+Level+str(Count), X, Y)
+                    self.__dict__["ExtFrontLines_"+Level].append(TempLine)
+                    
+                    # create new line object for back
+                    X = [TempBack.X for TempBack in ExtremeBackList]
+                    Y = [TempBack.Y for TempBack in ExtremeBackList]
+                    
+                    TempLine = Line("Ext_"+Level+str(Count), X, Y)
+                    self.__dict__["ExtBackLines_"+Level].append(TempLine)
+
+                    # update counter
+                    Count += 1
 
     def PlotTransects(self, PlotFolder):
         

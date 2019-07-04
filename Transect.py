@@ -913,8 +913,8 @@ class Transect:
         Y1 = self.StartNode.Y + FrontDist * np.cos( np.radians( self.Orientation ) )
 
         # Calculate position of barrier front top
-        X1 = self.StartNode.X + BackDist * np.sin( np.radians( self.Orientation ) )
-        Y1 = self.StartNode.Y + BackDist * np.cos( np.radians( self.Orientation ) )
+        X2 = self.StartNode.X + BackDist * np.sin( np.radians( self.Orientation ) )
+        Y2 = self.StartNode.Y + BackDist * np.cos( np.radians( self.Orientation ) )
 
         return Node(X1,Y1), Node(X2,Y2)
 
