@@ -968,7 +968,7 @@ class Coast:
                 CurrentTransect += 1
 
         print("")
-
+        
     def GetBarrierWidth(self):
 
         """

@@ -621,7 +621,7 @@ class Transect:
         # temporary fix for no assignment, need a function for reading in transect topo
         # rather than having it set externally?
         self.NoValues = len(self.Distance)
-        self.DistanceSpacing = self.Distance[1]-self.Distance[0]
+        self.DistanceSpacing = self.Distance[Start+1]-self.Distance[Start]
 
         for i in range(0, self.NoValues-1):
 
@@ -667,13 +667,18 @@ class Transect:
                     Fraction = np.abs((Elev-Y3)/dY34)
                     InterpolateFractions.append(Fraction)
         
+        
         # calculate width and volume at this elevation
         if IntersectionCounter > 1:
             
             # Define Intersection Distance and Elevation by Interpolating
             ExtremeDist1 = self.Distance[IntersectionIndices[0]] + InterpolateFractions[0]*self.DistanceSpacing
             ExtremeDist2 = self.Distance[IntersectionIndices[1]] + InterpolateFractions[1]*self.DistanceSpacing
-            
+            print(self.DistanceSpacing)
+            print(IntersectionIndices[0:2])
+            print(InterpolateFractions[0:2])
+            print(ExtremeDist1, ExtremeDist2)
+
             # Record distances
             self.ExtremeDistance = [ExtremeDist1,ExtremeDist2]
             self.ExtremeIndex = [IntersectionIndices[0], IntersectionIndices[1]]
