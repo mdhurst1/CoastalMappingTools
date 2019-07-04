@@ -11,11 +11,12 @@ from Coast import *
 
 # define file names for analysis
 Folder = "C:\\Users\\mh322u\\OneDrive - University of Glasgow\\Projects\\DynamicCoast2\\WP1_TopographicAnalysis\\"
-Site = "Montrose"
+Site = "BayOfSkail"
 SiteFolder = Folder+Site+"\\"
 PlotFolder = SiteFolder+"Plots\\" 
-LineShp = "Montrose_CoastTrend.shp"
-DTM = "DTM_1m.tif"
+LineShp = "Skail_CoastTrend.shp"
+DTM = "Skail_DTM_25cm.tif"
+WindowSize = 2001
 
 # make folder for plots if it doesnt already exist
 p = pathlib.Path(PlotFolder)
@@ -38,19 +39,17 @@ except:
     
     # SIMPLIFY COASTLINE
     ThisCoast.MergeCoastLines()
-    ThisCoast.SmoothCoastLines(WindowSize=51)
-    ThisCoast.ReconfigureCoastLines("E")
+    ThisCoast.SmoothCoastLines(WindowSize=WindowSize)
+    ThisCoast.ReconfigureCoastLines("W")
     
     # WRITE COASTLINE TO SHAPEFILE
     ThisCoast.WriteCoastShp(SiteFolder+"Coast.shp")
     
     # GENERATE TRANSECTS
-    ThisCoast.GenerateNormals(10.,200.,500.)
+    ThisCoast.GenerateNormals(10.,100.,200.)
     ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
-    ThisCoast.ExtractTransectTopography(SiteFolder+DTM)
+    ThisCoast.ExtractTransectTopography(SiteFolder+DTM)   
     
-    
-
     # SAVE ENTIRE COAST OBJECT
     print("Saving Coast Object as " + Filename2SaveCoast)
     with open(Filename2SaveCoast, 'wb') as PFile:
@@ -72,9 +71,9 @@ except:
 #ThisCoast.WriteCrestLinesShp(SiteFolder+"CrestLines.shp")
 #ThisCoast.WriteCrestPointsShp(SiteFolder+"CrestPoints.shp")
 #ThisCoast.WriteFrontPointsShp(SiteFolder+"FrontPoints.shp")
-ThisCoast.WriteExtremeLevelsShp(SiteFolder+"Extreme.shp")
+#ThisCoast.WriteExtremeLevelsShp(SiteFolder+"Extreme.shp")
 
-#ThisCoast.PlotTransects(PlotFolder)
+ThisCoast.PlotTransects(PlotFolder)
 #ThisCoast.WriteBarrierShp(SiteFolder+"Barriers.shp")
 
 # barrier width at 5 m water

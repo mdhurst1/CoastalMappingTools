@@ -394,12 +394,12 @@ class Transect:
         self.FrontHeight = self.Elevation[self.FrontTopInd]-self.Elevation[self.FrontToeInd]
         self.FrontSlope = self.FrontHeight/(self.Distance[self.FrontTopInd]-self.Distance[self.FrontToeInd])
         
-        if self.FrontSlope > 0.6:
-            print("\nSteeper than 40 degrees, therefore likely a cliff!")
+        #if self.FrontSlope > 0.6:
+            #print("\nSteeper than 40 degrees, therefore likely a cliff!")
             #self.Cliff = True
         
-        elif self.FrontHeight > 15.:
-            print("\nHigher than 15 m, therefore likely a cliff!")
+        #elif self.FrontHeight > 15.:
+            #print("\nHigher than 15 m, therefore likely a cliff!")
             #self.Cliff = True
         
         if not self.FrontTopInd > self.FrontToeInd:
@@ -791,14 +791,14 @@ class Transect:
         # set axis limits 
         Start, End = ma.notmasked_edges(self.Distance)
         
-        try:
-            ax.set_xlim([self.Distance[Start],self.Distance[self.CliffToeInd]])
-            ax.set_ylim(ma.min(self.Elevation[Start:self.BackToeInd])-1.,ma.max(self.Elevation[Start:self.CliffToeInd])+1.)
+        #try:
+        #    ax.set_xlim([self.Distance[Start],self.Distance[self.CliffToeInd]])
+        #    ax.set_ylim(ma.min(self.Elevation[Start:self.BackToeInd])-1.,ma.max(self.Elevation[Start:self.CliffToeInd])+1.)
         
-        except:
-            ax.set_xlim([self.Distance[Start],self.Distance[End]])
+        #except:
+        #    ax.set_xlim([self.Distance[Start],self.Distance[End]])
             
-        #ax.set_xlim([self.Distance[Start],self.Distance[End]])
+        ax.set_xlim([self.Distance[Start],self.Distance[End]])
 
         # add text
         plt.title("Transect "+str(self.ID))
@@ -924,7 +924,7 @@ class Transect:
         MDH, July 2019
         
         """
-        if Barrier:
+        if self.Barrier:
 
             # Get Distance
             CrestDistance = self.Distance[self.CrestInd]
@@ -936,4 +936,24 @@ class Transect:
             return X, Y, Z
         
         else:
-            print("Transect.get_CrestPosition (Error): Not a barrier")
+            return
+
+    def get_FrontPosition(self):
+
+        """
+        MDH, July 2019
+        
+        """
+        if self.Barrier:
+
+            # Get Distance
+            FrontDistance = self.Distance[self.FrontTopInd]
+
+            # Calculate position of barrier front top
+            X = self.StartNode.X + FrontDistance * np.sin( np.radians( self.Orientation ) )
+            Y = self.StartNode.Y + FrontDistance * np.cos( np.radians( self.Orientation ) )
+            Z = self.Elevation[self.FrontTopInd]
+            return X, Y, Z
+        
+        else:
+            return
