@@ -175,6 +175,9 @@ class Coast:
 
         """
 
+        if len(self.ExtFrontLines_Low) == 0:
+            self.GetExtremeLines()
+
         # print action to screen
         print("Coast.WriteExtremeLevelsShp: Writing extreme water line objects to polyline and polygon shapefile")
 
@@ -1317,7 +1320,7 @@ class Coast:
             
                 # find transects with cliffs
                 Widths = [Transect.ExtremeWidths[i] for Transect in CoastLine.Transects]
-                ExtremeBool = Widths > 0
+                ExtremeBool = [False if Width is None else True for Width in Widths]
                 ExtremeBool.insert(0, False)
                 ExtremeBool = np.array(ExtremeBool).astype(int)
                 
@@ -1351,8 +1354,8 @@ class Coast:
                     
                     for Transect in CoastLine.Transects[StartList[j]:EndList[j]]:
                         TempFront, TempBack  = Transect.get_ExtremePosition(i)
-                        ExtremeFrontList,append(TempFront)
-                        ExtremeBackList.append(ExtremeBack)
+                        ExtremeFrontList.append(TempFront)
+                        ExtremeBackList.append(TempBack)
                         
                     # create new line object for front 
                     X = [TempFront.X for TempFront in ExtremeFrontList]
