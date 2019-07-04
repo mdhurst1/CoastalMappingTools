@@ -960,9 +960,9 @@ class Coast:
                 print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
                     
                 # extract barrier width
-                if Transect.ID == "25":
-                    Transect.ExtractBarrierWidths(WaterElevs)
-                #Transect.ExtractBarrierWidths(WaterElevs)
+                #if Transect.ID == "183":
+                #    Transect.ExtractBarrierWidths(WaterElevs)
+                Transect.ExtractBarrierWidths(WaterElevs)
 
                 # update transect progress no
                 CurrentTransect += 1

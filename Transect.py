@@ -667,18 +667,13 @@ class Transect:
                     Fraction = np.abs((Elev-Y3)/dY34)
                     InterpolateFractions.append(Fraction)
         
-        
         # calculate width and volume at this elevation
         if IntersectionCounter > 1:
             
             # Define Intersection Distance and Elevation by Interpolating
             ExtremeDist1 = self.Distance[IntersectionIndices[0]] + InterpolateFractions[0]*self.DistanceSpacing
             ExtremeDist2 = self.Distance[IntersectionIndices[1]] + InterpolateFractions[1]*self.DistanceSpacing
-            print(self.DistanceSpacing)
-            print(IntersectionIndices[0:2])
-            print(InterpolateFractions[0:2])
-            print(ExtremeDist1, ExtremeDist2)
-
+            
             # Record distances
             self.ExtremeDistance = [ExtremeDist1,ExtremeDist2]
             self.ExtremeIndex = [IntersectionIndices[0], IntersectionIndices[1]]
@@ -700,7 +695,7 @@ class Transect:
                                 - self.Distance[IntersectionIndices[0]] + InterpolateFractions[0]*self.DistanceSpacing
 
             # Calculate Volume
-            self.ExtremeVolume = np.sum(self.Elevation[IntersectionIndices[0:2]]-Elev)*self.DistanceSpacing
+            self.ExtremeVolume = np.sum(self.Elevation[IntersectionIndices[0]+1:IntersectionIndices[1]+1]-Elev)*self.DistanceSpacing
         
             # flag that an intersection has occurred
             self.Intersection = True
@@ -778,8 +773,8 @@ class Transect:
                 
                 # colour in, this will have minor bug for now due to abs argmin returning either node before or node after
                 Inds = self.ExtremeIndices[i]
-                DistFill = np.insert(self.ExtremeDistances[i], 1, self.Distance[Inds[0]:Inds[1]])
-                ElevFill = np.insert(np.array([WaterLevel, WaterLevel]), 1, self.Elevation[Inds[0]:Inds[1]])
+                DistFill = np.insert(self.ExtremeDistances[i], 1, self.Distance[Inds[0]+1:Inds[1]])
+                ElevFill = np.insert(np.array([WaterLevel, WaterLevel]), 1, self.Elevation[Inds[0]+1:Inds[1]])
                 LowerFill = np.linspace(ElevFill[0],ElevFill[-1],len(ElevFill))
                 
                 # lighten the colour slightly
