@@ -888,6 +888,36 @@ class Transect:
 
         return Node(X1, Y1), Node(X2, Y2), Node(X3, Y3), Node(X4, Y4), Node(X5, Y5, Z5)
 
+    def get_ExtremePosition(self,Ind):
+        
+        """
+        return nodes for extreme front position and back position and index Ind
+        Ind must be 0, 1, or 2, for low, medium and high water levels
+
+        MDH, July 2019
+        
+        """
+        if not Ind in [0,1,2]:
+            sys,exit("Transect.get_ExtremePosition (Error): mist be an integer for extreme water (0,1, or 2)") 
+            
+        FrontDist = self.ExtremeDistances[Ind][0]
+        BackDist = self.ExtremeDistances[Ind][1]
+
+        if not isinstance(FrontDist,float):
+            return
+        elif not isinstance(BackDist,float):
+            return
+
+        # Calculate position of barrier front top
+        X1 = self.StartNode.X + FrontDist * np.sin( np.radians( self.Orientation ) )
+        Y1 = self.StartNode.Y + FrontDist * np.cos( np.radians( self.Orientation ) )
+
+        # Calculate position of barrier front top
+        X1 = self.StartNode.X + BackDist * np.sin( np.radians( self.Orientation ) )
+        Y1 = self.StartNode.Y + BackDist * np.cos( np.radians( self.Orientation ) )
+
+        return Node(X1,Y1), Node(X2,Y2)
+
     def get_CrestPosition(self):
 
         """

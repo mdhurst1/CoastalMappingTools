@@ -46,8 +46,12 @@ class Coast:
         self.BarrierBackTopLines = []
         self.BarrierBackToeLines = []
         self.CrestLines = []
-        self.ExtremeFrontLines = []
-        self.ExtremeBackLines = []
+        self.ExtFrontLines_Low = []
+        self.ExtFrontLines_Med = []
+        self.ExtFrontLines_High = []
+        self.ExtBackLines_Low = []
+        self.ExtBackLines_Med = []
+        self.ExtBackLines_High = []
         self.Projection = ""
         self.OverallOrientation = 0.
         self.TransectsSpacing = 10.
@@ -161,6 +165,34 @@ class Coast:
         # launch polygon patches shapefile writer
         self.WritePatchesShp("BarrierFrontTopLines", "BarrierBackTopLines", BarrierTopPatchesShp)
         self.WritePatchesShp("BarrierFrontToeLines", "BarrierBackToeLines", BarrierToePatchesShp)
+
+    def WriteExtremeLevelsShp(self, ExtremeShp):
+
+        """
+        Writes the contents of a list of barrier line objects to polyline shape file
+
+        MDH, June 2019
+
+        """
+
+        # print action to screen
+        print("Coast.WriteExtremeLevelsShp: Writing extreme water line objects to polyline and polygon shapefile")
+
+        # loop through extreme water levels
+        for i, Level in enumerate(["Low", "Med","High"]):
+
+            # set up individual file names
+            ExtFrontShp = ExtremeShp.split(".")[0]+"_"+Level+"_Front.shp"
+            ExtBackShp = ExtremeShp.split(".")[0]+"_"+Level+"_Back.shp"
+            ExtPatchesShp = ExtremeShp.split(".")[0]+"_"+Level+".shp"
+                
+            # launch polyline shapefile writer
+            self.WriteLinesShp("ExtFrontLines_"+Level, ExtFrontShp)
+            self.WriteLinesShp("ExtBackLines_"+Level, ExtBackShp)
+            
+            # launch polygon patches shapefile writer
+            self.WritePatchesShp("ExtFrontLines_"+Level, "ExtBackLines_"+Level, ExtPatchesShp)
+
 
     def WriteLinesShp(self, DictionaryKey, CoastShp):
         
@@ -1191,6 +1223,118 @@ class Coast:
 
                 # update counter
                 BarrierCount += 1
+
+    def GetExtremeLines(self):
+        
+        """
+
+        Generate line objects from extreme water positions on transects,
+        
+        MDH, July 2019
+
+        """
+
+        # set up individual file names
+            ExtFrontShp = ExtremeShp.split(".")[0]+"_"+Level+"_Front.shp"
+            ExtBackShp = ExtremeShp.split(".")[0]+"_"+Level+"_Back.shp"
+            ExtPatchesShp = ExtremeShp.split(".")[0]+"_"+Level+".shp"
+                
+            # launch polyline shapefile writer
+            self.WriteLinesShp("ExtFrontLines_"+Level, ExtFrontShp)
+            self.WriteLinesShp("ExtBackLines_"+Level, ExtBackShp)
+            
+            # launch polygon patches shapefile writer
+            self.WritePatchesShp("ExtFrontLines_"+Level, "ExtBackLines_"+Level, ExtPatchesShp)
+
+
+        # loop through extreme water levels
+        for i, Level in enumerate(["Low", "Med","High"]):
+            
+            # keep track of no of cliffs for IDs
+            Count = 0
+            
+            # loop through transects and get contiguous extreme lines
+            for CoastLine in self.CoastLines:
+            
+            # find transects with cliffs
+            Widths = [Transect.ExtremeWidths[i] for Transect in CoastLine.Transects]
+            ExtremeBool = Widths > 0
+            ExtremeBool.insert(0, False)
+            ExtremeBool = np.array(ExtremeBool).astype(int)
+            
+            # get a list of the start and end points of contiguous cliff lines
+            StartEndFlags = np.diff(ExtremeBool)
+            
+            # if last line finishes on a barrier flag the last element as the end of the barrier
+            if StartEndFlags[StartEndFlags.nonzero()[0][-1]] == 1:
+                StartEndFlags[-1] = -1
+                
+            StartList = np.argwhere(StartEndFlags == 1).flatten()
+            EndList = np.argwhere(StartEndFlags == -1).flatten()
+
+            if not len(StartList) == len(EndList):
+                print("Start and End lists not the same length")
+
+            for j in range(0,len(StartList)):
+                
+                # catch single node cliff lines and ignore
+                if (EndList[j]-StartList[j]<2):
+                    continue
+
+                # create empty lists for storing barrier front and back top and toe nodes
+                """
+                THIS WHOLE THING COULD PROBABLY BE SIMPLIFIED MASSIVELY BY USING __DICT__
+                """
+                ExtremeFrontList = []
+                ExtremeBackList = []
+                
+                # loop through transects and get front and back positions
+                
+                for Transect in CoastLine.Transects[StartList[j]:EndList[j]]:
+                    TempFront, TempBack,  = Transect.get_ExtremePosition(i)
+                    BarrierFrontTopList.append(TempFrontTop)
+                    BarrierFrontToeList.append(TempFrontToe)
+                    BarrierBackTopList.append(TempBackTop)
+                    BarrierBackToeList.append(TempBackToe)
+                    CrestList.append(TempCrest)
+                
+                # create new line object for front top
+                X = [TempTop.X for TempTop in BarrierFrontTopList]
+                Y = [TempTop.Y for TempTop in BarrierFrontTopList]
+                
+                TempLine = Line("Barrier_"+str(BarrierCount), X, Y)
+                self.BarrierFrontTopLines.append(TempLine)
+                
+                # create new line object for front toe
+                X = [TempToe.X for TempToe in BarrierFrontToeList]
+                Y = [TempToe.Y for TempToe in BarrierFrontToeList]
+                
+                TempLine = Line("Barrier_"+str(BarrierCount), X, Y)
+                self.BarrierFrontToeLines.append(TempLine)
+
+                # create new line object for back top
+                X = [TempTop.X for TempTop in BarrierBackTopList]
+                Y = [TempTop.Y for TempTop in BarrierBackTopList]
+                
+                TempLine = Line("Barrier_"+str(BarrierCount), X, Y)
+                self.BarrierBackTopLines.append(TempLine)
+                
+                # create new line object for back toe
+                X = [TempToe.X for TempToe in BarrierBackToeList]
+                Y = [TempToe.Y for TempToe in BarrierBackToeList]
+                
+                TempLine = Line("Barrier_"+str(BarrierCount), X, Y)
+                self.BarrierBackToeLines.append(TempLine)
+
+                # create new line object for crest
+                X = [TempCrest.X for TempCrest in CrestList]
+                Y = [TempCrest.Y for TempCrest in CrestList]
+                
+                TempLine = Line("Crest_"+str(BarrierCount), X, Y)
+                self.CrestLines.append(TempLine)
+
+                # update counter
+                Count += 1
 
     def PlotTransects(self, PlotFolder):
         
