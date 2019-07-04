@@ -1291,47 +1291,23 @@ class Coast:
                 # loop through transects and get front and back positions
                 
                 for Transect in CoastLine.Transects[StartList[j]:EndList[j]]:
-                    TempFront, TempBack,  = Transect.get_ExtremePosition(i)
-                    BarrierFrontTopList.append(TempFrontTop)
-                    BarrierFrontToeList.append(TempFrontToe)
-                    BarrierBackTopList.append(TempBackTop)
-                    BarrierBackToeList.append(TempBackToe)
-                    CrestList.append(TempCrest)
+                    TempFront, TempBack  = Transect.get_ExtremePosition(i)
+                    ExtremeFrontList,append(TempFront)
+                    ExtremeBackList.append(ExtremeBack)
+                    
+                # create new line object for front 
+                X = [TempFront.X for TempFront in ExtremeFrontList]
+                Y = [TempFront.Y for TempFront in ExtremeFrontList]
                 
-                # create new line object for front top
-                X = [TempTop.X for TempTop in BarrierFrontTopList]
-                Y = [TempTop.Y for TempTop in BarrierFrontTopList]
+                TempLine = Line("Ext_"+Level+str(Count), X, Y)
+                self.__dict__["ExtFrontLines_"+Level].append(TempLine)
                 
-                TempLine = Line("Barrier_"+str(BarrierCount), X, Y)
-                self.BarrierFrontTopLines.append(TempLine)
+                # create new line object for back
+                X = [TempBack.X for TempBack in ExtremeBackList]
+                Y = [TempBack.Y for TempBack in ExtremeBackList]
                 
-                # create new line object for front toe
-                X = [TempToe.X for TempToe in BarrierFrontToeList]
-                Y = [TempToe.Y for TempToe in BarrierFrontToeList]
-                
-                TempLine = Line("Barrier_"+str(BarrierCount), X, Y)
-                self.BarrierFrontToeLines.append(TempLine)
-
-                # create new line object for back top
-                X = [TempTop.X for TempTop in BarrierBackTopList]
-                Y = [TempTop.Y for TempTop in BarrierBackTopList]
-                
-                TempLine = Line("Barrier_"+str(BarrierCount), X, Y)
-                self.BarrierBackTopLines.append(TempLine)
-                
-                # create new line object for back toe
-                X = [TempToe.X for TempToe in BarrierBackToeList]
-                Y = [TempToe.Y for TempToe in BarrierBackToeList]
-                
-                TempLine = Line("Barrier_"+str(BarrierCount), X, Y)
-                self.BarrierBackToeLines.append(TempLine)
-
-                # create new line object for crest
-                X = [TempCrest.X for TempCrest in CrestList]
-                Y = [TempCrest.Y for TempCrest in CrestList]
-                
-                TempLine = Line("Crest_"+str(BarrierCount), X, Y)
-                self.CrestLines.append(TempLine)
+                TempLine = Line("Ext_"+Level+str(Count), X, Y)
+                self.__dict__["ExtBackLines_"+Level].append(TempLine)
 
                 # update counter
                 Count += 1
