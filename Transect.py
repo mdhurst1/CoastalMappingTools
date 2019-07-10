@@ -320,7 +320,7 @@ class Transect:
         # check that the whole topography has not been masked
         # this would indicate there is no barrier
         if ElevMasked.mask.all():
-            print("Not a barrier 1")
+            print("\n\tNot a barrier 1")
             self.Barrier = False
             return
 

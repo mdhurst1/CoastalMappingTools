@@ -569,9 +569,7 @@ class Coast:
 
             # Empty lists to populate with new shapes and records
             NewCoastLines = []
-            NewShapes = []
-            NewRecords = []
-
+            
             # create list of joins
             JoinsList = np.zeros(self.NoCoastLines,dtype=int)-9999
             JoinedByList = np.zeros(self.NoCoastLines,dtype=int)-9999
@@ -629,17 +627,11 @@ class Coast:
 
                 # write new line, and update shape and records lists
                 NewCoastLines.append(Line(self.CoastLines[StartLine].ID, X1, Y1))
-                NewShapes.append(np.column_stack([X1,Y1]).tolist())
-                NewRecords.append(self.Records[StartLine])
                     
             # update object properties with merged geometries
             self.CoastLines = NewCoastLines
-            self.Shapes = NewShapes
-            self.Records = NewRecords
-
+            
             # update number of shapes
-            if len(self.CoastLines) != len(self.Shapes):
-                sys.exit("Coast.MergeCoastlines(ERROR): Number of shapes and number of lines doesn't match!")
             self.NoCoastLines = len(self.CoastLines)
 
     def SmoothCoastLines(self, WindowSize=101, PolyOrder=4):
@@ -672,14 +664,11 @@ class Coast:
 
         print("Coast: Smoothing CoastLines")
 
-        for i, Line in enumerate(self.CoastLines):
+        for Line in self.CoastLines:
             
             # smooth the line
             Line.SmoothLine(WindowSize, PolyOrder)
 
-            # update the shape object list
-            X, Y = Line.get_XY()
-            self.Shapes[i] = np.column_stack([X,Y]).tolist()
 
     def ReconfigureCoastLines(self, Direction2OpenWater):
         """
@@ -880,8 +869,6 @@ class Coast:
                 # check transect lies within DEM extent
                 #if X1 < XMin or X2 < XMin:
                 
-            EstractTransectTopography
-
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 # pass DTM
@@ -1195,11 +1182,16 @@ class Coast:
             
             # get a list of the start and end points of contiguous cliff lines
             StartEndFlags = np.diff(CliffBool)
+
+            # if last line finishes on a cliff flag the last element as the end of the cliff
+            if StartEndFlags[StartEndFlags.nonzero()[0][-1]] == 1:
+                StartEndFlags[-1] = -1
+
             StartList = np.argwhere(StartEndFlags == 1).flatten()
             EndList = np.argwhere(StartEndFlags == -1).flatten()
             if not len(StartList) == len(EndList):
                 print("Start and End lists not the same length")
-
+                
             for i in range(0,len(StartList)):
                 
                 # catch single node cliff lines and ignore
