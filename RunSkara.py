@@ -30,24 +30,24 @@ p.mkdir(parents=True, exist_ok=True)
 
 # set up a file name to save the coast object
 Filename2SaveCoast = SiteFolder+ "Coast.pydata"
-#ThisCoast = pickle.load( open( Filename2SaveCoast, "rb" ) )
+ThisCoast = Coast(Filename2SaveCoast)
 
 # this checks to see whether coast object already exists
-try:
-    ThisCoast = pickle.load( open( Filename2SaveCoast, "rb" ) )
-    print("Loaded Coast Object " + Filename2SaveCoast)
+#try:
+#    ThisCoast = pickle.load( open( Filename2SaveCoast, "rb" ) )
+#    print("Loaded Coast Object " + Filename2SaveCoast)
 
-except:
-    print("Creating New Coast Object")
+#except:
+#    print("Creating New Coast Object")
     
     # SET UP THE COAST
-    ThisCoast = Coast(SiteFolder+LineShp)
-    
+    #ThisCoast = Coast(SiteFolder+LineShp)
+    #
     # save
     #with open(Filename2SaveCoast, 'wb') as PFile:
     #    pickle.dump(ThisCoast, PFile)
-        
-    ThisCoast.Save(Filename2SaveCoast)
+    #    
+    #ThisCoast.Save(Filename2SaveCoast)
     
     
     # SIMPLIFY COASTLINE
