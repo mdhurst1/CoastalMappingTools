@@ -26,7 +26,7 @@ class Coast:
 
     """
 
-    def __init__(self, CoastShp=""):
+    def __init__(self, CoastFile=""):
         """
         MDH, June 2019
         """
@@ -56,12 +56,20 @@ class Coast:
         self.TransectsLength2Land = 1000.
         self.ExtremeWaterLevels = []
 
-        if CoastShp:
-            self.ReadCoastShp(CoastShp)
-            print("Coast: Initialised coast from " + CoastShp)
+        if CoastFile:
+            try:
+                ThisCoast = pickle.load(CoastFile)
+                print("Coast: Initialised existing coast object from " + CoastFile)
+                return ThisCoast
+            
+            except:
+                self.ReadCoastShp(CoastShp)
+                print("Coast: Initialised new coast object from " + CoastShp)
+                return self
 
         else:
             print("Coast: Generating empty coast object")
+            return self
 
     def __str__(self):
         String = "Coast Object:\n\tFile: %s\n\tNumber of Coastlines:%d\n\t" % (str(self.CoastShp), self.NoCoastLines)
