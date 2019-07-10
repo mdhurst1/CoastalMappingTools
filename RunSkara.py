@@ -5,9 +5,12 @@ Created on Fri Jun 21 11:25:01 2019
 @author: mh322u
 """
 
+import sys
 import pickle
 import pathlib
 from Coast import *
+sys.setrecursionlimit(10000)
+#print(sys.getrecursionlimit)
 
 # define file names for analysis
 Folder = "C:\\Users\\mh322u\\OneDrive - University of Glasgow\\Projects\\DynamicCoast2\\WP1_TopographicAnalysis\\"
@@ -56,8 +59,13 @@ except:
         pickle.dump(ThisCoast, PFile)
         
 ## ANALYSE TRANSECTS
-#ThisCoast.AnalyseTransectMorphology()
-#ThisCoast.AnalyseBarrierWidths([4.,5.,6.])
+ThisCoast.AnalyseTransectMorphology()
+ThisCoast.AnalyseBarrierWidths([4.,5.,6.])
+
+# SAVE ENTIRE COAST OBJECT
+print("Saving Coast Object as " + Filename2SaveCoast)
+with open(Filename2SaveCoast, 'wb') as PFile:
+    pickle.dump(ThisCoast, PFile)
 
 # write transects
 
@@ -73,7 +81,7 @@ except:
 #ThisCoast.WriteFrontPointsShp(SiteFolder+"FrontPoints.shp")
 #ThisCoast.WriteExtremeLevelsShp(SiteFolder+"Extreme.shp")
 
-ThisCoast.PlotTransects(PlotFolder)
+#ThisCoast.PlotTransects(PlotFolder)
 #ThisCoast.WriteBarrierShp(SiteFolder+"Barriers.shp")
 
 # barrier width at 5 m water

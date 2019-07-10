@@ -1075,7 +1075,24 @@ class Coast:
                 CurrentTransect += 1
 
         print("")
+    
+    def FindRockyCoast(self, TidalElevation):
+
+        """
         
+        Calculates roughness up to a fixed tidal elevation in order 
+        to determind whether a shoreline is rocky or sedimentary
+
+        MDH, July 2019
+
+        """
+
+        # loop through transects and get contiguous barrier lines
+        for CoastLine in self.CoastLines:
+            for Transect in CoastLine.Transects:
+                Transect.AnalyseRoughness(TidalElevation)
+
+
     def GetBarrierWidth(self):
 
         """

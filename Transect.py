@@ -272,6 +272,31 @@ class Transect:
         else:
             self.Cliff = False
 
+    def AnalyseRoughness(self, Elev):
+
+        """
+        Isolates intertidal elevations and looks at their roughness to determine
+        if rocky of sandy (smooth)
+
+        MDH, July 2019
+
+        """
+
+        # mask by elevation
+        Mask = self.Elevation.mask.copy()
+        Mask[self.Elevation > Elev] = True
+        Mask[self.Elevation < 0] = True
+
+        # get the first contiguous section of topography
+
+
+        # apply mask
+        ElevMasked = ma.masked_where(Mask, self.Elevation)
+        DistanceMasked = ma.masked_where(Mask, self.Distance)
+
+        # calculate roughness
+
+
     def FindBarrier(self):
         
         """

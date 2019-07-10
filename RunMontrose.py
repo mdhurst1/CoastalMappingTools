@@ -63,18 +63,12 @@ except:
 #        pickle.dump(ThisCoast, PFile)
     
 # plot the results
-ThisCoast.PlotTransects(PlotFolder)
+#ThisCoast.PlotTransects(PlotFolder)
 
 # write some stuff
-#ThisCoast.WriteBarrierShp(SiteFolder+"Barriers.shp")
-#ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
-#ThisCoast.WriteCrestLinesShp(SiteFolder+"CrestLines.shp")
-#ThisCoast.WriteCrestPointsShp(SiteFolder+"CrestPoints.shp")
-#ThisCoast.WriteFrontPointsShp(SiteFolder+"FrontPoints.shp")
-#ThisCoast.WriteExtremeLevelsShp(SiteFolder+"Extreme.shp")
-
-#ThisCoast.PlotTransects(PlotFolder)
-#ThisCoast.WriteBarrierShp(SiteFolder+"Barriers.shp")
-
-# barrier width at 5 m water
-#ThisCoast.ExtractBarrierWidth(5.)
+ThisCoast.WriteBarrierShp(SiteFolder+"Barriers.shp")
+ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
+ThisCoast.WriteCrestLinesShp(SiteFolder+"CrestLines.shp")
+ThisCoast.WriteCrestPointsShp(SiteFolder+"CrestPoints.shp")
+ThisCoast.WriteFrontPointsShp(SiteFolder+"FrontPoints.shp")
+ThisCoast.WriteExtremeLevelsShp(SiteFolder+"Extreme.shp")
