@@ -8,7 +8,7 @@ June 2019
 """
 
 # import modules
-import sys, time
+import sys, time, pickle
 import numpy as np
 import numpy.ma as ma
 import shapefile
@@ -34,9 +34,6 @@ class Coast:
         print("Coast: Initialising Coast object")
 
         self.CoastShp = CoastShp
-        self.Shapes = []
-        self.Fields = []
-        self.Records = []
         self.NoCoastLines = 0
         self.CoastLines = []
         self.CliffTopLines = []
@@ -61,6 +58,7 @@ class Coast:
 
         if CoastShp:
             self.ReadCoastShp(CoastShp)
+            print("Coast: Initialised coast from " + CoastShp)
 
         else:
             print("Coast: Generating empty coast object")
@@ -69,24 +67,30 @@ class Coast:
         String = "Coast Object:\n\tFile: %s\n\tNumber of Coastlines:%d\n\t" % (str(self.CoastShp), self.NoCoastLines)
         return String
 
+    # a function to save to a pickle file
+    def Save(self, PickleFile):
+        with open(PickleFile, 'wb') as PFile:
+            pickle.dump(self, PFile)
+
     # read coast from a shapefile
     def ReadCoastShp(self,CoastShp):
 
         # Open coast polyline file for reading
         SF = shapefile.Reader(CoastShp)
-        self.Shapes = SF.shapes()
-        self.Fields = SF.fields
-        self.Records = SF.records()
+        Shapes = SF.shapes()
+        
+        # I HAVE DELETED THE RECORDING OF SHAPES AND RECORDS INTO THE OBJECT DUE TO COMPATIBILITY ISSUES
+        # WITH PICKLING THAT I CAN UNDERSTAND!!!!
 
         # Get number of coast segments to work on
-        self.NoCoastLines = len(self.Shapes)
+        self.NoCoastLines = len(Shapes)
         print("Coast.ReadCoastShp: Read Coastline, no of coast segments is", self.NoCoastLines)
     
         # Generate coast nodes for each segment
         for i in range(0,self.NoCoastLines):
             
             # get X and Y coordinates of segment
-            X, Y = np.array(self.Shapes[i].points).T
+            X, Y = np.array(Shapes[i].points).T
             
             # Set up a line object for each
             ThisLine = Line(str(i), X, Y)
@@ -867,8 +871,19 @@ class Coast:
         NoTransects = np.sum([Line.NoTransects for Line in self.CoastLines])
         CurrentTransect = 0
         for Line in self.CoastLines:
-            for Transect in Line.Transects:
+            for i, Transect in enumerate(Line.Transects[:]):
                 
+                #Get line points
+                X1, Y1 = Transect.StartNode.get_XY()
+                X2, Y2 = Transect.EndNode.get_XY()
+
+                # check transect lies within DEM extent
+                #if X1 < XMin or X2 < XMin:
+                
+            EstractTransectTopography
+
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
                 # pass DTM
                 # this needs to be changed to pass to transect object
                 # fix this later
@@ -879,6 +894,8 @@ class Coast:
                 #Get line points
                 X1, Y1 = Transect.StartNode.get_XY()
                 X2, Y2 = Transect.EndNode.get_XY()
+
+                
 
                 #find indices for bounding box
                 #need to be careful with reverse indexing
