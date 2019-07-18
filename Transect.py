@@ -291,7 +291,7 @@ class Transect:
         # mask by elevation
         Mask = self.Elevation.mask.copy()
         Mask[self.Elevation > Elev] = True
-        Mask[self.Elevation < 0] = True
+        Mask[self.Elevation < -1] = True
         
         # apply mask
         ElevMasked = ma.masked_where(Mask, self.Elevation)
@@ -300,18 +300,22 @@ class Transect:
         Start, End = ma.notmasked_edges(self.Distance)
         self.DistanceSpacing = self.Distance[Start+1]-self.Distance[Start] # temporary fix
         Slope = np.diff(ElevMasked)/self.DistanceSpacing
-
-        # set up the moving window (kernel)
-        MovingWindow = int(np.ceil(5./self.DistanceSpacing))
-        if np.ceil(5./self.DistanceSpacing) % 2 != 0:
-            MovingWindow = int(np.floor(5./self.DistanceSpacing))
+        Slope = Slope.compressed()
 
         # calculate roughness and take mean value
-        Roughness = np.convolve(np.abs(Slope),np.ones((MovingWindow,))/MovingWindow, mode='valid')
-        self.SlopeRoughness = np.std(Roughness)
-        self.ElevationRoughness = np.mean(self.ElevStd)
-        #if (self.Roughness > XXX) or (self.ElevStd > YYY):
-        #    self.Rocky = True
+        self.SlopeRoughness = np.max(Slope)-np.min(Slope)
+        self.SlopeRoughness = np.percentile(Slope, 0.95) - np.percentile(Slope, 0.05)
+
+        if self.SlopeRoughness > 10.:
+            print("ARGH!!!")
+
+        self.ElevationRoughness = ma.mean(self.ElevStd)
+        #self.ElevationRoughness = ma.mean(self.ElevationMax-self.ElevationMin)
+        #print(self.SlopeRoughness, end=", ")
+
+        #print(self.SlopeRoughness, self.ElevationRoughness)
+        if (self.SlopeRoughness > 0.05) and (self.ElevationRoughness > 0.2):
+            self.Rocky = True
 
     def FindBarrier(self):
         

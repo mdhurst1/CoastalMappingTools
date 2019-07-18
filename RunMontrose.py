@@ -45,7 +45,7 @@ except:
     ThisCoast.WriteCoastShp(SiteFolder+"Coast.shp")
     
     # GENERATE TRANSECTS
-    ThisCoast.GenerateNormals(10.,100.,300.)
+    ThisCoast.GenerateNormals(10.,200.,400.)
     ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
     ThisCoast.ExtractTransectTopography(SiteFolder+DTM)
     
@@ -56,6 +56,12 @@ except:
         
 ## ANALYSE TRANSECTS
 ThisCoast.FindRockyCoast()
+
+# SAVE ENTIRE COAST OBJECT
+print("Saving Coast Object as " + Filename2SaveCoast)
+with open(Filename2SaveCoast, 'wb') as PFile:
+    pickle.dump(ThisCoast, PFile)
+    
 #ThisCoast.AnalyseTransectMorphology()
 #ThisCoast.AnalyseBarrierWidths([4.,5.,6.])
 

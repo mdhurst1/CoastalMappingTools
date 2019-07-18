@@ -11,6 +11,8 @@ June 2019
 import sys, time, pickle
 import numpy as np
 import numpy.ma as ma
+from sklearn.cluster import KMeans
+
 import shapefile
 import itertools
 import rasterio
@@ -351,7 +353,7 @@ class Coast:
         # Create Fields
         Fields = [('DeletionFlag','C',1,0), ['LineID', 'C', 3, 0], ['TransectID', 'C', 3, 0], 
         ['Cliff_H','N', 5, 2],['Cliff_S','N', 5, 2],
-        ['RoughS1','N', 5, 3], ['RoughZ2','N', 5, 3],
+        ['Rocky','N', 2, 1], 
         ['Bar_FH','N', 5, 2], ['Bar_FS','N', 5, 2],
         ['Bar_BH','N', 5, 2], ['Bar_BS','N', 5, 2],
         ['Bar_ToeW','N', 6, 2], ['Bar_TopW','N', 6, 2],
@@ -372,7 +374,7 @@ class Coast:
 
                 # Create the record this could become a function in transect object...
                 Record = [str(Line.ID), str(Transect.ID), Transect.CliffHeight, Transect.CliffSlope, 
-                            Transect.SlopeRoughness, Transect.ElevationRoughness,
+                            Transect.Rocky,
                             Transect.FrontHeight, Transect.FrontSlope, 
                             Transect.BackHeight, Transect.BackSlope,
                             Transect.ToeWidth, Transect.TopWidth,
@@ -440,7 +442,7 @@ class Coast:
         # Create Fields
         Fields = [('DeletionFlag','C',1,0), ['LineID', 'C', 3, 0], ['TransectID', 'C', 3, 0], 
         ['Cliff_H','N', 5, 2],['Cliff_S','N', 5, 2],
-        ['RoughS1','N', 5, 3], ['RoughZ2','N', 5, 3],
+        ['Rocky','N', 2, 1], 
         ['Bar_FH','N', 5, 2], ['Bar_FS','N', 5, 2],
         ['Bar_BH','N', 5, 2], ['Bar_BS','N', 5, 2],
         ['Bar_ToeW','N', 6, 2], ['Bar_TopW','N', 6, 2],
@@ -462,7 +464,7 @@ class Coast:
                 
                 # Create the record
                 Record = [str(Line.ID), str(Transect.ID), Transect.CliffHeight, Transect.CliffSlope, 
-                            Transect.SlopeRoughness, Transect.ElevationRoughness,
+                            Transect.Rocky,
                             Transect.FrontHeight, Transect.FrontSlope, 
                             Transect.BackHeight, Transect.BackSlope,
                             Transect.ToeWidth, Transect.TopWidth,
@@ -507,7 +509,7 @@ class Coast:
         # Create Fields
         Fields = [('DeletionFlag','C',1,0), ['LineID', 'C', 3, 0], ['TransectID', 'C', 3, 0], 
         ['Cliff_H','N', 5, 2],['Cliff_S','N', 5, 2],
-        ['RoughS1','N', 5, 3], ['RoughZ2','N', 5, 3],
+        ['Rocky','N', 2, 1], 
         ['Bar_FH','N', 5, 2], ['Bar_FS','N', 5, 2],
         ['Bar_BH','N', 5, 2], ['Bar_BS','N', 5, 2],
         ['Bar_ToeW','N', 6, 2], ['Bar_TopW','N', 6, 2],
@@ -529,7 +531,7 @@ class Coast:
                 
                 # Create the record
                 Record = [str(Line.ID), str(Transect.ID), Transect.CliffHeight, Transect.CliffSlope, 
-                            Transect.SlopeRoughness, Transect.ElevationRoughness,
+                            Transect.Rocky,
                             Transect.FrontHeight, Transect.FrontSlope, 
                             Transect.BackHeight, Transect.BackSlope,
                             Transect.ToeWidth, Transect.TopWidth,
@@ -1089,12 +1091,15 @@ class Coast:
 
         print("")
     
-    def FindRockyCoast(self, TidalElevation=1.):
+    def FindRockyCoast(self, TidalElevation=2.):
 
         """
         
-        Calculates roughness up to a fixed tidal elevation in order 
-        to determind whether a shoreline is rocky or sedimentary
+        Calculates roughness up to a fixed tidal elevation as the standard deviation of 
+        slope and the average standard deviation of local elevations
+
+        uses a kmeans clustering algorithm to split in two based on these in order to split
+        rocky from sandy
 
         MDH, July 2019
 
@@ -1104,7 +1109,32 @@ class Coast:
         for CoastLine in self.CoastLines:
             for Transect in CoastLine.Transects:
                 Transect.AnalyseRoughness(TidalElevation)
-                return
+        
+        NoTransects = np.sum([Line.NoTransects for Line in self.CoastLines])-1
+
+        # Get roughness values as arrays
+        SlopeRoughness = np.array([Transect.SlopeRoughness for Line in self.CoastLines for Transect in Line.Transects])
+        ValueLocs = (np.isnan(SlopeRoughness) == False)
+        Locations = np.argwhere(ValueLocs)
+        SlopeRoughness = SlopeRoughness[ValueLocs]
+        ElevationRoughness = np.array([Transect.ElevationRoughness for Line in self.CoastLines for Transect in Line.Transects])
+        ElevationRoughness = ElevationRoughness[ValueLocs]
+        Data = np.column_stack((SlopeRoughness,ElevationRoughness))
+        
+        # perform k-means clustering assuming two clusters
+        # set up a KMeans object
+        ThisKMeans = KMeans(n_clusters=4)
+        ThisKMeans.fit(Data)
+        GroupList = ThisKMeans.fit_predict(Data)
+        
+        # loop through transects and get contiguous barrier lines
+        Counter = 0
+        for CoastLine in self.CoastLines:
+            for i, Transect in enumerate(CoastLine.Transects):
+                #print(str(Transect.ID) + " " + str(Counter)+"/"+str(NoTransects))
+                Transect.Rocky = GroupList[Counter]
+                Counter += 1
+                #print(len(GroupList))
 
 
     def GetBarrierWidth(self):
