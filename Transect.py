@@ -50,6 +50,7 @@ class Transect:
         self.Elevation = None
         self.ElevationMin = None
         self.ElevationMax = None
+        self.ElevStd = None
 
         # cliff metrics
         self.Cliff = False

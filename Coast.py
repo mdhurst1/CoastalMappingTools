@@ -965,6 +965,7 @@ class Coast:
                 ZIDW = np.zeros(len(XLine))
                 ZMin = np.zeros(len(XLine))
                 ZMax = np.zeros(len(XLine))
+                ZStd = np.zeros(len(XLine))
                                 
                 #Loop along line
                 for i in range(0,NoPoints):
@@ -982,6 +983,7 @@ class Coast:
                         ZIDW[i] = NDV
                         ZMin[i] = NDV
                         ZMax[i] = NDV
+                        ZStd[i] = NDV
                         continue
                     
                     # Do IDW
@@ -997,6 +999,7 @@ class Coast:
                     # Other Z Values
                     ZMin[i] = np.min(ZLocal)
                     ZMax[i] = np.max(ZLocal)
+                    ZStd = np.std(ZLocal)
                     
                 # Set up the mask from NDVs
                 Mask = ZIDW == -9999
@@ -1004,12 +1007,14 @@ class Coast:
                 ZIDW = ma.masked_where(Mask,ZIDW)
                 ZMin = ma.masked_where(Mask,ZMin)
                 ZMax = ma.masked_where(Mask,ZMax)
+                ZStd = ma.masked_where(Mask,ZStd)
                 
                 Transect.Distance = DistAlongTransect
                 Transect.DistanceSpacing = DistAlongTransect[1]-DistAlongTransect[0]
                 Transect.Elevation = ZIDW
                 Transect.ElevationMin = ZMin
                 Transect.ElevationMax = ZMax
+                Transect.ElevStd = ZStd
 
                 # update transect no
                 CurrentTransect += 1
