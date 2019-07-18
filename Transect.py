@@ -58,9 +58,11 @@ class Transect:
         self.CliffToeInd = None
         self.CliffHeight = None
         self.CliffSlope = None
+        self.Rocky = False
 
         # intertidal
-        self.Roughness = None
+        self.SlopeRoughness = None
+        self.ElevationRoughness = None
 
         # barrier metrics
         self.Barrier = False
@@ -294,13 +296,22 @@ class Transect:
         # apply mask
         ElevMasked = ma.masked_where(Mask, self.Elevation)
         
-        # calculate average roughness
-        MovingWindow = round(5./self.DistanceSpacing)
+        # calculate slope along the transect
+        Start, End = ma.notmasked_edges(self.Distance)
+        self.DistanceSpacing = self.Distance[Start+1]-self.Distance[Start] # temporary fix
         Slope = np.diff(ElevMasked)/self.DistanceSpacing
-        Roughness = np.convolve(np.abs(Slope),np.ones((MovingWindow))/MovingWindow)
-        
-        self.Roughness = np.mean(Roughness)
 
+        # set up the moving window (kernel)
+        MovingWindow = int(np.ceil(5./self.DistanceSpacing))
+        if np.ceil(5./self.DistanceSpacing) % 2 != 0:
+            MovingWindow = int(np.floor(5./self.DistanceSpacing))
+
+        # calculate roughness and take mean value
+        Roughness = np.convolve(np.abs(Slope),np.ones((MovingWindow,))/MovingWindow, mode='valid')
+        self.SlopeRoughness = np.mean(Roughness)
+        self.ElevationRoughness = np.mean(self.ElevStd)
+        #if (self.Roughness > XXX) or (self.ElevStd > YYY):
+        #    self.Rocky = True
 
     def FindBarrier(self):
         
@@ -355,7 +366,10 @@ class Transect:
             # Get Angle to detrend towards the coast
             # catch divide by zero
             if DistanceMasked[MaxInd] == DistanceMasked[self.FrontToeInd]:
+                print("")
                 print(self.ID)
+                plt.plot(self.Distance,self.Elevation)
+                plt.show()
                 print("Divide by zero getting top!")
                 sys.exit()
 

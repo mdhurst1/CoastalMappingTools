@@ -351,7 +351,7 @@ class Coast:
         # Create Fields
         Fields = [('DeletionFlag','C',1,0), ['LineID', 'C', 3, 0], ['TransectID', 'C', 3, 0], 
         ['Cliff_H','N', 5, 2],['Cliff_S','N', 5, 2],
-        ['ShoreRough','N', 5, 3],
+        ['RoughS1','N', 5, 3], ['RoughZ2','N', 5, 3],
         ['Bar_FH','N', 5, 2], ['Bar_FS','N', 5, 2],
         ['Bar_BH','N', 5, 2], ['Bar_BS','N', 5, 2],
         ['Bar_ToeW','N', 6, 2], ['Bar_TopW','N', 6, 2],
@@ -370,9 +370,9 @@ class Coast:
                 X, Y = Transect.get_XY()
                 WriteTransect = [np.column_stack([X,Y]).tolist()]
 
-                # Create the record
+                # Create the record this could become a function in transect object...
                 Record = [str(Line.ID), str(Transect.ID), Transect.CliffHeight, Transect.CliffSlope, 
-                            Transect.Roughness,
+                            Transect.SlopeRoughness, Transect.ElevationRoughness,
                             Transect.FrontHeight, Transect.FrontSlope, 
                             Transect.BackHeight, Transect.BackSlope,
                             Transect.ToeWidth, Transect.TopWidth,
@@ -387,7 +387,7 @@ class Coast:
                     WL.record(*Record) 
                 except:
                     print(Record)
-                    print(Transect.ExtremeWidths)
+                    #print(Transect.ExtremeWidths)
                     sys.exit()
                 
         
@@ -440,7 +440,7 @@ class Coast:
         # Create Fields
         Fields = [('DeletionFlag','C',1,0), ['LineID', 'C', 3, 0], ['TransectID', 'C', 3, 0], 
         ['Cliff_H','N', 5, 2],['Cliff_S','N', 5, 2],
-        ['ShoreRough','N', 5, 3],
+        ['RoughS1','N', 5, 3], ['RoughZ2','N', 5, 3],
         ['Bar_FH','N', 5, 2], ['Bar_FS','N', 5, 2],
         ['Bar_BH','N', 5, 2], ['Bar_BS','N', 5, 2],
         ['Bar_ToeW','N', 6, 2], ['Bar_TopW','N', 6, 2],
@@ -462,7 +462,7 @@ class Coast:
                 
                 # Create the record
                 Record = [str(Line.ID), str(Transect.ID), Transect.CliffHeight, Transect.CliffSlope, 
-                            Transect.Roughness,
+                            Transect.SlopeRoughness, Transect.ElevationRoughness,
                             Transect.FrontHeight, Transect.FrontSlope, 
                             Transect.BackHeight, Transect.BackSlope,
                             Transect.ToeWidth, Transect.TopWidth,
@@ -507,7 +507,7 @@ class Coast:
         # Create Fields
         Fields = [('DeletionFlag','C',1,0), ['LineID', 'C', 3, 0], ['TransectID', 'C', 3, 0], 
         ['Cliff_H','N', 5, 2],['Cliff_S','N', 5, 2],
-        ['ShoreRough','N', 5, 3],
+        ['RoughS1','N', 5, 3], ['RoughZ2','N', 5, 3],
         ['Bar_FH','N', 5, 2], ['Bar_FS','N', 5, 2],
         ['Bar_BH','N', 5, 2], ['Bar_BS','N', 5, 2],
         ['Bar_ToeW','N', 6, 2], ['Bar_TopW','N', 6, 2],
@@ -529,7 +529,7 @@ class Coast:
                 
                 # Create the record
                 Record = [str(Line.ID), str(Transect.ID), Transect.CliffHeight, Transect.CliffSlope, 
-                            Transect.Roughness,
+                            Transect.SlopeRoughness, Transect.ElevationRoughness,
                             Transect.FrontHeight, Transect.FrontSlope, 
                             Transect.BackHeight, Transect.BackSlope,
                             Transect.ToeWidth, Transect.TopWidth,
@@ -885,8 +885,6 @@ class Coast:
                 X1, Y1 = Transect.StartNode.get_XY()
                 X2, Y2 = Transect.EndNode.get_XY()
 
-                
-
                 #find indices for bounding box
                 #need to be careful with reverse indexing
                 iStart = np.argmin(np.abs(YVector-np.max([Y1,Y2])))-1
@@ -946,7 +944,7 @@ class Coast:
                 Sortedi = np.argsort(DistAlong)
                 X = np.asarray(X)[Sortedi]
                 Y = np.asarray(Y)[Sortedi]
-                DistAlong =     np.asarray(DistAlong)[Sortedi]
+                DistAlong = np.asarray(DistAlong)[Sortedi]
                 DistTo = np.asarray(DistTo)[Sortedi]
                 Z = np.asarray(Z)[Sortedi]
                 
@@ -956,8 +954,10 @@ class Coast:
                     #DF.to_pickle(SwathProfsFolder+"Swath_"+str(Transect.ID)+".pkl")
                 
                 #Create a line for interpolating to
+                # determination of distance spacing should be externalised
                 LineLength = np.sqrt((X2-X1)**2 + (Y2-Y1)**2)
                 NoPoints = (int)(LineLength/(DTM_Resolution*2.))
+                Transect.DistanceSpacing = DTM_Resolution*2.
                 XLine = np.linspace(X1,X2,NoPoints)
                 YLine = np.linspace(Y1,Y2,NoPoints)
                 DistAlongTransect = np.zeros(len(XLine))
@@ -1089,7 +1089,7 @@ class Coast:
 
         print("")
     
-    def FindRockyCoast(self, TidalElevation):
+    def FindRockyCoast(self, TidalElevation=1.):
 
         """
         

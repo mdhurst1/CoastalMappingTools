@@ -73,12 +73,13 @@ except:
 
     
 # plot the results
-#ThisCoast.PlotTransects(PlotFolder)
+ThisCoast.PlotTransects(PlotFolder)
 
 # write some stuff
+ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
+
 #ThisCoast.WriteCliffShp(SiteFolder+"Cliffs.shp")
 #ThisCoast.WriteBarrierShp(SiteFolder+"Barriers.shp")
-#ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
 #ThisCoast.WriteCrestLinesShp(SiteFolder+"CrestLines.shp")
 #ThisCoast.WriteCrestPointsShp(SiteFolder+"CrestPoints.shp")
 #ThisCoast.WriteFrontPointsShp(SiteFolder+"FrontPoints.shp")
