@@ -946,7 +946,7 @@ class Coast:
                 Sortedi = np.argsort(DistAlong)
                 X = np.asarray(X)[Sortedi]
                 Y = np.asarray(Y)[Sortedi]
-                DistAlong = np.asarray(DistAlong)[Sortedi]
+                DistAlong =     np.asarray(DistAlong)[Sortedi]
                 DistTo = np.asarray(DistTo)[Sortedi]
                 Z = np.asarray(Z)[Sortedi]
                 
@@ -983,6 +983,7 @@ class Coast:
                         ZMin[i] = NDV
                         ZMax[i] = NDV
                         ZStd[i] = NDV
+                        
                         continue
                     
                     # Do IDW
@@ -998,7 +999,7 @@ class Coast:
                     # Other Z Values
                     ZMin[i] = np.min(ZLocal)
                     ZMax[i] = np.max(ZLocal)
-                    ZStd = np.std(ZLocal)
+                    ZStd[i] = np.std(ZLocal)
                     
                 # Set up the mask from NDVs
                 Mask = ZIDW == -9999
