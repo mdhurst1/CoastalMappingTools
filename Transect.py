@@ -58,6 +58,9 @@ class Transect:
         self.CliffHeight = None
         self.CliffSlope = None
 
+        # intertidal
+        self.Roughness = None
+
         # barrier metrics
         self.Barrier = False
         self.FrontHeight = None
@@ -276,7 +279,7 @@ class Transect:
 
         """
         Isolates intertidal elevations and looks at their roughness to determine
-        if rocky of sandy (smooth)
+        if rocky (rough) or sandy (smooth)
 
         MDH, July 2019
 
@@ -286,15 +289,16 @@ class Transect:
         Mask = self.Elevation.mask.copy()
         Mask[self.Elevation > Elev] = True
         Mask[self.Elevation < 0] = True
-
-        # get the first contiguous section of topography
-
-
+        
         # apply mask
         ElevMasked = ma.masked_where(Mask, self.Elevation)
-        DistanceMasked = ma.masked_where(Mask, self.Distance)
-
-        # calculate roughness
+        
+        # calculate average roughness
+        MovingWindow = round(5./self.DistanceSpacing)
+        Slope = np.diff(ElevMasked)/self.DistanceSpacing
+        Roughness = np.convolve(np.abs(Slope),np.ones((MovingWindow))/MovingWindow)
+        
+        self.Roughness = np.mean(Roughness)
 
 
     def FindBarrier(self):

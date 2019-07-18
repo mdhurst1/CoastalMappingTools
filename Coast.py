@@ -351,11 +351,11 @@ class Coast:
         # Create Fields
         Fields = [('DeletionFlag','C',1,0), ['LineID', 'C', 3, 0], ['TransectID', 'C', 3, 0], 
         ['Cliff_H','N', 5, 2],['Cliff_S','N', 5, 2],
-        ['Crest_Elev','N', 5, 2], 
+        ['ShoreRough','N', 5, 3],
         ['Bar_FH','N', 5, 2], ['Bar_FS','N', 5, 2],
         ['Bar_BH','N', 5, 2], ['Bar_BS','N', 5, 2],
         ['Bar_ToeW','N', 6, 2], ['Bar_TopW','N', 6, 2],
-        ['Bar_Volume','N', 7, 2],
+        ['Bar_Volume','N', 7, 2], ['Crest_Elev','N', 5, 2], 
         ['Ext_W_low','N', 6, 2], ['Ext_V_low','N', 7, 2],
         ['Ext_W_med','N', 6, 2], ['Ext_V_med','N', 7, 2],
         ['Ext_W_high','N', 6, 2], ['Ext_V_high','N', 7, 2]]
@@ -372,11 +372,11 @@ class Coast:
 
                 # Create the record
                 Record = [str(Line.ID), str(Transect.ID), Transect.CliffHeight, Transect.CliffSlope, 
-                            Transect.CrestElevation,
+                            Transect.Roughness,
                             Transect.FrontHeight, Transect.FrontSlope, 
                             Transect.BackHeight, Transect.BackSlope,
                             Transect.ToeWidth, Transect.TopWidth,
-                            Transect.BarrierVolume,
+                            Transect.BarrierVolume, Transect.CrestElevation,
                             Transect.ExtremeWidths[0], Transect.ExtremeVolumes[0],
                             Transect.ExtremeWidths[1], Transect.ExtremeVolumes[1],
                             Transect.ExtremeWidths[2], Transect.ExtremeVolumes[2]]
@@ -440,6 +440,7 @@ class Coast:
         # Create Fields
         Fields = [('DeletionFlag','C',1,0), ['LineID', 'C', 3, 0], ['TransectID', 'C', 3, 0], 
         ['Cliff_H','N', 5, 2],['Cliff_S','N', 5, 2],
+        ['ShoreRough','N', 5, 3],
         ['Bar_FH','N', 5, 2], ['Bar_FS','N', 5, 2],
         ['Bar_BH','N', 5, 2], ['Bar_BS','N', 5, 2],
         ['Bar_ToeW','N', 6, 2], ['Bar_TopW','N', 6, 2],
@@ -461,6 +462,7 @@ class Coast:
                 
                 # Create the record
                 Record = [str(Line.ID), str(Transect.ID), Transect.CliffHeight, Transect.CliffSlope, 
+                            Transect.Roughness,
                             Transect.FrontHeight, Transect.FrontSlope, 
                             Transect.BackHeight, Transect.BackSlope,
                             Transect.ToeWidth, Transect.TopWidth,
@@ -505,6 +507,7 @@ class Coast:
         # Create Fields
         Fields = [('DeletionFlag','C',1,0), ['LineID', 'C', 3, 0], ['TransectID', 'C', 3, 0], 
         ['Cliff_H','N', 5, 2],['Cliff_S','N', 5, 2],
+        ['ShoreRough','N', 5, 3],
         ['Bar_FH','N', 5, 2], ['Bar_FS','N', 5, 2],
         ['Bar_BH','N', 5, 2], ['Bar_BS','N', 5, 2],
         ['Bar_ToeW','N', 6, 2], ['Bar_TopW','N', 6, 2],
@@ -526,6 +529,7 @@ class Coast:
                 
                 # Create the record
                 Record = [str(Line.ID), str(Transect.ID), Transect.CliffHeight, Transect.CliffSlope, 
+                            Transect.Roughness,
                             Transect.FrontHeight, Transect.FrontSlope, 
                             Transect.BackHeight, Transect.BackSlope,
                             Transect.ToeWidth, Transect.TopWidth,
