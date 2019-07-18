@@ -748,7 +748,6 @@ class Coast:
             # here comes some bullshit to convert list to numpy array 
             # in order to sort and then turn back into a list :(
             self.CoastLines = list(np.array(self.CoastLines)[DescendingIndices])
-            self.Records = list(np.array(self.Records)[DescendingIndices])
             for i, Line in enumerate(self.CoastLines):
                 Line.ID = str(i)
 
