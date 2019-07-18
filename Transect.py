@@ -308,7 +308,7 @@ class Transect:
 
         # calculate roughness and take mean value
         Roughness = np.convolve(np.abs(Slope),np.ones((MovingWindow,))/MovingWindow, mode='valid')
-        self.SlopeRoughness = np.mean(Roughness)
+        self.SlopeRoughness = np.std(Roughness)
         self.ElevationRoughness = np.mean(self.ElevStd)
         #if (self.Roughness > XXX) or (self.ElevStd > YYY):
         #    self.Rocky = True

@@ -1104,6 +1104,7 @@ class Coast:
         for CoastLine in self.CoastLines:
             for Transect in CoastLine.Transects:
                 Transect.AnalyseRoughness(TidalElevation)
+                return
 
 
     def GetBarrierWidth(self):
