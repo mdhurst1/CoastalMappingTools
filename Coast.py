@@ -565,11 +565,17 @@ class Coast:
 
         """
         
+        print("Coast.WriteTransectsCSV: Writing all topographic transects to csv files")
+        
         for Line in self.CoastLines:
             for Transect in Line.Transects:
+                
+                # print progress to screen
+                print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
+
+                # write transect    
                 Transect.Write(Folder)
                 
-
     def MergeCoastLines(self):
 
         """

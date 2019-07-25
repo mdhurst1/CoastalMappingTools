@@ -14,11 +14,14 @@ Folder = "C:\\Users\\mh322u\\OneDrive - University of Glasgow\\Projects\\Dynamic
 Site = "Montrose"
 SiteFolder = Folder+Site+"\\"
 PlotFolder = SiteFolder+"Plots\\" 
+TransectsFolder = SiteFolder+"Transects\\"
 LineShp = "Montrose_CoastTrend.shp"
 DTM = "DTM_1m.tif"
 
-# make folder for plots if it doesnt already exist
+# make folder for plots and transects if it doesnt already exist
 p = pathlib.Path(PlotFolder)
+p.mkdir(parents=True, exist_ok=True)
+p = pathlib.Path(TransectsFolder)
 p.mkdir(parents=True, exist_ok=True)
 
 # set up a file name to save the coast object
@@ -53,6 +56,9 @@ except:
     print("Saving Coast Object as " + Filename2SaveCoast)
     with open(Filename2SaveCoast, 'wb') as PFile:
         pickle.dump(ThisCoast, PFile)
+        
+    # WRITE TRANSECTS TO CSV
+    
         
 ## ANALYSE TRANSECTS
 ThisCoast.FindRockyCoast()
