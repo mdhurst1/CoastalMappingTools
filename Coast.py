@@ -8,7 +8,7 @@ June 2019
 """
 
 # import modules
-import sys, time, pickle
+import os, sys, time, pickle
 import numpy as np
 import numpy.ma as ma
 from sklearn.cluster import KMeans
@@ -551,6 +551,24 @@ class Coast:
         f = open(FrontPointsShp.rstrip("shp")+"prj","w")
         f.write(self.Projection)
         f.close()
+
+    def WriteTransectsCSV(self,Folder=os.get_cwd()):
+
+        """
+
+        Writes all transects to csv files in the folder specified or
+        by default in the current working directory
+
+        args: Folder in which to put files
+
+        MDH, July 2019
+
+        """
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                Transect.Write(Folder)
+                
 
     def MergeCoastLines(self):
 

@@ -9,7 +9,7 @@ June 2019
 
 import numpy as np
 import numpy.ma as ma
-import sys
+import os, sys
 from itertools import izip
 
 #import figure plotting stuff here not globally!
@@ -1010,11 +1010,11 @@ class Transect:
             return
 
 
-    def WriteTransect(self, Filename= "Transect_"+str(ID)+".csv"):
+    def Write(self, Folder=os.get_cwd(), Filename="Transect_"+str(self.ID)+".csv", delimiter=","):
         
         """
         
-        Write transect topography to a csv file
+        Write transect topography to file
 
         Can sepcify filename or create using default name + ID
         
@@ -1026,13 +1026,13 @@ class Transect:
         f = open(Filename,'w')
         
         # write headers
-        f.write("X,Y")
-        f.write(self.StartNode.X + "," + self.StartNode.Y + "\n")
-        f.write(self.EndNode.X + "," + self.EndNode.Y + "\n")
-        f.write("Distance,Z")
+        f.write("X" + delimiter + "Y")
+        f.write(self.StartNode.X + delimiter + self.StartNode.Y + "\n")
+        f.write(self.EndNode.X + delimiter + self.EndNode.Y + "\n")
+        f.write("Distance" + delimiter + "Z")
 
         #loop through transect and write data
         for (dist, z) in izip(self.Distance, self.Elevation):
-            f.write(dist + "," + z + "\n")
+            f.write(dist + delimiter + z + "\n")
 
         f.close()
