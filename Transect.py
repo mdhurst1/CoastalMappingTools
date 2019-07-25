@@ -10,6 +10,7 @@ June 2019
 import numpy as np
 import numpy.ma as ma
 import sys
+from itertools import izip
 
 #import figure plotting stuff here not globally!
 import matplotlib
@@ -303,13 +304,15 @@ class Transect:
         Slope = Slope.compressed()
 
         # calculate roughness and take mean value
-        self.SlopeRoughness = np.max(Slope)-np.min(Slope)
-        self.SlopeRoughness = np.percentile(Slope, 0.95) - np.percentile(Slope, 0.05)
+        #self.SlopeRoughness = np.max(Slope)-np.min(Slope)
+        print(np.percentile(Slope, 95),np.percentile(Slope, 5),np.std(Slope))
+        self.SlopeRoughness = np.percentile(Slope, 95) - np.percentile(Slope, 5)
+        self.ElevationRoughness = np.mean(self.ElevStd)
 
         if self.SlopeRoughness > 10.:
             print("ARGH!!!")
 
-        self.ElevationRoughness = ma.mean(self.ElevStd)
+        #self.ElevationRoughness = np.mean(self.ElevStd.compressed())
         #self.ElevationRoughness = ma.mean(self.ElevationMax-self.ElevationMin)
         #print(self.SlopeRoughness, end=", ")
 
@@ -1005,3 +1008,31 @@ class Transect:
         
         else:
             return
+
+
+    def WriteTransect(self, Filename= "Transect_"+str(ID)+".csv"):
+        
+        """
+        
+        Write transect topography to a csv file
+
+        Can sepcify filename or create using default name + ID
+        
+        MDH, July 2019
+
+        """
+
+        # define filename and open for writing
+        f = open(Filename,'w')
+        
+        # write headers
+        f.write("X,Y")
+        f.write(self.StartNode.X + "," + self.StartNode.Y + "\n")
+        f.write(self.EndNode.X + "," + self.EndNode.Y + "\n")
+        f.write("Distance,Z")
+
+        #loop through transect and write data
+        for (dist, z) in izip(self.Distance, self.Elevation):
+            f.write(dist + "," + z + "\n")
+
+        f.close()
