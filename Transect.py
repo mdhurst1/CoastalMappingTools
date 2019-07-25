@@ -10,7 +10,6 @@ June 2019
 import numpy as np
 import numpy.ma as ma
 import os, sys
-from itertools import izip
 
 #import figure plotting stuff here not globally!
 import matplotlib
@@ -1010,7 +1009,7 @@ class Transect:
             return
 
 
-    def Write(self, Folder=os.get_cwd(), Filename="Transect_"+str(self.ID)+".csv", delimiter=","):
+    def Write(self, Folder=os.getcwd(), delimiter=","):
         
         """
         
@@ -1023,6 +1022,7 @@ class Transect:
         """
 
         # define filename and open for writing
+        Filename="Transect_"+str(self.ID)+".csv"
         f = open(Filename,'w')
         
         # write headers
@@ -1032,7 +1032,7 @@ class Transect:
         f.write("Distance" + delimiter + "Z")
 
         #loop through transect and write data
-        for (dist, z) in izip(self.Distance, self.Elevation):
+        for (dist, z) in zip(self.Distance, self.Elevation):
             f.write(dist + delimiter + z + "\n")
 
         f.close()

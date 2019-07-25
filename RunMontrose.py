@@ -58,7 +58,7 @@ except:
         pickle.dump(ThisCoast, PFile)
         
     # WRITE TRANSECTS TO CSV
-    
+    ThisCoast.WriteTransects(Folder=TransectsFolder)
         
 ## ANALYSE TRANSECTS
 ThisCoast.FindRockyCoast()

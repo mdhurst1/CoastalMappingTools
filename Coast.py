@@ -552,7 +552,7 @@ class Coast:
         f.write(self.Projection)
         f.close()
 
-    def WriteTransectsCSV(self,Folder=os.get_cwd()):
+    def WriteTransectsCSV(self,Folder=os.getcwd()):
 
         """
 
