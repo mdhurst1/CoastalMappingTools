@@ -388,6 +388,7 @@ class Coast:
                 try:
                     WL.record(*Record) 
                 except:
+                    print(Transect.ID)
                     print(Record)
                     #print(Transect.ExtremeWidths)
                     sys.exit()
@@ -522,6 +523,7 @@ class Coast:
 
         for Line in self.CoastLines:
             for Transect in Line.Transects:
+
 
                 # get crest position
                 try:
@@ -1115,7 +1117,7 @@ class Coast:
                 print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
                     
                 # extract barrier width
-                #if Transect.ID == "183":
+                #if Transect.ID == "138":
                 #    Transect.ExtractBarrierWidths(WaterElevs)
                 Transect.ExtractBarrierWidths(WaterElevs)
 
@@ -1201,6 +1203,7 @@ class Coast:
             EndList = np.argwhere(StartEndFlags == -1).flatten()
             if not len(StartList) == len(EndList):
                 print("Start and End lists not the same length")
+                print(len(StartList),len(EndList))
 
             for i in range(0,len(StartList)):
                 
@@ -1268,6 +1271,7 @@ class Coast:
             EndList = np.argwhere(StartEndFlags == -1).flatten()
             if not len(StartList) == len(EndList):
                 print("Start and End lists not the same length")
+                print(len(StartList),len(EndList))
                 
             for i in range(0,len(StartList)):
                 
@@ -1320,7 +1324,7 @@ class Coast:
         # loop through transects and get contiguous barrier lines
         for CoastLine in self.CoastLines:
             
-            # find transects with cliffs
+            # find transects with barriers
             BarrierBool = [Transect.Barrier for Transect in CoastLine.Transects]
             BarrierBool.insert(0, False)
             BarrierBool = np.array(BarrierBool).astype(int)
@@ -1328,16 +1332,16 @@ class Coast:
             # get a list of the start and end points of contiguous cliff lines
             StartEndFlags = np.diff(BarrierBool)
             
-            # if last line finishes on a barrier flag the last element as the end of the barrier
+            # if last line finishes on a start barrier flag then ignore
             if StartEndFlags[StartEndFlags.nonzero()[0][-1]] == 1:
-                StartEndFlags[-1] = -1
+                StartEndFlags[-1] = 0
                 
             StartList = np.argwhere(StartEndFlags == 1).flatten()
             EndList = np.argwhere(StartEndFlags == -1).flatten()
 
             if not len(StartList) == len(EndList):
                 print("Start and End lists not the same length")
-
+                
             for i in range(0,len(StartList)):
                 
                 # catch single node cliff lines and ignore
@@ -1422,23 +1426,25 @@ class Coast:
             for CoastLine in self.CoastLines:
             
                 # find transects with cliffs
-                Widths = [Transect.ExtremeWidths[i] for Transect in CoastLine.Transects]
-                ExtremeBool = [False if Width is None else True for Width in Widths]
-                ExtremeBool.insert(0, False)
+                Widths = np.array([Transect.ExtremeWidths[i] for Transect in CoastLine.Transects])
+                ExtremeBool = np.array([False if Width is None else True for Width in Widths])
+                ExtremeBool[Widths==0] = False
+                ExtremeBool = np.insert(ExtremeBool, 0, False)
                 ExtremeBool = np.array(ExtremeBool).astype(int)
                 
                 # get a list of the start and end points of contiguous cliff lines
                 StartEndFlags = np.diff(ExtremeBool)
                 
-                # if last line finishes on a barrier flag the last element as the end of the barrier
+                # if last line finishes on a barrier flag ignore the last element
                 if StartEndFlags[StartEndFlags.nonzero()[0][-1]] == 1:
-                    StartEndFlags[-1] = -1
+                    StartEndFlags[-1] = 0
                     
                 StartList = np.argwhere(StartEndFlags == 1).flatten()
                 EndList = np.argwhere(StartEndFlags == -1).flatten()
 
                 if not len(StartList) == len(EndList):
                     print("Start and End lists not the same length")
+
 
                 for j in range(0,len(StartList)):
                     
@@ -1454,11 +1460,16 @@ class Coast:
                     ExtremeBackList = []
                     
                     # loop through transects and get front and back positions
-                    
                     for Transect in CoastLine.Transects[StartList[j]:EndList[j]]:
-                        TempFront, TempBack  = Transect.get_ExtremePosition(i)
-                        ExtremeFrontList.append(TempFront)
-                        ExtremeBackList.append(TempBack)
+                        try:
+                            TempFront, TempBack  = Transect.get_ExtremePosition(i)
+                            ExtremeFrontList.append(TempFront)
+                            ExtremeBackList.append(TempBack)
+                        except:
+                            print(Level, Transect.ID)
+                            print(Transect.ExtremeDistances)
+                            print(Transect.ExtremeWidths)
+                            sys.exit()
                         
                     # create new line object for front 
                     X = [TempFront.X for TempFront in ExtremeFrontList]

@@ -330,7 +330,7 @@ class Transect:
         # when looking for a barrier
         Mask = self.Elevation.mask.copy()
         if self.Cliff:
-            Mask[self.CliffToeInd:] = True
+            Mask[self.CliffToeInd+1:] = True
 
         # mask below sea level, including tide, in future
         Mask[self.Elevation < 0] = True
@@ -455,7 +455,8 @@ class Transect:
         Mask[0:self.FrontTopInd] = True
         MinInd = np.argmin(ma.masked_where(Mask, ElevMasked))
         self.BackToeInd = MinInd
-        
+        #plt.plot(DistanceMasked[MinInd],ElevMasked[MinInd],'k+',ms=20)
+
         # catch where Minimum Elevation coincides with "barrier" front
         # when looking for a "back barrier"2
         if MinInd == self.FrontTopInd:
@@ -482,16 +483,16 @@ class Transect:
             # !!!!!!!!!!!!!!!!!!might change this to look to back toe ind incrementally!!!!!!!!!!!!!!!!!!!!!!
             #################################################################################################
 
-            Angle = np.degrees(np.arctan((ElevMasked[MinInd]-ElevMasked[self.FrontTopInd])
-                                        / (DistanceMasked[MinInd]-DistanceMasked[self.FrontTopInd])))
-           
+            Angle = np.degrees(np.arctan((ElevMasked[self.BackToeInd]-ElevMasked[self.FrontTopInd])
+                                        / (DistanceMasked[self.BackToeInd]-DistanceMasked[self.FrontTopInd])))
+            
             # Get detrended elevation
             ElevDetrend = ((ElevMasked-ElevMasked[self.FrontTopInd])+(DistanceMasked[self.FrontTopInd]-DistanceMasked) \
                             * np.tan(np.radians(Angle)))
 
             # mask values up to the peak
             Mask = ElevMasked.mask.copy()
-            Mask[self.BackToeInd:] = True
+            Mask[self.BackToeInd+1:] = True
             ElevDetrend = ma.masked_where(Mask,ElevDetrend)
 
             # Find Maximum detrended elevation. Must be positive to be considered a change in barrier back top position
@@ -507,20 +508,22 @@ class Transect:
                 print("Divide by zero getting toe!")
                 sys.exit()
 
-            Angle = np.degrees(np.arctan((ElevMasked[MinInd]-ElevMasked[self.BackTopInd]) 
-                                        / (DistanceMasked[MinInd]-DistanceMasked[self.BackTopInd])))
+            Angle = np.degrees(np.arctan((ElevMasked[self.BackToeInd]-ElevMasked[self.FrontTopInd]) 
+                                        / (DistanceMasked[self.BackToeInd]-DistanceMasked[self.FrontTopInd])))
             
             # Get detrended elevation
-            ElevDetrend = ((ElevMasked-ElevMasked[self.BackTopInd]) + (DistanceMasked[self.BackTopInd] - DistanceMasked) \
+            ElevDetrend = ((ElevMasked-ElevMasked[self.FrontTopInd]) + (DistanceMasked[self.FrontTopInd] - DistanceMasked) \
                             * np.tan(np.radians(Angle)))
 
-            # mask values beyond the barrier front top
+            # mask values seaward of the barrier front top
             Mask = ElevMasked.mask.copy()
             Mask[0:self.FrontTopInd] = True
+            Mask[self.BackToeInd+1:] = True
             ElevDetrend = ma.masked_where(Mask, ElevDetrend)
-                            
+            #plt.plot(DistanceMasked,ElevDetrend,'r-')
+            
             # Find Minimum detrended elevation, must be negative to be considered a low (probably never a worry)
-            if ((np.argmin(ElevDetrend) < self.BackToeInd) and (ElevDetrend[np.argmin(ElevDetrend)] < -0.001)):
+            if ((np.argmin(ElevDetrend) < self.BackToeInd) and (ElevDetrend[np.argmin(ElevDetrend)] < -0.001) and (np.argmin(ElevDetrend) > self.BackTopInd)):
                 self.BackToeInd = np.argmin(ElevDetrend)
                 BarrierPositionChangeFlag = True
             
@@ -530,12 +533,19 @@ class Transect:
         if self.BackTopInd > self.BackToeInd:
             self.Barrier = False
             print("Error: Not a barrier 5")
+            #plt.plot(DistanceMasked,ElevMasked,'k-')
+            #plt.plot(DistanceMasked[self.FrontTopInd],ElevMasked[self.FrontTopInd],'bo-')
+            #plt.plot(DistanceMasked[self.FrontToeInd],ElevMasked[self.FrontToeInd],'go-')
+            #plt.plot(DistanceMasked[self.BackTopInd],ElevMasked[self.BackTopInd],'ko')
+            #plt.plot(DistanceMasked[self.BackToeInd],ElevMasked[self.BackToeInd],'ro')
+            #plt.show()
             #print("")
             #print(self.FrontTopInd, self.FrontToeInd)
             #print(self.Distance[self.FrontTopInd], self.Distance[self.FrontToeInd])
             #print(self.BackTopInd, self.BackToeInd)
             #print(self.Distance[self.BackTopInd], self.Distance[self.BackToeInd])
             #print("NOT A BARRIER 2")
+            sys.exit()
             return
 
         # Get Barrier Crest
@@ -621,14 +631,15 @@ class Transect:
         """
 
         # add results to lists
+        NDV = -9999
         self.ExtremeDistance = [None,None]
         self.ExtremeIndex = [None,None]
         self.InterpolateFractions = [None,None]
-        self.ExtremeWidth = [None,None]
-        self.ExtremeVolume = [None,None]
-        self.FrontNode = [None,None]
-        self.BackNode = [None,None]
-
+        self.ExtremeWidth = None
+        self.ExtremeVolume = None
+        self.FrontNode = None
+        self.BackNode = None
+        
         if self.Barrier == False:
             return
 
@@ -651,7 +662,7 @@ class Transect:
         self.DistanceSpacing = self.Distance[Start+1]-self.Distance[Start]
 
         # loop across barrier topography
-        for i in range(self.FrontToeInd, self.BackToeInd+1):
+        for i in range(self.FrontToeInd, self.NoValues-1):
 
             # cut and paste interesction analysis
             # do we want this to be a separate function somewhere?
@@ -696,12 +707,13 @@ class Transect:
                     InterpolateFractions.append(Fraction)
         
         # calculate width and volume at this elevation
+        # if no intersection then either barrier crest is too low
+        # or back barrier is too high
         if IntersectionCounter == 0:
-            # add results to lists
-            self.ExtremeDistance = [0,0]
-            self.ExtremeWidth = [0,0]
-            self.ExtremeVolume = [0,0]
-            self.Intersection = False
+            if (self.CrestElevation < Elev):
+                self.ExtremeWidth = 0.
+                self.ExtremeVolume = 0.
+                self.Intersection = False
             
         elif IntersectionCounter == 1:
             # add results to lists
@@ -742,6 +754,7 @@ class Transect:
             self.Intersection = True
 
     def Plot(self, PlotFolder):
+        
         """
         
         MDH, June 2019
