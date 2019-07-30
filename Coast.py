@@ -1332,9 +1332,16 @@ class Coast:
             # get a list of the start and end points of contiguous cliff lines
             StartEndFlags = np.diff(BarrierBool)
             
+            # get last non zero element
+            Last = [Ind for Ind, Flag in enumerate(StartEndFlags) if Flag != 0][-1]
+            
             # if last line finishes on a start barrier flag then ignore
-            if StartEndFlags[StartEndFlags.nonzero()[0][-1]] == 1:
+            if Last != len(StartEndFlags)-1:
+                if StartEndFlags[Last] == 1:
+                    StartEndFlags[-1] = -1
+            elif StartEndFlags[-1] == 1:
                 StartEndFlags[-1] = 0
+                
                 
             StartList = np.argwhere(StartEndFlags == 1).flatten()
             EndList = np.argwhere(StartEndFlags == -1).flatten()
@@ -1435,8 +1442,14 @@ class Coast:
                 # get a list of the start and end points of contiguous cliff lines
                 StartEndFlags = np.diff(ExtremeBool)
                 
-                # if last line finishes on a barrier flag ignore the last element
-                if StartEndFlags[StartEndFlags.nonzero()[0][-1]] == 1:
+                # get last non zero element
+                Last = [Ind for Ind, Flag in enumerate(StartEndFlags) if Flag != 0][-1]
+                
+                # if last line finishes on a start barrier flag then ignore
+                if Last != len(StartEndFlags)-1:
+                    if StartEndFlags[Last] == 1:
+                        StartEndFlags[-1] = -1
+                elif StartEndFlags[-1] == 1:
                     StartEndFlags[-1] = 0
                     
                 StartList = np.argwhere(StartEndFlags == 1).flatten()
