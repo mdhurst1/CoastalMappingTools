@@ -325,7 +325,11 @@ class Transect:
         Description goes here
         MDH, June 2019
         """
-
+        # Check if rocky and dont look for barrier on rocky coast
+        if self.Rocky:
+            self.Barrier = False
+            return
+            
         # Check if a cliff is present and only analyse topography up to the cliff toe
         # when looking for a barrier
         Mask = self.Elevation.mask.copy()
@@ -652,7 +656,7 @@ class Transect:
         self.DistanceSpacing = self.Distance[Start+1]-self.Distance[Start]
 
         # loop across barrier topography
-        for i in range(self.FrontToeInd, self.NoValues-1):
+        for i in range(Start, self.NoValues-1):
 
             # cut and paste interesction analysis
             # do we want this to be a separate function somewhere?
