@@ -453,6 +453,7 @@ class Transect:
         self.BackTopInd = self.FrontTopInd
         Mask = ElevMasked.mask.copy()
         Mask[0:self.FrontTopInd] = True
+
         MinInd = np.argmin(ma.masked_where(Mask, ElevMasked))
         self.BackToeInd = MinInd
         #plt.plot(DistanceMasked[MinInd],ElevMasked[MinInd],'k+',ms=20)
@@ -517,36 +518,25 @@ class Transect:
 
             # mask values seaward of the barrier front top
             Mask = ElevMasked.mask.copy()
-            Mask[0:self.FrontTopInd] = True
+            Mask[0:self.BackTopInd] = True
             Mask[self.BackToeInd+1:] = True
             ElevDetrend = ma.masked_where(Mask, ElevDetrend)
+            NewInd = np.argmin(ElevDetrend)
             #plt.plot(DistanceMasked,ElevDetrend,'r-')
             
             # Find Minimum detrended elevation, must be negative to be considered a low (probably never a worry)
-            if ((np.argmin(ElevDetrend) < self.BackToeInd) and (ElevDetrend[np.argmin(ElevDetrend)] < -0.001) and (np.argmin(ElevDetrend) > self.BackTopInd)):
-                self.BackToeInd = np.argmin(ElevDetrend)
+            if ((NewInd < self.BackToeInd) and (ElevDetrend[NewInd] < -0.001) and (NewInd > self.BackTopInd)):
+                self.BackToeInd = NewInd
                 BarrierPositionChangeFlag = True
-            
-        #Check top is not at the end, bottom is ok to be at end
-        # again not sure what this is acheiving
-        # this could be a problem in future
-        if self.BackTopInd > self.BackToeInd:
-            self.Barrier = False
-            print("Error: Not a barrier 5")
-            #plt.plot(DistanceMasked,ElevMasked,'k-')
-            #plt.plot(DistanceMasked[self.FrontTopInd],ElevMasked[self.FrontTopInd],'bo-')
-            #plt.plot(DistanceMasked[self.FrontToeInd],ElevMasked[self.FrontToeInd],'go-')
-            #plt.plot(DistanceMasked[self.BackTopInd],ElevMasked[self.BackTopInd],'ko')
-            #plt.plot(DistanceMasked[self.BackToeInd],ElevMasked[self.BackToeInd],'ro')
-            #plt.show()
-            #print("")
-            #print(self.FrontTopInd, self.FrontToeInd)
-            #print(self.Distance[self.FrontTopInd], self.Distance[self.FrontToeInd])
-            #print(self.BackTopInd, self.BackToeInd)
-            #print(self.Distance[self.BackTopInd], self.Distance[self.BackToeInd])
-            #print("NOT A BARRIER 2")
-            sys.exit()
-            return
+                
+        # print("\nHERE\n")
+        # plt.plot(self.Distance,self.Elevation,'k-')
+        # plt.plot(self.Distance[self.FrontTopInd],self.Elevation[self.FrontTopInd],'bo')
+        # plt.plot(self.Distance[self.FrontToeInd],self.Elevation[self.FrontToeInd],'bs')
+        # plt.plot(self.Distance[self.BackTopInd],self.Elevation[self.BackTopInd],'ro')
+        # plt.plot(self.Distance[self.BackToeInd],self.Elevation[self.BackToeInd],'rs')
+        # plt.plot(self.Distance,ElevDetrend,'r-')
+        # plt.show()
 
         # Get Barrier Crest
         Mask = ElevMasked.mask.copy()
@@ -714,13 +704,7 @@ class Transect:
                 self.ExtremeWidth = 0.
                 self.ExtremeVolume = 0.
                 self.Intersection = False
-            
-        elif IntersectionCounter == 1:
-            # add results to lists
-            # this could be risky
-            self.Barrier = False
-            self.Intersection = False
-            
+
         elif IntersectionCounter > 1:
             
             # Define Intersection Distance and Elevation by Interpolating
@@ -746,7 +730,7 @@ class Transect:
             # Calculate Width
             self.ExtremeWidth = self.Distance[IntersectionIndices[1]] + InterpolateFractions[1]*self.DistanceSpacing \
                                 - self.Distance[IntersectionIndices[0]] + InterpolateFractions[0]*self.DistanceSpacing
-
+            
             # Calculate Volume
             self.ExtremeVolume = np.sum(self.Elevation[IntersectionIndices[0]+1:IntersectionIndices[1]+1]-Elev)*self.DistanceSpacing
         

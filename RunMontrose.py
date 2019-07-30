@@ -62,22 +62,22 @@ except:
         
 ## ANALYSE TRANSECTS
 #ThisCoast.FindRockyCoast()
-#ThisCoast.AnalyseTransectMorphology()
-#ThisCoast.AnalyseBarrierWidths([4.,5.,6.])
+ThisCoast.AnalyseTransectMorphology()
+ThisCoast.AnalyseBarrierWidths([4.,5.,6.])
 
 # SAVE
-#print("Saving Coast Object as " + Filename2SaveCoast)   
-#with open(Filename2SaveCoast, 'wb') as PFile:
-#        pickle.dump(ThisCoast, PFile)
+print("Saving Coast Object as " + Filename2SaveCoast)   
+with open(Filename2SaveCoast, 'wb') as PFile:
+        pickle.dump(ThisCoast, PFile)
 
     
 # plot the results
-#ThisCoast.PlotTransects(PlotFolder)
+ThisCoast.PlotTransects(PlotFolder)
 
 # write some stuff
-#ThisCoast.WriteBarrierShp(SiteFolder+"Barriers.shp")
-#ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
-#ThisCoast.WriteCrestLinesShp(SiteFolder+"CrestLines.shp")
-#ThisCoast.WriteCrestPointsShp(SiteFolder+"CrestPoints.shp")
+ThisCoast.WriteBarrierShp(SiteFolder+"Barriers.shp")
+ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
+ThisCoast.WriteCrestLinesShp(SiteFolder+"CrestLines.shp")
+ThisCoast.WriteCrestPointsShp(SiteFolder+"CrestPoints.shp")
 ThisCoast.WriteFrontPointsShp(SiteFolder+"FrontPoints.shp")
 ThisCoast.WriteExtremeLevelsShp(SiteFolder+"Extreme.shp")
