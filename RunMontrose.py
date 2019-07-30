@@ -57,11 +57,11 @@ except:
     with open(Filename2SaveCoast, 'wb') as PFile:
         pickle.dump(ThisCoast, PFile)
         
-    # WRITE TRANSECTS TO CSV
-    ThisCoast.WriteTransects(Folder=TransectsFolder)
+# WRITE TRANSECTS TO CSV
+# ThisCoast.WriteTransectsCSV(Folder=TransectsFolder)
         
 ## ANALYSE TRANSECTS
-ThisCoast.FindRockyCoast()
+#ThisCoast.FindRockyCoast()
 
 # SAVE ENTIRE COAST OBJECT
 print("Saving Coast Object as " + Filename2SaveCoast)

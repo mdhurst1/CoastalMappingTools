@@ -567,6 +567,10 @@ class Coast:
         
         print("Coast.WriteTransectsCSV: Writing all topographic transects to csv files")
         
+        # Track progress
+        NoTransects = np.sum([Line.NoTransects for Line in self.CoastLines])
+        CurrentTransect = 0
+
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 
@@ -575,7 +579,12 @@ class Coast:
 
                 # write transect    
                 Transect.Write(Folder)
-                
+
+                # update counter
+                CurrentTransect += 1
+
+        print("")
+
     def MergeCoastLines(self):
 
         """
@@ -1134,7 +1143,7 @@ class Coast:
             for Transect in CoastLine.Transects:
                 Transect.AnalyseRoughness(TidalElevation)
         
-        NoTransects = np.sum([Line.NoTransects for Line in self.CoastLines])-1
+        #NoTransects = np.sum([Line.NoTransects for Line in self.CoastLines])-1
 
         # Get roughness values as arrays
         SlopeRoughness = np.array([Transect.SlopeRoughness for Line in self.CoastLines for Transect in Line.Transects])
@@ -1147,9 +1156,13 @@ class Coast:
         
         # perform k-means clustering assuming two clusters
         # set up a KMeans object
-        ThisKMeans = KMeans(n_clusters=4)
+        ThisKMeans = KMeans(n_clusters=2)
         ThisKMeans.fit(Data)
         GroupList = ThisKMeans.fit_predict(Data)
+        
+        # check which way round and correct
+        if np.mean(ElevationRoughness[GroupList == 0]) > np.mean(ElevationRoughness[GroupList == 1]):
+            GroupList = abs(GroupList-1)
         
         # loop through transects and get contiguous barrier lines
         Counter = 0

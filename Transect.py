@@ -304,7 +304,7 @@ class Transect:
 
         # calculate roughness and take mean value
         #self.SlopeRoughness = np.max(Slope)-np.min(Slope)
-        print(np.percentile(Slope, 95),np.percentile(Slope, 5),np.std(Slope))
+        #print(np.percentile(Slope, 95),np.percentile(Slope, 5),np.std(Slope))
         self.SlopeRoughness = np.percentile(Slope, 95) - np.percentile(Slope, 5)
         self.ElevationRoughness = np.mean(self.ElevStd)
 
@@ -1022,17 +1022,17 @@ class Transect:
         """
 
         # define filename and open for writing
-        Filename="Transect_"+str(self.ID)+".csv"
+        Filename=Folder+"Transect_"+str(self.ID)+".csv"
         f = open(Filename,'w')
         
         # write headers
-        f.write("X" + delimiter + "Y")
-        f.write(self.StartNode.X + delimiter + self.StartNode.Y + "\n")
-        f.write(self.EndNode.X + delimiter + self.EndNode.Y + "\n")
-        f.write("Distance" + delimiter + "Z")
+        f.write("X" + delimiter + "Y" + "\n")
+        f.write(str(self.StartNode.X) + delimiter + str(self.StartNode.Y) + "\n")
+        f.write(str(self.EndNode.X) + delimiter + str(self.EndNode.Y) + "\n")
+        f.write("Distance" + delimiter + "Z" + "\n")
 
         #loop through transect and write data
         for (dist, z) in zip(self.Distance, self.Elevation):
-            f.write(dist + delimiter + z + "\n")
+            f.write(str(dist) + delimiter + str(z) + "\n")
 
         f.close()
