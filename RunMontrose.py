@@ -18,6 +18,9 @@ TransectsFolder = SiteFolder+"Transects\\"
 LineShp = "Montrose_CoastTrend.shp"
 DTM = "DTM_1m.tif"
 
+# Montrose Mean High Water Springs
+MHWS = 2.
+
 # make folder for plots and transects if it doesnt already exist
 p = pathlib.Path(PlotFolder)
 p.mkdir(parents=True, exist_ok=True)
@@ -38,6 +41,7 @@ except:
     
     # SET UP THE COAST
     ThisCoast = Coast(SiteFolder+LineShp)
+    ThisCoast.SetMHWS(MHWS)
     
     # SIMPLIFY COASTLINE
     ThisCoast.MergeCoastLines()
@@ -62,6 +66,7 @@ except:
         
 ## ANALYSE TRANSECTS
 #ThisCoast.FindRockyCoast()
+#ThisCoast.SetMHWS(MHWS)
 #ThisCoast.AnalyseTransectMorphology()
 #ThisCoast.AnalyseBarrierWidths([4.,5.,6.])
 
@@ -72,9 +77,10 @@ except:
 
     
 # plot the results
-#ThisCoast.PlotTransects(PlotFolder)
+ThisCoast.PlotTransects(PlotFolder)
 
 # write some stuff
+ThisCoast.WriteCliffShp(SiteFolder+"Cliffs.shp")
 ThisCoast.WriteBarrierShp(SiteFolder+"Barriers.shp")
 ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
 ThisCoast.WriteCrestLinesShp(SiteFolder+"CrestLines.shp")

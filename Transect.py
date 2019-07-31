@@ -81,6 +81,7 @@ class Transect:
         self.BarrierVolume = None
 
         # other barrier metrics for extreme water levels
+        self.MHWS = None
         self.ExtremeWaterLevels = ["","",""]
         self.Intersection = None
         self.IntersectionIndices = None
@@ -327,9 +328,10 @@ class Transect:
         """
         # Check if rocky and dont look for barrier on rocky coast
         if self.Rocky:
+            #print("Rocky")
             self.Barrier = False
             return
-            
+
         # Check if a cliff is present and only analyse topography up to the cliff toe
         # when looking for a barrier
         Mask = self.Elevation.mask.copy()
@@ -392,19 +394,19 @@ class Transect:
             Mask[0:self.FrontToeInd] = True
             Mask[MaxInd+1:] = True
             ElevDetrend = ma.masked_where(Mask, ElevDetrend)
+            NewInd = np.argmax(ElevDetrend)
             
             # Find Maximum detrended elevation. 
             # if at end of transect then not a barrier
-            if (np.argmax(ElevDetrend) == LastInd):
+            if (NewInd == LastInd):
                 self.Barrier = False
                 return
 
-            # Must be positive to be considered a change in barrier top position
-            elif ((np.argmax(ElevDetrend) < self.FrontTopInd) and (ElevDetrend[np.argmax(ElevDetrend)] > 0.001)):
+            # Must be above MHWS to be considered a change in barrier top position
+            elif ((NewInd < self.FrontTopInd) and (ElevDetrend[NewInd] > 0.001) and (ElevMasked[NewInd] > self.MHWS)):
                 self.FrontTopInd = np.argmax(ElevDetrend)
                 BarrierPositionChangeFlag = True
                 
-            
             # THEN Barrier TOE
 
             # Get Angle to detrend towards the coast
@@ -465,6 +467,14 @@ class Transect:
         # catch where Minimum Elevation coincides with "barrier" front
         # when looking for a "back barrier"2
         if MinInd == self.FrontTopInd:
+            print("not a barrier 2")
+            #plt.plot(self.Distance,self.Elevation,'k-')
+            #plt.plot(self.Distance[self.FrontTopInd],self.Elevation[self.FrontTopInd],'bo')
+            #plt.plot(self.Distance[self.FrontToeInd],self.Elevation[self.FrontToeInd],'bs')
+            #plt.plot(self.Distance[self.BackTopInd],self.Elevation[self.BackTopInd],'ro')
+            #plt.plot(self.Distance[self.BackToeInd],self.Elevation[self.BackToeInd],'rs')
+            #plt.plot(self.Distance,ElevDetrend,'r-')
+            #plt.show()
             self.Barrier = False
             return
 
@@ -829,15 +839,12 @@ class Transect:
         # set axis limits 
         Start, End = ma.notmasked_edges(self.Distance)
         
-        #try:
-        #    ax.set_xlim([self.Distance[Start],self.Distance[self.CliffToeInd]])
-        #    ax.set_ylim(ma.min(self.Elevation[Start:self.BackToeInd])-1.,ma.max(self.Elevation[Start:self.CliffToeInd])+1.)
-        
-        #except:
-        #    ax.set_xlim([self.Distance[Start],self.Distance[End]])
+        try:
+            ax.set_xlim([self.Distance[Start],self.Distance[self.CliffToeInd]])
             
-        ax.set_xlim([self.Distance[Start],self.Distance[End]])
-
+        except:
+            ax.set_xlim([self.Distance[Start],self.Distance[End]])
+        
         # add text
         plt.title("Transect "+str(self.ID))
 

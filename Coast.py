@@ -57,6 +57,7 @@ class Coast:
         self.TransectsLength2Sea = 200.
         self.TransectsLength2Land = 1000.
         self.ExtremeWaterLevels = []
+        self.MHWS = None
 
         if CoastShp:
             self.ReadCoastShp(CoastShp)
@@ -1081,7 +1082,7 @@ class Coast:
                 print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
                 
                 # # Call analyses
-                #if Transect.ID == "1":
+                #if Transect.ID == "159":
                 Transect.FindCliff()
                 Transect.FindBarrier()
                 
@@ -1500,6 +1501,23 @@ class Coast:
 
                     # update counter
                     Count += 1
+
+    def SetMHWS(self,MHWS):
+
+        """
+        Sets MHWS on all lines and transects
+        Could be replaced with spatially dynamic data later
+
+        MDH, July 2019
+
+        """
+        # set MHWS
+        self.MHWS = MHWS
+
+        # loop through lines and plot profiles #
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                Transect.MHWS = MHWS
 
     def PlotTransects(self, PlotFolder):
         
