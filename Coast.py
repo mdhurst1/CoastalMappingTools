@@ -1040,7 +1040,7 @@ class Coast:
                     ZStd[i] = np.std(ZLocal)
                     
                 # Set up the mask from NDVs
-                Mask = ZIDW == -9999
+                Mask = ZIDW == NDV
                 DistAlongTransect = ma.masked_where(Mask,DistAlongTransect)
                 ZIDW = ma.masked_where(Mask,ZIDW)
                 ZMin = ma.masked_where(Mask,ZMin)
@@ -1082,9 +1082,9 @@ class Coast:
                 print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
                 
                 # # Call analyses
-                if Transect.ID == "738":
-                    Transect.FindCliff()
-                    Transect.FindBarrier()
+                #if Transect.ID == "13":
+                Transect.FindCliff()
+                Transect.FindBarrier()
                 
                 # update transect progress no
                 CurrentTransect += 1
@@ -1118,9 +1118,10 @@ class Coast:
                 print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
                     
                 # extract barrier width
-                #if Transect.ID == "138":
-                #    Transect.ExtractBarrierWidths(WaterElevs)
-                Transect.ExtractBarrierWidths(WaterElevs)
+                if Transect.ID == "691":
+                    Transect.ExtractBarrierWidths(WaterElevs)
+                    return
+                #Transect.ExtractBarrierWidths(WaterElevs)
 
                 # update transect progress no
                 CurrentTransect += 1
@@ -1534,7 +1535,6 @@ class Coast:
         matplotlib.use('agg')
         import matplotlib.pyplot as plt
 
-
         print("Coast.PlotTransects: Plotting each transect topographic profile")
 
         # Track progress
@@ -1549,9 +1549,9 @@ class Coast:
                 print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
 
                 # call plotting function
-                if Transect.ID == "738":
-                    Transect.Plot(PlotFolder)
-
+                #if Transect.ID == "0":
+                Transect.Plot(PlotFolder)
+                    
                 CurrentTransect += 1
 
         print("")

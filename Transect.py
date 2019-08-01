@@ -32,9 +32,10 @@ class Transect:
     Description of object goes here
 
     """
-    def __init__(self, ID, CoastNode, StartNode, EndNode):
+    def __init__(self, LineID, ID, CoastNode, StartNode, EndNode):
         
         self.ID = ID
+        self.LineID = LineID
         
         # transect positioning
         self.CoastNode = CoastNode
@@ -163,12 +164,7 @@ class Transect:
         MDH, June 2019
 
         """
-        # cliffed coast will have elevations > 10 m
-        # this threshold could be flexible in future
-        if np.max(self.Elevation) < 10.:
-            self.Cliff = False
-            return
-
+        
         # Find the last point on the Transect
         LastInd = np.transpose(self.Elevation.nonzero())[-1][0]
         self.CliffTopInd = LastInd
@@ -176,16 +172,23 @@ class Transect:
         # Find first real elevation location in masked array
         FirstInd = np.transpose(self.Elevation.nonzero())[0][0]
 
-        # Find the minumum elevation in the masked array
-        MinInd = np.argmin(self.Elevation.nonzero())
+        # Find the minumum and maximum elevation in the masked array
+        MaxInd = np.argmax(self.Elevation)
+        MinInd = np.argmin(self.Elevation)
         self.CliffToeInd = MinInd
         
         # mask distances and elevations seaward of minimum
         Mask = self.Elevation.mask.copy()
         Mask[0:MinInd] = True
         Mask[LastInd:] = True
-        self.Elevation[Mask] = ma.masked
-        self.Distance[Mask] = ma.masked
+        self.Elevation = ma.masked_where(Mask, self.Elevation)
+        self.Distance = ma.masked_where(Mask, self.Distance)
+
+        # cliffed coast will have elevations > 10 m
+        # this threshold could be flexible in future
+        if np.max(self.Elevation) < 10.:
+            self.Cliff = False
+            return
 
         # flag for changing position
         CliffPositionChangeFlag = True
@@ -374,6 +377,14 @@ class Transect:
         if MaxInd == FirstInd:
             print("\n\tNot a barrier 4")
             self.Barrier = False
+            plt.plot(self.Distance,ElevMasked,'k-')
+            plt.plot(self.Distance[self.FrontTopInd],self.Elevation[self.FrontTopInd],'bo')
+            plt.plot(self.Distance[self.FrontToeInd],self.Elevation[self.FrontToeInd],'bs')
+            #plt.plot(self.Distance[self.BackTopInd],self.Elevation[self.BackTopInd],'ro')
+            #plt.plot(self.Distance[self.BackToeInd],self.Elevation[self.BackToeInd],'rs')
+            #plt.plot(self.Distance,ElevDetrend,'r-')
+            plt.show()
+            sys.exit()
             return
 
         # flag for changing position
@@ -383,14 +394,6 @@ class Transect:
 
         Counter = 0
         MHWSFlag = False
-
-        plt.plot(self.Distance,ElevMasked,'k-')
-        #plt.plot(self.Distance[self.FrontTopInd],self.Elevation[self.FrontTopInd],'bo')
-        #plt.plot(self.Distance[self.FrontToeInd],self.Elevation[self.FrontToeInd],'bs')
-        #plt.plot(self.Distance[self.BackTopInd],self.Elevation[self.BackTopInd],'ro')
-        #plt.plot(self.Distance[self.BackToeInd],self.Elevation[self.BackToeInd],'rs')
-        #plt.plot(self.Distance,ElevDetrend,'r-')
-        plt.show()
 
         while BarrierPositionChangeFlag:
 
@@ -428,7 +431,7 @@ class Transect:
             # Find Maximum detrended elevation. 
             # if at end of transect then not a barrier
             if (NewInd == LastInd):
-                print("\n\tNot a barrier 4")
+                #print("\n\tNot a barrier 5")
                 #plt.plot(self.Distance,ElevMasked,'k-')
                 #plt.plot(self.Distance[self.FrontTopInd],self.Elevation[self.FrontTopInd],'bo')
                 #plt.plot(self.Distance[self.FrontToeInd],self.Elevation[self.FrontToeInd],'bs')
@@ -436,6 +439,7 @@ class Transect:
                 #plt.plot(self.Distance[self.BackToeInd],self.Elevation[self.BackToeInd],'rs')
                 #plt.plot(self.Distance,ElevDetrend,'r-')
                 #plt.show()
+                #sys.exit()
                 self.Barrier = False
                 return
 
@@ -587,13 +591,10 @@ class Transect:
             #plt.plot(DistanceMasked,ElevDetrend,'r-')
             
             # Find Minimum detrended elevation, must be negative to be considered a low (probably never a worry)
-            #if ((NewInd < self.BackToeInd) and (ElevDetrend[NewInd] < -0.001) and (NewInd > self.BackTopInd)):
-            if ((NewInd < self.BackToeInd) and (ElevDetrend[NewInd] < -0.001)):
+            if ((NewInd < self.BackToeInd) and (ElevDetrend[NewInd] < -0.001) and (NewInd > self.BackTopInd)):
+            #if ((NewInd < self.BackToeInd) and (ElevDetrend[NewInd] < -0.001)):
                 self.BackToeInd = NewInd
                 BarrierPositionChangeFlag = True
-
-            
-        plt.show()
 
         if self.BackTopInd == LastInd:
             print("\n\tNot a barrier 8")
@@ -711,8 +712,8 @@ class Transect:
         # temporary fix for no assignment, need a function for reading in transect topo
         # rather than having it set externally?
         self.NoValues = len(self.Distance)
-        self.DistanceSpacing = self.Distance[Start+1]-self.Distance[Start]
-
+        self.DistanceSpacing = self.Distance[End]-self.Distance[End-1]
+        
         # loop across barrier topography
         for i in range(Start, self.NoValues-1):
 
@@ -768,6 +769,8 @@ class Transect:
                 self.Intersection = False
 
         elif IntersectionCounter > 1:
+
+            print("Intersection", Elev)
             
             # Define Intersection Distance and Elevation by Interpolating
             ExtremeDist1 = self.Distance[IntersectionIndices[0]] + InterpolateFractions[0]*self.DistanceSpacing
@@ -793,6 +796,12 @@ class Transect:
             self.ExtremeWidth = self.Distance[IntersectionIndices[1]] + InterpolateFractions[1]*self.DistanceSpacing \
                                 - self.Distance[IntersectionIndices[0]] + InterpolateFractions[0]*self.DistanceSpacing
             
+            print(self.ExtremeWidth)
+            print(IntersectionIndices)
+            print(self.Distance[IntersectionIndices[1]],self.Distance[IntersectionIndices[0]])
+            print(InterpolateFractions)
+            print(self.DistanceSpacing)
+
             # Calculate Volume
             self.ExtremeVolume = np.sum(self.Elevation[IntersectionIndices[0]+1:IntersectionIndices[1]+1]-Elev)*self.DistanceSpacing
         
@@ -807,6 +816,20 @@ class Transect:
 
         """
 
+        # catch no data cases
+        if self.Elevation.count() == 0:
+            print("\n\tNo data to plot")
+            print(self.Elevation)
+            print(self.Distance)
+            return
+
+        # if (self.Elevation < -9998).any():
+        #     print("\n\tNo data values in transect")
+        #     print(self.Elevation)
+        #     print(self.Distance)
+        #     sys.exit()
+        #     return
+
         # grab colour map
         ColourMap = cm.viridis
 
@@ -814,16 +837,10 @@ class Transect:
         fig = plt.figure(1,figsize=(6,3))
                 
         # create 4 subplots
-        ax = plt.subplot(111)
+        ax = fig.add_subplot(111)
                 
-        # temp fix to masked array legacy problem
-        self.Distance = ma.masked_where(self.Elevation.mask,self.Distance)
-
-        # plot raw data
+        # plot raw, unmasked data
         ax.plot(self.Distance, self.Elevation, '-', lw=1., c=[0.5,0.5,0.5], zorder=21)
-                
-        # plot range
-        #ax.fill_between(self.Distance, self.ElevationMin, self.ElevationMax, color=[0.8,0.8,0.8], zorder=10)
         
         # add cliff details here
         if self.Cliff:
@@ -833,7 +850,7 @@ class Transect:
             ax.plot(self.Distance[self.CliffToeInd:self.CliffTopInd], self.Elevation[self.CliffToeInd:self.CliffTopInd], '-', c=CliffColour, lw=1., zorder=22)
             ax.plot(self.Distance[self.CliffTopInd], self.Elevation[self.CliffTopInd], 'ko', mfc=CliffColour, zorder=31)
             ax.plot(self.Distance[self.CliffToeInd], self.Elevation[self.CliffToeInd], 'ko', mfc=CliffColour, zorder=31)
-            
+
         # # add barrier details here
         if self.Barrier:
         
@@ -879,6 +896,9 @@ class Transect:
                 # and shade in the region above the extreme elevation
                 ax.fill_between(DistFill, ElevFill, LowerFill, color=LighterColour, zorder=11+i)
 
+            # add text
+            plt.text(LineDists[0],WaterLevel,"$V_B$ = " + "{:.1f}".format(self.ExtremeVolumes[-1]) + " m$^3$ m$^{-1}$")
+
         # label axes
         ax.set_aspect(10.)
         ax.set_ylabel("Elevation (m)")
@@ -886,13 +906,9 @@ class Transect:
 
         # set axis limits 
         Start, End = ma.notmasked_edges(self.Distance)
-        
-        try:
-            ax.set_xlim([self.Distance[Start],self.Distance[self.CliffToeInd]])
-            ax.set_ylim([self.Elevation[Start],np.max(self.Elevation[Start:self.CliffToeInd])+1])
-            
-        except:
+        if Start != End:
             ax.set_xlim([self.Distance[Start],self.Distance[End]])
+            ax.set_ylim([self.Elevation[Start],np.max(self.Elevation[Start:End])+1])
         
         # add text
         plt.title("Transect "+str(self.ID))
@@ -903,7 +919,7 @@ class Transect:
         plt.tight_layout()
 
         # save the figure        
-        fig.savefig(PlotFolder+"Transect_"+str(self.ID)+".png", dpi=300)
+        fig.savefig(PlotFolder+"Transect_"+ str(self.LineID) + "_" +str(self.ID)+".png", dpi=300)
 
         # close the figure
         plt.close(fig)
