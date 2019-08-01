@@ -24,6 +24,9 @@ LineShp = "MHWS_2018_Smooth.shp"
 DTM = "StAn_2018_DTM_1m.tif"
 WindowSize = 2001
 
+# Montrose Mean High Water Springs
+MHWS = 2.5
+
 # make folder for plots if it doesnt already exist
 p = pathlib.Path(PlotFolder)
 p.mkdir(parents=True, exist_ok=True)
@@ -59,25 +62,26 @@ except:
     print("Saving Coast Object as " + Filename2SaveCoast)
     with open(Filename2SaveCoast, 'wb') as PFile:
         pickle.dump(ThisCoast, PFile)
-        
+
 ## ANALYSE TRANSECTS
-#ThisCoast.AnalyseTransectMorphology()
-#ThisCoast.AnalyseBarrierWidths([4.,5.,6.])
+#ThisCoast.FindRockyCoast()
+ThisCoast.SetMHWS(MHWS)
+ThisCoast.AnalyseTransectMorphology()
+ThisCoast.AnalyseBarrierWidths([4.,5.,6.])
 
 # SAVE ENTIRE COAST OBJECT
-#print("Saving Coast Object as " + Filename2SaveCoast)
-#with open(Filename2SaveCoast, 'wb') as PFile:
-#    pickle.dump(ThisCoast, PFile)
+print("Saving Coast Object as " + Filename2SaveCoast)
+with open(Filename2SaveCoast, 'wb') as PFile:
+    pickle.dump(ThisCoast, PFile)
 
 # write transects
-
     
 # plot the results
-ThisCoast.PlotTransects(PlotFolder)
+#ThisCoast.PlotTransects(PlotFolder)
 
 # write some stuff
-ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
-
+#ThisCoast.WriteCoastShp(SiteFolder+"Coast.shp")
+#ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
 #ThisCoast.WriteCliffShp(SiteFolder+"Cliffs.shp")
 #ThisCoast.WriteBarrierShp(SiteFolder+"Barriers.shp")
 #ThisCoast.WriteCrestLinesShp(SiteFolder+"CrestLines.shp")

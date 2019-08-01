@@ -1082,9 +1082,9 @@ class Coast:
                 print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
                 
                 # # Call analyses
-                #if Transect.ID == "13":
-                Transect.FindCliff()
-                Transect.FindBarrier()
+                if Transect.ID == "738":
+                    Transect.FindCliff()
+                    Transect.FindBarrier()
                 
                 # update transect progress no
                 CurrentTransect += 1
@@ -1549,8 +1549,8 @@ class Coast:
                 print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
 
                 # call plotting function
-                #if Transect.ID == "67":
-                Transect.Plot(PlotFolder)
+                if Transect.ID == "738":
+                    Transect.Plot(PlotFolder)
 
                 CurrentTransect += 1
 
