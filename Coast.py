@@ -1118,10 +1118,9 @@ class Coast:
                 print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
                     
                 # extract barrier width
-                if Transect.ID == "691":
-                    Transect.ExtractBarrierWidths(WaterElevs)
-                    return
-                #Transect.ExtractBarrierWidths(WaterElevs)
+                #if Transect.ID == "138":
+                #    Transect.ExtractBarrierWidths(WaterElevs)
+                Transect.ExtractBarrierWidths(WaterElevs)
 
                 # update transect progress no
                 CurrentTransect += 1
@@ -1261,6 +1260,11 @@ class Coast:
             CliffBool = [Transect.Cliff for Transect in CoastLine.Transects]
             CliffBool.insert(0, False)
             CliffBool = np.array(CliffBool).astype(int)
+
+            # check for transects with no cliffs
+            if not any(CliffBool):
+                print("No Cliffs on Line")
+                continue
             
             # get a list of the start and end points of contiguous cliff lines
             StartEndFlags = np.diff(CliffBool)
@@ -1481,10 +1485,10 @@ class Coast:
                             ExtremeFrontList.append(TempFront)
                             ExtremeBackList.append(TempBack)
                         except:
-                            print(Level, Transect.ID)
-                            print(Transect.ExtremeDistances)
-                            print(Transect.ExtremeWidths)
-                            sys.exit()
+                            continue
+                    
+                    if len(ExtremeFrontList) < 2:
+                        continue
                         
                     # create new line object for front 
                     X = [TempFront.X for TempFront in ExtremeFrontList]

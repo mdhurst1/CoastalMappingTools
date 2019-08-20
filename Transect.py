@@ -332,7 +332,7 @@ class Transect:
         """
         # Check if rocky and dont look for barrier on rocky coast
         if self.Rocky:
-            print("\n\tNot a barrier 1")
+            #print("\n\tNot a barrier 1")
             self.Barrier = False
             return
 
@@ -362,7 +362,7 @@ class Transect:
 
         # if highest point is not above MHWS then cant be a barrier
         if ElevMasked[MaxInd] < self.MHWS:
-            print("\n\tNot a barrier 3")
+            #print("\n\tNot a barrier 3")
             self.Barrier = False
             return
 
@@ -767,11 +767,14 @@ class Transect:
                 self.ExtremeWidth = 0.
                 self.ExtremeVolume = 0.
                 self.Intersection = False
+        
+        elif IntersectionCounter == 1:
+            self.ExtremeWidth = -99
+            self.ExtremeVolume = -99
+            self.Intersection = False
 
         elif IntersectionCounter > 1:
 
-            print("Intersection", Elev)
-            
             # Define Intersection Distance and Elevation by Interpolating
             ExtremeDist1 = self.Distance[IntersectionIndices[0]] + InterpolateFractions[0]*self.DistanceSpacing
             ExtremeDist2 = self.Distance[IntersectionIndices[1]] + InterpolateFractions[1]*self.DistanceSpacing
@@ -796,12 +799,6 @@ class Transect:
             self.ExtremeWidth = self.Distance[IntersectionIndices[1]] + InterpolateFractions[1]*self.DistanceSpacing \
                                 - self.Distance[IntersectionIndices[0]] + InterpolateFractions[0]*self.DistanceSpacing
             
-            print(self.ExtremeWidth)
-            print(IntersectionIndices)
-            print(self.Distance[IntersectionIndices[1]],self.Distance[IntersectionIndices[0]])
-            print(InterpolateFractions)
-            print(self.DistanceSpacing)
-
             # Calculate Volume
             self.ExtremeVolume = np.sum(self.Elevation[IntersectionIndices[0]+1:IntersectionIndices[1]+1]-Elev)*self.DistanceSpacing
         
@@ -822,13 +819,6 @@ class Transect:
             print(self.Elevation)
             print(self.Distance)
             return
-
-        # if (self.Elevation < -9998).any():
-        #     print("\n\tNo data values in transect")
-        #     print(self.Elevation)
-        #     print(self.Distance)
-        #     sys.exit()
-        #     return
 
         # grab colour map
         ColourMap = cm.viridis
@@ -872,7 +862,7 @@ class Transect:
             
             for i, WaterLevel in enumerate(self.ExtremeWaterLevels):
                 
-                if self.ExtremeWidths[i] is None:
+                if (self.ExtremeWidths[i] is None) or (self.ExtremeWidths[i] == -99):
                     continue
 
                 # get colour

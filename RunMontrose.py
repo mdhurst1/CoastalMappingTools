@@ -52,7 +52,7 @@ except:
     ThisCoast.WriteCoastShp(SiteFolder+"Coast.shp")
     
     # GENERATE TRANSECTS
-    ThisCoast.GenerateNormals(10.,200.,400.)
+    ThisCoast.GenerateNormals(10.,200.,200.)
     ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
     ThisCoast.ExtractTransectTopography(SiteFolder+DTM)
     
@@ -65,8 +65,8 @@ except:
     ThisCoast.WriteTransectsCSV(Folder=TransectsFolder)
 
 ## ANALYSE TRANSECTS
-#ThisCoast.FindRockyCoast()
-#ThisCoast.SetMHWS(MHWS)
+ThisCoast.FindRockyCoast()
+ThisCoast.SetMHWS(MHWS)
 ThisCoast.AnalyseTransectMorphology()
 ThisCoast.AnalyseBarrierWidths([4.,5.,6.])
 
@@ -77,7 +77,7 @@ with open(Filename2SaveCoast, 'wb') as PFile:
 
     
 ## plot the results
-ThisCoast.PlotTransects(PlotFolder)
+#ThisCoast.PlotTransects(PlotFolder)
 
 ## write some stuff
 ThisCoast.WriteCliffShp(SiteFolder+"Cliffs.shp")

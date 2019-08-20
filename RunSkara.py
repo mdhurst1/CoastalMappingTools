@@ -24,6 +24,9 @@ LineShp = "Skail_CoastTrend.shp"
 DTM = "Skail_DTM_25cm2.tif"
 WindowSize = 2001
 
+# Skail Mean High Water Springs
+MHWS = 1.8
+
 # make folder for plots if it doesnt already exist
 p = pathlib.Path(PlotFolder)
 p.mkdir(parents=True, exist_ok=True)
@@ -61,8 +64,9 @@ except:
         pickle.dump(ThisCoast, PFile)
         
 ## ANALYSE TRANSECTS
-#ThisCoast.AnalyseTransectMorphology()
-ThisCoast.AnalyseBarrierWidths([5.,6.,7.])
+ThisCoast.SetMHWS(MHWS)
+ThisCoast.AnalyseTransectMorphology()
+ThisCoast.AnalyseBarrierWidths([3.,4.,5.])
 
 # SAVE ENTIRE COAST OBJECT
 print("Saving Coast Object as " + Filename2SaveCoast)
@@ -71,9 +75,8 @@ with open(Filename2SaveCoast, 'wb') as PFile:
 
 # write transects
 
-    
 # plot the results
-#ThisCoast.PlotTransects(PlotFolder)
+ThisCoast.PlotTransects(PlotFolder)
 
 # write some stuff
 ThisCoast.WriteCliffShp(SiteFolder+"Cliffs.shp")
