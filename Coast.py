@@ -92,6 +92,8 @@ class Coast:
         # Generate coast nodes for each segment
         for i in range(0,self.NoCoastLines):
             
+            print(" \r\tCoastline %4d / %4d" % (i, self.NoCoastLines), end="")
+
             # get X and Y coordinates of segment
             X, Y = np.array(Shapes[i].points).T
             
@@ -604,7 +606,13 @@ class Coast:
         # set up Flag for lines being flipped
         FlagReverse = 1
 
+        Pass = 0
+
         while FlagReverse:
+
+            # print progress to screen
+            print(" \r\tPass %3d" % (Pass))
+            Pass += 1
 
             # Update Flag
             FlagReverse = 0
@@ -642,8 +650,11 @@ class Coast:
             
             # get list of line sections to start at
             StartList = np.where(JoinedByList < 0)[0]
-            for StartLine in StartList:
+            for i, StartLine in enumerate(StartList):
                 
+                # print progress to screen
+                print(" \r\tLine %4d / %4d" % (i, len(StartList)), end="")
+
                 # get vector of line section
                 X1, Y1 = self.CoastLines[StartLine].get_XY()
                 
@@ -675,6 +686,8 @@ class Coast:
             
             # update number of shapes
             self.NoCoastLines = len(self.CoastLines)
+        
+        print("\r\t Done.")
 
     def SmoothCoastLines(self, WindowSize=101, PolyOrder=4):
         

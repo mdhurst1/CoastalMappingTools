@@ -228,7 +228,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         
         """
 
-        print("Line: Generating Transects perpendicular to the coast")
+        # print("Line: Generating Transects perpendicular to the coast")
         
         # if rewriting Transects, empty the Transects list
         if len(self.Transects) != 0:
