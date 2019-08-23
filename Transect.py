@@ -44,6 +44,10 @@ class Transect:
         self.Orientation = self.CalculateOrientation(self.StartNode, self.EndNode)
         self.Length = self.CalculateLength(self.StartNode, self.EndNode)
         
+        # historic shoreline positions
+        self.HistoricShorelinesYears = []
+        self.HistoricShorelinePositions = []
+
         # transect data
         self.NoValues = None
         self.DistanceSpacing = None

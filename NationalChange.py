@@ -53,8 +53,8 @@ except:
 # ScotlandCoast.MergeCoastLines()
 
 # GENERATE TRANSECTS
-ScotlandCoast.GenerateNormals(50.,200.,200.)
-ScotlandCoast.WriteTransectsShp(str(WorkingPath / "ScotlandTransects.Shp"))
+ScotlandCoast.GenerateNormals(10.,20.,20.)
+ScotlandCoast.WritePointsShp(str(WorkingPath / "ScotlandPoints.Shp"))
 
 #ThisCoast.SmoothCoastLines(WindowSize=WindowSize)
 #     ThisCoast.ReconfigureCoastLines("E")

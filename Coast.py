@@ -16,6 +16,10 @@ from sklearn.cluster import KMeans
 import shapefile
 import itertools
 import rasterio
+import geopandas as gp
+from shapely.geometry import LineString, Point
+from shapely.ops import nearest_points
+
 from Line import *
 from IPython.display import clear_output
 
@@ -883,6 +887,33 @@ class Coast:
 
             # generate transects along each line
             Line.GenerateNodes(NodeSpacing)
+
+    def ExtractHistoricalShorelinePositions(self,HistoricalShorelinesShp):
+
+        """
+        Function to find nearest historic shoreline position on each transect
+        and add nodes to transect dictionary by date
+
+        MDH, August 2019
+
+        Parameters
+        ----------
+        HistoricalShorelineShp : string
+            Filename for polyline shapfile containing historical shoreline positions
+        
+        """
+        print("Coast: Finding historical shoreline positions")
+
+        # read shapefile
+        GDF = gp.read_file(HistoricalShorelinesShp)
+        Lines = GDF['geometry']
+
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                
+                # shapely goes here
+                Point = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                NearestPoint = nearest_points(Lines, Point)[0]
 
     def ExtractTransectTopography(self, DEMFile, SwathDistance=-9999):
         """
