@@ -54,6 +54,7 @@ class Coast:
         self.Projection = ""
         self.OverallOrientation = 0.
         self.TransectsSpacing = 10.
+        self.NodeSpacing = 10.
         self.TransectsLength2Sea = 200.
         self.TransectsLength2Land = 1000.
         self.ExtremeWaterLevels = []
@@ -856,6 +857,32 @@ class Coast:
 
             # generate transects along each line
             Line.GenerateTransects(TransectSpacing, TransectLength2Sea, TransectLength2Land)
+
+    def GenerateNodes(self, NodeSpacing):
+
+        """
+        Wrapper to the function in the Line object
+
+        Generates nodes the coastline
+
+        MDH, August 2019
+
+        Parameters
+        ----------
+        NodeSpacing : float
+            The distance between consecutive nodes along the CoastLines
+            in map units, spatial units depend on units of the CoastLine read in,
+            Should be [m]
+        
+        """
+        print("Coast: Generating CoastLine nodes")
+
+        self.NodeSpacing = TransectSpacing
+        
+        for Line in self.CoastLines:
+
+            # generate transects along each line
+            Line.GenerateNodes(NodeSpacing)
 
     def ExtractTransectTopography(self, DEMFile, SwathDistance=-9999):
         """

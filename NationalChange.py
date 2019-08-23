@@ -32,29 +32,29 @@ print(Filename2SaveCoast)
 
 
 # # this checks to see whether coast object already exists
-#try:
-#    ScotlandCoast = pickle.load( open( Filename2SaveCoast, "rb" ) )
-#    print("Loaded Coast Object " + Filename2SaveCoast)
+try:
+    ScotlandCoast = pickle.load( open( Filename2SaveCoast, "rb" ) )
+    print("Loaded Coast Object ", Filename2SaveCoast)
 
-#except:
+except:
 
-print("Creating New Coast Object")
+    print("Creating New Coast Object")
 
-# SET UP THE COAST
-ScotlandCoast = Coast(str(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Modern_FINAL.shp"))
-print(ScotlandCoast)
+    # SET UP THE COAST
+    ScotlandCoast = Coast(str(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Modern_FINAL.shp"))
+    print(ScotlandCoast)
 
-# SAVE ENTIRE COAST OBJECT
-print("Saving Coast Object as ", Filename2SaveCoast)
-with open(str(Filename2SaveCoast), 'wb') as PFile:
-    pickle.dump(ScotlandCoast, PFile)
+    # SAVE ENTIRE COAST OBJECT
+    print("Saving Coast Object as ", Filename2SaveCoast)
+    with open(str(Filename2SaveCoast), 'wb') as PFile:
+        pickle.dump(ScotlandCoast, PFile)
 
 # SIMPLIFY COASTLINE?
 # ScotlandCoast.MergeCoastLines()
 
 # GENERATE TRANSECTS
-ScotlandCoast.GenerateNormals(10.,200.,200.)
-ScotlandCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
+ScotlandCoast.GenerateNormals(50.,200.,200.)
+ScotlandCoast.WriteTransectsShp(str(WorkingPath / "ScotlandTransects.Shp"))
 
 #ThisCoast.SmoothCoastLines(WindowSize=WindowSize)
 #     ThisCoast.ReconfigureCoastLines("E")

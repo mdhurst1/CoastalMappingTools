@@ -32,6 +32,8 @@ class Line:
         self.TotalLength = 0
         self.Transects = []
         self.NoTransects = 0
+        self.Points = []
+        self.NoPoints = 0
 
         self.GenerateNodes(X, Y)
 
@@ -282,6 +284,64 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         
         # record number of transects
         self.NoTransects = TransectCount        
+
+    def GeneratePoints(self, Spacing):
+        """
+        Generates regularly spaced points along the coastline
+
+        MDH, August 2019
+
+        Parameters
+        ----------
+        Spacing : float
+            The distance between consecutive points along the CoastLines
+            in map units, spatial units depend on units of the CoastLine read in,
+            Should be [m]
+              
+        """
+
+        # print("Line: Generating Transects perpendicular to the coast")
+        
+        # if rewriting Transects, empty the Transects list
+        if len(self.Nodes) != 0:
+            self.Nodes = []
+
+        # Give each node unique ID
+        PointCount = 0
+        
+        # Parameters for tracing along length
+        CumulativeLength = 0.0
+        NextPosition = Spacing
+
+        # Track spacing and generate profile at desired distances
+        for i in range(0, self.NoNodes):
+
+            #Update the cumulative length of the line
+            CumulativeLength += self.SegmentLength[i]
+
+            # get orientation
+            TempOrientation = self.Orientation[i]
+            
+            # Test to see if we're going to create a node
+            while CumulativeLength > NextPosition:
+
+                #calculate point for section
+                DistanceToStepBack = CumulativeLength - NextPosition
+                dX = DistanceToStepBack * np.sin( np.radians( TempOrientation ) )
+                dY = DistanceToStepBack * np.cos( np.radians( TempOrientation ) )
+                
+                # find the point for the node along the line
+                PointX = self.Nodes[i+1].X - dX
+                PointY = self.Nodes[i+1].Y - dY
+
+                self.Points.append(Node(PointX, PointY, ID=PointCount))
+
+                # update to find next transect
+                PointCount += 1
+                NextPosition += Spacing
+        
+        # record number of transects
+        self.NoPoints = PointCount  
 
     def ReverseLine(self):
         """

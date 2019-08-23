@@ -14,7 +14,7 @@ class Node:
 
     """
     
-    def __init__(self, X, Y, Z=None, Dist=None):
+    def __init__(self, X, Y, Z=None, Dist=None, ID=None):
         
         self.X = X
         self.Y = Y
