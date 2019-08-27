@@ -904,16 +904,34 @@ class Coast:
         """
         print("Coast: Finding historical shoreline positions")
 
-        # read shapefile
+        # read shapefile using geopandas
         GDF = gp.read_file(HistoricalShorelinesShp)
         Lines = GDF['geometry']
+        print(type(Lines))
+        print(type(Lines[0]))
+        #MultiLines = MultiLineString(Lines)
+        #print(MultiLines)
+        return
 
         for Line in self.CoastLines:
+            print(Line)
             for Transect in Line.Transects:
                 
                 # shapely goes here
-                Point = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
-                NearestPoint = nearest_points(Lines, Point)[0]
+                BasePoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                NearestPoint = nearest_points(Lines, BasePoint)[0]
+                print(NearestPoint)
+
+                # add point to transect
+                Transect.HistoricShorelinePositions.append(Node(NearestPoint))
+
+                #Transect.HistoricShorelineYears.append()
+                # use line.distance < 10**-3 as conditional to find WHICH line?
+                # need date attribute if rates are to be calculated
+                
+
+                sys.exit()
+
 
     def ExtractTransectTopography(self, DEMFile, SwathDistance=-9999):
         """

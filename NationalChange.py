@@ -14,7 +14,7 @@ from Coast import *
 
 # define file names for analysis
 WorkingPath = pathlib.Path.cwd().parent
-print(WorkingPath)
+
 # Folder = r"../"
 # Site = "StAndrews_1m_2018"
 # SiteFolder = Folder+Site+"\\"
@@ -28,7 +28,6 @@ print(WorkingPath)
 
 # set up a file name to save the coast object
 Filename2SaveCoast = WorkingPath / "ScottishCoast.pydata"
-print(Filename2SaveCoast)
 
 
 # # this checks to see whether coast object already exists
@@ -44,6 +43,9 @@ except:
     ScotlandCoast = Coast(str(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Modern_FINAL.shp"))
     print(ScotlandCoast)
 
+    # GENERATE TRANSECTS
+    ScotlandCoast.GenerateNormals(10.,20.,20.)
+
     # SAVE ENTIRE COAST OBJECT
     print("Saving Coast Object as ", Filename2SaveCoast)
     with open(str(Filename2SaveCoast), 'wb') as PFile:
@@ -52,9 +54,9 @@ except:
 # SIMPLIFY COASTLINE?
 # ScotlandCoast.MergeCoastLines()
 
-# GENERATE TRANSECTS
-ScotlandCoast.GenerateNormals(10.,20.,20.)
-ScotlandCoast.WritePointsShp(str(WorkingPath / "ScotlandPoints.Shp"))
+#ScotlandCoast.WritePointsShp(str(WorkingPath / "ScotlandPoints.Shp"))
+
+ScotlandCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1890_FINAL.shp"))
 
 #ThisCoast.SmoothCoastLines(WindowSize=WindowSize)
 #     ThisCoast.ReconfigureCoastLines("E")
