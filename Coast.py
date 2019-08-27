@@ -17,7 +17,7 @@ import shapefile
 import itertools
 import rasterio
 import geopandas as gp
-from shapely.geometry import LineString, Point
+from shapely.geometry import Point, LineString, MultiLineString
 from shapely.ops import nearest_points
 
 from Line import *
