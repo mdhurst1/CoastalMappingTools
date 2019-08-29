@@ -53,10 +53,19 @@ except:
 
 # SIMPLIFY COASTLINE?
 # ScotlandCoast.MergeCoastLines()
+# ScotlandCoast.WritePointsShp(str(WorkingPath / "ScotlandPoints.Shp"))
 
-#ScotlandCoast.WritePointsShp(str(WorkingPath / "ScotlandPoints.Shp"))
-
+# find historic shoreline positions
 ScotlandCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1890_FINAL.shp"))
+ScotlandCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1970_FINAL.shp"))
+
+print("Saving Coast Object as ", Filename2SaveCoast)
+with open(str(Filename2SaveCoast), 'wb') as PFile:
+    pickle.dump(ScotlandCoast, PFile)
+
+# generate new transects based on historic shoreline positions?
+
+# find -10m contour on each transect
 
 #ThisCoast.SmoothCoastLines(WindowSize=WindowSize)
 #     ThisCoast.ReconfigureCoastLines("E")

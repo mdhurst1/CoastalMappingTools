@@ -9,6 +9,7 @@ June 2019
 
 # import modules
 import os, sys, time, pickle
+from pathlib import Path
 import numpy as np
 import numpy.ma as ma
 from sklearn.cluster import KMeans
@@ -902,35 +903,38 @@ class Coast:
             Filename for polyline shapfile containing historical shoreline positions
         
         """
-        print("Coast: Finding historical shoreline positions")
+        print("Coast: Finding historical shoreline positions from ", end="")
+        print(Path(HistoricalShorelinesShp).name)
 
         # read shapefile using geopandas
         GDF = gp.read_file(HistoricalShorelinesShp)
         Lines = GDF['geometry']
-        print(type(Lines))
-        print(type(Lines[0]))
-        #MultiLines = MultiLineString(Lines)
-        #print(MultiLines)
-        return
-
+        MultiLines = MultiLineString([Line for Line in Lines])
+        
         for Line in self.CoastLines:
-            print(Line)
             for Transect in Line.Transects:
                 
                 # shapely goes here
                 BasePoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
-                NearestPoint = nearest_points(Lines, BasePoint)[0]
-                print(NearestPoint)
-
-                # add point to transect
-                Transect.HistoricShorelinePositions.append(Node(NearestPoint))
-
-                #Transect.HistoricShorelineYears.append()
-                # use line.distance < 10**-3 as conditional to find WHICH line?
-                # need date attribute if rates are to be calculated
+                NearestPoint = nearest_points(MultiLines, BasePoint)[0]
                 
+                # use minimum of line.distance to find line
+                # need date attribute if rates are to be calculated
+                Distances = Lines.distance(NearestPoint)
+                NearestLine = GDF.iloc[Distances.argmin()]
+                
+                # check it hasnt already been read
+                Year = NearestLine.Surv_End_A
 
-                sys.exit()
+                if Year not in Transect.HistoricShorelineYears:
+                    # add point to transect
+                    Transect.HistoricShorelinesPositions.append(Node(NearestPoint.x,NearestPoint.y))
+                    Transect.HistoricShorelineYears.append(Year)
+
+                else:
+                    # find and replace
+                    Index = Transect.HistoricShorelineYears.index(Year)
+                    Transect.HistoricShorelinesPositions[Index] = Node(NearestPoint.x,NearestPoint.y)                    
 
 
     def ExtractTransectTopography(self, DEMFile, SwathDistance=-9999):

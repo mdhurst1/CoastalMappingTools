@@ -46,7 +46,7 @@ class Transect:
         
         # historic shoreline positions
         self.HistoricShorelinesYears = []
-        self.HistoricShorelinePositions = []
+        self.HistoricShorelinesPositions = []
 
         # transect data
         self.NoValues = None
