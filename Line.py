@@ -20,7 +20,7 @@ class Line:
     """
     """
 
-    def __init__(self, ID, X, Y):
+    def __init__(self, ID, X, Y, Contour=None):
         """
         """
         self.ID = ID
@@ -34,7 +34,7 @@ class Line:
         self.NoTransects = 0
         self.Points = []
         self.NoPoints = 0
-
+        self.Contour = Contour
         self.GenerateNodes(X, Y)
 
     def __str__(self):

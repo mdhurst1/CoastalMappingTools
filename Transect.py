@@ -44,9 +44,14 @@ class Transect:
         self.Orientation = self.CalculateOrientation(self.StartNode, self.EndNode)
         self.Length = self.CalculateLength(self.StartNode, self.EndNode)
         
-        # historic shoreline positions
+        # historic shoreline positions and change rates
         self.HistoricShorelinesYears = []
         self.HistoricShorelinesPositions = []
+        self.ChangeRates = []
+
+        # location of -10m depth contour
+        self.Contour = []
+        self.HistoricalRSL = None
 
         # transect data
         self.NoValues = None
@@ -156,6 +161,39 @@ class Transect:
         dy = Node2.Y - Node1.Y
         
         return np.sqrt(dx**2 + dy**2.)
+
+    def RebuildTransectFromContours(self,Distance2Land, Distance2Sea):
+
+        """
+
+        Function to build new transects based on contour positions
+
+        MDH, August 2019
+
+        """
+
+        # transect positioning
+        self.StartNode = CoastNode
+
+        # get 0 m contour
+        Index = ([ContourNode.z for ContourNode in self.Contours]).index(0.)
+        self.EndNode = self.Contours[Index]
+
+        # get orientation
+        self.Orientation = self.CalculateOrientation(self.StartNode, self.EndNode)
+
+        # extend transect landward and seaward?
+        X1 = self.StartNode.X - Distance2Land * np.sin( np.radians( self.Orientation ) )
+        Y1 = self.StartNode.Y - Distance2Land * np.cos( np.radians( self.Orientation ) )
+        self.StartNode = Node(X1,Y1)
+
+        X1 = self.StartNode.X + Distance2Sea * np.sin( np.radians( self.Orientation ) )
+        Y1 = self.StartNode.Y + Distance2Sea * np.cos( np.radians( self.Orientation ) )
+        self.EndNode = Node(X1,Y1)
+
+        self.Length = self.CalculateLength(self.StartNode, self.EndNode)
+
+
 
     def FindCliff(self):
 

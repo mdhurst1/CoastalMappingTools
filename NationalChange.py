@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Driver for assessment of future shoreline change in Scotland
+Driver for assessment of future shoreline change in Montrose
 Bruun Rule approach
 
 Martin Hurst
@@ -27,12 +27,12 @@ WorkingPath = pathlib.Path.cwd().parent
 # MHWS = 2.5
 
 # set up a file name to save the coast object
-Filename2SaveCoast = WorkingPath / "ScottishCoast.pydata"
+Filename2SaveCoast = WorkingPath / "MontroseCoast.pydata"
 
 
 # # this checks to see whether coast object already exists
 try:
-    ScotlandCoast = pickle.load( open( Filename2SaveCoast, "rb" ) )
+    MontroseCoast = pickle.load( open( Filename2SaveCoast, "rb" ) )
     print("Loaded Coast Object ", Filename2SaveCoast)
 
 except:
@@ -40,28 +40,39 @@ except:
     print("Creating New Coast Object")
 
     # SET UP THE COAST
-    ScotlandCoast = Coast(str(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Modern_FINAL.shp"))
-    print(ScotlandCoast)
-
-    # GENERATE TRANSECTS
-    ScotlandCoast.GenerateNormals(10.,20.,20.)
-
+    MontroseCoast = Coast(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_Modern_Soft.shp"))
+    
     # SAVE ENTIRE COAST OBJECT
     print("Saving Coast Object as ", Filename2SaveCoast)
     with open(str(Filename2SaveCoast), 'wb') as PFile:
-        pickle.dump(ScotlandCoast, PFile)
-
-# SIMPLIFY COASTLINE?
-# ScotlandCoast.MergeCoastLines()
-# ScotlandCoast.WritePointsShp(str(WorkingPath / "ScotlandPoints.Shp"))
+        pickle.dump(MontroseCoast, PFile)
 
 # find historic shoreline positions
-ScotlandCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1890_FINAL.shp"))
-ScotlandCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1970_FINAL.shp"))
+# MontroseCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_1890_FINAL.shp"))
+# MontroseCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_1970_FINAL.shp"))
 
+# find nearest -10m contour
+# MontroseCoast.Extract10mDepthContour(str(WorkingPath / "Bathymetry" / "MTBathy_Scotland_Contour.shp"))
+
+# SAVE ENTIRE COAST OBJECT
 print("Saving Coast Object as ", Filename2SaveCoast)
 with open(str(Filename2SaveCoast), 'wb') as PFile:
-    pickle.dump(ScotlandCoast, PFile)
+    pickle.dump(MontroseCoast, PFile)
+
+# SIMPLIFY COASTLINE?
+# MontroseCoast.SmoothCoastLines()
+# MontroseCoast.WriteCoastShp(str(WorkingPath / "Coast.shp"))
+
+# MontroseCoast.MergeCoastLines()
+# MontroseCoast.WritePointsShp(str(WorkingPath / "MontrosePoints.Shp"))
+
+# find historic shoreline positions
+#MontroseCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_1890_FINAL.shp"))
+#MontroseCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_1970_FINAL.shp"))
+
+#print("Saving Coast Object as ", Filename2SaveCoast)
+#with open(str(Filename2SaveCoast), 'wb') as PFile:
+#    pickle.dump(MontroseCoast, PFile)
 
 # generate new transects based on historic shoreline positions?
 

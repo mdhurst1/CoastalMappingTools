@@ -43,6 +43,7 @@ class Coast:
         self.CoastShp = CoastShp
         self.NoCoastLines = 0
         self.CoastLines = []
+        self.Contours = []
         self.CliffTopLines = []
         self.CliffToeLines = []
         self.BarrierFrontTopLines = []
@@ -695,7 +696,7 @@ class Coast:
         
         print("\r\t Done.")
 
-    def SmoothCoastLines(self, WindowSize=101, PolyOrder=4):
+    def SmoothCoastLines(self, WindowSize=1001, PolyOrder=4):
         
         """
         Smooths the CoastLines contained in Coast object
@@ -921,22 +922,79 @@ class Coast:
                 # use minimum of line.distance to find line
                 # need date attribute if rates are to be calculated
                 Distances = Lines.distance(NearestPoint)
-                NearestLine = GDF.iloc[Distances.argmin()]
+                NearestLine = GDF.iloc[Distances.idxmin()]
                 
                 # check it hasnt already been read
                 Year = NearestLine.Surv_End_A
 
-                if Year not in Transect.HistoricShorelineYears:
+                if Year not in Transect.HistoricShorelinesYears:
                     # add point to transect
                     Transect.HistoricShorelinesPositions.append(Node(NearestPoint.x,NearestPoint.y))
-                    Transect.HistoricShorelineYears.append(Year)
+                    Transect.HistoricShorelinesYears.append(Year)
 
                 else:
                     # find and replace
-                    Index = Transect.HistoricShorelineYears.index(Year)
+                    Index = Transect.HistoricShorelinesYears.index(Year)
                     Transect.HistoricShorelinesPositions[Index] = Node(NearestPoint.x,NearestPoint.y)                    
 
+    def ExtractDepthContours(self,DepthContourShp):
 
+        """
+        Function to find nearest location of -10 m depth contour
+        from contour shapefile for each transect
+
+        MDH, August 2019
+
+        Parameters
+        ----------
+        DepthContourShp : string
+            Filename for polyline shapfile containing depth contours
+        
+        """
+        print("Coast: Finding nearest depth contours")
+        
+        # read shapefile using geopandas
+        GDF = gp.read_file(DepthContourShp)
+        
+        for Contour in GDF.level.unique():
+        
+            # isolate closure depth contour
+            GDFtemp = GDF[GDF.level == Contour]
+        
+            # get lines geometry
+            Lines = GDFtemp['geometry']
+            MultiLines = MultiLineString([Line for Line in Lines])
+
+            for Line in MultiLines:
+                x, y = Line.xy
+                self.Contours.append(Line(x,y,Contour))
+            
+            for Line in self.CoastLines:
+                for Transect in Line.Transects:
+                    
+                    # shapely goes here
+                    BasePoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                    NearestPoint = nearest_points(MultiLines, BasePoint)[0]
+                    Transect.Contours.append(Node(NearestPoint.x,NearestPoint.y, Contour))
+
+    def RebuildTransectsFromContours(Distance2Land,Distance2Sea):
+
+        """
+
+        MDH August 2019
+        
+        """
+
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                Transect.RebuildTransectsFromContours(Distance2Land, Distance2Sea)
+
+    def SampleFromRaster2Transect():
+
+        """ goes here somewhere """
+
+        HistoricalRSL = rasterio.sample()
+                
     def ExtractTransectTopography(self, DEMFile, SwathDistance=-9999):
         """
         Profile to populate transects with topographic data
@@ -1678,3 +1736,32 @@ class Coast:
 
         fig.clear()
         plt.close(fig)
+    
+    def PlotPositions():
+
+        #import figure plotting stuff here not globally!
+        import matplotlib
+        matplotlib.use('agg')
+        import matplotlib.pyplot as plt
+
+        print("Coast.PlotPositions: Plotting transect positions")
+
+        # Track progress
+        NoTransects = np.sum([Line.NoTransects for Line in self.CoastLines])-1
+        CurrentTransect = 0
+
+        # loop through lines and plot profiles #
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                
+                # print progress to screen
+                print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
+
+                # call plotting function
+                #if Transect.ID == "0":
+                Transect.PlotPositions(PlotFolder)
+                    
+                CurrentTransect += 1
+
+        print("")
+        
