@@ -50,7 +50,7 @@ class Transect:
         self.ChangeRates = []
 
         # location of -10m depth contour
-        self.Contour = []
+        self.Contours = []
         self.HistoricalRSL = None
 
         # transect data
@@ -173,7 +173,7 @@ class Transect:
         """
 
         # transect positioning
-        self.StartNode = CoastNode
+        self.StartNode = self.CoastNode
 
         # get 0 m contour
         Index = ([ContourNode.z for ContourNode in self.Contours]).index(0.)

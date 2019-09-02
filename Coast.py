@@ -380,6 +380,7 @@ class Coast:
 
                 # get transect node positions
                 X, Y = Transect.get_XY()
+                
                 WriteTransect = [np.column_stack([X,Y]).tolist()]
 
                 # Create the record this could become a function in transect object...
@@ -925,7 +926,12 @@ class Coast:
                 NearestLine = GDF.iloc[Distances.idxmin()]
                 
                 # check it hasnt already been read
-                Year = NearestLine.Surv_End_A
+                if "Surv_End_A" in NearestLine:
+                    Year = NearestLine.Surv_End_A
+                elif "Surv_End_B" in NearestLine:
+                    Year = NearestLine.Surv_End_B
+                else:
+                    sys.exit("Couldnt find survey year for MHWS historic shoreline position")
 
                 if Year not in Transect.HistoricShorelinesYears:
                     # add point to transect
@@ -937,7 +943,7 @@ class Coast:
                     Index = Transect.HistoricShorelinesYears.index(Year)
                     Transect.HistoricShorelinesPositions[Index] = Node(NearestPoint.x,NearestPoint.y)                    
 
-    def ExtractDepthContours(self,DepthContourShp):
+    def ExtractContours(self,ContourShp):
 
         """
         Function to find nearest location of -10 m depth contour
@@ -947,14 +953,14 @@ class Coast:
 
         Parameters
         ----------
-        DepthContourShp : string
+        ContourShp : string
             Filename for polyline shapfile containing depth contours
         
         """
         print("Coast: Finding nearest depth contours")
         
         # read shapefile using geopandas
-        GDF = gp.read_file(DepthContourShp)
+        GDF = gp.read_file(ContourShp)
         
         for Contour in GDF.level.unique():
         
@@ -965,29 +971,30 @@ class Coast:
             Lines = GDFtemp['geometry']
             MultiLines = MultiLineString([Line for Line in Lines])
 
-            for Line in MultiLines:
-                x, y = Line.xy
-                self.Contours.append(Line(x,y,Contour))
+            for i, ContourLine in enumerate(MultiLines):
+                x, y = ContourLine.xy
+                TempLine = Line(str(i),x,y,Contour)
+                self.Contours.append(TempLine)
             
-            for Line in self.CoastLines:
-                for Transect in Line.Transects:
+            for ThisLine in self.CoastLines:
+                for Transect in ThisLine.Transects:
                     
                     # shapely goes here
                     BasePoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
                     NearestPoint = nearest_points(MultiLines, BasePoint)[0]
-                    Transect.Contours.append(Node(NearestPoint.x,NearestPoint.y, Contour))
+                    Transect.Contours.append(Node(str(Contour), NearestPoint.x,NearestPoint.y, Contour))
 
-    def RebuildTransectsFromContours(Distance2Land,Distance2Sea):
+    def RebuildTransectsFromContours(self,Distance2Land,Distance2Sea):
 
         """
 
         MDH August 2019
-        
+
         """
 
         for Line in self.CoastLines:
             for Transect in Line.Transects:
-                Transect.RebuildTransectsFromContours(Distance2Land, Distance2Sea)
+                Transect.RebuildTransectFromContours(Distance2Land, Distance2Sea)
 
     def SampleFromRaster2Transect():
 

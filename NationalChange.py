@@ -41,6 +41,7 @@ except:
 
     # SET UP THE COAST
     MontroseCoast = Coast(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_Modern_Soft.shp"))
+    MontroseCoast.GenerateNormals(10.,10.,20.)
     
     # SAVE ENTIRE COAST OBJECT
     print("Saving Coast Object as ", Filename2SaveCoast)
@@ -48,11 +49,17 @@ except:
         pickle.dump(MontroseCoast, PFile)
 
 # find historic shoreline positions
-# MontroseCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_1890_FINAL.shp"))
-# MontroseCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_1970_FINAL.shp"))
+MontroseCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_1890_FINAL.shp"))
+MontroseCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_1970_FINAL.shp"))
 
-# find nearest -10m contour
-# MontroseCoast.Extract10mDepthContour(str(WorkingPath / "Bathymetry" / "MTBathy_Scotland_Contour.shp"))
+# extract depth contours
+MontroseCoast.ExtractContours(str(WorkingPath / "Bathymetry" / "MTBathy_Scotland_Contour.shp"))
+
+# build transects from contours
+Distance2Land = 100.
+Distance2Sea = 1000.
+MontroseCoast.RebuildTransectsFromContours(Distance2Land,Distance2Sea)
+MontroseCoast.WriteTransectsShp(str(WorkingPath / "Transects.shp"))
 
 # SAVE ENTIRE COAST OBJECT
 print("Saving Coast Object as ", Filename2SaveCoast)
