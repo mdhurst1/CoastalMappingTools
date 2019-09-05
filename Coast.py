@@ -865,6 +865,34 @@ class Coast:
             # generate transects along each line
             Line.GenerateTransects(TransectSpacing, TransectLength2Sea, TransectLength2Land)
 
+    def GenerateTransectsNormal2Shp(self, ContourShp, TransectSpacing=10.):
+        """
+        Wrapper to the function in the Line object
+
+        Generates transects perpendicular to the coastline and extends them to 
+        the nearest point on another shapefile line
+
+        MDH, September 2019
+
+        Parameters
+        ----------
+        ContourShp : str
+            The name of a shapefile containing a contour/contours 
+            to base transects on.
+        TransectSpacing : float
+            The distance between consecutive transects along the CoastLines
+            in map units, spatial units depend on units of the CoastLine read in,
+            Should be [m]
+        """
+        print("Coast: Generating CoastLine transects perpendicular to the coast, extending to ", ContourShp)
+
+        self.TransectsSpacing = TransectSpacing
+        
+        for Line in self.CoastLines:
+
+            # generate transects along each line
+            Line.GenerateTransectsNormal2Shp(ContourShp,TransectSpacing)
+
     def GenerateTransectsFromContours(self,ContourShp,TransectSpacing=10.):
 
         """

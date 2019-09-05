@@ -239,6 +239,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         # if rewriting Transects, empty the Transects list
         if len(self.Transects) != 0:
             self.Transects = []
+            self.Points = []
 
         # Give each transect unique ID
         TransectCount = 0
@@ -339,6 +340,59 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
                 
                 # build transect using these two points
                 self.Transects.append(Transect(str(self.ID), str(ThisPoint.ID), Node(NearestPoint.x, NearestPoint.y), Node(BasePoint.x, BasePoint.y), Node(NearestPoint.x, NearestPoint.y)))
+
+    def GenerateTransectsNormal2Shp(self, ContourShp, Spacing):
+
+        """
+
+        Generates regularly spaced transects along the coastline by 
+        finding the nearest point in another line dataset and drawing
+        connecting lines
+    
+        MDH, August 2019
+
+        Parameters
+        ----------
+        Spacing : float
+            The distance between consecutive points along the CoastLines
+            in map units, spatial units depend on units of the CoastLine read in,
+            Should be [m]
+
+        """
+
+        # load the contour shapefile
+        GDF = gp.read_file(ContourShp)
+        Lines = GDF['geometry']
+        
+        # make a multlinestring if there are multiple lines
+        LineList = []
+        for LineObj in Lines:
+            if (LineObj.geom_type == "MultiLineString"):
+                for ThisLine in LineObj:
+                    LineList.append(ThisLine)
+            else:
+                LineList.append(LineObj)
+
+        Lines = MultiLineString(LineList)
+        
+        # get points to define initial transect line and make it nice and long
+        self.GenerateTransects(Spacing,5000.,5000.)
+
+        # intersect Transect with shapefile to find new end node of transect
+        for Transect in self.Transects:
+            print(Transect.ID)
+            Intersection = Transect.LineString.intersection(Lines)
+
+            if Intersection.geom_type is "MultiPoint":
+                StartPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection]
+                Index = Distances.index(min(Distances))
+                Intersection = Intersection[Index]
+
+            NewEndNode = Node(Intersection.x,Intersection.y)
+
+            # reinitialise transect with coastnode and new endnode
+            Transect.__init__(Transect.LineID, Transect.ID, Transect.CoastNode, Transect.CoastNode, NewEndNode)
 
     def GeneratePoints(self, Spacing):
         """

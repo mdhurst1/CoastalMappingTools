@@ -41,13 +41,15 @@ except:
 
     # SET UP THE COAST FROM -10m Contour
     MontroseCoast = Coast(str(WorkingPath / "Bathymetry" / "MTBathy_Montrose_Clip_Contour_BNG.shp"))
-    MontroseCoast.GenerateTransectsFromContours(str(WorkingPath / "MHWS_Lines" / "OS_Montrose_MHWS.shp"),50.)
+    MontroseCoast.SmoothCoastLines()
+    MontroseCoast.GenerateTransectsNormal2Shp(str(WorkingPath / "MHWS_Lines" / "OS_Montrose_MHWS.shp"), 50.)
     
     # SAVE ENTIRE COAST OBJECT
     print("Saving Coast Object as ", Filename2SaveCoast)
     with open(str(Filename2SaveCoast), 'wb') as PFile:
         pickle.dump(MontroseCoast, PFile)
 
+MontroseCoast.WriteCoastShp(str(WorkingPath / "SmoothCoast.shp"))
 MontroseCoast.WriteTransectsShp(str(WorkingPath / "Montrose_Transects.shp"))
 
 # find historic shoreline positions
