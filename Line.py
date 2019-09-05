@@ -15,6 +15,10 @@ import Transect
 from Node import *
 from Transect import *
 
+import geopandas as gp
+from shapely.geometry import Point, LineString, MultiLineString
+from shapely.ops import nearest_points
+
 class Line:
     
     """
@@ -285,6 +289,57 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         # record number of transects
         self.NoTransects = TransectCount        
 
+    def GenerateTransectsFromContour(self, ContourShp, Spacing):
+
+        """
+
+        Generates regularly spaced transects along the coastline by 
+        finding the nearest point in another line dataset and drawing
+        connecting lines
+    
+        MDH, August 2019
+
+        Parameters
+        ----------
+        Spacing : float
+            The distance between consecutive points along the CoastLines
+            in map units, spatial units depend on units of the CoastLine read in,
+            Should be [m]
+
+        """
+
+        # if rewriting Transects, empty the Transects list
+        if len(self.Points) != 0:
+            self.Transects = []
+            self.Points = []
+        
+        # generate points along the line
+        self.GeneratePoints(Spacing)
+
+        # load the contour shapefile
+        GDF = gp.read_file(ContourShp)
+        Lines = GDF['geometry']
+        
+        # make a multlinestring if there are multiple lines
+        LineList = []
+        for LineObj in Lines:
+            if (LineObj.geom_type == "MultiLineString"):
+                for ThisLine in LineObj:
+                    LineList.append(ThisLine)
+            else:
+                LineList.append(LineObj)
+
+        Lines = MultiLineString(LineList)
+        
+        for ThisPoint in self.Points:
+                
+                # find nearest point in contour lines
+                BasePoint = Point(ThisPoint.X, ThisPoint.Y)
+                NearestPoint = nearest_points(Lines, BasePoint)[0]
+                
+                # build transect using these two points
+                self.Transects.append(Transect(str(self.ID), str(ThisPoint.ID), Node(NearestPoint.x, NearestPoint.y), Node(BasePoint.x, BasePoint.y), Node(NearestPoint.x, NearestPoint.y)))
+
     def GeneratePoints(self, Spacing):
         """
         Generates regularly spaced points along the coastline
@@ -302,9 +357,10 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
         # print("Line: Generating Transects perpendicular to the coast")
         
-        # if rewriting Transects, empty the Transects list
-        if len(self.Nodes) != 0:
-            self.Nodes = []
+        # if rewriting Points, empty the Points and transects list
+        if len(self.Points) != 0:
+            self.Points = []
+            self.Transects = []
 
         # Give each node unique ID
         PointCount = 0
@@ -341,7 +397,9 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
                 NextPosition += Spacing
         
         # record number of transects
-        self.NoPoints = PointCount  
+        self.NoPoints = PointCount
+
+    
 
     def ReverseLine(self):
         """

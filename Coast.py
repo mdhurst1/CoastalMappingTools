@@ -832,7 +832,7 @@ class Coast:
             self.OverallOrientation = 360 + np.degrees( np.arctan( dx / dy ) )
 
     # function to do something    
-    def GenerateNormals(self, TransectSpacing, TransectLength2Sea, TransectLength2Land):
+    def GenerateTransectsNormals(self, TransectSpacing, TransectLength2Sea, TransectLength2Land):
         """
         Wrapper to the function in the Line object
 
@@ -864,6 +864,31 @@ class Coast:
 
             # generate transects along each line
             Line.GenerateTransects(TransectSpacing, TransectLength2Sea, TransectLength2Land)
+
+    def GenerateTransectsFromContours(self,ContourShp,TransectSpacing=10.):
+
+        """
+
+        Loops along Coast line object and creates transects between coast and nearest
+        point on adjacent contour lines
+
+        MDH September 2019
+
+        Parameters
+        ----------
+        ContourShp : str
+            The name of a shapefile containing a contour/contours 
+            to base transects on.
+        TransectSpacing : float
+            The distance between consecutive transects along the CoastLines
+            in map units, spatial units depend on units of the CoastLine read in,
+            Should be [m]
+        """
+
+        self.TransectsSpacing = TransectSpacing
+
+        for Line in self.CoastLines:
+            Line.GenerateTransectsFromContour(ContourShp, TransectSpacing)
 
     def GenerateNodes(self, NodeSpacing):
 
@@ -984,17 +1009,8 @@ class Coast:
                     NearestPoint = nearest_points(MultiLines, BasePoint)[0]
                     Transect.Contours.append(Node(str(Contour), NearestPoint.x,NearestPoint.y, Contour))
 
-    def RebuildTransectsFromContours(self,Distance2Land,Distance2Sea):
+    
 
-        """
-
-        MDH August 2019
-
-        """
-
-        for Line in self.CoastLines:
-            for Transect in Line.Transects:
-                Transect.RebuildTransectFromContours(Distance2Land, Distance2Sea)
 
     def SampleFromRaster2Transect():
 

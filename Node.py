@@ -20,6 +20,7 @@ class Node:
         self.Y = Y
         self.Z = Z
         self.Dist = Dist
+        self.ID = ID
 
     def __eq__(self,other):
         if (self.X == other.X) and (self.Y == other.Y):

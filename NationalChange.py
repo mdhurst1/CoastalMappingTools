@@ -27,7 +27,7 @@ WorkingPath = pathlib.Path.cwd().parent
 # MHWS = 2.5
 
 # set up a file name to save the coast object
-Filename2SaveCoast = WorkingPath / "MontroseCoast.pydata"
+Filename2SaveCoast = WorkingPath / "MontroseChange.pydata"
 
 
 # # this checks to see whether coast object already exists
@@ -39,32 +39,34 @@ except:
 
     print("Creating New Coast Object")
 
-    # SET UP THE COAST
-    MontroseCoast = Coast(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_Modern_Soft.shp"))
-    MontroseCoast.GenerateNormals(10.,10.,20.)
+    # SET UP THE COAST FROM -10m Contour
+    MontroseCoast = Coast(str(WorkingPath / "Bathymetry" / "MTBathy_Montrose_Clip_Contour_BNG.shp"))
+    MontroseCoast.GenerateTransectsFromContours(str(WorkingPath / "MHWS_Lines" / "OS_Montrose_MHWS.shp"),50.)
     
     # SAVE ENTIRE COAST OBJECT
     print("Saving Coast Object as ", Filename2SaveCoast)
     with open(str(Filename2SaveCoast), 'wb') as PFile:
         pickle.dump(MontroseCoast, PFile)
 
+MontroseCoast.WriteTransectsShp(str(WorkingPath / "Montrose_Transects.shp"))
+
 # find historic shoreline positions
-MontroseCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_1890_FINAL.shp"))
-MontroseCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_1970_FINAL.shp"))
+# MontroseCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_1890_FINAL.shp"))
+# MontroseCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_1970_FINAL.shp"))
 
 # extract depth contours
-MontroseCoast.ExtractContours(str(WorkingPath / "Bathymetry" / "MTBathy_Scotland_Contour.shp"))
+# MontroseCoast.ExtractContours(str(WorkingPath / "Bathymetry" / "MTBathy_Scotland_Contour.shp"))
 
 # build transects from contours
-Distance2Land = 100.
-Distance2Sea = 1000.
-MontroseCoast.RebuildTransectsFromContours(Distance2Land,Distance2Sea)
-MontroseCoast.WriteTransectsShp(str(WorkingPath / "Transects.shp"))
+# Distance2Land = 100.
+# Distance2Sea = 1000.
+# MontroseCoast.RebuildTransectsFromContours(Distance2Land,Distance2Sea)
+# MontroseCoast.WriteTransectsShp(str(WorkingPath / "Transects.shp"))
 
 # SAVE ENTIRE COAST OBJECT
-print("Saving Coast Object as ", Filename2SaveCoast)
-with open(str(Filename2SaveCoast), 'wb') as PFile:
-    pickle.dump(MontroseCoast, PFile)
+# print("Saving Coast Object as ", Filename2SaveCoast)
+# with open(str(Filename2SaveCoast), 'wb') as PFile:
+#    pickle.dump(MontroseCoast, PFile)
 
 # SIMPLIFY COASTLINE?
 # MontroseCoast.SmoothCoastLines()
