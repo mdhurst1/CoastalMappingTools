@@ -30,6 +30,7 @@ class Line:
         self.ID = ID
         self.NoNodes = 0
         self.Nodes = []
+        self.RawNodes = []
         self.Projection = ""
         self.Orientation = []
         self.SegmentLength = []
@@ -67,6 +68,9 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             self.Nodes.append(Node(x,y))
         
         self.CalculateGeometry()
+        
+        if not self.RawNodes:
+            self.RawNodes = self.Nodes
 
     def CalculateGeometry(self):
         
@@ -131,6 +135,8 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         # window size and polyorder must be integers you idiot!
         XSmooth = savgol_filter(X,WindowSize,PolyOrder, mode="nearest")
         YSmooth = savgol_filter(Y,WindowSize,PolyOrder, mode="nearest")
+
+        self.RawNodes = self.Nodes
         
         # Write new X and Y vectors to Nodes
         self.GenerateNodes(XSmooth,YSmooth)
@@ -341,7 +347,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
                 # build transect using these two points
                 self.Transects.append(Transect(str(self.ID), str(ThisPoint.ID), Node(NearestPoint.x, NearestPoint.y), Node(BasePoint.x, BasePoint.y), Node(NearestPoint.x, NearestPoint.y)))
 
-    def GenerateTransectsNormal2Shp(self, ContourShp, Spacing):
+    def GenerateTransectsNormal2Contours(self, ContourShp1, ContourShp2, Spacing):
 
         """
 
@@ -361,7 +367,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         """
 
         # load the contour shapefile
-        GDF = gp.read_file(ContourShp)
+        GDF = gp.read_file(ContourShp1)
         Lines = GDF['geometry']
         
         # make a multlinestring if there are multiple lines
@@ -373,26 +379,64 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             else:
                 LineList.append(LineObj)
 
-        Lines = MultiLineString(LineList)
+        Lines1 = MultiLineString(LineList)
         
+        # load the second contour shapefile
+        GDF = gp.read_file(ContourShp2)
+        Lines = GDF['geometry']
+        
+        # make a multlinestring if there are multiple lines
+        LineList = []
+        for LineObj in Lines:
+            if (LineObj.geom_type == "MultiLineString"):
+                for ThisLine in LineObj:
+                    LineList.append(ThisLine)
+            else:
+                LineList.append(LineObj)
+
+        Lines2 = MultiLineString(LineList)
+
         # get points to define initial transect line and make it nice and long
         self.GenerateTransects(Spacing,5000.,5000.)
 
         # intersect Transect with shapefile to find new end node of transect
         for Transect in self.Transects:
-            print(Transect.ID)
-            Intersection = Transect.LineString.intersection(Lines)
+            
+            # find intersection between transect line and shapefile lines
+            Intersection = Transect.LineString.intersection(Lines1)
+            
+            # catch no intersections
+            if Intersection.geom_type == "GeometryCollection":
+                continue
 
+            # check there arent multiple intersections, if there are just get the nearest
+            if Intersection.geom_type is "MultiPoint":
+                StartPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection]
+                Index = Distances.index(min(Distances))
+                Intersection = Intersection[Index]
+                
+            # set this as the new end node
+            NewEndNode = Node(Intersection.x,Intersection.y)
+            
+            # now do the same with the raw coastline data (i.e. the original contour)
+            Intersection = Transect.LineString.intersection(Lines2)
+            
+            # catch no intersections
+            if Intersection.geom_type == "GeometryCollection":
+                continue
+
+            # check there arent multiple intersections, if there are just get the nearest
             if Intersection.geom_type is "MultiPoint":
                 StartPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
                 Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection]
                 Index = Distances.index(min(Distances))
                 Intersection = Intersection[Index]
 
-            NewEndNode = Node(Intersection.x,Intersection.y)
+            NewStartNode = Node(Intersection.x,Intersection.y)
 
-            # reinitialise transect with coastnode and new endnode
-            Transect.__init__(Transect.LineID, Transect.ID, Transect.CoastNode, Transect.CoastNode, NewEndNode)
+            # reinitialise transect with new startnode and new endnode
+            Transect.__init__(Transect.LineID, Transect.ID, Transect.CoastNode, NewStartNode, NewEndNode)
 
     def GeneratePoints(self, Spacing):
         """

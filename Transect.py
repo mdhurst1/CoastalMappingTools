@@ -51,6 +51,7 @@ class Transect:
         self.HistoricShorelinesYears = []
         self.HistoricShorelinesPositions = []
         self.ChangeRates = []
+        self.DeleteFlag = False
 
         # location of -10m depth contour
         self.Contours = []
@@ -165,26 +166,16 @@ class Transect:
         
         return np.sqrt(dx**2 + dy**2.)
 
-    def RebuildTransectFromContours(self,Distance2Land, Distance2Sea):
+    def ExtendTransect(self,Distance2Land, Distance2Sea):
 
         """
 
-        Function to build new transects based on contour positions
+        Function to extend transects
 
         MDH, August 2019
 
         """
-
-        # transect positioning
-        self.StartNode = self.CoastNode
-
-        # get 0 m contour
-        Index = ([ContourNode.z for ContourNode in self.Contours]).index(0.)
-        self.EndNode = self.Contours[Index]
-
-        # get orientation
-        self.Orientation = self.CalculateOrientation(self.StartNode, self.EndNode)
-
+        
         # extend transect landward and seaward?
         X1 = self.StartNode.X - Distance2Land * np.sin( np.radians( self.Orientation ) )
         Y1 = self.StartNode.Y - Distance2Land * np.cos( np.radians( self.Orientation ) )

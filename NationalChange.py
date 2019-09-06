@@ -42,81 +42,30 @@ except:
     # SET UP THE COAST FROM -10m Contour
     MontroseCoast = Coast(str(WorkingPath / "Bathymetry" / "MTBathy_Montrose_Clip_Contour_BNG.shp"))
     MontroseCoast.SmoothCoastLines()
-    MontroseCoast.GenerateTransectsNormal2Shp(str(WorkingPath / "MHWS_Lines" / "OS_Montrose_MHWS.shp"), 50.)
+    MontroseCoast.GenerateTransectsNormal2Shp(str(WorkingPath / "MHWS_Lines" / "OS_Montrose_MHWS.shp"),
+                                              str(WorkingPath / "Bathymetry" / "MTBathy_Montrose_Clip_Contour_BNG.shp"), 50.)
     
     # SAVE ENTIRE COAST OBJECT
     print("Saving Coast Object as ", Filename2SaveCoast)
     with open(str(Filename2SaveCoast), 'wb') as PFile:
         pickle.dump(MontroseCoast, PFile)
 
-MontroseCoast.WriteCoastShp(str(WorkingPath / "SmoothCoast.shp"))
-MontroseCoast.WriteTransectsShp(str(WorkingPath / "Montrose_Transects.shp"))
+#MontroseCoast.WriteCoastShp(str(WorkingPath / "SmoothCoast.shp"))
+
 
 # find historic shoreline positions
-# MontroseCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_1890_FINAL.shp"))
-# MontroseCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_1970_FINAL.shp"))
+MontroseCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_1890_FINAL.shp"))
+MontroseCoast.WriteTransectsShp(str(WorkingPath / "Montrose_Transects1.shp"))
+MontroseCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_1970_FINAL.shp"))
+MontroseCoast.WriteTransectsShp(str(WorkingPath / "Montrose_Transects2.shp"))
+MontroseCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_Modern_Soft.shp"))
+MontroseCoast.WriteTransectsShp(str(WorkingPath / "Montrose_Transects3.shp"))
 
-# extract depth contours
-# MontroseCoast.ExtractContours(str(WorkingPath / "Bathymetry" / "MTBathy_Scotland_Contour.shp"))
-
-# build transects from contours
-# Distance2Land = 100.
-# Distance2Sea = 1000.
-# MontroseCoast.RebuildTransectsFromContours(Distance2Land,Distance2Sea)
-# MontroseCoast.WriteTransectsShp(str(WorkingPath / "Transects.shp"))
 
 # SAVE ENTIRE COAST OBJECT
-# print("Saving Coast Object as ", Filename2SaveCoast)
-# with open(str(Filename2SaveCoast), 'wb') as PFile:
-#    pickle.dump(MontroseCoast, PFile)
-
-# SIMPLIFY COASTLINE?
-# MontroseCoast.SmoothCoastLines()
-# MontroseCoast.WriteCoastShp(str(WorkingPath / "Coast.shp"))
-
-# MontroseCoast.MergeCoastLines()
-# MontroseCoast.WritePointsShp(str(WorkingPath / "MontrosePoints.Shp"))
-
-# find historic shoreline positions
-#MontroseCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_1890_FINAL.shp"))
-#MontroseCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_1970_FINAL.shp"))
-
-#print("Saving Coast Object as ", Filename2SaveCoast)
-#with open(str(Filename2SaveCoast), 'wb') as PFile:
-#    pickle.dump(MontroseCoast, PFile)
-
-# generate new transects based on historic shoreline positions?
-
-# find -10m contour on each transect
-
-#ThisCoast.SmoothCoastLines(WindowSize=WindowSize)
-#     ThisCoast.ReconfigureCoastLines("E")
-    
-#     # WRITE COASTLINE TO SHAPEFILE
-#     #ThisCoast.WriteCoastShp(SiteFolder+"Coast.shp")
-    
-#     # GENERATE TRANSECTS
-#     ThisCoast.GenerateNormals(10.,100.,200.)
-#     ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
-#     ThisCoast.ExtractTransectTopography(SiteFolder+DTM)   
-    
-#     # SAVE ENTIRE COAST OBJECT
-#     print("Saving Coast Object as " + Filename2SaveCoast)
-#     with open(Filename2SaveCoast, 'wb') as PFile:
-#         pickle.dump(ThisCoast, PFile)
-
-# ## ANALYSE TRANSECTS
-# #ThisCoast.FindRockyCoast()
-# #ThisCoast.SetMHWS(MHWS)
-# #ThisCoast.AnalyseTransectMorphology()
-# #ThisCoast.AnalyseBarrierWidths([4.,5.,6.])
-
-# # SAVE ENTIRE COAST OBJECT
-# #print("Saving Coast Object as " + Filename2SaveCoast)
-# #with open(Filename2SaveCoast, 'wb') as PFile:
-# #    pickle.dump(ThisCoast, PFile)
-
-# # write transects
+print("Saving Coast Object as ", Filename2SaveCoast)
+with open(str(Filename2SaveCoast), 'wb') as PFile:
+    pickle.dump(MontroseCoast, PFile)
     
 # # plot the results
 # ThisCoast.PlotTransects(PlotFolder)

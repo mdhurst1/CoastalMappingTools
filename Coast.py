@@ -865,7 +865,7 @@ class Coast:
             # generate transects along each line
             Line.GenerateTransects(TransectSpacing, TransectLength2Sea, TransectLength2Land)
 
-    def GenerateTransectsNormal2Shp(self, ContourShp, TransectSpacing=10.):
+    def GenerateTransectsNormal2Shp(self, ContourShp1, ContourShp2, TransectSpacing=10.):
         """
         Wrapper to the function in the Line object
 
@@ -884,14 +884,14 @@ class Coast:
             in map units, spatial units depend on units of the CoastLine read in,
             Should be [m]
         """
-        print("Coast: Generating CoastLine transects perpendicular to the coast, extending to ", ContourShp)
+        print("Coast: Generating CoastLine transects perpendicular to the coast")
 
         self.TransectsSpacing = TransectSpacing
         
         for Line in self.CoastLines:
 
             # generate transects along each line
-            Line.GenerateTransectsNormal2Shp(ContourShp,TransectSpacing)
+            Line.GenerateTransectsNormal2Contours(ContourShp1,ContourShp2,TransectSpacing)
 
     def GenerateTransectsFromContours(self,ContourShp,TransectSpacing=10.):
 
@@ -961,6 +961,9 @@ class Coast:
         print("Coast: Finding historical shoreline positions from ", end="")
         print(Path(HistoricalShorelinesShp).name)
 
+        # set a distance to look inland to check for intersections
+        LookDistance = 500.
+
         # read shapefile using geopandas
         GDF = gp.read_file(HistoricalShorelinesShp)
         Lines = GDF['geometry']
@@ -969,13 +972,42 @@ class Coast:
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 
-                # shapely goes here
-                BasePoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
-                NearestPoint = nearest_points(MultiLines, BasePoint)[0]
-                
+                # extend transect line inland to look for intersection
+                #Calculate start and end nodes and generate Transect
+                X1 = Transect.EndNode.X + LookDistance * np.sin( np.radians( Transect.Orientation ) )
+                Y1 = Transect.EndNode.Y + LookDistance * np.cos( np.radians( Transect.Orientation ) )
+                TransectLine = LineString(((Transect.StartNode.X,Transect.StartNode.Y),(X1,Y1)))
+            
+                # intersect with historical shoreline
+                Intersection = TransectLine.intersection(MultiLines)
+
+                # catch no intersections and flag for deletion?
+                if Intersection.geom_type == "GeometryCollection":
+                    Transect.DeleteFlag = True
+                    continue
+
+                # check there arent multiple intersections, if there are just get the nearest
+                if Intersection.geom_type is "MultiPoint":
+                    StartPoint = Point(Transect.EndNode.X, Transect.EndNode.Y)
+                    Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection]
+                    Index = Distances.index(min(Distances))
+                    Intersection = Intersection[Index]
+
+                # check if this is a new endnode by intersecting with line from startnode to endnode
+                Distance = Transect.LineString.distance(Intersection)
+                if Transect.ID == "264":
+                    print(Distance)
+
+                if Distance > 0.001:
+                    # set this as the new end node
+                    NewEndNode = Node(Intersection.x,Intersection.y)
+                    if Transect.ID == "264":
+                        print("I AM HERE")
+                    Transect.__init__(Transect.LineID, Transect.ID, Transect.CoastNode, Transect.StartNode, NewEndNode)
+
                 # use minimum of line.distance to find line
                 # need date attribute if rates are to be calculated
-                Distances = Lines.distance(NearestPoint)
+                Distances = Lines.distance(Intersection)
                 NearestLine = GDF.iloc[Distances.idxmin()]
                 
                 # check it hasnt already been read
@@ -983,18 +1015,21 @@ class Coast:
                     Year = NearestLine.Surv_End_A
                 elif "Surv_End_B" in NearestLine:
                     Year = NearestLine.Surv_End_B
+                elif "Surv_End_C" in NearestLine:
+                    Year = NearestLine.Surv_End_C
                 else:
                     sys.exit("Couldnt find survey year for MHWS historic shoreline position")
 
                 if Year not in Transect.HistoricShorelinesYears:
                     # add point to transect
-                    Transect.HistoricShorelinesPositions.append(Node(NearestPoint.x,NearestPoint.y))
+                    Transect.HistoricShorelinesPositions.append(Node(Intersection.x,Intersection.y))
                     Transect.HistoricShorelinesYears.append(Year)
 
                 else:
                     # find and replace
                     Index = Transect.HistoricShorelinesYears.index(Year)
-                    Transect.HistoricShorelinesPositions[Index] = Node(NearestPoint.x,NearestPoint.y)                    
+                    Transect.HistoricShorelinesPositions[Index] = Node(Intersection.x,Intersection.y)
+
 
     def ExtractContours(self,ContourShp):
 
