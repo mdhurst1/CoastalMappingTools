@@ -928,10 +928,10 @@ class Transect:
         # add water to MHWS
         self.ExtractBarrierWidth(self.MHWS)
         plt.fill_between(self.Distance[0:self.IntersectionIndices[0]],  
-                            self.Elevation[0:self.InteresectionIndices[0]], np.ones(self.IntersectionIndices[0])*self.MHWS
+                            self.Elevation[0:self.IntersectionIndices[0]], np.ones(self.IntersectionIndices[0])*self.MHWS,
                             color=(0.7,0.7,1.0))
-        plt.text(0.1, 0.9,'Sea', ha='center', va='center', transform=ax.transAxes)
-        plt.text(0.8, 0.9,'Land', ha='center', va='center', transform=ax.transAxes)
+        plt.text(0.05, 0.9,'Sea', ha='center', va='center', transform=ax.transAxes)
+        plt.text(0.9, 0.9,'Land', ha='center', va='center', transform=ax.transAxes)
 
         # label axes
         ax.set_aspect(10.)
@@ -949,7 +949,8 @@ class Transect:
         ax.set_ylim([0.,15.])
 
         # add text
-        plt.title("Line_" + str(self.LineID) + "Transect " + "_" +str(self.ID)
+        plt.title("Line " + str(self.LineID) + "; Transect " + str(self.ID))
+
         if self.Rocky:
             plt.text(0.2, 0.9,'Rocky', ha='center', va='center', transform=ax.transAxes)
 
