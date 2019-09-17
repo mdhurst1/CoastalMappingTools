@@ -1791,7 +1791,7 @@ class Coast:
 
                 # call plotting function
                 #if Transect.ID == "0":
-                Transect.Plot(PlotFolder)
+                Transect.Plot(PlotFolder, ReverseFlag)
                     
                 CurrentTransect += 1
 

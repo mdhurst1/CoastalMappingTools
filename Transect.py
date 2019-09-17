@@ -868,6 +868,12 @@ class Transect:
         # plot raw, unmasked data
         ax.plot(self.Distance, self.Elevation, '-', lw=1., c=[0.5,0.5,0.5], zorder=21)
         
+        # set up text alignment depending on figure orientation
+        if ReverseFlag:
+            Alignment="left"
+        else:
+            Alignment="right"
+            
         # add cliff details here
         if self.Cliff:
             
@@ -922,10 +928,18 @@ class Transect:
                 # and shade in the region above the extreme elevation
                 ax.fill_between(DistFill, ElevFill, LowerFill, color=LighterColour, zorder=11+i)
 
-            # add text (needs moving)
-            plt.text(LineDists[0],WaterLevel,
-                        "$V_B$ = " + "{:.1f}".format(self.ExtremeVolumes[-1]) + " m$^3$ m$^{-1}$", 
-                        color=[0.5,0.4,0.3], ha="right")
+                # label elevations
+                plt.text(LineDists[0],WaterLevel,
+                        str(WaterLevel)+" m OD", 
+                        color=ColourMap(Colour), ha=Alignment,size="smaller")
+
+
+            
+
+            # add label for volume
+            #plt.text(LineDists[0],WaterLevel,
+            #            "$V_B$ = " + "{:.1f}".format(self.ExtremeVolumes[-1]) + " m$^3$ m$^{-1}$", 
+            #            color=[0.5,0.4,0.3], ha=Alignment)
 
         # add water to MHWS
         self.ExtractBarrierWidth(self.MHWS)
@@ -933,14 +947,19 @@ class Transect:
             plt.fill_between(self.Distance[0:self.IntersectionIndices[0]],  
                             self.Elevation[0:self.IntersectionIndices[0]], np.ones(self.IntersectionIndices[0])*self.MHWS,
                             color=(0.6,0.8,1.0))
-            plt.text(20., self.MHWS+0.5, "MHWS", color=[0.4,0.6,0.8])
-        plt.text(0.05, 0.9,'Sea', ha='center', va='center', transform=ax.transAxes)
-        plt.text(0.9, 0.9,'Land', ha='center', va='center', transform=ax.transAxes)
+            plt.text(50., self.MHWS+0.5, "MHWS", ha='center',color=[0.4,0.6,0.8])
+        
+        if ReverseFlag:
+            plt.text(0.9, 0.9,'Sea', ha='center', va='center', transform=ax.transAxes)
+            plt.text(0.05, 0.9,'Land', ha='center', va='center', transform=ax.transAxes)
+        else:
+            plt.text(0.05, 0.9,'Sea', ha='center', va='center', transform=ax.transAxes)
+            plt.text(0.9, 0.9,'Land', ha='center', va='center', transform=ax.transAxes)
 
         # label axes
         ax.set_aspect(10.)
-        ax.set_ylabel("Elevation (m)")
-        ax.set_xlabel("Distance (m)")
+        ax.set_ylabel("Elevation (m OD)")
+        ax.set_xlabel("Distance toward land (m)")
 
         # set axis limits 
         Start, End = ma.notmasked_edges(self.Distance)
@@ -954,8 +973,8 @@ class Transect:
 
         # flip the plot in the horizontal?
         if ReverseFlag:
-            xlimits = ax.get_xlim()
-            ax.set_xlim(xlimits.reverse())
+            xmin, xmax = ax.get_xlim()
+            ax.set_xlim([xmax,xmin])
 
         # add text
         plt.title("Line " + str(self.LineID) + "; Transect " + str(self.ID))
