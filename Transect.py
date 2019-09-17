@@ -742,7 +742,7 @@ class Transect:
         
         # count and record locations of intersection
         IntersectionCounter = 0
-        IntersectionIndices = []
+        self.IntersectionIndices = []
         InterpolateFractions = []
         
         # temporary fix for no assignment, need a function for reading in transect topo
@@ -791,7 +791,7 @@ class Transect:
                     continue
                 else:
                     IntersectionCounter += 1
-                    IntersectionIndices.append(i)
+                    self.IntersectionIndices.append(i)
                     Fraction = np.abs((Elev-Y3)/dY34)
                     InterpolateFractions.append(Fraction)
         
@@ -812,12 +812,12 @@ class Transect:
         elif IntersectionCounter > 1:
 
             # Define Intersection Distance and Elevation by Interpolating
-            ExtremeDist1 = self.Distance[IntersectionIndices[0]] + InterpolateFractions[0]*self.DistanceSpacing
-            ExtremeDist2 = self.Distance[IntersectionIndices[1]] + InterpolateFractions[1]*self.DistanceSpacing
+            ExtremeDist1 = self.Distance[self.IntersectionIndices[0]] + InterpolateFractions[0]*self.DistanceSpacing
+            ExtremeDist2 = self.Distance[self.IntersectionIndices[1]] + InterpolateFractions[1]*self.DistanceSpacing
             
             # Record distances
             self.ExtremeDistance = [ExtremeDist1,ExtremeDist2]
-            self.ExtremeIndex = [IntersectionIndices[0], IntersectionIndices[1]]
+            self.ExtremeIndex = [self.IntersectionIndices[0], self.IntersectionIndices[1]]
             self.InterpolationFractions = [InterpolateFractions[0], InterpolateFractions[1]]
             
             # Define Intersection X and Y coordinates by Interpolating
@@ -832,11 +832,11 @@ class Transect:
             self.BackNode = Node(X2,Y2,Elev)
 
             # Calculate Width
-            self.ExtremeWidth = self.Distance[IntersectionIndices[1]] + InterpolateFractions[1]*self.DistanceSpacing \
-                                - self.Distance[IntersectionIndices[0]] + InterpolateFractions[0]*self.DistanceSpacing
+            self.ExtremeWidth = self.Distance[self.IntersectionIndices[1]] + InterpolateFractions[1]*self.DistanceSpacing \
+                                - self.Distance[self.IntersectionIndices[0]] + InterpolateFractions[0]*self.DistanceSpacing
             
             # Calculate Volume
-            self.ExtremeVolume = np.sum(self.Elevation[IntersectionIndices[0]+1:IntersectionIndices[1]+1]-Elev)*self.DistanceSpacing
+            self.ExtremeVolume = np.sum(self.Elevation[self.IntersectionIndices[0]+1:self.IntersectionIndices[1]+1]-Elev)*self.DistanceSpacing
         
             # flag that an intersection has occurred
             self.Intersection = True
@@ -922,8 +922,16 @@ class Transect:
                 # and shade in the region above the extreme elevation
                 ax.fill_between(DistFill, ElevFill, LowerFill, color=LighterColour, zorder=11+i)
 
-            # add text
+            # add text (needs moving)
             plt.text(LineDists[0],WaterLevel,"$V_B$ = " + "{:.1f}".format(self.ExtremeVolumes[-1]) + " m$^3$ m$^{-1}$")
+
+        # add water to MHWS
+        self.ExtractBarrierWidth(self.MHWS)
+        plt.fill_between(self.Distance[0:self.IntersectionIndices[0]],  
+                            self.Elevation[0:self.InteresectionIndices[0]], np.ones(self.IntersectionIndices[0])*self.MHWS
+                            color=(0.7,0.7,1.0))
+        plt.text(0.1, 0.9,'Sea', ha='center', va='center', transform=ax.transAxes)
+        plt.text(0.8, 0.9,'Land', ha='center', va='center', transform=ax.transAxes)
 
         # label axes
         ax.set_aspect(10.)
@@ -936,8 +944,12 @@ class Transect:
             ax.set_xlim([self.Distance[Start],self.Distance[End]])
             ax.set_ylim([self.Elevation[Start],np.max(self.Elevation[Start:End])+1])
         
+        # temporary over-ride to fix axis limits
+        ax.set_xlim([0.,600.])
+        ax.set_ylim([0.,15.])
+
         # add text
-        plt.title("Transect "+str(self.ID))
+        plt.title("Line_" + str(self.LineID) + "Transect " + "_" +str(self.ID)
         if self.Rocky:
             plt.text(0.2, 0.9,'Rocky', ha='center', va='center', transform=ax.transAxes)
 

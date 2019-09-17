@@ -16,10 +16,10 @@ from Coast import *
 #print(sys.getrecursionlimit)
 
 # define file names for analysis
-Folder = r"D:\\DynamicCoast2\\"
-Site = "StAndrews_1m_2018"
-SiteFolder = Folder+Site+"\\"
-PlotFolder = SiteFolder+"Plots\\" 
+Folder = "/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS1_Natural_Flood_Defences/"
+Site = "StAndrews"
+SiteFolder = Folder+Site+"/"
+PlotFolder = SiteFolder+"Plots/" 
 LineShp = "MHWS_2018_Smooth.shp"
 DTM = "StAn_2018_DTM_1m.tif"
 WindowSize = 2001
@@ -54,7 +54,7 @@ except:
     #ThisCoast.WriteCoastShp(SiteFolder+"Coast.shp")
     
     # GENERATE TRANSECTS
-    ThisCoast.GenerateNormals(10.,100.,200.)
+    ThisCoast.GenerateTransectsNormals(10.,200.,400.)
     ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
     ThisCoast.ExtractTransectTopography(SiteFolder+DTM)   
     
@@ -65,14 +65,14 @@ except:
 
 ## ANALYSE TRANSECTS
 #ThisCoast.FindRockyCoast()
-#ThisCoast.SetMHWS(MHWS)
-#ThisCoast.AnalyseTransectMorphology()
-#ThisCoast.AnalyseBarrierWidths([4.,5.,6.])
+ThisCoast.SetMHWS(MHWS)
+ThisCoast.AnalyseTransectMorphology()
+ThisCoast.AnalyseBarrierWidths([4.,5.,6.])
 
 # SAVE ENTIRE COAST OBJECT
-#print("Saving Coast Object as " + Filename2SaveCoast)
-#with open(Filename2SaveCoast, 'wb') as PFile:
-#    pickle.dump(ThisCoast, PFile)
+print("Saving Coast Object as " + Filename2SaveCoast)
+with open(Filename2SaveCoast, 'wb') as PFile:
+    pickle.dump(ThisCoast, PFile)
 
 # write transects
     
@@ -80,11 +80,11 @@ except:
 ThisCoast.PlotTransects(PlotFolder)
 
 # write some stuff
-#ThisCoast.WriteCoastShp(SiteFolder+"Coast.shp")
-#ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
-#ThisCoast.WriteCliffShp(SiteFolder+"Cliffs.shp")
-#ThisCoast.WriteBarrierShp(SiteFolder+"Barriers.shp")
-#ThisCoast.WriteCrestLinesShp(SiteFolder+"CrestLines.shp")
-#ThisCoast.WriteCrestPointsShp(SiteFolder+"CrestPoints.shp")
-#ThisCoast.WriteFrontPointsShp(SiteFolder+"FrontPoints.shp")
-#ThisCoast.WriteExtremeLevelsShp(SiteFolder+"Extreme.shp")
+ThisCoast.WriteCoastShp(SiteFolder+"Coast.shp")
+ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
+ThisCoast.WriteCliffShp(SiteFolder+"Cliffs.shp")
+ThisCoast.WriteBarrierShp(SiteFolder+"Barriers.shp")
+ThisCoast.WriteCrestLinesShp(SiteFolder+"CrestLines.shp")
+ThisCoast.WriteCrestPointsShp(SiteFolder+"CrestPoints.shp")
+ThisCoast.WriteFrontPointsShp(SiteFolder+"FrontPoints.shp")
+ThisCoast.WriteExtremeLevelsShp(SiteFolder+"Extreme.shp")

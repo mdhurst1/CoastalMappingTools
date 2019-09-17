@@ -317,7 +317,7 @@ class Coast:
         WP = shapefile.Writer(PointsShp, shapeType=shapefile.POINT)
         
         # Create Fields
-        Fields = [('DeletionFlag','C',1,0),['Line_ID', 'C', 3, 0],['Transect_ID', 'C', 3, 0]] #['Segment_ID','C', 3, 0], might add 
+        Fields = [('DeletionFlag','C',1,0),['Line_ID', 'C', 3, 0],['Transect_ID', 'C', 5, 0]] #['Segment_ID','C', 3, 0], might add 
         WP.fields = Fields[1:]
 
         for Line in self.CoastLines:
@@ -361,7 +361,7 @@ class Coast:
             self.ExtremeWaterLevels = [[],[],[]]
 
         # Create Fields
-        Fields = [('DeletionFlag','C',1,0), ['LineID', 'C', 3, 0], ['TransectID', 'C', 3, 0], 
+        Fields = [('DeletionFlag','C',1,0), ['LineID', 'C', 3, 0], ['TransectID', 'C', 5, 0], 
         ['Cliff_H','N', 5, 2],['Cliff_S','N', 5, 2],
         ['Rocky','N', 2, 1], 
         ['Bar_FH','N', 5, 2], ['Bar_FS','N', 5, 2],
@@ -452,7 +452,7 @@ class Coast:
             self.ExtremeWaterLevels = [[],[],[]]
 
         # Create Fields
-        Fields = [('DeletionFlag','C',1,0), ['LineID', 'C', 3, 0], ['TransectID', 'C', 3, 0], 
+        Fields = [('DeletionFlag','C',1,0), ['LineID', 'C', 3, 0], ['TransectID', 'C', 5, 0], 
         ['Cliff_H','N', 5, 2],['Cliff_S','N', 5, 2],
         ['Rocky','N', 2, 1], 
         ['Bar_FH','N', 5, 2], ['Bar_FS','N', 5, 2],
@@ -519,7 +519,7 @@ class Coast:
             self.ExtremeWaterLevels = [[],[],[]]
 
         # Create Fields
-        Fields = [('DeletionFlag','C',1,0), ['LineID', 'C', 3, 0], ['TransectID', 'C', 3, 0], 
+        Fields = [('DeletionFlag','C',1,0), ['LineID', 'C', 3, 0], ['TransectID', 'C', 5, 0], 
         ['Cliff_H','N', 5, 2],['Cliff_S','N', 5, 2],
         ['Rocky','N', 2, 1], 
         ['Bar_FH','N', 5, 2], ['Bar_FS','N', 5, 2],
@@ -811,7 +811,7 @@ class Coast:
                 Line.ID = str(i)
 
         if len(self.CoastLines[0].Transects) != 0:
-            self.GenerateNormals(self.TransectsSpacing, self.TransectsLength2Sea, self.TransectsLength2Land)
+            self.GenerateTransectsNormals(self.TransectsSpacing, self.TransectsLength2Sea, self.TransectsLength2Land)
 
         # calculate overall orientation
         StartNode = self.CoastLines[0].Nodes[0]

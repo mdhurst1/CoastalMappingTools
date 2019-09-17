@@ -10,11 +10,11 @@ import pathlib
 from Coast import *
 
 # define file names for analysis
-Folder = "C:\\Users\\mh322u\\OneDrive - University of Glasgow\\Projects\\DynamicCoast2\\WP1_TopographicAnalysis\\"
+Folder = "/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS1_Natural_Flood_Defences/"
 Site = "Montrose"
-SiteFolder = Folder+Site+"\\"
-PlotFolder = SiteFolder+"Plots\\" 
-TransectsFolder = SiteFolder+"Transects\\"
+SiteFolder = Folder+Site+"/"
+PlotFolder = SiteFolder+"Plots/" 
+TransectsFolder = SiteFolder+"Transects/"
 LineShp = "Montrose_CoastTrend.shp"
 DTM = "DTM_1m.tif"
 
@@ -52,7 +52,7 @@ except:
     ThisCoast.WriteCoastShp(SiteFolder+"Coast.shp")
     
     # GENERATE TRANSECTS
-    ThisCoast.GenerateNormals(10.,200.,200.)
+    ThisCoast.GenerateTransectsNormals(10.,250.,500.)
     ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
     ThisCoast.ExtractTransectTopography(SiteFolder+DTM)
     
@@ -77,7 +77,7 @@ with open(Filename2SaveCoast, 'wb') as PFile:
 
     
 ## plot the results
-#ThisCoast.PlotTransects(PlotFolder)
+ThisCoast.PlotTransects(PlotFolder)
 
 ## write some stuff
 ThisCoast.WriteCliffShp(SiteFolder+"Cliffs.shp")
