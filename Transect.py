@@ -841,7 +841,7 @@ class Transect:
             # flag that an intersection has occurred
             self.Intersection = True
 
-    def Plot(self, PlotFolder):
+    def Plot(self, PlotFolder, ReverseFlag=False):
         
         """
         
@@ -923,13 +923,17 @@ class Transect:
                 ax.fill_between(DistFill, ElevFill, LowerFill, color=LighterColour, zorder=11+i)
 
             # add text (needs moving)
-            plt.text(LineDists[0],WaterLevel,"$V_B$ = " + "{:.1f}".format(self.ExtremeVolumes[-1]) + " m$^3$ m$^{-1}$")
+            plt.text(LineDists[0],WaterLevel,
+                        "$V_B$ = " + "{:.1f}".format(self.ExtremeVolumes[-1]) + " m$^3$ m$^{-1}$", 
+                        color=[0.5,0.4,0.3], ha="right")
 
         # add water to MHWS
         self.ExtractBarrierWidth(self.MHWS)
-        plt.fill_between(self.Distance[0:self.IntersectionIndices[0]],  
+        if self.IntersectionIndices:
+            plt.fill_between(self.Distance[0:self.IntersectionIndices[0]],  
                             self.Elevation[0:self.IntersectionIndices[0]], np.ones(self.IntersectionIndices[0])*self.MHWS,
-                            color=(0.7,0.7,1.0))
+                            color=(0.6,0.8,1.0))
+            plt.text(20., self.MHWS+0.5, "MHWS", color=[0.4,0.6,0.8])
         plt.text(0.05, 0.9,'Sea', ha='center', va='center', transform=ax.transAxes)
         plt.text(0.9, 0.9,'Land', ha='center', va='center', transform=ax.transAxes)
 
@@ -947,6 +951,11 @@ class Transect:
         # temporary over-ride to fix axis limits
         ax.set_xlim([0.,600.])
         ax.set_ylim([0.,15.])
+
+        # flip the plot in the horizontal?
+        if ReverseFlag:
+            xlimits = ax.get_xlim()
+            ax.set_xlim(xlimits.reverse())
 
         # add text
         plt.title("Line " + str(self.LineID) + "; Transect " + str(self.ID))

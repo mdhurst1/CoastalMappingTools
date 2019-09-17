@@ -77,7 +77,7 @@ except:
 # write transects
     
 # plot the results
-ThisCoast.PlotTransects(PlotFolder)
+ThisCoast.PlotTransects(PlotFolder, ReverseFlag=True)
 
 # write some stuff
 ThisCoast.WriteCoastShp(SiteFolder+"Coast.shp")
