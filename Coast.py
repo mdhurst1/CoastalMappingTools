@@ -1761,7 +1761,7 @@ class Coast:
             for Transect in Line.Transects:
                 Transect.MHWS = MHWS
 
-    def PlotTransects(self, PlotFolder):
+    def PlotTransects(self, PlotFolder, ReverseFlag=False):
         
         """
 
