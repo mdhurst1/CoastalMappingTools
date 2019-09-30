@@ -995,14 +995,10 @@ class Coast:
 
                 # check if this is a new endnode by intersecting with line from startnode to endnode
                 Distance = Transect.LineString.distance(Intersection)
-                if Transect.ID == "264":
-                    print(Distance)
-
+                
                 if Distance > 0.001:
                     # set this as the new end node
                     NewEndNode = Node(Intersection.x,Intersection.y)
-                    if Transect.ID == "264":
-                        print("I AM HERE")
                     Transect.__init__(Transect.LineID, Transect.ID, Transect.CoastNode, Transect.StartNode, NewEndNode)
 
                 # use minimum of line.distance to find line
@@ -1075,11 +1071,67 @@ class Coast:
     
 
 
-    def SampleFromRaster2Transect():
+    def SampleHistoricalRSLR(self, PastRSLRRaster):
 
-        """ goes here somewhere """
+        """ 
+        
+        Samples a raster of most recent rates of relative sea level change (rise/fall)
+        at each transect location on coast
 
-        HistoricalRSL = rasterio.sample()
+        Parameters
+        ----------
+        PastRSLRRaster : string
+            Filename for raster to be sampled
+        
+        MDH, September 2019
+
+        """
+
+        print("Coast: Sampling historical Relative Sea Level raster dataset")
+
+        # open the raster dataset to work on
+        with rasterio.open(RSLRRaster) as RSLRDataset
+        
+            # loop through transects and sample
+            for Line in self.CoastLines:
+                for i, Transect in enumerate(Line.Transects[:]):
+                    Transect.HistoricalRSLR = RSLRDataset.sample((Transect.CoastNode.x,Transect.CoastNode.y))
+
+
+
+    def SampleFutureRSL(self,FutureRSLFolder,Percentile,Years)
+
+        """ 
+        
+        Samples a raster of future rates of relative sea level change (rise/fall)
+        at each transect location on coast
+
+        Parameters
+        ----------
+        FutureRSLFolder : string
+            Folder containing future sea level elevation rasters for Scotland
+        Percentile : int
+            Percentile scenario to use
+        Years : list
+            List of integers corresponding to the years to be analysed
+        
+        MDH, September 2019
+
+        """
+
+        print("Coast: Sampling future Relative Sea Level raster dataset")
+
+        for Year in Years:
+            FutureRSLRaster = FutureRSLFolder + "RCP8_" + str(Percentile) + "th_" + str(Year) + "_filled.tif"
+
+            # open the raster dataset to work on
+            with rasterio.open(FutureRSLRaster) as RSLDataset
+            
+                # loop through transects and sample
+                for Line in self.CoastLines:
+                    for i, Transect in enumerate(Line.Transects[:]):
+                        Transect.FutureSeaLevels.append(RSLDataset.sample((Transect.CoastNode.x,Transect.CoastNode.y)))
+                        Transect.FutureSeaLevelYears.append(Year)
                 
     def ExtractTransectTopography(self, DEMFile, SwathDistance=-9999):
         """

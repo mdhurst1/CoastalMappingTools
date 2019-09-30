@@ -50,12 +50,20 @@ class Transect:
         # historic shoreline positions and change rates
         self.HistoricShorelinesYears = []
         self.HistoricShorelinesPositions = []
+
+        # change rates will be 1 less than no of positions
         self.ChangeRates = []
         self.DeleteFlag = False
 
         # location of -10m depth contour
         self.Contours = []
-        self.HistoricalRSL = None
+
+        # relative sea level rise history (rate in mm/year)
+        self.HistoricalRSLR = None
+        
+        # future sea level rise
+        self.FutureSeaLevelYears = []
+        self.FutureSeaLevels = []
 
         # transect data
         self.NoValues = None

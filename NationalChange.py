@@ -52,15 +52,14 @@ except:
 
 #MontroseCoast.WriteCoastShp(str(WorkingPath / "SmoothCoast.shp"))
 
-
-# find historic shoreline positions
+# find historic shoreline positions and extend transect accordingly
 MontroseCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_1890_FINAL.shp"))
-MontroseCoast.WriteTransectsShp(str(WorkingPath / "Montrose_Transects1.shp"))
 MontroseCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_1970_FINAL.shp"))
-MontroseCoast.WriteTransectsShp(str(WorkingPath / "Montrose_Transects2.shp"))
 MontroseCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_Modern_Soft.shp"))
 MontroseCoast.WriteTransectsShp(str(WorkingPath / "Montrose_Transects3.shp"))
 
+# get historical rate of relative sea level change
+MnotroseCoast.
 
 # SAVE ENTIRE COAST OBJECT
 print("Saving Coast Object as ", Filename2SaveCoast)
