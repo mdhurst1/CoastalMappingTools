@@ -7,6 +7,8 @@ June 2019
 
 """
 
+import numpy
+
 class Node:
     
     """
@@ -41,4 +43,7 @@ class Node:
     
     def get_XZ(self):
         return self.X, self.Z
+    
+    def get_Distance(self,OtherNode):
+        return np.sqrt((self.X-OtherNode.X)**2.+(self.Y-OtherNode.Y)**2.)
         

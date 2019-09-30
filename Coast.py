@@ -988,7 +988,7 @@ class Coast:
 
                 # check there arent multiple intersections, if there are just get the nearest
                 if Intersection.geom_type is "MultiPoint":
-                    StartPoint = Point(Transect.EndNode.X, Transect.EndNode.Y)
+                    StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
                     Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection]
                     Index = Distances.index(min(Distances))
                     Intersection = Intersection[Index]
@@ -1008,11 +1008,11 @@ class Coast:
                 
                 # check it hasnt already been read
                 if "Surv_End_A" in NearestLine:
-                    Year = NearestLine.Surv_End_A
+                    Year = int(NearestLine.Surv_End_A)
                 elif "Surv_End_B" in NearestLine:
-                    Year = NearestLine.Surv_End_B
+                    Year = int(NearestLine.Surv_End_B)
                 elif "Surv_End_C" in NearestLine:
-                    Year = NearestLine.Surv_End_C
+                    Year = int(NearestLine.Surv_End_C)
                 else:
                     sys.exit("Couldnt find survey year for MHWS historic shoreline position")
 
@@ -1137,6 +1137,34 @@ class Coast:
                             Transect.FutureSeaLevels.append(val[0])
                             Transect.FutureSeaLevelYears.append(Year)
                 
+    def PredictFutureShorelines(self):
+
+        """
+
+        Wrapper to call Transects function to predict future shoreline positions
+
+        MDH, September 2019
+
+        """
+
+        # loop through transects and sample
+        for Line in self.CoastLines:
+            for i, Transect in enumerate(Line.Transects[:]):
+                Transect.PredictFutureShorelines()
+
+
+    def WriteFutureShorelines(self):
+
+        """
+
+        Wrapper to write future shoreline positions to individual shapefiles
+
+        MDH, September 2019
+
+        """
+
+        
+    
     def ExtractTransectTopography(self, DEMFile, SwathDistance=-9999):
         """
         Profile to populate transects with topographic data

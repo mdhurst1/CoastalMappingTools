@@ -57,6 +57,9 @@ class Transect:
 
         # location of -10m depth contour
         self.Contours = []
+        self.ClosureDepth = 10.
+        self.ShorefaceDistance = None
+        self.ShorefaceSlope = None
 
         # relative sea level rise history (rate in mm/year)
         self.HistoricalRSLR = None
@@ -64,6 +67,9 @@ class Transect:
         # future sea level rise
         self.FutureSeaLevelYears = []
         self.FutureSeaLevels = []
+
+        # future shore line poisitions
+        self.FutureShorelinePositions = []
 
         # transect data
         self.NoValues = None
@@ -195,8 +201,61 @@ class Transect:
 
         self.Length = self.CalculateLength(self.StartNode, self.EndNode)
 
+    def PredictFutureShorelines(self):
 
+        """
+        Function to predict the future position of the shoreline based on
+        historical shoreline positions, historical rates of sea level change
+        and future rates of sea level change following a calibrated Bruun Rule
+        type approach.
 
+        This function requires several funcions with the Coast object to have been run
+        first but the Coast wrapper should/could check for this.
+
+        MDH, September 2019
+
+        """
+
+        # calculate retreat rates
+        if not self.HistoricShorelinesYears:
+            print("No historical shorelines")
+            return
+        
+        # reset change rates in case already calculated
+        self.ChangeRates = []
+
+        # historic shoreline positions and change rates
+        for i in range(0,len(self.HistoricShorelinesYears)):
+            
+            # first do the whole length of the record
+            if i == 0:
+                dEta = self.HistoricShorelinesPositions[-1]-self.HistoricShorelinesPositions[0]
+                dT = self.HistoricShorelinesYears[-1]-self.HistoricShorelinesYears[0]
+            
+            # otherwise do the shorter period
+            else:
+                dEta = self.HistoricShorelinesPositions[i]-self.HistoricShorelinesPositions[i-1]
+                dT = self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[i-1]
+            
+            self.ChangeRates.append(dEta/dT)
+        
+        # get mean slope
+        self.ShorefaceDistance = Transect.StartNode.Distance(HistoricShorelinesPositions[-1]
+        self.ShorefaceSlope = self.ClosureDepth/ShorefaceDistance
+
+        # Calibration term, remembering to convert relative sea level change rates to m/yr
+        self.VolumetricCalibrationRate = self.ClosureDepth*self.ChangeRates[0] + self.ShorefaceDistance*(self.HistoricalRSLR/1000.)
+
+        # Future shoreline positions
+        for i in range(0, len(self.FutureSeaLevelYears)):
+            dT = self.FutureSeaLevelYears[i]-self.HistoricShorelinesYears[-1]
+            ShorelinePositionChange = (-1./self.ShorefaceSlope)*self.FutureSeaLevels[i]+self.ClosureDepth*self.VolumetricCalibrationRate*dT
+            
+            X1 = self.HistoricShorelinesPosition[-1].X + ShorelinePositionChange * np.sin( np.radians( self.Orientation ) )
+            Y1 = self.HistoricShorelinesPosition[-1].Y + ShorelinePositionChange * np.cos( np.radians( self.Orientation ) )
+
+            self.FutureShorelinePositions.append(Node(X1,Y1))
+            
     def FindCliff(self):
 
         """

@@ -64,6 +64,9 @@ MontroseCoast.SampleHistoricalRSLR(str(WorkingPath / "RSL_Bradley_Model" / "Scot
 # get future relative sea level time series
 MontroseCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL"))
 
+# predict future shorelines
+MontroseCoast.PredictFutureShorelines()
+
 # SAVE ENTIRE COAST OBJECT
 print("Saving Coast Object as ", Filename2SaveCoast)
 with open(str(Filename2SaveCoast), 'wb') as PFile:
