@@ -1076,7 +1076,9 @@ class Coast:
         """ 
         
         Samples a raster of most recent rates of relative sea level change (rise/fall)
-        at each transect location on coast
+        at each transect location on coast. 
+
+        Gets the nearest point for now, rather than any interpolation
 
         Parameters
         ----------
@@ -1090,16 +1092,17 @@ class Coast:
         print("Coast: Sampling historical Relative Sea Level raster dataset")
 
         # open the raster dataset to work on
-        with rasterio.open(RSLRRaster) as RSLRDataset
+        with rasterio.open(PastRSLRRaster) as RSLRDataset:
         
             # loop through transects and sample
             for Line in self.CoastLines:
                 for i, Transect in enumerate(Line.Transects[:]):
-                    Transect.HistoricalRSLR = RSLRDataset.sample((Transect.CoastNode.x,Transect.CoastNode.y))
+                    for val in RSLRDataset.sample([(Transect.CoastNode.X,Transect.CoastNode.Y)]):
+                        Transect.HistoricalRSLR = val[0]
 
 
 
-    def SampleFutureRSL(self,FutureRSLFolder,Percentile,Years)
+    def SampleFutureRSL(self, FutureRSLFolder, Percentile=95, Years=[2020,2030,2040,2050,2060,2070,2080,2090,2100]):
 
         """ 
         
@@ -1122,16 +1125,17 @@ class Coast:
         print("Coast: Sampling future Relative Sea Level raster dataset")
 
         for Year in Years:
-            FutureRSLRaster = FutureRSLFolder + "RCP8_" + str(Percentile) + "th_" + str(Year) + "_filled.tif"
+            FutureRSLRaster = FutureRSLFolder + "/RCP8_" + str(Percentile) + "th_" + str(Year) + "_filled.tif"
 
             # open the raster dataset to work on
-            with rasterio.open(FutureRSLRaster) as RSLDataset
+            with rasterio.open(FutureRSLRaster) as RSLDataset:
             
                 # loop through transects and sample
                 for Line in self.CoastLines:
                     for i, Transect in enumerate(Line.Transects[:]):
-                        Transect.FutureSeaLevels.append(RSLDataset.sample((Transect.CoastNode.x,Transect.CoastNode.y)))
-                        Transect.FutureSeaLevelYears.append(Year)
+                        for val in RSLDataset.sample([(Transect.CoastNode.X,Transect.CoastNode.Y)]):
+                            Transect.FutureSeaLevels.append(val[0])
+                            Transect.FutureSeaLevelYears.append(Year)
                 
     def ExtractTransectTopography(self, DEMFile, SwathDistance=-9999):
         """

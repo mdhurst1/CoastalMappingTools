@@ -50,24 +50,29 @@ except:
     with open(str(Filename2SaveCoast), 'wb') as PFile:
         pickle.dump(MontroseCoast, PFile)
 
-#MontroseCoast.WriteCoastShp(str(WorkingPath / "SmoothCoast.shp"))
+MontroseCoast.WriteCoastShp(str(WorkingPath / "SmoothCoast.shp"))
 
 # find historic shoreline positions and extend transect accordingly
 MontroseCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_1890_FINAL.shp"))
 MontroseCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_1970_FINAL.shp"))
 MontroseCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Montrose_MHWS_Modern_Soft.shp"))
-MontroseCoast.WriteTransectsShp(str(WorkingPath / "Montrose_Transects3.shp"))
+MontroseCoast.WriteTransectsShp(str(WorkingPath / "Montrose_Transects.shp"))
 
 # get historical rate of relative sea level change
-MnotroseCoast.
+MontroseCoast.SampleHistoricalRSLR(str(WorkingPath / "RSL_Bradley_Model" / "Scotland_RSLR_Modern_BNG.tif"))
+
+# get future relative sea level time series
+MontroseCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL"))
 
 # SAVE ENTIRE COAST OBJECT
 print("Saving Coast Object as ", Filename2SaveCoast)
 with open(str(Filename2SaveCoast), 'wb') as PFile:
     pickle.dump(MontroseCoast, PFile)
-    
+
+
 # # plot the results
 # ThisCoast.PlotTransects(PlotFolder)
+
 
 # # write some stuff
 # #ThisCoast.WriteCoastShp(SiteFolder+"Coast.shp")
