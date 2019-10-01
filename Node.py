@@ -7,7 +7,7 @@ June 2019
 
 """
 
-import numpy
+import numpy as np
 
 class Node:
     

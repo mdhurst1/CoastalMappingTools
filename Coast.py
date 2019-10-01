@@ -1149,7 +1149,7 @@ class Coast:
 
         # loop through transects and sample
         for Line in self.CoastLines:
-            for i, Transect in enumerate(Line.Transects[:]):
+            for Transect in Line.Transects:
                 Transect.PredictFutureShorelines()
 
 
