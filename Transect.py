@@ -65,10 +65,9 @@ class Transect:
         self.HistoricalRSLR = None
         
         # future sea level rise
+        self.Future = False
         self.FutureSeaLevelYears = []
         self.FutureSeaLevels = []
-
-        # future shore line poisitions
         self.FutureShorelinesPositions = []
 
         # transect data
@@ -224,6 +223,9 @@ class Transect:
             print("Only one shoreline position") 
             return
         
+        # boolean flag if making predicti
+        self.Future = True
+
         # reset change rates in case already calculated
         self.ChangeRates = []
 
@@ -1264,6 +1266,29 @@ class Transect:
             Z = self.Elevation[self.FrontTopInd]
             return X, Y, Z
         
+        else:
+            return
+
+    def get_FuturePosition(self, Year):
+
+        """
+
+        Get the future position of the coast for a particular year
+        from Bruun Rule predictions
+
+        MDH, October 2019
+
+        """
+
+        # check there are predictions for this transect
+        if self.Future:
+
+            # find year index
+            Index = [i for i, x in enumerate(self.FutureSeaLevelYears) if x == Year]
+
+            # use to access future position
+            return self.FutureShorelinesPositions[Index]
+
         else:
             return
 

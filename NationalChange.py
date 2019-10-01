@@ -64,16 +64,18 @@ except:
 ## get future relative sea level time series
 #MontroseCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL"))
 #
-## SAVE ENTIRE COAST OBJECT
-#print("Saving Coast Object as ", Filename2SaveCoast)
-#with open(str(Filename2SaveCoast), 'wb') as PFile:
-#    pickle.dump(MontroseCoast, PFile)
+
     
 # predict future shorelines
 MontroseCoast.SetMHWS(2.)
 MontroseCoast.PredictFutureShorelines()
 
+## SAVE ENTIRE COAST OBJECT
+print("Saving Coast Object as ", Filename2SaveCoast)
+with open(str(Filename2SaveCoast), 'wb') as PFile:
+    pickle.dump(MontroseCoast, PFile)
 
+MontroseCoast.WriteFutureShorelinesShp(str(WorkingPath / "FutureShorelines.shp")
 
 
 # # plot the results

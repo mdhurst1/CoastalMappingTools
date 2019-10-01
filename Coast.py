@@ -57,6 +57,8 @@ class Coast:
         self.ExtBackLines_Low = []
         self.ExtBackLines_Med = []
         self.ExtBackLines_High = []
+        self.FutureShoreLinesYears = []
+        self.FutureShoreLines = []
         self.Projection = ""
         self.OverallOrientation = 0.
         self.TransectsSpacing = 10.
@@ -196,6 +198,36 @@ class Coast:
 
         # print action to screen
         print("Coast.WriteExtremeLevelsShp: Writing extreme water line objects to polyline and polygon shapefile")
+
+        # loop through extreme water levels
+        for i, Level in enumerate(["Low", "Med","High"]):
+
+            # set up individual file names
+            ExtFrontShp = ExtremeShp.split(".")[0]+"_"+Level+"_Front.shp"
+            ExtBackShp = ExtremeShp.split(".")[0]+"_"+Level+"_Back.shp"
+            ExtPatchesShp = ExtremeShp.split(".")[0]+"_"+Level+".shp"
+                
+            # launch polyline shapefile writer
+            self.WriteLinesShp("ExtFrontLines_"+Level, ExtFrontShp)
+            self.WriteLinesShp("ExtBackLines_"+Level, ExtBackShp)
+            
+            # launch polygon patches shapefile writer
+            self.WritePatchesShp("ExtFrontLines_"+Level, "ExtBackLines_"+Level, ExtPatchesShp)
+    
+    def WriteFutureShorelinesShp(self, FutureShorelinesShp):
+
+        """
+        Writes the contents of a list of future shoreline objects to polyline shape file
+
+        MDH, June 2019
+
+        """
+
+        if len(self.FutureShoreLines) == 0:
+            self.GetFutureShoreLines()
+
+        # print action to screen
+        print("Coast.WriteFutureShorelinesShp: Writing future MHWS line objects to polyline shapefile")
 
         # loop through extreme water levels
         for i, Level in enumerate(["Low", "Med","High"]):
@@ -1124,6 +1156,8 @@ class Coast:
 
         print("Coast: Sampling future Relative Sea Level raster dataset")
 
+        self.FutureShoreLinesYears = Years
+
         for Year in Years:
             FutureRSLRaster = FutureRSLFolder + "/RCP8_" + str(Percentile) + "th_" + str(Year) + "_filled.tif"
 
@@ -1497,6 +1531,78 @@ class Coast:
                 Counter += 1
                 #print(len(GroupList))
 
+    def GetFutureShoreLines(self):
+
+        """
+
+        Extracts contiguous lines of future predicted MHWS
+
+        """
+
+        # Loop through prediction years
+        for Year in self.FutureShoreLinesYears:
+
+            # keep track of no of coastal segments for IDs
+            CoastCount = 0
+
+            # loop through transects and get contiguous cliff lines
+            for CoastLine in self.CoastLines:
+                
+                # find transects with cliffs
+                FutureBool = [Transect.Future for Transect in CoastLine.Transects]
+                FutureBool.insert(0, False)
+                FutureBool = np.array(FutureBool).astype(int)
+
+                # check for transects with no cliffs
+                if not any(FutureBool):
+                    print("No Future Predictions on Line")
+                    continue
+                
+                # get a list of the start and end points of contiguous cliff lines
+                StartEndFlags = np.diff(FutureBool)
+
+                # if last line finishes on a cliff flag the last element as the end of the cliff
+                if StartEndFlags[StartEndFlags.nonzero()[0][-1]] == 1:
+                    StartEndFlags[-1] = -1
+
+                StartList = np.argwhere(StartEndFlags == 1).flatten()
+                EndList = np.argwhere(StartEndFlags == -1).flatten()
+                if not len(StartList) == len(EndList):
+                    print("Start and End lists not the same length")
+                    print(len(StartList),len(EndList))
+                    
+                for i in range(0,len(StartList)):
+                    
+                    # catch single node cliff lines and ignore
+                    if (EndList[i]-StartList[i]<2):
+                        continue
+
+                    # create empty lists for storing clifftop and clifftoe nodes
+                    FutureList = []
+                    
+                    # loop through transects and get future positions
+                    
+                    for Transect in CoastLine.Transects[StartList[i]:EndList[i]]:
+                        FutureNode = Transect.get_FuturePosition(Year)
+                        CliffTopList.append(TempTop)
+                        CliffToeList.append(TempToe)
+                    
+                    # create new line object for top
+                    X = [TempTop.X for TempTop in CliffTopList]
+                    Y = [TempTop.Y for TempTop in CliffTopList]
+                    
+                    TempLine = Line("Cliff_"+str(CliffCount), X, Y)
+                    self.CliffTopLines.append(TempLine)
+                    
+                    # create new line object for toe
+                    X = [TempToe.X for TempToe in CliffToeList]
+                    Y = [TempToe.Y for TempToe in CliffToeList]
+                    
+                    TempLine = Line("Cliff_"+str(CliffCount), X, Y)
+                    self.CliffToeLines.append(TempLine)
+
+                    # update counter
+                    CliffCount += 1
 
     def GetBarrierWidth(self):
 
