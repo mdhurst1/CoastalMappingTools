@@ -214,7 +214,7 @@ class Coast:
             # launch polygon patches shapefile writer
             self.WritePatchesShp("ExtFrontLines_"+Level, "ExtBackLines_"+Level, ExtPatchesShp)
     
-    def WriteFutureShorelinesShp(self, FutureShorelinesShp):
+    def WriteFutureShorelinesShp(self, FutureShoreLinesShp):
 
         """
         Writes the contents of a list of future shoreline objects to polyline shape file
@@ -227,27 +227,44 @@ class Coast:
             self.GetFutureShoreLines()
 
         # print action to screen
-        print("Coast.WriteFutureShorelinesShp: Writing future MHWS line objects to polyline shapefile")
+        print("Coast.WriteFutureShorelinesShp: Writing future MHWS line objects to polyline shapefiles")
 
-        # loop through extreme water levels
-        for i, Level in enumerate(["Low", "Med","High"]):
+        # open new shapefile        
+        WL = shapefile.Writer(FutureShoreLinesShp,shapeType=shapefile.POLYLINE)
+       
+        # Create Fields
+        self.Fields = [('DeletionFlag','C',1,0),['Line_ID', 'C', 20, 0],['Year','N', 4, 0]]
+        WL.fields = self.Fields[1:] 
 
-            # set up individual file names
-            ExtFrontShp = ExtremeShp.split(".")[0]+"_"+Level+"_Front.shp"
-            ExtBackShp = ExtremeShp.split(".")[0]+"_"+Level+"_Back.shp"
-            ExtPatchesShp = ExtremeShp.split(".")[0]+"_"+Level+".shp"
-                
-            # launch polyline shapefile writer
-            self.WriteLinesShp("ExtFrontLines_"+Level, ExtFrontShp)
-            self.WriteLinesShp("ExtBackLines_"+Level, ExtBackShp)
+        for Line in self.FutureShoreLines:
             
-            # launch polygon patches shapefile writer
-            self.WritePatchesShp("ExtFrontLines_"+Level, "ExtBackLines_"+Level, ExtPatchesShp)
+            # get line node positions
+            X, Y = Line.get_XY()
+            WriteLine = [np.column_stack([X,Y]).tolist()]
+            
+            # generate record
+            Record = [str(Line.ID),str(Line.Year)]
 
+            # write line and record
+            WL.line(WriteLine)
+            WL.record(*Record) ####### ISSUE WITH RECORDS NEEDS FIXING ########
+        
+        # close the shapefiles and clean up
+        WL.close()
+            
+        # create the projection file    
+        f = open(FutureShoreLinesShp.rstrip("shp")+"prj","w")
+        f.write(self.Projection)
+        f.close()
+            
     def WriteLinesShp(self, DictionaryKey, CoastShp):
         
         """
         Writes the contents of a list of line objects to polyline shape file
+        List of line objects is part of the Coast object and identified by 
+        the dictionary key
+
+        Need to add optional conditional statement?
 
         MDH, June 2019
 
@@ -1156,6 +1173,10 @@ class Coast:
 
         print("Coast: Sampling future Relative Sea Level raster dataset")
 
+        if self.FutureShoreLinesYears:
+            print("\tFuture sea levels already sampled")
+            return
+
         self.FutureShoreLinesYears = Years
 
         for Year in Years:
@@ -1543,7 +1564,7 @@ class Coast:
         for Year in self.FutureShoreLinesYears:
 
             # keep track of no of coastal segments for IDs
-            CoastCount = 0
+            FutureCount = 0
 
             # loop through transects and get contiguous cliff lines
             for CoastLine in self.CoastLines:
@@ -1584,25 +1605,17 @@ class Coast:
                     
                     for Transect in CoastLine.Transects[StartList[i]:EndList[i]]:
                         FutureNode = Transect.get_FuturePosition(Year)
-                        CliffTopList.append(TempTop)
-                        CliffToeList.append(TempToe)
-                    
+                        FutureList.append(FutureNode)
+                        
                     # create new line object for top
-                    X = [TempTop.X for TempTop in CliffTopList]
-                    Y = [TempTop.Y for TempTop in CliffTopList]
+                    X = [FutureNode.X for FutureNode in FutureList]
+                    Y = [FutureNode.Y for FutureNode in FutureList]
                     
-                    TempLine = Line("Cliff_"+str(CliffCount), X, Y)
-                    self.CliffTopLines.append(TempLine)
+                    TempLine = Line("FutureCoast_"+str(FutureCount), X, Y, Year=Year)
+                    self.FutureShoreLines.append(TempLine)
                     
-                    # create new line object for toe
-                    X = [TempToe.X for TempToe in CliffToeList]
-                    Y = [TempToe.Y for TempToe in CliffToeList]
-                    
-                    TempLine = Line("Cliff_"+str(CliffCount), X, Y)
-                    self.CliffToeLines.append(TempLine)
-
                     # update counter
-                    CliffCount += 1
+                    FutureCount += 1
 
     def GetBarrierWidth(self):
 

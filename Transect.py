@@ -1285,9 +1285,10 @@ class Transect:
 
             # find year index
             Index = [i for i, x in enumerate(self.FutureSeaLevelYears) if x == Year]
-
+            
             # use to access future position
-            return self.FutureShorelinesPositions[Index]
+            Position = self.FutureShorelinesPositions[Index[0]]
+            return Position
 
         else:
             return

@@ -24,10 +24,11 @@ class Line:
     """
     """
 
-    def __init__(self, ID, X, Y, Contour=None):
+    def __init__(self, ID, X, Y, Contour=None, Year=None):
         """
         """
         self.ID = ID
+        self.Year = Year
         self.NoNodes = 0
         self.Nodes = []
         self.RawNodes = []
