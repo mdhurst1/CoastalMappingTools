@@ -108,10 +108,12 @@ class Transect:
         self.BarrierVolume = None
 
         # other barrier metrics for extreme water levels
+        # will need short term and long term here?
         self.MHWS = None
         self.ExtremeWaterLevels = ["","",""]
         self.Intersection = None
         self.IntersectionIndices = None
+        self.IntersectionNodes = []
         self.InterpolateFractions = None
         self.FrontNode = None
         self.BackNode = None
@@ -122,9 +124,13 @@ class Transect:
         self.ExtremeDistances = ["","",""]
         self.ExtremeInterpFractions = ["","",""]
         self.ExtremeWidth = None
+        self.ExtremeWidthTotal = None
         self.ExtremeWidths = ["","",""]
+        self.ExtremeTotalWidths = ["","",""]
         self.ExtremeVolume = None
+        self.ExtremeVolumeTotal = None
         self.ExtremeVolumes = ["","",""]
+        self.ExtremeTotalVolumes = ["","",""]
     
     def __str__(self):
         String = "Transect Object:\nID: %s\n" % (str(self.ID))
@@ -903,35 +909,61 @@ class Transect:
 
         elif IntersectionCounter > 1:
 
-            # Define Intersection Distance and Elevation by Interpolating
-            ExtremeDist1 = self.Distance[self.IntersectionIndices[0]] + InterpolateFractions[0]*self.DistanceSpacing
-            ExtremeDist2 = self.Distance[self.IntersectionIndices[1]] + InterpolateFractions[1]*self.DistanceSpacing
-            
-            # Record distances
-            self.ExtremeDistance = [ExtremeDist1,ExtremeDist2]
-            self.ExtremeIndex = [self.IntersectionIndices[0], self.IntersectionIndices[1]]
-            self.InterpolationFractions = [InterpolateFractions[0], InterpolateFractions[1]]
-            
-            # Define Intersection X and Y coordinates by Interpolating
-            # Calculate position of front intersection
-            X1 = self.StartNode.X + ExtremeDist1 * np.sin( np.radians( self.Orientation ) )
-            Y1 = self.StartNode.Y + ExtremeDist1 * np.cos( np.radians( self.Orientation ) )
-            self.FrontNode = Node(X1,Y1,Elev)
+            # modify this to get first set of interesections and full sets of intersections...
+            self.ExtremeIndices = []
+            self.ExtremeWidthTotal = 0
+            self.ExtremeVolumeTotal = 0
 
-            # Calculate position of back intersection
-            X2 = self.StartNode.X + ExtremeDist2 * np.sin( np.radians( self.Orientation ) )
-            Y2 = self.StartNode.Y + ExtremeDist2 * np.cos( np.radians( self.Orientation ) )
-            self.BackNode = Node(X2,Y2,Elev)
+            # loop through intersections in pairs that define positive features relative to elevation
+            for i in range(0,len(self.IntersectionIndices),2):
 
-            # Calculate Width
-            self.ExtremeWidth = self.Distance[self.IntersectionIndices[1]] + InterpolateFractions[1]*self.DistanceSpacing \
-                                - self.Distance[self.IntersectionIndices[0]] + InterpolateFractions[0]*self.DistanceSpacing
+                # catch if we're at the end of the intersection list
+                if ((i+1) >= len(self.IntersectionIndices)):
+                    continue
+
+                # Define Intersection Distance and Elevation by Interpolating
+                ExtremeDist1 = self.Distance[self.IntersectionIndices[i]] + InterpolateFractions[i]*self.DistanceSpacing
+                ExtremeDist2 = self.Distance[self.IntersectionIndices[i+1]] + InterpolateFractions[i+1]*self.DistanceSpacing
             
-            # Calculate Volume
-            self.ExtremeVolume = np.sum(self.Elevation[self.IntersectionIndices[0]+1:self.IntersectionIndices[1]+1]-Elev)*self.DistanceSpacing
-        
-            # flag that an intersection has occurred
-            self.Intersection = True
+                # Record distances
+                self.ExtremeDistance = [ExtremeDist1,ExtremeDist2]
+                self.ExtremeIndex = [self.IntersectionIndices[0], self.IntersectionIndices[1]]
+                self.ExtremeIndices.append(self.IntersectionIndices[0])
+                self.ExtremeIndices.append(self.IntersectionIndices[1])
+                self.InterpolationFractions = [InterpolateFractions[0], InterpolateFractions[1]]
+                
+                # Define Intersection X and Y coordinates by Interpolating
+                # Calculate position of front intersection
+                X1 = self.StartNode.X + ExtremeDist1 * np.sin( np.radians( self.Orientation ) )
+                Y1 = self.StartNode.Y + ExtremeDist1 * np.cos( np.radians( self.Orientation ) )
+                FrontNode = Node(X1,Y1,Elev)
+
+                # Calculate position of back intersection
+                X2 = self.StartNode.X + ExtremeDist2 * np.sin( np.radians( self.Orientation ) )
+                Y2 = self.StartNode.Y + ExtremeDist2 * np.cos( np.radians( self.Orientation ) )
+                BackNode = Node(X2,Y2,Elev)
+
+                # append intersection nodes
+                self.IntersectionNodes.append(FrontNode)
+                self.IntersectionNodes.append(BackNode)
+
+                # Calculate Width
+                self.ExtremeWidthTotal += self.Distance[self.IntersectionIndices[1]] + InterpolateFractions[1]*self.DistanceSpacing \
+                                    - self.Distance[self.IntersectionIndices[0]] + InterpolateFractions[0]*self.DistanceSpacing
+                
+                # Calculate Volume
+                self.ExtremeVolumeTotal += np.sum(self.Elevation[self.IntersectionIndices[0]+1:self.IntersectionIndices[1]+1]-Elev)*self.DistanceSpacing
+            
+                # flag that an intersection has occurred
+                self.Intersection = True
+
+                # catch the first topographic feature for the short term resilliance
+                if (i==0):
+                    self.FrontNode = FrontNode
+                    self.BackNode = BackNode
+                    self.ExtremeWidth = self.ExtremeWidthTotal
+                    self.ExtremeVolume = self.ExtremeVolumeTotal
+            
 
     def Plot(self, PlotFolder, ReverseFlag=False):
         

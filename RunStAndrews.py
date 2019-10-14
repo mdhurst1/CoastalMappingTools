@@ -19,6 +19,7 @@ from Coast import *
 Folder = "/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS1_Natural_Flood_Defences/"
 Site = "StAndrews"
 SiteFolder = Folder+Site+"/"
+MHWSFolder = SiteFolder+"MHWS/"
 PlotFolder = SiteFolder+"Plots/" 
 LineShp = "MHWS_2018_Smooth.shp"
 DTM = "StAn_2018_DTM_1m.tif"
@@ -43,7 +44,7 @@ except:
     print("Creating New Coast Object")
     
     # SET UP THE COAST
-    ThisCoast = Coast(SiteFolder+LineShp)
+    ThisCoast = Coast(MHWSFolder+LineShp)
     
     # SIMPLIFY COASTLINE
     #ThisCoast.MergeCoastLines()
@@ -51,7 +52,7 @@ except:
     ThisCoast.ReconfigureCoastLines("E")
     
     # WRITE COASTLINE TO SHAPEFILE
-    #ThisCoast.WriteCoastShp(SiteFolder+"Coast.shp")
+    ThisCoast.WriteCoastShp(SiteFolder+"Coast.shp")
     
     # GENERATE TRANSECTS
     ThisCoast.GenerateTransectsNormals(10.,200.,400.)
