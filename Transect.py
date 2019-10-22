@@ -120,7 +120,7 @@ class Transect:
         self.ExtremeFrontNodes = ["","",""]
         self.ExtremeBackNodes = ["","",""]
         self.ExtremeDistance = None
-        self.ExtremeIndices = ["","",""]
+        self.ExtremeIndicesLists = ["","",""]
         self.ExtremeDistances = ["","",""]
         self.ExtremeInterpFractions = ["","",""]
         self.ExtremeWidth = None
@@ -786,7 +786,7 @@ class Transect:
         
         # setup empty lists
         self.ExtremeDistances = ["","",""]
-        self.ExtremeIndices = ["","",""]
+        self.ExtremeIndicesLists = ["","",""]
         self.ExtremeInterpFractions = ["","",""]
         self.ExtremeWidths = ["","",""]
         self.ExtremeVolumes = ["","",""]
@@ -801,7 +801,7 @@ class Transect:
 
             # add results to lists
             self.ExtremeDistances[i] = self.ExtremeDistance
-            self.ExtremeIndices[i] = self.ExtremeIndex
+            self.ExtremeIndicesLists[i] = self.ExtremeIndices
             self.ExtremeInterpFractions[i] = self.InterpolateFractions
             self.ExtremeWidths[i] = self.ExtremeWidth
             self.ExtremeVolumes[i] = self.ExtremeVolume

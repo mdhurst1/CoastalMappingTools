@@ -417,9 +417,12 @@ class Coast:
         ['Bar_BH','N', 5, 2], ['Bar_BS','N', 5, 2],
         ['Bar_ToeW','N', 6, 2], ['Bar_TopW','N', 6, 2],
         ['Bar_Volume','N', 7, 2], ['Crest_Elev','N', 5, 2], 
-        ['Ext_W_low','N', 6, 2], ['Ext_V_low','N', 7, 2],
-        ['Ext_W_med','N', 6, 2], ['Ext_V_med','N', 7, 2],
-        ['Ext_W_high','N', 6, 2], ['Ext_V_high','N', 7, 2]]
+        ['ST_W_low','N', 6, 2], ['ST_V_low','N', 7, 2],
+        ['ST_W_med','N', 6, 2], ['ST_V_med','N', 7, 2],
+        ['ST_W_high','N', 6, 2], ['ST_V_high','N', 7, 2],
+        ['LT_W_low','N', 6, 2], ['LT_V_low','N', 7, 2],
+        ['LT_W_med','N', 6, 2], ['LT_V_med','N', 7, 2],
+        ['LT_W_high','N', 6, 2], ['LT_V_high','N', 7, 2]]
         
         WL.fields = Fields[1:]
 
@@ -441,7 +444,10 @@ class Coast:
                             Transect.BarrierVolume, Transect.CrestElevation,
                             Transect.ExtremeWidths[0], Transect.ExtremeVolumes[0],
                             Transect.ExtremeWidths[1], Transect.ExtremeVolumes[1],
-                            Transect.ExtremeWidths[2], Transect.ExtremeVolumes[2]]
+                            Transect.ExtremeWidths[2], Transect.ExtremeVolumes[2],
+                            Transect.ExtremeTotalWidths[0], Transect.ExtremeTotalVolumes[0],
+                            Transect.ExtremeTotalWidths[1], Transect.ExtremeTotalVolumes[1],
+                            Transect.ExtremeTotalWidths[2], Transect.ExtremeTotalVolumes[2]]
 
                 # write transect and record
                 WL.line(WriteTransect)
@@ -508,9 +514,12 @@ class Coast:
         ['Bar_BH','N', 5, 2], ['Bar_BS','N', 5, 2],
         ['Bar_ToeW','N', 6, 2], ['Bar_TopW','N', 6, 2],
         ['Bar_Volume','N', 7, 2], ['Crest_Elev','N', 5, 2], 
-        ['Ext_W_low','N', 6, 2], ['Ext_V_low','N', 7, 2],
-        ['Ext_W_med','N', 6, 2], ['Ext_V_med','N', 7, 2],
-        ['Ext_W_high','N', 6, 2], ['Ext_V_high','N', 7, 2]]
+        ['ST_W_low','N', 6, 2], ['ST_V_low','N', 7, 2],
+        ['ST_W_med','N', 6, 2], ['ST_V_med','N', 7, 2],
+        ['ST_W_high','N', 6, 2], ['ST_V_high','N', 7, 2],
+        ['LT_W_low','N', 6, 2], ['LT_V_low','N', 7, 2],
+        ['LT_W_med','N', 6, 2], ['LT_V_med','N', 7, 2],
+        ['LT_W_high','N', 6, 2], ['LT_V_high','N', 7, 2]]
 
         WP.fields = Fields[1:]
 
@@ -532,7 +541,11 @@ class Coast:
                             Transect.BarrierVolume, Transect.CrestElevation,
                             Transect.ExtremeWidths[0], Transect.ExtremeVolumes[0],
                             Transect.ExtremeWidths[1], Transect.ExtremeVolumes[1],
-                            Transect.ExtremeWidths[2], Transect.ExtremeVolumes[2]]
+                            Transect.ExtremeWidths[2], Transect.ExtremeVolumes[2],
+                            Transect.ExtremeTotalWidths[0], Transect.ExtremeTotalVolumes[0],
+                            Transect.ExtremeTotalWidths[1], Transect.ExtremeTotalVolumes[1],
+                            Transect.ExtremeTotalWidths[2], Transect.ExtremeTotalVolumes[2]]
+
 
                 # write transect and record
                 WP.pointz(X, Y, Z)
@@ -575,9 +588,12 @@ class Coast:
         ['Bar_BH','N', 5, 2], ['Bar_BS','N', 5, 2],
         ['Bar_ToeW','N', 6, 2], ['Bar_TopW','N', 6, 2],
         ['Bar_Volume','N', 7, 2], ['Crest_Elev','N', 5, 2], 
-        ['Ext_W_low','N', 6, 2], ['Ext_V_low','N', 7, 2],
-        ['Ext_W_med','N', 6, 2], ['Ext_V_med','N', 7, 2],
-        ['Ext_W_high','N', 6, 2], ['Ext_V_high','N', 7, 2]]
+        ['ST_W_low','N', 6, 2], ['ST_V_low','N', 7, 2],
+        ['ST_W_med','N', 6, 2], ['ST_V_med','N', 7, 2],
+        ['ST_W_high','N', 6, 2], ['ST_V_high','N', 7, 2],
+        ['LT_W_low','N', 6, 2], ['LT_V_low','N', 7, 2],
+        ['LT_W_med','N', 6, 2], ['LT_V_med','N', 7, 2],
+        ['LT_W_high','N', 6, 2], ['LT_V_high','N', 7, 2]]
 
         WP.fields = Fields[1:]
 
@@ -600,7 +616,10 @@ class Coast:
                             Transect.BarrierVolume, Transect.CrestElevation,
                             Transect.ExtremeWidths[0], Transect.ExtremeVolumes[0],
                             Transect.ExtremeWidths[1], Transect.ExtremeVolumes[1],
-                            Transect.ExtremeWidths[2], Transect.ExtremeVolumes[2]]
+                            Transect.ExtremeWidths[2], Transect.ExtremeVolumes[2],
+                            Transect.ExtremeTotalWidths[0], Transect.ExtremeTotalVolumes[0],
+                            Transect.ExtremeTotalWidths[1], Transect.ExtremeTotalVolumes[1],
+                            Transect.ExtremeTotalWidths[2], Transect.ExtremeTotalVolumes[2]]
 
                 # write transect and record
                 WP.pointz(X, Y, Z)
@@ -1220,7 +1239,7 @@ class Coast:
 
         
     
-    def ExtractTransectTopography(self, DEMFile, SwathDistance=-9999):
+    def ExtractTransectTopography(self, DTMFile, SwathDistance=-9999):
         """
         Profile to populate transects with topographic data
         Uses swath profile routine to collect elevations within a certain distance
@@ -1230,8 +1249,8 @@ class Coast:
         
         Parameters
         ----------
-        DEMFile : str
-            Name of DEM File, must be a *.tif
+        DTMFile : str
+            Name of DTM File, must be a *.tif
 
         SwathDistance : float
             Distance away from transect line to sample elevations in DEM
@@ -1243,7 +1262,7 @@ class Coast:
         
         # load the DTM and get its properties
         print("\tLoading DTM... ", end="")
-        DTM_Dataset = rasterio.open(DEMFile)
+        DTM_Dataset = rasterio.open(DTMFile)
         DTMArray = DTM_Dataset.read(1)
         NCols = DTM_Dataset.width
         NRows = DTM_Dataset.height
@@ -1503,6 +1522,64 @@ class Coast:
 
         print("")
     
+    def MapBarrierFeatureExtents(self, WaterElevs, DTM):
+        """
+        Function to contour the DEM to map extent of elevations above extreme water levels
+        but within the zone of analysis from the first to the last topographic intersection
+
+        MDH, October 2019
+        
+        Parameters
+        ----------
+        WaterElevsL : list(float)
+            List of extreme water surface elevations
+        
+        DTMFile : str
+            Name of DTM File, must be a *.tif
+
+        """
+        
+        print("Coast.MapBarrierFeatureExtents: Extracting features from DTM")
+
+        # get the max extent of flood protection features
+
+        
+        # load the DTM and get its properties
+        print("\tLoading DTM... ", end="")
+        DTM_Dataset = rasterio.open(DTMFile)
+        DTMArray = DTM_Dataset.read(1)
+        NCols = DTM_Dataset.width
+        NRows = DTM_Dataset.height
+        NDV = DTM_Dataset.nodata
+        Resolutions = DTM_Dataset.res
+        print("Done")
+
+        # check for square pixels
+        if not DTM_Dataset.res[0] == DTM_Dataset.res[1]:
+            raise SystemExit("DTM has non-square cells")
+        
+        # get resolution
+        DTM_Resolution = DTM_Dataset.res[0]
+
+        # check swath distance
+        if SwathDistance < 0:
+            SwathDistance = DTM_Resolution*2.
+
+        # get extent of DTM
+        XMin = DTM_Dataset.bounds[0]
+        XMax = DTM_Dataset.bounds[2]
+        YMin = DTM_Dataset.bounds[1]
+        YMax = DTM_Dataset.bounds[3]
+
+        # Get vectors of X and Y coordinates, NB reversal of Y in line with 
+        # DTM indexing from top left
+        XVector = XMin+np.arange(0,NCols)*DTM_Resolution+0.5*DTM_Resolution
+        YVector = YMin+DTM_Resolution*np.arange(0,NRows)[::-1]+0.5*DTM_Resolution
+
+        # Track progress
+        NoTransects = np.sum([Line.NoTransects for Line in self.CoastLines])
+        CurrentTransect = 0
+
     def FindRockyCoast(self, TidalElevation=2.):
 
         """
@@ -1863,7 +1940,7 @@ class Coast:
         
         """
 
-        Generate line objects from extreme water positions on transects,
+        Generate line objects from extreme water positions on transects for front feature,
         
         MDH, July 2019
 
@@ -1946,6 +2023,94 @@ class Coast:
 
                     # update counter
                     Count += 1
+
+    def GetExtremeExtent(self):
+
+        """
+        Generates shapefiles of the lowest elevation extreme water
+        extent that is providing some sort of protective function
+
+        MDH, October 2019
+
+        """
+
+        # loop through extreme water levels
+        i = 0
+        Level = "Low"
+        
+        # keep track of no of lines for IDs
+        Count = 0
+            
+        # loop through transects and get contiguous extreme lines
+        for CoastLine in self.CoastLines:
+        
+            # find transects with coastal protection
+            ExtremeBool = ([any(isinstance(Transect.Intersections,float)) for Transect in CoastLine.Transect])
+            ExtremeBool = np.insert(ExtremeBool, 0, False)
+            ExtremeBool = np.array(ExtremeBool).astype(int)
+            
+            # get a list of the start and end points of contiguous sections with protection
+            StartEndFlags = np.diff(ExtremeBool)
+            
+            # get last non zero element
+            Last = [Ind for Ind, Flag in enumerate(StartEndFlags) if Flag != 0][-1]
+            
+            # if last line finishes on a start flag then ignore
+            if Last != len(StartEndFlags)-1:
+                if StartEndFlags[Last] == 1:
+                    StartEndFlags[-1] = -1
+            elif StartEndFlags[-1] == 1:
+                StartEndFlags[-1] = 0
+            
+            # start flag is gradient = 1, end flag where gradient = -1
+            StartList = np.argwhere(StartEndFlags == 1).flatten()
+            EndList = np.argwhere(StartEndFlags == -1).flatten()
+
+            if not len(StartList) == len(EndList):
+                print("Start and End lists not the same length")
+
+
+            for j in range(0,len(StartList)):
+                
+                # catch single node cliff lines and ignore
+                if (EndList[j]-StartList[j]<2):
+                    continue
+
+                # create empty lists for storing barrier front and back top and toe nodes
+                """
+                THIS WHOLE THING COULD PROBABLY BE SIMPLIFIED MASSIVELY BY USING __DICT__
+                """
+                ExtremeFrontList = []
+                ExtremeBackList = []
+                
+                # loop through transects and get front and back positions
+                for Transect in CoastLine.Transects[StartList[j]:EndList[j]]:
+                    try:
+                        TempFront, TempBack  = Transect.get_ExtremePosition(i)
+                        ExtremeFrontList.append(TempFront)
+                        ExtremeBackList.append(TempBack)
+                    except:
+                        continue
+                
+                if len(ExtremeFrontList) < 2:
+                    continue
+                    
+                # create new line object for front 
+                X = [TempFront.X for TempFront in ExtremeFrontList]
+                Y = [TempFront.Y for TempFront in ExtremeFrontList]
+                
+                TempLine = Line("Ext_"+Level+str(Count), X, Y)
+                self.__dict__["ExtFrontLines_"+Level].append(TempLine)
+                
+                # create new line object for back
+                X = [TempBack.X for TempBack in ExtremeBackList]
+                Y = [TempBack.Y for TempBack in ExtremeBackList]
+                
+                TempLine = Line("Ext_"+Level+str(Count), X, Y)
+                self.__dict__["ExtBackLines_"+Level].append(TempLine)
+
+                # update counter
+                Count += 1
 
     def SetMHWS(self,MHWS):
 
