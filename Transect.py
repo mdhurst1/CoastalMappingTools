@@ -901,11 +901,13 @@ class Transect:
             if (self.CrestElevation < Elev):
                 self.ExtremeWidth = 0.
                 self.ExtremeVolume = 0.
+                self.ExtremeIndices = []
                 self.Intersection = False
         
         elif IntersectionCounter == 1:
             self.ExtremeWidth = -99
             self.ExtremeVolume = -99
+            self.ExtremeIndices = []
             self.Intersection = False
 
         elif IntersectionCounter > 1:
@@ -928,10 +930,10 @@ class Transect:
             
                 # Record distances
                 self.ExtremeDistance = [ExtremeDist1,ExtremeDist2]
-                self.ExtremeIndex = [self.IntersectionIndices[0], self.IntersectionIndices[1]]
-                self.ExtremeIndices.append(self.IntersectionIndices[0])
-                self.ExtremeIndices.append(self.IntersectionIndices[1])
-                self.InterpolationFractions = [InterpolateFractions[0], InterpolateFractions[1]]
+                self.ExtremeIndex = [self.IntersectionIndices[i], self.IntersectionIndices[i+1]]
+                self.ExtremeIndices.append(self.IntersectionIndices[i])
+                self.ExtremeIndices.append(self.IntersectionIndices[i+1])
+                self.InterpolationFractions = [InterpolateFractions[i], InterpolateFractions[i+1]]
                 
                 # Define Intersection X and Y coordinates by Interpolating
                 # Calculate position of front intersection
