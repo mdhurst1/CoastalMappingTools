@@ -1245,6 +1245,8 @@ class Coast:
         Uses swath profile routine to collect elevations within a certain distance
         of each transect line then takes IDW values for the transect topography
 
+        ADD FUNCTIONALITY TO CATCH WHEN DEM EDGE HAS BEEN EXCEEDED? NO TRANSECTS IN THIS CASE
+
         MDH, June 2019
         
         Parameters
@@ -2158,8 +2160,7 @@ class Coast:
                 print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
 
                 # call plotting function
-                #if Transect.ID == "0":
-                Transect.Plot(PlotFolder, ReverseFlag)
+                Transect.SimplePlot(PlotFolder, ReverseFlag)
                     
                 CurrentTransect += 1
 

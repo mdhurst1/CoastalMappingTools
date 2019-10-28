@@ -120,6 +120,7 @@ class Transect:
         self.ExtremeFrontNodes = ["","",""]
         self.ExtremeBackNodes = ["","",""]
         self.ExtremeDistance = None
+        self.ExtremeIndices = []
         self.ExtremeIndicesLists = ["","",""]
         self.ExtremeDistances = ["","",""]
         self.ExtremeInterpFractions = ["","",""]
@@ -965,10 +966,97 @@ class Transect:
                     self.ExtremeVolume = self.ExtremeVolumeTotal
             
 
+    def SimplePlot(self, PlotFolder, ReverseFlag=False):
+
+        """
+        
+        Function to plot transects topography
+
+        MDH, October 2019
+
+        """
+
+        # catch no data cases
+        if self.Elevation.count() == 0:
+            print("\n\tNo data to plot")
+            print(self.Elevation)
+            print(self.Distance)
+            return
+
+        # grab colour map
+        ColourMap = cm.viridis
+
+        # create figure
+        fig = plt.figure(1,figsize=(6,3))
+                
+        # create 4 subplots
+        ax = fig.add_subplot(111)
+                
+        # plot raw, unmasked data
+        ax.plot(self.Distance, self.Elevation, '-', lw=1., c=[0.5,0.5,0.5], zorder=21)
+        
+        # set up text alignment depending on figure orientation
+        if ReverseFlag:
+            Alignment="left"
+        else:
+            Alignment="right"
+        
+        # add water to MHWS
+        self.ExtractBarrierWidth(self.MHWS)
+        if self.IntersectionIndices:
+            plt.fill_between(self.Distance[0:self.IntersectionIndices[0]],  
+                            self.Elevation[0:self.IntersectionIndices[0]], np.ones(self.IntersectionIndices[0])*self.MHWS,
+                            color=(0.6,0.8,1.0))
+            plt.text(50., self.MHWS+0.5, "MHWS", ha='center',color=[0.4,0.6,0.8])
+        
+        if ReverseFlag:
+            plt.text(0.9, 0.9,'Sea', ha='center', va='center', transform=ax.transAxes)
+            plt.text(0.05, 0.9,'Land', ha='center', va='center', transform=ax.transAxes)
+        else:
+            plt.text(0.05, 0.9,'Sea', ha='center', va='center', transform=ax.transAxes)
+            plt.text(0.9, 0.9,'Land', ha='center', va='center', transform=ax.transAxes)
+
+        # label axes
+        ax.set_aspect(10.)
+        ax.set_ylabel("Elevation (m OD)")
+        ax.set_xlabel("Distance toward land (m)")
+
+        # set axis limits 
+        Start, End = ma.notmasked_edges(self.Distance)
+        if Start != End:
+            ax.set_xlim([self.Distance[Start],self.Distance[End]])
+            ax.set_ylim([self.Elevation[Start],np.max(self.Elevation[Start:End])+1])
+        
+        # temporary over-ride to fix axis limits
+        ax.set_xlim([0.,600.])
+        ax.set_ylim([0.,15.])
+
+        # flip the plot in the horizontal?
+        if ReverseFlag:
+            xmin, xmax = ax.get_xlim()
+            ax.set_xlim([xmax,xmin])
+
+        # add text
+        plt.title("Line " + str(self.LineID) + "; Transect " + str(self.ID))
+
+        if self.Rocky:
+            plt.text(0.2, 0.9,'Rocky', ha='center', va='center', transform=ax.transAxes)
+
+        # tight layout!
+        plt.tight_layout()
+
+        # save the figure        
+        fig.savefig(PlotFolder+"SimpleTransect_"+ str(self.LineID) + "_" +str(self.ID)+".png", dpi=300)
+
+        # close the figure
+        plt.close(fig)
+
     def Plot(self, PlotFolder, ReverseFlag=False):
         
         """
         
+        Function to plot transects analysed for topographic barriers
+
         MDH, June 2019
 
         """
@@ -1024,10 +1112,11 @@ class Transect:
             ax.plot(self.Distance[self.BackToeInd], self.Elevation[self.BackToeInd], 'ko', ms=2, zorder=32)
         
         # add extreme water lines and volumes
-        if self.Intersection:
-            
-            for i, WaterLevel in enumerate(self.ExtremeWaterLevels):
+        print(self.Intersections)
+
+        for i, WaterLevel in enumerate(self.ExtremeWaterLevels):
                 
+            if self.Intersections[i]:
                 if (self.ExtremeWidths[i] is None) or (self.ExtremeWidths[i] == -99):
                     continue
 
@@ -1041,7 +1130,7 @@ class Transect:
                 ax.plot(LineDists, [WaterLevel,WaterLevel], '-', lw=1., color=LineColour, zorder=20)
                 
                 # colour in, this will have minor bug for now due to abs argmin returning either node before or node after
-                Inds = self.ExtremeIndices[i]
+                Inds = self.ExtremeIndicesLists[i]
                 DistFill = np.insert(self.ExtremeDistances[i], 1, self.Distance[Inds[0]+1:Inds[1]])
                 ElevFill = np.insert(np.array([WaterLevel, WaterLevel]), 1, self.Elevation[Inds[0]+1:Inds[1]])
                 LowerFill = np.linspace(ElevFill[0],ElevFill[-1],len(ElevFill))
@@ -1056,9 +1145,6 @@ class Transect:
                 plt.text(LineDists[0],WaterLevel,
                         str(WaterLevel)+" m OD", 
                         color=ColourMap(Colour), ha=Alignment,size="smaller")
-
-
-            
 
             # add label for volume
             #plt.text(LineDists[0],WaterLevel,
