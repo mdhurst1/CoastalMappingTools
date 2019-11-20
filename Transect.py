@@ -791,6 +791,8 @@ class Transect:
         self.ExtremeInterpFractions = ["","",""]
         self.ExtremeWidths = ["","",""]
         self.ExtremeVolumes = ["","",""]
+        self.ExtremeTotalWidths = ["","",""]
+        self.ExtremeTotalVolumes = ["","",""]
         self.ExtremeFrontNodes = ["","",""]
         self.ExtremeBackNodes = ["","",""]
         self.Intersections = ["","",""]
@@ -806,6 +808,8 @@ class Transect:
             self.ExtremeInterpFractions[i] = self.InterpolateFractions
             self.ExtremeWidths[i] = self.ExtremeWidth
             self.ExtremeVolumes[i] = self.ExtremeVolume
+            self.ExtremeTotalWidths[i] = self.ExtremeWidthTotal
+            self.ExtremeTotalVolumes[i] = self.ExtremeVolumeTotal
             self.ExtremeFrontNodes[i] = self.FrontNode
             self.ExtremeBackNodes[i] = self.BackNode
             self.Intersections[i] = self.Intersection
