@@ -47,7 +47,7 @@ except:
     
     # SIMPLIFY COASTLINE
     #ThisCoast.MergeCoastLines()
-    #ThisCoast.SmoothCoastLines(WindowSize=WindowSize)
+    ThisCoast.SmoothCoastLines(WindowSize=WindowSize)
     ThisCoast.ReconfigureCoastLines("E")
     
     # WRITE COASTLINE TO SHAPEFILE
@@ -56,7 +56,7 @@ except:
     # GENERATE TRANSECTS
     ThisCoast.GenerateTransectsNormals(10.,200.,400.)
     ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
-    ThisCoast.ExtractTransectTopography(SiteFolder+DTM)   
+    #ThisCoast.ExtractTransectTopography(SiteFolder+DTM)   
     
     # SAVE ENTIRE COAST OBJECT
     print("Saving Coast Object as " + Filename2SaveCoast)
@@ -77,7 +77,7 @@ except:
 # write transects
     
 # plot the results
-ThisCoast.PlotTransects(PlotFolder, ReverseFlag=True)
+#ThisCoast.PlotTransects(PlotFolder, ReverseFlag=True)
 
 # write some stuff
 #ThisCoast.WriteCoastShp(SiteFolder+"Coast.shp")
@@ -86,5 +86,5 @@ ThisCoast.PlotTransects(PlotFolder, ReverseFlag=True)
 #ThisCoast.WriteBarrierShp(SiteFolder+"Barriers.shp")
 #ThisCoast.WriteCrestLinesShp(SiteFolder+"CrestLines.shp")
 #ThisCoast.WriteCrestPointsShp(SiteFolder+"CrestPoints.shp")
-ThisCoast.WriteFrontPointsShp(SiteFolder+"FrontPoints.shp")
+#ThisCoast.WriteFrontPointsShp(SiteFolder+"FrontPoints.shp")
 #ThisCoast.WriteExtremeLevelsShp(SiteFolder+"Extreme.shp")

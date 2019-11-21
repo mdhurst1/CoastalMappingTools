@@ -900,7 +900,7 @@ class Coast:
             self.OverallOrientation = 360 + np.degrees( np.arctan( dx / dy ) )
 
     # function to do something    
-    def GenerateTransectsNormals(self, TransectSpacing, TransectLength2Sea, TransectLength2Land):
+    def GenerateTransectsNormals(self, TransectSpacing, TransectLength2Sea, TransectLength2Land, CheckTopology=True):
         """
         Wrapper to the function in the Line object
 
@@ -920,6 +920,8 @@ class Coast:
         TransectLength2Land : float
             The length of the transect in the direction of land in map units, 
             spatial units depend on units of the CoastLine read in, Should be [m]
+        CheckTopology : bool
+            Whether to check for overlapping transects and correct. Default is true.
                     
         """
         print("Coast: Generating CoastLine transects perpendicular to the coast")
@@ -928,10 +930,13 @@ class Coast:
         self.TransectsLength2Sea = TransectLength2Sea
         self.TransectsLength2Land = TransectLength2Land
 
+
+
+        # generate transects along each line
         for Line in self.CoastLines:
 
             # generate transects along each line
-            Line.GenerateTransects(TransectSpacing, TransectLength2Sea, TransectLength2Land)
+            Line.GenerateTransects(TransectSpacing, TransectLength2Sea, TransectLength2Land, CheckTopology)
 
     def GenerateTransectsNormal2Shp(self, ContourShp1, ContourShp2, TransectSpacing=10.):
         """
