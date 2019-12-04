@@ -56,7 +56,7 @@ except:
     # GENERATE TRANSECTS
     ThisCoast.GenerateTransectsNormals(10.,200.,400.)
     ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
-    #ThisCoast.ExtractTransectTopography(SiteFolder+DTM)   
+    #ThisCoast.ExtractTransectTopography(SiteFolder+DTM)   /media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/CoastalMappingTools/NationalChange.py
     
     # SAVE ENTIRE COAST OBJECT
     print("Saving Coast Object as " + Filename2SaveCoast)

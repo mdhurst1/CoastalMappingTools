@@ -358,7 +358,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
                 # build transect using these two points
                 self.Transects.append(Transect(str(self.ID), str(ThisPoint.ID), Node(NearestPoint.x, NearestPoint.y), Node(BasePoint.x, BasePoint.y), Node(NearestPoint.x, NearestPoint.y)))
 
-    def GenerateTransectsNormal2Contours(self, ContourShp1, ContourShp2, Spacing):
+    def GenerateTransectsNormal2Contours(self, ContourShp1, ContourShp2, Spacing, Distance2Sea=5000., Distance2Land=5000., CheckTopology=True):
 
         """
 
@@ -380,6 +380,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         # load the contour shapefile
         GDF = gp.read_file(ContourShp1)
         Lines = GDF['geometry']
+        print(Lines)
         
         # make a multlinestring if there are multiple lines
         LineList = []
@@ -390,7 +391,13 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             else:
                 LineList.append(LineObj)
 
-        Lines1 = MultiLineString(LineList)
+        # catch situation where only one line
+        if len(LineList) == 1:
+            Lines1 = LineList[0]
+        else:
+            Lines1 = MultiLineString(LineList)
+
+        #Lines1 = MultiLineString(LineList)
         
         # load the second contour shapefile
         GDF = gp.read_file(ContourShp2)
@@ -405,47 +412,58 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             else:
                 LineList.append(LineObj)
 
-        Lines2 = MultiLineString(LineList)
+        # catch situation where only one line
+        if len(LineList) == 1:
+            Lines2 = LineList[0]
+        else:
+            Lines2 = MultiLineString(LineList)
+
+        #Lines2 = MultiLineString(LineList)
 
         # get points to define initial transect line and make it nice and long
-        self.GenerateTransects(Spacing,5000.,5000.)
+        self.GenerateTransects(Spacing,Distance2Sea,Distance2Land,CheckTopology)
 
         # intersect Transect with shapefile to find new end node of transect
         for Transect in self.Transects:
             
             # find intersection between transect line and shapefile lines
-            Intersection = Transect.LineString.intersection(Lines1)
-            
-            # catch no intersections
-            if Intersection.geom_type == "GeometryCollection":
-                continue
-
-            # check there arent multiple intersections, if there are just get the nearest
-            if Intersection.geom_type is "MultiPoint":
-                StartPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
-                Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection]
-                Index = Distances.index(min(Distances))
-                Intersection = Intersection[Index]
-                
-            # set this as the new end node
-            NewEndNode = Node(Intersection.x,Intersection.y)
-            
-            # now do the same with the raw coastline data (i.e. the original contour)
             Intersection = Transect.LineString.intersection(Lines2)
             
             # catch no intersections
-            if Intersection.geom_type == "GeometryCollection":
-                continue
+            if Intersection.geom_type != "GeometryCollection":
+            
+                # check there arent multiple intersections, if there are just get the nearest
+                if Intersection.geom_type is "MultiPoint":
+                    StartPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                    Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection]
+                    Index = Distances.index(min(Distances))
+                    Intersection = Intersection[Index]
+                
+                # set this as the new start node
+                NewStartNode = Node(Intersection.x,Intersection.y)
+            
+            else:
+                NewStartNode = Transect.StartNode
 
-            # check there arent multiple intersections, if there are just get the nearest
-            if Intersection.geom_type is "MultiPoint":
-                StartPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
-                Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection]
-                Index = Distances.index(min(Distances))
-                Intersection = Intersection[Index]
+            # now do the same with the raw coastline data (i.e. the original contour)
+            Intersection = Transect.LineString.intersection(Lines1)
+            
+            # catch no intersections
+            if Intersection.geom_type != "GeometryCollection":
+                
+                # check there arent multiple intersections, if there are just get the nearest
+                if Intersection.geom_type is "MultiPoint":
+                    StartPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                    Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection]
+                    Index = Distances.index(min(Distances))
+                    Intersection = Intersection[Index]
+                    
+                # set this as the new end node
+                NewEndNode = Node(Intersection.x,Intersection.y)
 
-            NewStartNode = Node(Intersection.x,Intersection.y)
-
+            else:
+                NewEndNode = Transect.EndNode
+            
             # reinitialise transect with new startnode and new endnode
             Transect.__init__(Transect.LineID, Transect.ID, Transect.CoastNode, NewStartNode, NewEndNode)
 

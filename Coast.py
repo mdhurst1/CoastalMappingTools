@@ -938,7 +938,7 @@ class Coast:
             # generate transects along each line
             Line.GenerateTransects(TransectSpacing, TransectLength2Sea, TransectLength2Land, CheckTopology)
 
-    def GenerateTransectsNormal2Shp(self, ContourShp1, ContourShp2, TransectSpacing=10.):
+    def GenerateTransectsNormal2Shp(self, ContourShp1, ContourShp2, Distance2Sea=5000., Distance2Land=5000., TransectSpacing=10.):
         """
         Wrapper to the function in the Line object
 
@@ -964,7 +964,7 @@ class Coast:
         for Line in self.CoastLines:
 
             # generate transects along each line
-            Line.GenerateTransectsNormal2Contours(ContourShp1,ContourShp2,TransectSpacing)
+            Line.GenerateTransectsNormal2Contours(ContourShp1,ContourShp2,TransectSpacing,Distance2Sea,Distance2Land,CheckTopology=False)
 
     def GenerateTransectsFromContours(self,ContourShp,TransectSpacing=10.):
 
@@ -1040,8 +1040,14 @@ class Coast:
         # read shapefile using geopandas
         GDF = gp.read_file(HistoricalShorelinesShp)
         Lines = GDF['geometry']
-        MultiLines = MultiLineString([Line for Line in Lines])
         
+        # catch situation where only one line
+        if len(Lines) == 1:
+            MultiLines = Lines[0]
+        else:
+            MultiLines = MultiLineString([Line for Line in Lines])
+            
+
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 
@@ -1070,9 +1076,10 @@ class Coast:
                 Distance = Transect.LineString.distance(Intersection)
                 
                 if Distance > 0.001:
+                    
                     # set this as the new end node
                     NewEndNode = Node(Intersection.x,Intersection.y)
-                    Transect.__init__(Transect.LineID, Transect.ID, Transect.CoastNode, Transect.StartNode, NewEndNode)
+                    Transect.Redraw(Transect.StartNode, NewEndNode)
 
                 # use minimum of line.distance to find line
                 # need date attribute if rates are to be calculated
@@ -1086,6 +1093,8 @@ class Coast:
                     Year = int(NearestLine.Surv_End_B)
                 elif "Surv_End_C" in NearestLine:
                     Year = int(NearestLine.Surv_End_C)
+                elif "Surv_End_D" in NearestLine:
+                    Year = int(NearestLine.Surv_End_D)
                 else:
                     sys.exit("Couldnt find survey year for MHWS historic shoreline position")
 
@@ -1098,7 +1107,6 @@ class Coast:
                     # find and replace
                     Index = Transect.HistoricShorelinesYears.index(Year)
                     Transect.HistoricShorelinesPositions[Index] = Node(Intersection.x,Intersection.y)
-
 
     def ExtractContours(self,ContourShp):
 
@@ -1175,7 +1183,7 @@ class Coast:
 
 
 
-    def SampleFutureRSL(self, FutureRSLFolder, Percentile=95, Years=[2020,2030,2040,2050,2060,2070,2080,2090,2100]):
+    def SampleFutureRSL(self, FutureRSLFolder, Percentile=95, Years=[2010,2020,2030,2040,2050,2060,2070,2080,2090,2100]):
 
         """ 
         
@@ -1204,7 +1212,7 @@ class Coast:
         self.FutureShoreLinesYears = Years
 
         for Year in Years:
-            FutureRSLRaster = FutureRSLFolder + "/RCP8_" + str(Percentile) + "th_" + str(Year) + "_filled.tif"
+            FutureRSLRaster = FutureRSLFolder + "/RCP8_" + str(Percentile) + "th_" + str(Year) + "_OSGB_filled.tif"
 
             # open the raster dataset to work on
             with rasterio.open(FutureRSLRaster) as RSLDataset:
@@ -1230,7 +1238,6 @@ class Coast:
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 Transect.PredictFutureShorelines()
-
 
     def WriteFutureShorelines(self):
 
@@ -1645,7 +1652,7 @@ class Coast:
         """
 
         # Loop through prediction years
-        for Year in self.FutureShoreLinesYears:
+        for Year in self.FutureShoreLinesYears[1:]:
 
             # keep track of no of coastal segments for IDs
             FutureCount = 0
@@ -2135,6 +2142,23 @@ class Coast:
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 Transect.MHWS = MHWS
+
+    def SetShorefaceDepth(self,Dsf):
+
+        """
+        Sets shoreface depth on all lines and transects
+        Could be replaced with spatially dynamic data later
+
+        MDH, November 2019
+
+        """
+        # set Shoreface Depth
+        self.Dsf = Dsf
+
+        # loop through lines and 
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                Transect.ClosureDepth = Dsf
 
     def PlotTransects(self, PlotFolder, ReverseFlag=False):
         

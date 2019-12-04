@@ -63,6 +63,7 @@ class Transect:
 
         # relative sea level rise history (rate in mm/year)
         self.HistoricalRSLR = None
+        self.InterpolatedRSLR = []
         
         # future sea level rise
         self.Future = False
@@ -140,6 +141,14 @@ class Transect:
         String += "EndNode: "
         String += self.EndNode.__str__()
         return String
+
+    def Redraw(self, StartNode, EndNode):
+        
+        self.StartNode = StartNode
+        self.EndNode = EndNode
+        self.LineString = LineString(((self.StartNode.X,self.StartNode.Y),(self.EndNode.X,self.EndNode.Y)))
+        self.Orientation = self.CalculateOrientation(self.StartNode, self.EndNode)
+        self.Length = self.CalculateLength(self.StartNode, self.EndNode)
 
     def CalculateOrientation(self, Node1, Node2):
         
@@ -222,12 +231,18 @@ class Transect:
 
         """
 
+        self.FutureShorelinesPositions = []
+        self.InterpolatedRSLR = []
+
         # calculate retreat rates
         if not self.HistoricShorelinesYears:
+            self.Future = False
             print("No historical shorelines")
             return
-        elif len(self.HistoricShorelinesYears) == 1:
-            print("Only one shoreline position") 
+        elif len(self.HistoricShorelinesYears) < 3:
+            self.Future = False
+            print(self.HistoricShorelinesYears)
+            print("Not enough shoreline positions") 
             return
         
         # boolean flag if making predicti
@@ -248,41 +263,57 @@ class Transect:
             else:
                 dEta = self.HistoricShorelinesPositions[i].get_Distance(self.HistoricShorelinesPositions[i-1])
                 dT = self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[i-1]
-            
-            self.ChangeRates.append(dEta/dT)
+                
+            self.ChangeRates.append(-dEta/dT)
         
-        #print(self.ChangeRates)
+        # interpolate to get average RSLR in each time stamp between 1870s and 2020
+        FutureSeaLevelRate = (self.FutureSeaLevels[1] - self.FutureSeaLevels[0])/(self.FutureSeaLevelYears[1] - self.FutureSeaLevelYears[0])
+        RSLRDiff= FutureSeaLevelRate-self.HistoricalRSLR/1000.
+        
+        InterpolationYears = []
+        for i in range(0,len(self.HistoricShorelinesYears)):
+            if i == 0:
+                InterpolationYears.append(self.HistoricShorelinesYears[0]+0.5*(self.HistoricShorelinesYears[-1]-self.HistoricShorelinesYears[0]))
+                
+            else:
+                InterpolationYears.append((self.HistoricShorelinesYears[0]+self.HistoricShorelinesYears[i-1]-self.HistoricShorelinesYears[0])+0.5*(self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[i-1]))
+                    
+            #        0.5*(self.HistoricShorelinesYears[-1]-self.HistoricShorelinesYears[0]))
+            #    InterpFraction = (self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[0])/(self.FutureSeaLevelYears[0]-self.HistoricShorelinesYears[0]) 
+            #    + 0.5*(self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[i-1])/(self.FutureSeaLevelYears[0]-self.HistoricShorelinesYears[0])
 
+        InterpFractions = (np.array(InterpolationYears)-self.HistoricShorelinesYears[0])/(self.FutureSeaLevelYears[0]-self.HistoricShorelinesYears[0])
+        self.InterpolatedRSLR = self.HistoricalRSLR/1000.+RSLRDiff*InterpFractions
+            #self.InterpolatedRSLR.append(self.HistoricalRSLR/1000.+RSLRGradient*InterpFraction)
+
+        
         # get mean slope
         self.ShorefaceDistance = self.StartNode.get_Distance(self.HistoricShorelinesPositions[-1])
         self.ShorefaceDepth = self.ClosureDepth + self.MHWS
         self.ShorefaceSlope = self.ShorefaceDepth/self.ShorefaceDistance
-        #print(self.ShorefaceDistance)
-        #print(self.ShorefaceSlope)
-        #print(self.ShorefaceDepth)
         
         # Calibration term, remembering to convert relative sea level change rates to m/yr
-        self.VolumetricCalibrationRate = self.ShorefaceDepth*self.ChangeRates[0] + self.ShorefaceDistance*(self.HistoricalRSLR/1000.)
-        #print("Historical Bruun Rule")
-        #print(self.HistoricalRSLR/1000.)
-        #print(-1./self.ShorefaceSlope)
-        #print((-1./self.ShorefaceSlope)*(float(self.HistoricalRSLR)/1000.))
-
+        self.VolumetricCalibrationRate = self.ShorefaceDepth*np.array(self.ChangeRates) + self.ShorefaceDistance*(self.InterpolatedRSLR)
+        
+        #self.VolumetricCalibrationRate = self.ShorefaceDepth*np.array(self.ChangeRates) + self.ShorefaceDistance*(self.HistoricalRSLR/1000.)
+        
         #print("Calibration Term")
         #print(self.VolumetricCalibrationRate)
 
-        #print(self.FutureSeaLevels)
-
+        # get sea level at latest time
+        self.HistoricShorelinesYears[-1]
+        Interp = (self.FutureSeaLevelYears[1]-self.HistoricShorelinesYears[-1])/(self.FutureSeaLevelYears[1]-self.FutureSeaLevelYears[0])
+        LatestRSL = self.FutureSeaLevels[0]+Interp*(self.FutureSeaLevels[1]-self.FutureSeaLevels[0])
+        
         # Future shoreline positions
-        for i in range(0, len(self.FutureSeaLevelYears)):
+        for i in range(1, len(self.FutureSeaLevelYears)):
             dT = self.FutureSeaLevelYears[i]-self.HistoricShorelinesYears[-1]
-            BruunRuleComponent = (-1./self.ShorefaceSlope)*self.FutureSeaLevels[i]
-            CalibrationComponent = (1./self.ShorefaceDepth)*self.VolumetricCalibrationRate*dT
+            
+            # self.InterpolatedRSLR
+            BruunRuleComponent = (-1./self.ShorefaceSlope)*(self.FutureSeaLevels[i]-LatestRSL)
+            CalibrationComponent = (1./self.ShorefaceDepth)*self.VolumetricCalibrationRate[-1]*dT
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
-            #print("BruunRule Component", BruunRuleComponent)
-            #print("Calibration Component", CalibrationComponent)
-            #print("Total Change", ShorelinePositionChange)
-
+            
             X1 = self.HistoricShorelinesPositions[-1].X - ShorelinePositionChange * np.sin( np.radians( self.Orientation ) )
             Y1 = self.HistoricShorelinesPositions[-1].Y - ShorelinePositionChange * np.cos( np.radians( self.Orientation ) )
 
@@ -1408,8 +1439,11 @@ class Transect:
         if self.Future:
 
             # find year index
-            Index = [i for i, x in enumerate(self.FutureSeaLevelYears) if x == Year]
+            Index = [i for i, x in enumerate(self.FutureSeaLevelYears[1:]) if x == Year]
             
+            if len(Index) == 0:
+                return
+
             # use to access future position
             Position = self.FutureShorelinesPositions[Index[0]]
             return Position
