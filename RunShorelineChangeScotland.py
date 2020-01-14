@@ -58,25 +58,21 @@ for index, Row in Cells.iterrows():
     CellCoast.WriteTransectsShp(str(WorkingPath / "CoastalCells" / (RowName + "_Transects.shp")))
 
     #### get MHWS for each transect
-    CellCoast.SampleMHWS(str(WorkingPath / "MHWS_Lines" / ))
-    
+    CellCoast.SampleMHWS(str(WorkingPath / "MHWS_Lines" / "scotland_mhws_elev.tif"))
+
     #### get historical rate of relative sea level change
     CellCoast.SampleHistoricalRSLR(str(WorkingPath / "RSL_Bradley_Model" / "Scotland_RSLR_Modern_BNG.tif"))
 
     ### get future relative sea level time series
-    #MontroseCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL"))
+    CellCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL"))
 
     ## predict future shorelines
-    #MontroseCoast.SetMHWS(2.)
-    MontroseCoast.PredictFutureShorelines()
+    CellCoast.PredictFutureShorelines()
 
-    MontroseCoast.WriteFutureShorelinesShp(str(WorkingPath / "test2.shp"))
+    # write future shorelines
+    CellCoast.WriteFutureShorelinesShp(str(WorkingPath / "CoastalCells" / (RowName + "_Future.shp")))
         
-        
-        
-        # SAVE ENTIRE COAST OBJECT
-        print("\tSaving Coast Object as ", Filename2SaveCoast)
-        with open(str(Filename2SaveCoast), 'wb') as PFile:
-            pickle.dump(MontroseCoast, PFile)
-
-
+    # SAVE ENTIRE COAST OBJECT
+    print("\tSaving Coast Object as ", Filename2SaveCoast)
+    with open(str(Filename2SaveCoast), 'wb') as PFile:
+        pickle.dump(CellCoast, PFile)
