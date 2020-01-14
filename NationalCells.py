@@ -18,7 +18,7 @@ WorkingPath = pathlib.Path.cwd().parent
 
 ### FUNCTIONALITY HERE TO SAMPLE FROM NATIONAL DATASETS BASED ON COASTAL CELLS ###
 # open shapefile of coastal cells
-Cells = gp.read_file(WorkingPath / "CoastalCells" / "Cell_polly.shp")
+Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCell_CA.shp")
 
 # open shapefiles of -10m contour
 BathyLines = gp.read_file(WorkingPath / "Bathymetry" / "Scotland_10m_Bathy_Contour.shp")
@@ -30,7 +30,7 @@ MHWS_Soft = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Modern_Soft
 
 for index, Row in Cells.iterrows():
 
-    print(Row.Name)
+    print(Row.Cell_sub)
     
     # Intersection to isolate datasets for each cell
     Bathy = BathyLines[BathyLines.geometry.intersects(Row.geometry)]
@@ -39,7 +39,7 @@ for index, Row in Cells.iterrows():
     Soft = MHWS_Soft[MHWS_Soft.geometry.intersects(Row.geometry)]
     
     # Save these to new files
-    RowName = Row.Name.replace(" ","_")
+    RowName = "Cell_" + Row.Cell_sub
     
     try:
         Bathy.to_file(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp"))
@@ -48,4 +48,4 @@ for index, Row in Cells.iterrows():
         Soft.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp"))
     
     except:
-        print("Unable to write some files for " + Row.Name)
+        print("Unable to write some files for " + Row.Cell_sub)

@@ -19,14 +19,17 @@ WorkingPath = pathlib.Path.cwd().parent
 TransectSpacing = 50.
 
 # get all coastal cells to loop through
-Cells = gp.read_file(WorkingPath / "CoastalCells" / "Cell_polly.shp")
+Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCell_CA.shp")
+
+CellSubList = ["2a","2b"]
 
 # loop through each cell
-for index, Row in Cells.iterrows():
+#for index, Row in Cells.iterrows():
+for CellSub in CellSubList:
 
     # print cell to screen
-    print(Row.Name)
-    RowName = Row.Name.replace(" ","_")
+    print(CellSub)
+    RowName = "Cell_"+CellSub
     
     # try opening bathy file as check on whether there is data
     try:
@@ -61,7 +64,7 @@ for index, Row in Cells.iterrows():
     CellCoast.WriteTransectsShp(str(WorkingPath / "CoastalCells" / (RowName + "_Transects.shp")))
 
     #### get MHWS for each transect
-    CellCoast.SampleMHWS(str(WorkingPath / "MHWS_Lines" / "scotland_mhws_elev.tif"))
+    CellCoast.SampleMHWSElevation(str(WorkingPath / "MHWS_Lines" / "scotland_mhws_elev.tif"))
 
     #### get historical rate of relative sea level change
     CellCoast.SampleHistoricalRSLR(str(WorkingPath / "RSL_Bradley_Model" / "Scotland_RSLR_Modern_BNG.tif"))
@@ -80,4 +83,4 @@ for index, Row in Cells.iterrows():
     with open(str(Filename2SaveCoast), 'wb') as PFile:
         pickle.dump(CellCoast, PFile)
     
-    break
+
