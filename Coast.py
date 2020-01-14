@@ -1181,6 +1181,31 @@ class Coast:
                     for val in RSLRDataset.sample([(Transect.CoastNode.X,Transect.CoastNode.Y)]):
                         Transect.HistoricalRSLR = val[0]
 
+    def SampleMHWSElevation(self,MHWSRaster)
+
+        """
+        Samples a raster of MHWS elevation at each transect location on the coast
+
+        Parameters
+        ----------
+
+        MHWSRaster : string
+            Filename for raster to be sampled
+        
+        MDH, January 2020
+
+        """
+
+        print("Coast: Sampling MHWS elevation raster dataset")
+
+        # open the raster dataset to work on
+        with rasterio.open(MHWSRaster) as MHWSDataset:
+        
+            # loop through transects and sample
+            for Line in self.CoastLines:
+                for i, Transect in enumerate(Line.Transects[:]):
+                    for val in MHWSDataset.sample([(Transect.CoastNode.X,Transect.CoastNode.Y)]):
+                        Transect.MHWS = val[0]
 
 
     def SampleFutureRSL(self, FutureRSLFolder, Percentile=95, Years=[2010,2020,2030,2040,2050,2060,2070,2080,2090,2100]):
