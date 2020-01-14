@@ -8,7 +8,8 @@ Dynamic Coast 2 Project
 
 """
 
-import sys, pickle, pathlib, shapefile
+import pickle, pathlib
+import geopandas as gp
 from Coast import *
 
 # define file names for analysis
@@ -25,16 +26,17 @@ for index, Row in Cells.iterrows():
 
     # print cell to screen
     print(Row.Name)
+    RowName = Row.Name.replace(" ","_")
     
     # try opening bathy file as check on whether there is data
     try:
         gp.read_file(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp"))
     except:
-        print("\tUnable to access files for " + Row.Name)
+        print("\tUnable to access files for " + RowName)
         continue
 
     # # this checks to see whether coast object already exists
-    Filename2SaveCoast = WorkingPath / "CoastalCells" / Row.Name+"_Change.pydata"
+    Filename2SaveCoast = WorkingPath / "CoastalCells" / (RowName+"_Change.pydata")
 
     try:
         CellCoast = pickle.load( open( Filename2SaveCoast, "rb" ) )
@@ -46,10 +48,11 @@ for index, Row in Cells.iterrows():
 
         # SET UP THE COAST FROM -10m Contour
         CellCoast = Coast(str(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")))
+        
         # may need to think carefully about how much to smooth
         CellCoast.SmoothCoastLines()
         CellCoast.GenerateTransectsNormal2Shp(str(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")),
-                                                str(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp"), TransectSpacing))
+                                                str(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")), TransectSpacing=TransectSpacing)
 
     #### find historic shoreline positions and extend transect accordingly
     CellCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")))
@@ -76,3 +79,5 @@ for index, Row in Cells.iterrows():
     print("\tSaving Coast Object as ", Filename2SaveCoast)
     with open(str(Filename2SaveCoast), 'wb') as PFile:
         pickle.dump(CellCoast, PFile)
+    
+    break

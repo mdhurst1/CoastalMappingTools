@@ -1181,7 +1181,7 @@ class Coast:
                     for val in RSLRDataset.sample([(Transect.CoastNode.X,Transect.CoastNode.Y)]):
                         Transect.HistoricalRSLR = val[0]
 
-    def SampleMHWSElevation(self,MHWSRaster)
+    def SampleMHWSElevation(self,MHWSRaster):
 
         """
         Samples a raster of MHWS elevation at each transect location on the coast

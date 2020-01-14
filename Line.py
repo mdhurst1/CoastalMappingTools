@@ -380,7 +380,6 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         # load the contour shapefile
         GDF = gp.read_file(ContourShp1)
         Lines = GDF['geometry']
-        print(Lines)
         
         # make a multlinestring if there are multiple lines
         LineList = []
@@ -397,8 +396,6 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         else:
             Lines1 = MultiLineString(LineList)
 
-        #Lines1 = MultiLineString(LineList)
-        
         # load the second contour shapefile
         GDF = gp.read_file(ContourShp2)
         Lines = GDF['geometry']
@@ -417,8 +414,6 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             Lines2 = LineList[0]
         else:
             Lines2 = MultiLineString(LineList)
-
-        #Lines2 = MultiLineString(LineList)
 
         # get points to define initial transect line and make it nice and long
         self.GenerateTransects(Spacing,Distance2Sea,Distance2Land,CheckTopology)
