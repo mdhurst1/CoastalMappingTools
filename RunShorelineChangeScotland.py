@@ -22,13 +22,12 @@ SmoothingWindowSize=2001
 # get all coastal cells to loop through
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCell_CA.shp")
 
-CellSubList = ["2a","2b"]
-
 # loop through each cell
-#for index, Row in Cells.iterrows():
-for CellSub in CellSubList:
+for index, Row in Cells.iterrows():
+#for CellSub in CellSubList:
 
     # print cell to screen
+    CellSub = Row.Cell_sub
     print(CellSub)
     RowName = "Cell_"+CellSub
     
