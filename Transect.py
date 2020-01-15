@@ -1468,8 +1468,23 @@ class Transect:
         """
 
         # find index of most recent historical shoreline
-        Index = max(HistoricShorelinesYears)
-        Position = HistoricShorelinesPositions[Index]
+        Index = np.argmax(self.HistoricShorelinesYears)
+        Position = self.HistoricShorelinesPositions[Index]
+        return Position 
+
+    def get_OldestPosition(self):
+
+        """
+
+        Get the most oldest position of the coast 
+
+        MDH, January 2020
+
+        """
+
+        # find index of most recent historical shoreline
+        Index = np.argmin(self.HistoricShorelinesYears)
+        Position = self.HistoricShorelinesPositions[Index]
         return Position 
     
     def get_FutureShorelineRate(self, Year):

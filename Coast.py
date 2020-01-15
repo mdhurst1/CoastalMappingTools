@@ -62,6 +62,8 @@ class Coast:
         self.ExtBackLines_High = []
         self.FutureShoreLinesYears = []
         self.FutureShoreLines = []
+        self.WriteFutureLines = []
+        self.WriteRecentLines = []
         self.Projection = ""
         self.OverallOrientation = 0.
         self.TransectsSpacing = 10.
@@ -296,18 +298,24 @@ class Coast:
 
         # print action to screen
         print("Coast.WriteFutureShorelineSegmentsShp: Writing future MHWS line objects to polyline shapefiles")
-
+        
+        
+        if len(self.FutureShoreLines) == 0:
+            self.GetFutureShoreLines()
+        
         # open new shapefile        
         WL = shapefile.Writer(FutureShoreLinesShp,shapeType=shapefile.POLYLINE)
        
         # Create Fields
-        self.Fields = [('DeletionFlag','C', 1, 0), ['Line_ID', 'C', 3, 0], ['Transect_ID','C', 5, 0]
-                        ['Cell','N', 2, 0], ['SubCell','C', 2, 0], ['CMU','C', 3, 0]
+        self.Fields = [('DeletionFlag','C', 1, 0), ['Line_ID', 'C', 3, 0], ['Transect_ID','C', 5, 0],
+                        ['Cell','C', 2, 0], ['SubCell','C', 2, 0], ['CMU','C', 3, 0],
                         ['Year','N', 4, 0], ['Distance','N', 6, 2], ['Rate','N', 4, 4]]
         WL.fields = self.Fields[1:] 
 
         # Loop through prediction years
         for Year in self.FutureShoreLinesYears[1:]:
+            
+            print(Year)
 
             # keep track of no of coastal segments for IDs
             FutureCount = 0
@@ -329,18 +337,19 @@ class Coast:
 
                     # get previous and next nodes (either future or current)
                     # might need some logic for start and end nodes here
-                    PreviousTransect = CoastLine.Transects[i-1]
-                    NextTransect = CoastLine.Transects[i+1]
-                    
-                    if PreviousTransect.Future:
-                        PreviousNode = PreviousTransect.get_FuturePosition(Year)
+                    if (i == 0):
+                        PreviousNode = FutureNode
+                    elif CoastLine.Transects[i-1].Future:
+                        PreviousNode = CoastLine.Transects[i-1].get_FuturePosition(Year)
                     else:
-                        PreviousNode = PreviousTransect.get_RecentPosition()
+                        PreviousNode = FutureNode
                     
-                    if NextTransect.Future:
-                        NextNode = NextTransect.get_FuturePosition(Year)
+                    if (i == len(CoastLine.Transects)-1):
+                        NextNode = FutureNode
+                    elif CoastLine.Transects[i+1].Future:
+                        NextNode = CoastLine.Transects[i+1].get_FuturePosition(Year)
                     else:
-                        NextNode = NextTransect.get_RecentPosition()
+                        NextNode = FutureNode
 
                     # build line segments from the three nodes
                     X.append((PreviousNode.X+FutureNode.X)/2.)
@@ -350,9 +359,7 @@ class Coast:
                     X.append((NextNode.X+FutureNode.X)/2.)
                     Y.append((NextNode.Y+FutureNode.Y)/2.)
                     
-                    self.Fields = [('DeletionFlag','C', 1, 0),['Line_ID', 'C', 20, 0],
-                        ['Cell','N', 2, 0],['SubCell','C', 2, 0],['CMU','C', 3, 0]
-                        ['Year','N', 4, 0],['EDist','N', 6, 2],['Rate','N', 4, 4]]
+                    print(X,Y)
 
                     # get line node positions
                     WriteLine = [np.column_stack([X,Y]).tolist()]
@@ -363,7 +370,7 @@ class Coast:
                     Rate = Transect.get_FutureShorelineRate(Year)
 
                     # generate record (strs?)
-                    Record = [str(Line.ID), str(Transect.ID), str(Transect.Cell), str(Transect.SubCell),
+                    Record = [str(CoastLine.ID), str(Transect.ID), str(Transect.Cell), str(Transect.SubCell),
                     str(Transect.CMU), str(Year), str(Distance), str(Rate)]
 
                     # write line and record
@@ -373,7 +380,7 @@ class Coast:
         # close the shapefiles and clean up
         WL.close()
             
-        # create the projection file    
+        # create the projection file 
         f = open(FutureShoreLinesShp.rstrip("shp")+"prj","w")
         f.write(self.Projection)
         f.close()
@@ -391,7 +398,7 @@ class Coast:
         print("Coast.WriteFutureShorelineSegmentsShp: Writing future MHWS line objects to polyline shapefiles")
 
         # open new shapefile        
-        WL = shapefile.Writer(FutureShoreLinesShp,shapeType=shapefile.POLYLINE)
+        WL = shapefile.Writer(ErodedAreaShp,shapeType=shapefile.POLYLINE)
        
         # Create Fields
         self.Fields = [('DeletionFlag','C', 1, 0), ['Line_ID', 'C', 3, 0],
@@ -418,15 +425,19 @@ class Coast:
                     PreviousTransect = CoastLine.Transects[i-1]
                     NextTransect = CoastLine.Transects[i+1]
                     
-                    if PreviousTransect.Future:
-                        PreviousNode = PreviousTransect.get_FuturePosition(Year)
+                    if (i == 0):
+                        PreviousNode = FutureNode
+                    elif CoastLine.Transects[i-1].Future:
+                        PreviousNode = CoastLine.Transects[i-1].get_FuturePosition(Year)
                     else:
-                        PreviousNode = PreviousTransect.get_RecentPosition()
+                        PreviousNode = FutureNode
                     
-                    if NextTransect.Future:
-                        NextNode = NextTransect.get_FuturePosition(Year)
+                    if (i == len(CoastLine.Transects)-1):
+                        NextNode = FutureNode
+                    elif CoastLine.Transects[i+1].Future:
+                        NextNode = CoastLine.Transects[i+1].get_FuturePosition(Year)
                     else:
-                        NextNode = NextTransect.get_RecentPosition()
+                        NextNode = FutureNode
 
                     # build line segments from the three nodes
                     X.append((PreviousNode.X+FutureNode.X)/2.)
@@ -437,7 +448,7 @@ class Coast:
                     Y.append((NextNode.Y+FutureNode.Y)/2.)
                     
                     self.Fields = [('DeletionFlag','C', 1, 0),['Line_ID', 'C', 20, 0],
-                        ['Cell','N', 2, 0],['SubCell','C', 2, 0],['CMU','C', 3, 0]
+                        ['Cell','N', 2, 0],['SubCell','C', 2, 0],['CMU','C', 3, 0],
                         ['Year','N', 4, 0],['EDist','N', 6, 2],['Rate','N', 4, 4]]
 
                     # get line node positions
@@ -460,7 +471,7 @@ class Coast:
         WL.close()
             
         # create the projection file    
-        f = open(FutureShoreLinesShp.rstrip("shp")+"prj","w")
+        f = open(ErodedAreaShp.rstrip("shp")+"prj","w")
         f.write(self.Projection)
         f.close()
 
@@ -1899,7 +1910,6 @@ class Coast:
 
                 # check for lines with no predictions
                 if not any(FutureBool):
-                    print("No Future Predictions on Line")
                     continue
                 
                 # get a list of the start and end points of contiguous cliff lines

@@ -17,19 +17,19 @@ WorkingPath = pathlib.Path.cwd().parent
 
 # set the transect spacing (in m)
 TransectSpacing = 50.
-SmoothingWindowSize=2001
+SmoothingWindowSize=1001
 
 # get all coastal cells to loop through
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCell_CA.shp")
 
 # loop through each cell
-#for index, Row in Cells.iterrows():
-CellSubList = ["2a","2b"]
+for index, Row in Cells.iterrows():
+#CellSubList = ["2a","2b"]
 
-for CellSub in CellSubList:
+#for CellSub in CellSubList:
 
     # print cell to screen
-    #CellSub = Row.Cell_sub
+    CellSub = Row.Cell_sub
     print(CellSub)
     RowName = "Cell_"+CellSub
     
@@ -59,6 +59,11 @@ for CellSub in CellSubList:
         CellCoast.GenerateTransectsNormal2Shp(str(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")),
                                                 str(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")), TransectSpacing=TransectSpacing)
 
+        # SAVE ENTIRE COAST OBJECT
+        print("\tSaving Coast Object as ", Filename2SaveCoast)
+        with open(str(Filename2SaveCoast), 'wb') as PFile:
+            pickle.dump(CellCoast, PFile)
+        
     #### find historic shoreline positions and extend transect accordingly
     CellCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")))
     CellCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp")))
@@ -80,10 +85,13 @@ for CellSub in CellSubList:
     # write future shorelines
     CellCoast.WriteFutureShorelinesShp(str(WorkingPath / "CoastalCells" / (RowName + "_Future.shp")))
     CellCoast.WriteFutureShorelineSegmentsShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSegments.shp")))
+    CellCoast.WriteErodedAreaShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureErosion.shp")))
     
     # SAVE ENTIRE COAST OBJECT
     print("\tSaving Coast Object as ", Filename2SaveCoast)
     with open(str(Filename2SaveCoast), 'wb') as PFile:
         pickle.dump(CellCoast, PFile)
+    
+    
     
 
