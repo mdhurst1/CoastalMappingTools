@@ -40,6 +40,9 @@ class Coast:
 
         print("Coast: Initialising Coast object")
 
+        self.Cell = None
+        self.SubCell = None
+        self.CMU = None
         self.CoastShp = CoastShp
         self.NoCoastLines = 0
         self.CoastLines = []
@@ -70,8 +73,7 @@ class Coast:
 
         if CoastShp:
             self.ReadCoastShp(CoastShp)
-            print("Coast: Initialised coast from " + CoastShp)
-
+            
         else:
             print("Coast: Generating empty coast object")
 
@@ -92,7 +94,7 @@ class Coast:
         Shapes = SF.shapes()
         
         # I HAVE DELETED THE RECORDING OF SHAPES AND RECORDS INTO THE OBJECT DUE TO COMPATIBILITY ISSUES
-        # WITH PICKLING THAT I CAN UNDERSTAND!!!!
+        # WITH PICKLING THAT I CANT UNDERSTAND!!!!
 
         # Get number of coast segments to work on
         self.NoCoastLines = len(Shapes)
@@ -256,7 +258,96 @@ class Coast:
         f = open(FutureShoreLinesShp.rstrip("shp")+"prj","w")
         f.write(self.Projection)
         f.close()
+
+    def WriteFutureShorelineSegmentsShp(self, FutureShoreLinesShp):
+
+        """
+        Writes the contents of a list of future shoreline objects to polyline shape file
+        organised into individual segments with attributes
+
+        MDH, January 2020
+
+        """
+
+        # print action to screen
+        print("Coast.WriteFutureShorelineSegmentsShp: Writing future MHWS line objects to polyline shapefiles")
+
+        # open new shapefile        
+        WL = shapefile.Writer(FutureShoreLinesShp,shapeType=shapefile.POLYLINE)
+       
+        # Create Fields
+        self.Fields = [('DeletionFlag','C', 1, 0), ['Line_ID', 'C', 3, 0], ['Transect_ID','C', 5, 0]
+                        ['Cell','N', 2, 0], ['SubCell','C', 2, 0], ['CMU','C', 3, 0]
+                        ['Year','N', 4, 0], ['Distance','N', 6, 2], ['Rate','N', 4, 4]]
+        WL.fields = self.Fields[1:] 
+
+        # Loop through prediction years
+        for Year in self.FutureShoreLinesYears[1:]:
+
+            # keep track of no of coastal segments for IDs
+            FutureCount = 0
+
+            # loop through transects and get contiguous future prediction lines
+            for CoastLine in self.CoastLines:
+                for i, Transect in enumerate(CoastLine.Transects):
+                    
+                    # check for prediction
+                    if not Transect.Future:
+                        continue
+                    
+                    # initiate dummy lists for nodes
+                    X = []
+                    Y = []
+                    
+                    # get shoreline position in the future
+                    FutureNode = Transect.get_FuturePosition(Year)
+
+                    # get previous and next nodes (either future or current)
+                    # might need some logic for start and end nodes here
+                    PreviousTransect = CoastLine.Transects[i-1]
+                    NextTransect = CoastLine.Transects[i+1]
+                    
+                    if PreviousTransect.Future:
+                        PreviousNode = PreviousTransect.get_FuturePosition(Year)
+                    else:
+                        PreviousNode = PreviousTransect.get_RecentPosition()
+                    
+                    if NextTransect.Future:
+                        NextNode = NextTransect.get_FuturePosition(Year)
+                    else:
+                        NextNode = NextTransect.get_RecentPosition()
+
+                    # build line segments from the three nodes
+                    X.append((PreviousNode.X+FutureNode.X)/2.)
+                    Y.append((PreviousNode.Y+FutureNode.Y)/2.)
+                    X.append(FutureNode.X)
+                    Y.append(FutureNode.Y)
+                    X.append((NextNode.X+FutureNode.X)/2.)
+                    Y.append((NextNode.Y+FutureNode.Y)/2.)
+                    
+                    self.Fields = [('DeletionFlag','C', 1, 0),['Line_ID', 'C', 20, 0],
+                        ['Cell','N', 2, 0],['SubCell','C', 2, 0],['CMU','C', 3, 0]
+                        ['Year','N', 4, 0],['Distance','N', 6, 2],['Rate','N', 4, 4]]
+
+                    # get line node positions
+                    WriteLine = [np.column_stack([X,Y]).tolist()]
             
+                    # generate record (strs?)
+                    Record = [str(Line.ID), str(Transect.ID), str(Transect.Cell), str(Transect.SubCell),
+                    str(Transect.CMU), str(Year), str(Transect.Distance?), str(Transect.Rate?)]
+
+                    # write line and record
+                    WL.line(WriteLine)
+                    WL.record(*Record) ####### ISSUE WITH RECORDS NEEDS FIXING ########
+        
+        # close the shapefiles and clean up
+        WL.close()
+            
+        # create the projection file    
+        f = open(FutureShoreLinesShp.rstrip("shp")+"prj","w")
+        f.write(self.Projection)
+        f.close()
+
     def WriteLinesShp(self, DictionaryKey, CoastShp):
         
         """
@@ -1732,7 +1823,7 @@ class Coast:
                     
                     # update counter
                     FutureCount += 1
-
+    
     def GetBarrierWidth(self):
 
         """

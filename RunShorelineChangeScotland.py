@@ -17,6 +17,7 @@ WorkingPath = pathlib.Path.cwd().parent
 
 # set the transect spacing (in m)
 TransectSpacing = 50.
+SmoothingWindowSize=2001
 
 # get all coastal cells to loop through
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCell_CA.shp")
@@ -53,7 +54,7 @@ for CellSub in CellSubList:
         CellCoast = Coast(str(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")))
         
         # may need to think carefully about how much to smooth
-        CellCoast.SmoothCoastLines()
+        CellCoast.SmoothCoastLines(WindowSize=SmoothingWindowSize)
         CellCoast.GenerateTransectsNormal2Shp(str(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")),
                                                 str(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")), TransectSpacing=TransectSpacing)
 

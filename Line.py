@@ -24,10 +24,13 @@ class Line:
     """
     """
 
-    def __init__(self, ID, X, Y, Contour=None, Year=None):
+    def __init__(self, ID, X, Y, Contour=None, Year=None, Cell=None, SubCell=None, CMU=None):
         """
         """
         self.ID = ID
+        self.Cell = Cell
+        self.SubCell = SubCell
+        self.CMU = CMU
         self.Year = Year
         self.NoNodes = 0
         self.Nodes = []

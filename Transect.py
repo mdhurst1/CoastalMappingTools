@@ -34,10 +34,13 @@ class Transect:
     Description of object goes here
 
     """
-    def __init__(self, LineID, ID, CoastNode, StartNode, EndNode):
+    def __init__(self, CoastNode, StartNode, EndNode, LineID, ID, Cell=None, SubCell=None, CMU=None):
         
         self.ID = ID
         self.LineID = LineID
+        self.Cell = Cell
+        self.SubCell = SubCell
+        self.CMU = CMU
         
         # transect positioning
         self.CoastNode = CoastNode
@@ -1451,6 +1454,20 @@ class Transect:
         else:
             return
 
+    def get_RecentPosition(self):
+
+        """
+
+        Get the most recent position of the coast 
+
+        MDH, January 2020
+
+        """
+
+        # find index of most recent historical shoreline
+        Index = max(HistoricShorelinesYears)
+        Position = HistoricShorelinesPositions[Index]
+        return Position        
 
     def Write(self, Folder=os.getcwd(), delimiter=","):
         
