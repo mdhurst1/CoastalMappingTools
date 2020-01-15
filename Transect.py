@@ -73,6 +73,7 @@ class Transect:
         self.FutureSeaLevelYears = []
         self.FutureSeaLevels = []
         self.FutureShorelinesPositions = []
+        self.FutureShorelinesRates = []
 
         # transect data
         self.NoValues = None
@@ -235,6 +236,7 @@ class Transect:
         """
 
         self.FutureShorelinesPositions = []
+        self.FutureShorelinesRates = []
         self.InterpolatedRSLR = []
 
         # calculate retreat rates
@@ -321,6 +323,7 @@ class Transect:
             Y1 = self.HistoricShorelinesPositions[-1].Y - ShorelinePositionChange * np.cos( np.radians( self.Orientation ) )
 
             self.FutureShorelinesPositions.append(Node(X1,Y1))
+            self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
             
     def FindCliff(self):
 
@@ -1467,7 +1470,34 @@ class Transect:
         # find index of most recent historical shoreline
         Index = max(HistoricShorelinesYears)
         Position = HistoricShorelinesPositions[Index]
-        return Position        
+        return Position 
+    
+    def get_FutureShorelineRate(self, Year):
+
+        """
+
+        Get the future erosion rate of the coast for a particular year
+        from Bruun Rule predictions
+
+        MDH, January 2020
+
+        """
+
+        # check there are predictions for this transect
+        if self.Future:
+
+            # find year index
+            Index = [i for i, x in enumerate(self.FutureSeaLevelYears[1:]) if x == Year]
+            
+            if len(Index) == 0:
+                return
+
+            # use to access future position
+            Rate = self.FutureShorelinesRates[Index[0]]
+            return Rate
+
+        else:
+            return
 
     def Write(self, Folder=os.getcwd(), delimiter=","):
         

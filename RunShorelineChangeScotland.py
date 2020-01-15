@@ -23,8 +23,10 @@ SmoothingWindowSize=2001
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCell_CA.shp")
 
 # loop through each cell
-for index, Row in Cells.iterrows():
-#for CellSub in CellSubList:
+#for index, Row in Cells.iterrows():
+CellSubList = ["2a","2b"]
+
+for CellSub in CellSubList:
 
     # print cell to screen
     CellSub = Row.Cell_sub
@@ -77,7 +79,8 @@ for index, Row in Cells.iterrows():
 
     # write future shorelines
     CellCoast.WriteFutureShorelinesShp(str(WorkingPath / "CoastalCells" / (RowName + "_Future.shp")))
-        
+    CellCoast.WriteFutureShorelineSegmentsShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSegments.shp")))
+    
     # SAVE ENTIRE COAST OBJECT
     print("\tSaving Coast Object as ", Filename2SaveCoast)
     with open(str(Filename2SaveCoast), 'wb') as PFile:

@@ -327,14 +327,19 @@ class Coast:
                     
                     self.Fields = [('DeletionFlag','C', 1, 0),['Line_ID', 'C', 20, 0],
                         ['Cell','N', 2, 0],['SubCell','C', 2, 0],['CMU','C', 3, 0]
-                        ['Year','N', 4, 0],['Distance','N', 6, 2],['Rate','N', 4, 4]]
+                        ['Year','N', 4, 0],['EDist','N', 6, 2],['Rate','N', 4, 4]]
 
                     # get line node positions
                     WriteLine = [np.column_stack([X,Y]).tolist()]
             
+                    # calculate additional attributes
+                    RecentNode = Transect.get_RecentPosition()
+                    Distance = np.sqrt((FutureNode.X-RecentNode.X)**2. + (FutureNode.Y-RecentNode.Y)**2.)
+                    Rate = Transect.get_FutureShorelineRate(Year)
+
                     # generate record (strs?)
                     Record = [str(Line.ID), str(Transect.ID), str(Transect.Cell), str(Transect.SubCell),
-                    str(Transect.CMU), str(Year), str(Transect.Distance?), str(Transect.Rate?)]
+                    str(Transect.CMU), str(Year), str(Distance), str(Rate)]
 
                     # write line and record
                     WL.line(WriteLine)
