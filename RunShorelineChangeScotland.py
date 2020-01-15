@@ -29,7 +29,7 @@ CellSubList = ["2a","2b"]
 for CellSub in CellSubList:
 
     # print cell to screen
-    CellSub = Row.Cell_sub
+    #CellSub = Row.Cell_sub
     print(CellSub)
     RowName = "Cell_"+CellSub
     
