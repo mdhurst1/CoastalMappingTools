@@ -17,8 +17,9 @@ WorkingPath = pathlib.Path.cwd().parent
 
 # set the transect spacing (in m)
 TransectSpacing = 50.
-SmoothingWindowSize = 1001
-NoSmooths = 1
+SmoothingWindowSize = 201
+SmoothedSpacing = 50.
+NoSmooths = 4
 
 # set up a file name to save the coast object
 Filename2SaveCoast = WorkingPath / "StAndrewsChange.pydata"
@@ -31,8 +32,8 @@ RowName = "Cell_2a"
 CellCoast = Coast(str(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")))
 
 # may need to think carefully about how much to smooth
-CellCoast.SmoothCoastLines(WindowSize=SmoothingWindowSize, NoSmooths=NoSmooths)
-CellCoast.WriteCoastShp(str(WorkingPath / "Test_Bathy_Smooth2.shp"))
+CellCoast.SmoothCoastLines(WindowSize=SmoothingWindowSize, NoSmooths=NoSmooths, NodeSpacing=SmoothedSpacing)
+CellCoast.WriteCoastShp(str(WorkingPath / "Test_Bathy_Smooth.shp"))
 CellCoast.GenerateTransectsNormal2Shp(str(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")),
                                         str(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")), TransectSpacing=TransectSpacing)
 

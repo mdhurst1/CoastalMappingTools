@@ -112,7 +112,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
                 YNew.append(self.Nodes[i+1].Y - dY)
 
                 # update to find next point
-                NextPosition += Spacing
+                NextPosition += ResampleInterval
         
         # add last node
         XNew.append(X[-1])
@@ -159,8 +159,6 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             elif dx < 0 and dy > 0:
                 self.Orientation[i] = 360 + np.degrees( np.arctan( dx / dy ) )
             
-            
-
             #Calculate the length of the segment
             self.SegmentLength[i] = np.sqrt(dx**2. + dy**2.)
 
@@ -190,6 +188,10 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         YSmooth = savgol_filter(Y,WindowSize,PolyOrder, mode="mirror")
 
         # add functions to insert first and last node again
+        XSmooth = np.insert(XSmooth,0,X[0])
+        YSmooth = np.insert(YSmooth,0,Y[0])
+        XSmooth = np.append(XSmooth,X[-1])
+        YSmooth = np.append(YSmooth,Y[-1])
 
         # copy nodes to raw
         self.RawNodes = self.Nodes
@@ -516,96 +518,67 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
     def CheckTransectTopology(self):
 
         """
-        Check for overlapping transects and correct by truncating to point of intersection
+        Check for overlapping transects and correct by 
+        setting new start/end points evenly spaced in the near shore 
+        between non-intersecting transects
 
-        MDH, November 2019
+        MDH, January 2020
 
         """
 
-        # create list of transects organised by descending curvature
-        # based on gradient in orientation
-        self.Curvature = np.ones(self.NoTransects)*-9999.
-        TransectOrientations = [Transect.Orientation for Transect in self.Transects]
+        # empty array of bools for flagging intersections
+        IntersectionsFlags = np.zeros(len(self.Transects))
+        print(IntersectionsFlags)
 
-        for i in range(1,self.NoTransects-1):
-            if ((TransectOrientations[i-1] > 270.) and (TransectOrientations[i] < 90.)):
-                self.Curvature[i] = TransectOrientations[i]-(TransectOrientations[i-1]-360.)
-            elif ((TransectOrientations[i] > 270.) and (TransectOrientations[i-1] < 90.)):
-                self.Curvature[i] = (TransectOrientations[i]-360.)-TransectOrientations[i-1]
-            else:
-                self.Curvature[i] = TransectOrientations[i]-TransectOrientations[i-1]
+        # get a list of all transects
+        LinesList = [Transect.LineString for Transect in self.Transects]
 
-        # fix start and end node values
-        self.Curvature[0] = self.Curvature[1]
-        self.Curvature[-1] = self.Curvature[-2]
+        # loope through transects
+        # intersect each Transect with all the others to identify intersecting
+        for i in range(0,self.NoTransects):
 
-        # sort in descending order
-        Indices = np.argsort(self.Curvature)
-
-        IntersectionsFlag = True
-
-        # while IntersectionsFlag == True:
-
-        InteresectionsFlag = False
-
-        # intersect Transect with shapefile to find new end node of transect
-        for i in Indices:
-
+            print("\r\ti is ", i, "/ ", self.NoTransects, end="")
             # get the transect
             Transect = self.Transects[i]
             
             # remove current transect from line list for comparison
             # make a shapely object containing all transect lines
-            LinesList = [Transect.LineString for Transect in self.Transects]
-            LinesList.remove(Transect.LineString)
-            Lines = MultiLineString(LinesList)
+            TempLinesList = LinesList.copy()
+            TempLinesList.remove(Transect.LineString)
+            Lines = MultiLineString(TempLinesList)
 
-            # find intersection between transect line and shapefile lines
-            try:
-                Intersection = Transect.LineString.intersection(Lines)
-            except:
-                continue
+            # check for intersection between transect line and shapefile lines
+            IntersectionsFlags[i] = Lines.intersects(Transect.LineString)
+
+        # get list of contiguous intersection groups
+        IntersectionsFlags = np.insert(IntersectionsFlags, 0, 0)
+        
+        # get a list of the start and end points of contiguous barrier lines
+        StartEndFlags = np.diff(IntersectionsFlags)
+        StartList = np.argwhere(StartEndFlags == 1).flatten()
+        EndList = np.argwhere(StartEndFlags == -1).flatten()
+        if not len(StartList) == len(EndList):
+            print("Start and End lists not the same length")
+            print(len(StartList),len(EndList))
+
+        for i in range(0,len(StartList)):
             
-            # catch no intersections
-            if Intersection.geom_type == "GeometryCollection":
-                continue
+            # get non intersecting end point coordinates from adjacent transects
+            StartX = self.Transects[StartList[i]-1].EndNode.X
+            StartY = self.Transects[StartList[i]-1].EndNode.Y
+            EndX = self.Transects[EndList[i]].EndNode.X
+            EndY = self.Transects[EndList[i]].EndNode.Y
+
+            # interpolate some new transect endpoints to avoid intersections
+            InterpolatedX = np.linspace(StartX,EndX,EndList[i]-StartList[i])
+            InterpolatedY = np.linspace(StartY,EndY,EndList[i]-StartList[i])
             
-            IntersectionsFlag = True
-
-            # check there arent multiple intersections, if there are just get the nearest
-            if Intersection.geom_type is "MultiPoint":
-                StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
-                Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection]
-                Index = Distances.index(min(Distances))
-                Intersection = Intersection[Index]
-            
-            # reinitialise transect with new endnode
-            NewEndNode = Node(Intersection.x,Intersection.y)
-            Transect.__init__(Transect.LineID, Transect.ID, Transect.CoastNode, Transect.StartNode, NewEndNode)
-
-            # fig = plt.figure(1)
-            # ax = fig.add_subplot(111)
-            # plt.axis("equal")
-            # plt.plot([Transect.StartNode.X,Transect.EndNode.X],[Transect.StartNode.Y,Transect.EndNode.Y],lw=0.5)
-            # plt.plot(Intersection.x,Intersection.y,'ro')
-
-            # find intersecting transect
-            for OtherTransect in self.Transects:
+            # loop across groups of intersecting transects and re-initiate
+            for j, Transect, in enumerate(self.Transects[StartList[i]:EndList[i]]):
                 
-                if Intersection.intersects(OtherTransect.LineString):
-
-                    if (Transect.StartNode.X == OtherTransect.StartNode.X):
-                        continue
-
-                    else:
-                        NewEndNode = Node(Intersection.x,Intersection.y)
-
-                        # reinitialise transect with new startnode and new endnode
-                        OtherTransect.__init__(OtherTransect.LineID, OtherTransect.ID, OtherTransect.CoastNode, OtherTransect.StartNode, NewEndNode)
-                        
-                        # plt.plot([OtherTransect.StartNode.X,OtherTransect.EndNode.X],[OtherTransect.StartNode.Y,OtherTransect.EndNode.Y],'r')
-                        # plt.show()
-
+                NewEndNode = Node(InterpolatedX[j], InterpolatedY[j])
+                Transect.__init__(Transect.LineID, Transect.ID, Transect.CoastNode, Transect.StartNode, NewEndNode)
+      
     def GeneratePoints(self, Spacing):
         """
         Generates regularly spaced points along the coastline

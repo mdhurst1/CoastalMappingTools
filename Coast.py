@@ -1171,7 +1171,7 @@ class Coast:
             # generate transects along each line
             Line.GenerateTransects(TransectSpacing, TransectLength2Sea, TransectLength2Land, CheckTopology)
 
-    def GenerateTransectsNormal2Shp(self, ContourShp1, ContourShp2, Distance2Sea=5000., Distance2Land=5000., TransectSpacing=10.):
+    def GenerateTransectsNormal2Shp(self, ContourShp1, ContourShp2, Distance2Sea=5000., Distance2Land=5000., TransectSpacing=10., CheckTopology=True):
         """
         Wrapper to the function in the Line object
 
@@ -1197,7 +1197,7 @@ class Coast:
         for Line in self.CoastLines:
 
             # generate transects along each line
-            Line.GenerateTransectsNormal2Contours(ContourShp1,ContourShp2,TransectSpacing,Distance2Sea,Distance2Land,CheckTopology=False)
+            Line.GenerateTransectsNormal2Contours(ContourShp1,ContourShp2,TransectSpacing,Distance2Sea,Distance2Land,CheckTopology)
 
     def GenerateTransectsFromContours(self,ContourShp,TransectSpacing=10.):
 
