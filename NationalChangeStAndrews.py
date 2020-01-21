@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Driver for assessment of future shoreline change in Montrose
+Driver for assessment of future shoreline change in St Andrews
 Bruun Rule approach
 
 Martin Hurst
@@ -18,57 +18,21 @@ WorkingPath = pathlib.Path.cwd().parent
 # # Mean High Water Springs
 MHWS = 2.0
 
-# smoothing window size
-# WindowSize = 75
-
-# transect spacing 
+# set the transect spacing (in m)
 TransectSpacing = 50.
-Distance2Sea = 100.
-Distance2Land = 1000.
+SmoothingWindowSize = 1001
 
 # set up a file name to save the coast object
 Filename2SaveCoast = WorkingPath / "StAndrewsChange.pydata"
 
+print("Creating New Coast Object")
 
-# # this checks to see whether coast object already exists
-try:
-    SkaillCoast = pickle.load( open( Filename2SaveCoast, "rb" ) )
-    print("Loaded Coast Object ", Filename2SaveCoast)
+# SET UP THE COAST FROM -10m Contour
+StAndrewsCoast = Coast(str(WorkingPath / "Bathymetry" / "MTBathy_StAndrews_10m_Contour_BNG.shp"))
+StAndrewsCoast.SmoothCoastLines(SmoothingWindowSize)
 
-except:
+StAndrewsCoast.GenerateTransectsNormal2Shp(str(WorkingPath / "MHWS_Lines" / "StAndrews_MHWS_Modern_Soft_2018.shp"),
+                                            str(WorkingPath / "Bathymetry" / "MTBathy_StAndrews_Clip_Contour_BNG.shp"), Distance2Sea, Distance2Land, TransectSpacing)
 
-    print("Creating New Coast Object")
+StAndrewsCoast.WriteTransectsShp(str(WorkingPath / "StAndrews_Transects.shp"))
 
-    # SET UP THE COAST FROM -10m Contour
-    SkaillCoast = Coast(str(WorkingPath / "Bathymetry" / "MTBathy_StAndrews_10m_Contour_BNG.shp"))
-    SkaillCoast.SmoothCoastLines(WindowSize)
-    SkaillCoast.ReconfigureCoastLines("W")
-    
-    SkaillCoast.GenerateTransectsNormal2Shp(str(WorkingPath / "MHWS_Lines" / "Skaill_MHWS_Modern_Soft_2018.shp"),
-                                              str(WorkingPath / "Bathymetry" / "MTBathy_Skaill_Clip_Contour_BNG.shp"), Distance2Sea, Distance2Land, TransectSpacing)
-    
-    # SAVE ENTIRE COAST OBJECT
-    print("Saving Coast Object as ", Filename2SaveCoast)
-    with open(str(Filename2SaveCoast), 'wb') as PFile:
-        pickle.dump(SkaillCoast, PFile)
-
-
-#### find historic shoreline positions and extend transect accordingly
-SkaillCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Skaill_MHWS_1890_FINAL.shp"))
-SkaillCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Skaill_MHWS_1970_FINAL2.shp"))
-SkaillCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Skaill_MHWS_Modern_Soft_2018.shp"))
-
-SkaillCoast.WriteTransectsShp(str(WorkingPath / "Skaill_Transects.shp"))
-
-#### get historical rate of relative sea level change
-SkaillCoast.SampleHistoricalRSLR(str(WorkingPath / "RSL_Bradley_Model" / "Scotland_RSLR_Modern_BNG.tif"))
-
-### get future relative sea level time series
-SkaillCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL"))
-
-## predict future shorelines
-SkaillCoast.SetMHWS(2.)
-SkaillCoast.SetShorefaceDepth(5.)
-SkaillCoast.PredictFutureShorelines()
-
-SkaillCoast.WriteFutureShorelinesShp(str(WorkingPath / "SkaillTest.shp"))
