@@ -986,7 +986,7 @@ class Coast:
         
         print("\r\t Done.")
 
-    def SmoothCoastLines(self, WindowSize=1001, NoSmooths=1, NodeSpacing=10.,PolyOrder=4):
+    def SmoothCoastLines(self, WindowSize=1001, NoSmooths=1, Resample=True, NodeSpacing=10., PolyOrder=4):
         
         """
         Smooths the CoastLines contained in Coast object
@@ -1012,18 +1012,26 @@ class Coast:
             The order of the polynomial used to fit the samples. 
             PolyOrder must be less than window_length.
         NoSmooths : int
-            Description
+            Default is 1
+        Resampling : bool
+            Whether or not to resample the line to regular spaced nodes
+            Default is True
         NodeSpacing : float
+            Node spacing for resampleing
             Default is 10 m
         
         """
 
         print("Coast: Smoothing CoastLines")
 
-        for Line in self.CoastLines:
+        for i in range(0, NoSmooths):
+            for Line in self.CoastLines:
             
-            # smooth the line
-            Line.SmoothLine(WindowSize, NoSmooths, PolyOrder)
+                # smooth the line
+                Line.SmoothLine(WindowSize, PolyOrder)
+
+                if Resample:
+                    Line.ResampleNodes(NodeSpacing)
 
 
     def ReconfigureCoastLines(self, Direction2OpenWater):

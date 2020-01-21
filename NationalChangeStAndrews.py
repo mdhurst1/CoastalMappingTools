@@ -18,7 +18,7 @@ WorkingPath = pathlib.Path.cwd().parent
 # set the transect spacing (in m)
 TransectSpacing = 50.
 SmoothingWindowSize = 1001
-NoSmooths = 4
+NoSmooths = 1
 
 # set up a file name to save the coast object
 Filename2SaveCoast = WorkingPath / "StAndrewsChange.pydata"

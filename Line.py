@@ -181,7 +181,6 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             1639, 1964.
         """
 
-    
         # Get X and Y vectors from Nodes
         X, Y = self.get_XY()
         
@@ -190,6 +189,9 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         XSmooth = savgol_filter(X,WindowSize,PolyOrder, mode="mirror")
         YSmooth = savgol_filter(Y,WindowSize,PolyOrder, mode="mirror")
 
+        # add functions to insert first and last node again
+
+        # copy nodes to raw
         self.RawNodes = self.Nodes
         
         # Write new X and Y vectors to Nodes
