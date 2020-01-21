@@ -469,7 +469,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             Lines2 = MultiLineString(LineList)
 
         # get points to define initial transect line and make it nice and long
-        self.GenerateTransects(Spacing,Distance2Sea,Distance2Land,CheckTopology)
+        self.GenerateTransects(Spacing,Distance2Sea,Distance2Land,CheckTopology=False)
 
         # intersect Transect with shapefile to find new end node of transect
         for Transect in self.Transects:
@@ -514,8 +514,12 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             
             # reinitialise transect with new startnode and new endnode
             Transect.__init__(Transect.CoastNode, NewStartNode, NewEndNode, Transect.LineID, Transect.ID)
+            
+        # check for overlaps?
+        if CheckTopology:
+            self.CheckTransectTopology()    
 
-    def CheckTransectTopology(self):
+    def CheckTransectTopology(self,ThinFactor=2):
 
         """
         Check for overlapping transects and correct by 
@@ -528,28 +532,24 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
         # empty array of bools for flagging intersections
         IntersectionsFlags = np.zeros(len(self.Transects))
-        print(IntersectionsFlags)
-
+        DeleteFlags = np.ones(len(self.Transects))
+        
         # get a list of all transects
         LinesList = [Transect.LineString for Transect in self.Transects]
 
         # loope through transects
         # intersect each Transect with all the others to identify intersecting
-        for i in range(0,self.NoTransects):
-
-            print("\r\ti is ", i, "/ ", self.NoTransects, end="")
-            # get the transect
-            Transect = self.Transects[i]
-            
-            # remove current transect from line list for comparison
-            # make a shapely object containing all transect lines
-            TempLinesList = LinesList.copy()
-            TempLinesList.remove(Transect.LineString)
-            Lines = MultiLineString(TempLinesList)
-
-            # check for intersection between transect line and shapefile lines
-            IntersectionsFlags[i] = Lines.intersects(Transect.LineString)
-
+        for i, Transect1 in enumerate(self.Transects):
+            for j, Transect2 in enumerate(self.Transects):
+                
+                # catch identical lines
+                if i == j:
+                    continue
+                
+                # otherwise check for intersection
+                if Transect1.LineString.intersects(Transect2.LineString):
+                    IntersectionsFlags[i] = 1
+                
         # get list of contiguous intersection groups
         IntersectionsFlags = np.insert(IntersectionsFlags, 0, 0)
         
@@ -557,6 +557,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         StartEndFlags = np.diff(IntersectionsFlags)
         StartList = np.argwhere(StartEndFlags == 1).flatten()
         EndList = np.argwhere(StartEndFlags == -1).flatten()
+
         if not len(StartList) == len(EndList):
             print("Start and End lists not the same length")
             print(len(StartList),len(EndList))
@@ -564,10 +565,10 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         for i in range(0,len(StartList)):
             
             # get non intersecting end point coordinates from adjacent transects
-            StartX = self.Transects[StartList[i]-1].EndNode.X
-            StartY = self.Transects[StartList[i]-1].EndNode.Y
-            EndX = self.Transects[EndList[i]].EndNode.X
-            EndY = self.Transects[EndList[i]].EndNode.Y
+            StartX = (self.Transects[StartList[i]-1]).EndNode.X
+            StartY = (self.Transects[StartList[i]-1]).EndNode.Y
+            EndX = (self.Transects[EndList[i]]).EndNode.X
+            EndY = (self.Transects[EndList[i]]).EndNode.Y
 
             # interpolate some new transect endpoints to avoid intersections
             InterpolatedX = np.linspace(StartX,EndX,EndList[i]-StartList[i])
@@ -576,9 +577,18 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             # loop across groups of intersecting transects and re-initiate
             for j, Transect, in enumerate(self.Transects[StartList[i]:EndList[i]]):
                 
+                if j % ThinFactor:
+                    DeleteFlags[StartList[i]+j] = 0
+
                 NewEndNode = Node(InterpolatedX[j], InterpolatedY[j])
-                Transect.__init__(Transect.LineID, Transect.ID, Transect.CoastNode, Transect.StartNode, NewEndNode)
-      
+                Transect.__init__(Transect.CoastNode, Transect.StartNode, NewEndNode, Transect.LineID, Transect.ID)
+        
+        print(DeleteFlags)
+
+        # resample transects after thinning sections with overlaps
+        if (ThinFactor > 1):
+            self.Transects = [Transect for i, Transect in enumerate(self.Transects) if DeleteFlags[i] == 1]
+
     def GeneratePoints(self, Spacing):
         """
         Generates regularly spaced points along the coastline
