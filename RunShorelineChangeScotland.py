@@ -85,7 +85,7 @@ for CellSub in CellSubList:
     # write future shorelines
     CellCoast.WriteFutureShorelinesShp(str(WorkingPath / "CoastalCells" / (RowName + "_Future.shp")))
     CellCoast.WriteFutureShorelineSegmentsShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSegments.shp")))
-    CellCoast.WriteErodedAreaShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureErosion.shp")))
+    #CellCoast.WriteErodedAreaShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureErosion.shp")))
     
     # SAVE ENTIRE COAST OBJECT
     print("\tSaving Coast Object as ", Filename2SaveCoast)

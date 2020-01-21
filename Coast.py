@@ -85,11 +85,18 @@ class Coast:
 
     # a function to save to a pickle file
     def Save(self, PickleFile):
+
+        """
+        """
+
         with open(PickleFile, 'wb') as PFile:
             pickle.dump(self, PFile)
 
     # read coast from a shapefile
-    def ReadCoastShp(self,CoastShp):
+    def ReadCoastShp(self,CoastShp, MinLength=200.):
+        
+        """
+        """
 
         # Open coast polyline file for reading
         SF = shapefile.Reader(CoastShp)
@@ -114,7 +121,8 @@ class Coast:
             ThisLine = Line(str(i), X, Y)
 
             # append to list of coast lines
-            self.CoastLines.append(ThisLine)
+            if ThisLine.TotalLength > MinLength:
+                self.CoastLines.append(ThisLine)
 
         print("")    
 
@@ -362,8 +370,6 @@ class Coast:
                     X.append((NextNode.X+FutureNode.X)/2.)
                     Y.append((NextNode.Y+FutureNode.Y)/2.)
                     
-                    print(X,Y)
-
                     # get line node positions
                     WriteLine = [np.column_stack([X,Y]).tolist()]
             
@@ -1487,6 +1493,8 @@ class Coast:
         """
 
         Wrapper to call Transects function to predict future shoreline positions
+
+        ADD FUNCTIONALITY IN HERE TO CHECK AGAINST UPSM?
 
         MDH, September 2019
 

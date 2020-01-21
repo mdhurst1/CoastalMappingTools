@@ -242,12 +242,10 @@ class Transect:
         # calculate retreat rates
         if not self.HistoricShorelinesYears:
             self.Future = False
-            print("No historical shorelines")
             return
+
         elif len(self.HistoricShorelinesYears) < 3:
             self.Future = False
-            print(self.HistoricShorelinesYears)
-            print("Not enough shoreline positions") 
             return
         
         # boolean flag if making predicti

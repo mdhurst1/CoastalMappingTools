@@ -559,8 +559,9 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         EndList = np.argwhere(StartEndFlags == -1).flatten()
 
         if not len(StartList) == len(EndList):
-            print("Start and End lists not the same length")
-            print(len(StartList),len(EndList))
+            print("\tStart and End lists not the same length")
+            print("\t\t", len(StartList),len(EndList))
+            return
 
         for i in range(0,len(StartList)):
             
@@ -583,8 +584,6 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
                 NewEndNode = Node(InterpolatedX[j], InterpolatedY[j])
                 Transect.__init__(Transect.CoastNode, Transect.StartNode, NewEndNode, Transect.LineID, Transect.ID)
         
-        print(DeleteFlags)
-
         # resample transects after thinning sections with overlaps
         if (ThinFactor > 1):
             self.Transects = [Transect for i, Transect in enumerate(self.Transects) if DeleteFlags[i] == 1]
