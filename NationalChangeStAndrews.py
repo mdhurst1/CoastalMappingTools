@@ -15,12 +15,10 @@ from Coast import *
 # define file names for analysis
 WorkingPath = pathlib.Path.cwd().parent
 
-# # Mean High Water Springs
-MHWS = 2.0
-
 # set the transect spacing (in m)
 TransectSpacing = 50.
 SmoothingWindowSize = 1001
+NoSmooths = 4
 
 # set up a file name to save the coast object
 Filename2SaveCoast = WorkingPath / "StAndrewsChange.pydata"
@@ -28,11 +26,14 @@ Filename2SaveCoast = WorkingPath / "StAndrewsChange.pydata"
 print("Creating New Coast Object")
 
 # SET UP THE COAST FROM -10m Contour
-StAndrewsCoast = Coast(str(WorkingPath / "Bathymetry" / "MTBathy_StAndrews_10m_Contour_BNG.shp"))
-StAndrewsCoast.SmoothCoastLines(SmoothingWindowSize)
+RowName = "Cell_2a"
 
-StAndrewsCoast.GenerateTransectsNormal2Shp(str(WorkingPath / "MHWS_Lines" / "StAndrews_MHWS_Modern_Soft_2018.shp"),
-                                            str(WorkingPath / "Bathymetry" / "MTBathy_StAndrews_Clip_Contour_BNG.shp"), Distance2Sea, Distance2Land, TransectSpacing)
+CellCoast = Coast(str(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")))
 
-StAndrewsCoast.WriteTransectsShp(str(WorkingPath / "StAndrews_Transects.shp"))
+# may need to think carefully about how much to smooth
+CellCoast.SmoothCoastLines(WindowSize=SmoothingWindowSize, NoSmooths=NoSmooths)
+CellCoast.WriteCoastShp(str(WorkingPath / "Test_Bathy_Smooth2.shp"))
+CellCoast.GenerateTransectsNormal2Shp(str(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")),
+                                        str(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")), TransectSpacing=TransectSpacing)
 
+CellCoast.WriteTransectsShp(str(WorkingPath / "Test_Transects.shp"))

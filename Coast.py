@@ -115,11 +115,14 @@ class Coast:
 
             # append to list of coast lines
             self.CoastLines.append(ThisLine)
-            
+
+        print("")    
+
         # get projection strings
         f = open(CoastShp.rstrip("shp")+"prj")
         self.Projection = f.read()
         f.close()
+
  
     def WriteCoastShp(self, CoastShp):
         
@@ -895,7 +898,7 @@ class Coast:
         MDH, June 2019
         """
 
-        print("Coast: Merging coastlines")
+        print("Coast.MergeCoastLines: Merging coastlines")
 
         # set up Flag for lines being flipped
         FlagReverse = 1
@@ -983,7 +986,7 @@ class Coast:
         
         print("\r\t Done.")
 
-    def SmoothCoastLines(self, WindowSize=1001, PolyOrder=4):
+    def SmoothCoastLines(self, WindowSize=1001, NoSmooths=1, NodeSpacing=10.,PolyOrder=4):
         
         """
         Smooths the CoastLines contained in Coast object
@@ -1008,6 +1011,10 @@ class Coast:
         PolyOrder : int
             The order of the polynomial used to fit the samples. 
             PolyOrder must be less than window_length.
+        NoSmooths : int
+            Description
+        NodeSpacing : float
+            Default is 10 m
         
         """
 
@@ -1016,7 +1023,7 @@ class Coast:
         for Line in self.CoastLines:
             
             # smooth the line
-            Line.SmoothLine(WindowSize, PolyOrder)
+            Line.SmoothLine(WindowSize, NoSmooths, PolyOrder)
 
 
     def ReconfigureCoastLines(self, Direction2OpenWater):
@@ -1142,7 +1149,7 @@ class Coast:
             Whether to check for overlapping transects and correct. Default is true.
                     
         """
-        print("Coast: Generating CoastLine transects perpendicular to the coast")
+        print("Coast.GenerateTransectNormals: Generating CoastLine transects perpendicular to the coast")
 
         self.TransectsSpacing = TransectSpacing
         self.TransectsLength2Sea = TransectLength2Sea
@@ -1175,7 +1182,7 @@ class Coast:
             in map units, spatial units depend on units of the CoastLine read in,
             Should be [m]
         """
-        print("Coast: Generating CoastLine transects perpendicular to the coast")
+        print("Coast.GenerateTransectsNormal2Shp: Generating CoastLine transects perpendicular to the coast")
 
         self.TransectsSpacing = TransectSpacing
         
@@ -1226,7 +1233,7 @@ class Coast:
             Should be [m]
         
         """
-        print("Coast: Generating CoastLine nodes")
+        print("Coast.GenerateNodes: Generating CoastLine nodes")
 
         self.NodeSpacing = TransectSpacing
         
@@ -1249,7 +1256,7 @@ class Coast:
             Filename for polyline shapfile containing historical shoreline positions
         
         """
-        print("Coast: Finding historical shoreline positions from ", end="")
+        print("Coast.ExtractHistoricalShorelinePositions: Finding historical shoreline positions from ", end="")
         print(Path(HistoricalShorelinesShp).name)
 
         # set a distance to look inland to check for intersections
@@ -1340,7 +1347,7 @@ class Coast:
             Filename for polyline shapfile containing depth contours
         
         """
-        print("Coast: Finding nearest depth contours")
+        print("Coast.ExtractContours: Finding nearest depth contours")
         
         # read shapefile using geopandas
         GDF = gp.read_file(ContourShp)
@@ -1388,7 +1395,7 @@ class Coast:
 
         """
 
-        print("Coast: Sampling historical Relative Sea Level raster dataset")
+        print("Coast.SampleHistoricalRSLR: Sampling historical Relative Sea Level raster dataset")
 
         # open the raster dataset to work on
         with rasterio.open(PastRSLRRaster) as RSLRDataset:
@@ -1414,7 +1421,7 @@ class Coast:
 
         """
 
-        print("Coast: Sampling MHWS elevation raster dataset")
+        print("Coast.SampleMHWSElevation: Sampling MHWS elevation raster dataset")
 
         # open the raster dataset to work on
         with rasterio.open(MHWSRaster) as MHWSDataset:
@@ -1446,7 +1453,7 @@ class Coast:
 
         """
 
-        print("Coast: Sampling future Relative Sea Level raster dataset")
+        print("Coast.SampleFutureRSL: Sampling future Relative Sea Level raster dataset")
 
         if self.FutureShoreLinesYears:
             print("\tFuture sea levels already sampled")

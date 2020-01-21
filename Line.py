@@ -77,6 +77,51 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         if not self.RawNodes:
             self.RawNodes = self.Nodes
 
+    def ResampleNodes(self, ResampleInterval=10.):
+        
+        # Get X and Y vectors from Nodes
+        X, Y = self.get_XY()
+
+        # set up lists to store new X and Y and put first values
+        XNew = [X[0],]
+        YNew =[Y[0],]
+
+        # Parameters for tracing along length
+        CumulativeLength = 0.
+        NextPosition = ResampleInterval
+
+        # Track spacing and generate profile at desired distances
+        for i in range(0, self.NoNodes):
+
+            #Update the cumulative length of the line
+            CumulativeLength += self.SegmentLength[i]
+
+            # get orientation
+            TempOrientation = self.Orientation[i]
+            
+            # Test to see if we're going to create a new node
+            while CumulativeLength > NextPosition:
+
+                #calculate point for section
+                DistanceToStepBack = CumulativeLength - NextPosition
+                dX = DistanceToStepBack * np.sin( np.radians( TempOrientation ) )
+                dY = DistanceToStepBack * np.cos( np.radians( TempOrientation ) )
+                
+                # find the point for the transect along the line
+                XNew.append(self.Nodes[i+1].X - dX)
+                YNew.append(self.Nodes[i+1].Y - dY)
+
+                # update to find next point
+                NextPosition += Spacing
+        
+        # add last node
+        XNew.append(X[-1])
+        YNew.append(Y[-1])
+
+        # Write new X and Y vectors to Nodes and recalc geometry
+        self.GenerateNodes(XNew,YNew)
+        self.CalculateGeometry()
+
     def CalculateGeometry(self):
         
         """
@@ -126,7 +171,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         self.Orientation[-1] = self.Orientation[-2]
         self.SegmentLength[-1] = 0
         
-    def SmoothLine(self, WindowSize=1001, PolyOrder=4):
+    def SmoothLine(self, WindowSize=1001, PolyOrder=2):
         
         """
         Savitzky and Golay (1964) smoothing filter
@@ -136,13 +181,14 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             1639, 1964.
         """
 
+    
         # Get X and Y vectors from Nodes
         X, Y = self.get_XY()
         
         # smooth X and Y individually with Savitzky Golay filter
         # window size and polyorder must be integers you idiot!
-        XSmooth = savgol_filter(X,WindowSize,PolyOrder, mode="nearest")
-        YSmooth = savgol_filter(Y,WindowSize,PolyOrder, mode="nearest")
+        XSmooth = savgol_filter(X,WindowSize,PolyOrder, mode="mirror")
+        YSmooth = savgol_filter(Y,WindowSize,PolyOrder, mode="mirror")
 
         self.RawNodes = self.Nodes
         
