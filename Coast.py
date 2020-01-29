@@ -1537,7 +1537,7 @@ class Coast:
 
                     # flag position as attribute of transect
                     Transect.RockHeadPosition = Node(X[JInd],Y[JInd])
-                    Trasnect.RockHeadDistance = Transect.StartNode.get_Distance(Transect.RockHeadPosition)
+                    Transect.RockHeadDistance = Transect.StartNode.get_Distance(Transect.RockHeadPosition)
 
     def PredictFutureShorelines(self):
 
