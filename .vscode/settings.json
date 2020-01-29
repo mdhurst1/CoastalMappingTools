@@ -2,5 +2,5 @@
     "python.linting.pylintEnabled": true,
     "python.linting.enabled": true,
     "python.linting.mypyEnabled": false,
-    "python.pythonPath": "/media/14TB_RAID_Array/User_Homes/Martin_Hurst/anaconda3/bin/python"
+    "python.pythonPath": "C:\\ProgramData\\Anaconda3\\python.exe"
 }

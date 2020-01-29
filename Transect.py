@@ -91,7 +91,8 @@ class Transect:
         self.CliffHeight = None
         self.CliffSlope = None
         self.Rocky = False
-
+        self.RockHeadPosition = None
+        
         # intertidal
         self.SlopeRoughness = None
         self.ElevationRoughness = None

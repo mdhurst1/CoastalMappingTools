@@ -1487,14 +1487,63 @@ class Coast:
                         for val in RSLDataset.sample([(Transect.CoastNode.X,Transect.CoastNode.Y)]):
                             Transect.FutureSeaLevels.append(val[0])
                             Transect.FutureSeaLevelYears.append(Year)
-                
+
+    def SampleRockHeadPosition(self, UPSMRaster):
+
+        """
+        Function to check values of UPSM and identify if a limit on shoreline erosion position 
+        is required based on a threshold value of 0.4
+
+        MDH, January 2020
+
+        """
+
+        # open the raster dataset to work on
+        with rasterio.open(UPSMRaster) as RockHeadDataset:
+        
+            # loop through transects and sample
+            for Line in self.CoastLines:
+                for i, Transect in enumerate(Line.Transects[:]):
+                    
+                    # generate a list of tuples to sample UPSM
+                    X1 = Transect.StartNode.X
+                    Y1 = Transect.StartNode.Y
+                    X2 = Transect.EndNode.X
+                    Y2 = Transect.EndNode.Y
+                    X = np.linspace(X1,X2,50.)
+                    Y = np.linspace(Y1,Y2,50.)
+                    NodeList = tuple(zip(X, Y))
+
+                    # build a list of X,Y values to check along transect to find position of rock head if present
+                    RockHeadList = RockHeadDataset.sample(NodeList)
+
+                    # if everything is soft, carry on
+                    if not RockHeadList.any < 0.4:
+                        continue
+
+                    # else find the position of the first appearance of 0.4
+                    JInd = next(j for j, Rockhead in enumerate(RockHeadList) if RockHeadList < 0.4)
+
+                    # repeat to find to the nearest meter
+                    X = np.arange(X[JInd-1], X[JInd], 1.)
+                    Y = np.arange(Y[JInd-1], Y[JInd], 1.)
+                    NodeList = tuple(zip(X, Y))
+
+                    # build a list of X,Y values to check along transect to find position of rock head if present
+                    RockHeadList = RockHeadDataset.sample(NodeList)
+
+                    # else find the position of the first appearance of 0.4
+                    JInd = next(j for j, Rockhead in enumerate(RockHeadList) if RockHeadList < 0.4)
+
+                    # flag position as attribute of transect
+                    Transect.RockHeadPosition = Node(X[JInd],Y[JInd])
+                    Trasnect.RockHeadDistance = Transect.StartNode.get_Distance(Transect.RockHeadPosition)
+
     def PredictFutureShorelines(self):
 
         """
 
         Wrapper to call Transects function to predict future shoreline positions
-
-        ADD FUNCTIONALITY IN HERE TO CHECK AGAINST UPSM?
 
         MDH, September 2019
 
