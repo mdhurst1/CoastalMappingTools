@@ -295,7 +295,7 @@ class Coast:
             Spline, u = scipy.interpolate.splprep([X, Y], u=Dist, s=0)
 
             # resample it at smaller distance intervals
-            Interp_Dist = np.linspace(Dist[0], Dist[-1], self.TransectsSpacing)
+            Interp_Dist = np.arange(Dist[0], Dist[-1], 1.)
             Interp_X, Interp_Y = scipy.interpolate.splev(Interp_Dist, Spline)
             
             # convert to list for writing to shapefile
@@ -322,6 +322,10 @@ class Coast:
         Writes the contents of a list of future shoreline objects to polyline shape file
         organised into individual segments with attributes
 
+        PLAN FOR DOING THIS ON A SPLINE
+        loop through future shoreline lines and get the spline
+        loop through transects and intersect with historic shoreline position and then get nearerst nodes from spline??
+
         MDH, January 2020
 
         """
@@ -343,20 +347,54 @@ class Coast:
         WL.fields = self.Fields[1:] 
 
         # Loop through prediction years
-        for Year in self.FutureShoreLinesYears[1:]:
+        for i, Line in enumerate(self.FutureShoreLines[1:]):
             
-            print(Year)
-
             # keep track of no of coastal segments for IDs
             FutureCount = 0
 
+            # get spline
+            # get line node positions
+            X, Y = Line.get_XY()
+
+            # calculate distance
+            Dist = np.zeros(X.shape)
+            Dist[1:] = np.sqrt((X[1:] - X[:-1])**2 + (Y[1:] - Y[:-1])**2)
+            Dist = np.cumsum(Dist)
+            
+            # build a spline representation of the line
+            Spline, u = scipy.interpolate.splprep([X, Y], u=Dist, s=0)
+
+            # resample it at smaller distance intervals
+            Interp_Dist = np.arange(Dist[0], Dist[-1], 1.)
+            Interp_X, Interp_Y = scipy.interpolate.splev(Interp_Dist, Spline)
+
+            # convert to a linestring
+            SplineLine = LineString((tuple(zip(Interp_X,Interp_Y))))
+            SplinePoints = MultiPoint((tuple(zip(Interp_X,Interp_Y))))
+            
             # loop through transects and get contiguous future prediction lines
             for CoastLine in self.CoastLines:
-                for i, Transect in enumerate(CoastLine.Transects):
+                
+                # set up empty list of intersection indices with spline
+                IntersectionIndices = []
+
+                # get a list of nearest indices on interpolated lines
+                for Transect in CoastLine.Transects:
                     
-                    # check for prediction
-                    if not Transect.Future:
-                        continue
+                    # intersect with spline to find index
+                    TransectLine = LineString(((Transect.StartNode.X,Transect.StartNode.Y),(Transect.EndNode.X,Transect.EndNode.Y)))
+                    Intersection = TransectLine.intersection(SplineLine)
+
+                    # catch no intersections and flag for deletion?
+                    if Intersection.geom_type == "GeometryCollection":
+                        sys.exit("No intersection ERROR")
+
+                    # check there arent multiple intersections, if there are just get the nearest
+                    IntersectPoint = Intersection[0]
+                    Distances = [SplinePoint.distance(IntersectPoint) for SplinePoint in SplinePoints]
+                    IntersectionIndices.append(Distances.index(min(Distances)))
+                                    
+                    
                     
                     # initiate dummy lists for nodes
                     X = []
