@@ -261,6 +261,11 @@ class Coast:
 
         MDH, June 2019
 
+        Added functionality to write spline of future line prediction to get smoothed
+        shape that is faithful to predictions
+
+        MDH, Jan 2020
+
         """
 
         if len(self.FutureShoreLines) == 0:
@@ -280,7 +285,21 @@ class Coast:
             
             # get line node positions
             X, Y = Line.get_XY()
-            WriteLine = [np.column_stack([X,Y]).tolist()]
+
+            # calculate distance
+            Dist = np.zeros(X.shape)
+            Dist[1:] = np.sqrt((X[1:] - X[:-1])**2 + (Y[1:] - Y[:-1])**2)
+            Dist = np.cumsum(Dist)
+            
+            # build a spline representation of the line
+            Spline, u = scipy.interpolate.splprep([X, Y], u=Dist, s=0)
+
+            # resample it at smaller distance intervals
+            Interp_Dist = np.linspace(Dist[0], Dist[-1], self.TransectsSpacing)
+            Interp_X, Interp_Y = scipy.interpolate.splev(Interp_Dist, Spline)
+            
+            # convert to list for writing to shapefile
+            WriteLine = [np.column_stack([Interp_X,Interp_Y]).tolist()]
             
             # generate record
             Record = [str(Line.ID),str(Line.Year)]
