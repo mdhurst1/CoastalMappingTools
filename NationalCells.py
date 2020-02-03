@@ -27,6 +27,7 @@ BathyLines = gp.read_file(WorkingPath / "Bathymetry" / "Scotland_10m_Bathy_Conto
 MHWS_1890 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1890_FINAL.shp")
 MHWS_1970 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1970_FINAL.shp")
 MHWS_Soft = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Modern_Soft.shp")
+MHWS_Modern = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Modern_FINAL.shp")
 
 def ClipLines2Poly(LinesGDF,PolyGDF):
 
@@ -44,6 +45,7 @@ for index, Row in Cells.iterrows():
     Old = ClipLines2Poly(MHWS_1890,Row.geometry)
     Inter = ClipLines2Poly(MHWS_1970,Row.geometry)
     Soft = ClipLines2Poly(MHWS_Soft,Row.geometry)
+    Modern = ClipLines2Poly(MHWS_Modern,Row.geometry)
     
     # Save these to new files
     RowName = "Cell_" + Row.Cell_sub
@@ -53,6 +55,7 @@ for index, Row in Cells.iterrows():
         Old.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp"))
         Inter.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp"))
         Soft.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp"))
-    
+        Modern.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Final.shp"))
+
     except:
         print("Unable to write some files for " + Row.Cell_sub)

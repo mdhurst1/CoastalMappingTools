@@ -11,6 +11,7 @@ June 2019
 import os, sys, time, pickle
 from pathlib import Path
 import numpy as np
+from scipy.interpolate import splprep, splev
 import numpy.ma as ma
 from sklearn.cluster import KMeans
 
@@ -254,7 +255,7 @@ class Coast:
         self.WriteLinesShp("WriteRecentLines", ErosionFrontShp)
         self.WritePatchesShp("WriteFutureLines", "WriteRecentLines", ErosionShp)
 
-    def WriteFutureShorelinesShp(self, FutureShoreLinesShp):
+    def WriteFutureShorelinesShp(self, FutureShoreLinesShp, Smooth=True):
 
         """
         Writes the contents of a list of future shoreline objects to polyline shape file
@@ -268,8 +269,8 @@ class Coast:
 
         """
 
-        if len(self.FutureShoreLines) == 0:
-            self.GetFutureShoreLines()
+        # extract future shoreline positions from transect
+        self.GetFutureShoreLines()
 
         # print action to screen
         print("Coast.WriteFutureShorelinesShp: Writing future MHWS line objects to polyline shapefiles")
@@ -286,20 +287,21 @@ class Coast:
             # get line node positions
             X, Y = Line.get_XY()
 
-            # calculate distance
-            Dist = np.zeros(X.shape)
-            Dist[1:] = np.sqrt((X[1:] - X[:-1])**2 + (Y[1:] - Y[:-1])**2)
-            Dist = np.cumsum(Dist)
-            
-            # build a spline representation of the line
-            Spline, u = scipy.interpolate.splprep([X, Y], u=Dist, s=0)
+            if Smooth:
+                # calculate distance
+                Dist = np.zeros(X.shape)
+                Dist[1:] = np.sqrt((X[1:] - X[:-1])**2 + (Y[1:] - Y[:-1])**2)
+                Dist = np.cumsum(Dist)
+                
+                # build a spline representation of the line
+                Spline, u = splprep([X, Y], u=Dist, s=0)
 
-            # resample it at smaller distance intervals
-            Interp_Dist = np.arange(Dist[0], Dist[-1], 1.)
-            Interp_X, Interp_Y = scipy.interpolate.splev(Interp_Dist, Spline)
-            
+                # resample it at smaller distance intervals
+                Interp_Dist = np.arange(Dist[0], Dist[-1], 1.)
+                X, Y = splev(Interp_Dist, Spline)
+
             # convert to list for writing to shapefile
-            WriteLine = [np.column_stack([Interp_X,Interp_Y]).tolist()]
+            WriteLine = [np.column_stack([X,Y]).tolist()]
             
             # generate record
             Record = [str(Line.ID),str(Line.Year)]
@@ -362,11 +364,11 @@ class Coast:
             Dist = np.cumsum(Dist)
             
             # build a spline representation of the line
-            Spline, u = scipy.interpolate.splprep([X, Y], u=Dist, s=0)
+            Spline, u = splprep([X, Y], u=Dist, s=0)
 
             # resample it at smaller distance intervals
             Interp_Dist = np.arange(Dist[0], Dist[-1], 1.)
-            Interp_X, Interp_Y = scipy.interpolate.splev(Interp_Dist, Spline)
+            Interp_X, Interp_Y = splev(Interp_Dist, Spline)
 
             # convert to a linestring
             SplineLine = LineString((tuple(zip(Interp_X,Interp_Y))))
@@ -1049,7 +1051,7 @@ class Coast:
         
         print("\r\t Done.")
 
-    def SmoothCoastLines(self, WindowSize=1001, NoSmooths=1, Resample=True, NodeSpacing=10., PolyOrder=4):
+    def SmoothCoastLines(self, WindowSize=1001, NoSmooths=2, Resample=True, NodeSpacing=10., PolyOrder=4):
         
         """
         Smooths the CoastLines contained in Coast object
@@ -1107,6 +1109,10 @@ class Coast:
         This might be buggy as anything and need lots more work. Should be run
         after MergeCoast and SmoothCoast but before Transects are built, though 
         if Transects have been built they will get rebuilt
+
+        ***add argument to include shoreline shape then for each node
+            find nearest on shoreline shape and calc orientation
+            then use mean orientation to assess MDH, Feb 2020
 
         MDH, June 2019
 
@@ -1234,7 +1240,7 @@ class Coast:
             # generate transects along each line
             Line.GenerateTransects(TransectSpacing, TransectLength2Sea, TransectLength2Land, CheckTopology)
 
-    def GenerateTransectsNormal2Shp(self, ContourShp1, ContourShp2, Distance2Sea=5000., Distance2Land=8000., TransectSpacing=20., CheckTopology=True):
+    def GenerateTransectsNormal2Shp(self, ContourShp1, ContourShp2, Distance2Sea=8000., Distance2Land=8000., TransectSpacing=20., CheckTopology=True):
         """
         Wrapper to the function in the Line object
 
@@ -1301,6 +1307,11 @@ class Coast:
         for Line in self.CoastLines:
             Line.CheckTransectTopology()
 
+    def RemoveNoHistoricalTransects(self):
+        """
+        Deletes transects with no historical shoreline positions at any time?
+
+        """
 
     def GenerateNodes(self, NodeSpacing):
 
@@ -2037,13 +2048,14 @@ class Coast:
         Extracts contiguous lines of future predicted MHWS
 
         """
+        self.FutureShoreLines = []
 
         # Loop through prediction years
         for Year in self.FutureShoreLinesYears[1:]:
 
             # keep track of no of coastal segments for IDs
             FutureCount = 0
-
+            
             # loop through transects and get contiguous cliff lines
             for CoastLine in self.CoastLines:
                 
@@ -2080,6 +2092,7 @@ class Coast:
                     
                     # add latest MHWS from previous node to start
                     # might need some logic here
+                    print("Start", StartList[i])
                     FirstNode = CoastLine.Transects[StartList[i-1]].get_RecentPosition()
                     FutureList.append(FirstNode)
 
@@ -2092,9 +2105,8 @@ class Coast:
                     # might need some logic here to finish
                     try:
                         LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition()
+
                     except:
-                        print(EndList[i])
-                        print(CoastLine.NoTransects)
                         sys.exit()
                     FutureList.append(LastNode)
 
@@ -2102,11 +2114,17 @@ class Coast:
                     X = [FutureNode.X for FutureNode in FutureList]
                     Y = [FutureNode.Y for FutureNode in FutureList]
                     
+                    plt.plot(X[1:-1],Y[1:-1],'k-')
+                    plt.plot(X[0],Y[0],'r.')
+                    plt.show()
+
                     TempLine = Line("FutureCoast_"+str(FutureCount), X, Y, Year=Year)
                     self.FutureShoreLines.append(TempLine)
                     
                     # update counter
                     FutureCount += 1
+
+                    return
     
     def GetBarrierWidth(self):
 
