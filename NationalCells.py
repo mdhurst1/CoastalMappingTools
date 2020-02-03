@@ -33,10 +33,10 @@ for index, Row in Cells.iterrows():
     print(Row.Cell_sub)
     
     # Intersection to isolate datasets for each cell
-    Bathy = BathyLines[BathyLines.geometry.intersects(Row.geometry)]
-    Old = MHWS_1890[MHWS_1890.geometry.intersects(Row.geometry)]
-    Inter = MHWS_1970[MHWS_1970.geometry.intersects(Row.geometry)]
-    Soft = MHWS_Soft[MHWS_Soft.geometry.intersects(Row.geometry)]
+    Bathy = BathyLines.intersection(Row.geometry)
+    Old = MHWS_1890.intersection(Row.geometry)
+    Inter = MHWS_1970.intersection(Row.geometry)
+    Soft = MHWS_Soft.intersection(Row.geometry)
     
     # Save these to new files
     RowName = "Cell_" + Row.Cell_sub

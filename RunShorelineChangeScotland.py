@@ -58,7 +58,7 @@ for CellSub in CellSubList:
         # may need to think carefully about how much to smooth
         CellCoast.SmoothCoastLines(WindowSize=SmoothingWindowSize)
         CellCoast.GenerateTransectsNormal2Shp(str(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")),
-                                                str(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")), TransectSpacing=TransectSpacing)
+                                                str(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")), TransectSpacing=TransectSpacing, CheckTransectTopology=False)
 
         
         #### find historic shoreline positions and extend transect accordingly
