@@ -2060,15 +2060,24 @@ class Coast:
                     if (EndList[i]-StartList[i]<2):
                         continue
 
-                    # create empty lists for storing clifftop and clifftoe nodes
+                    # create empty lists for storing future nodes
                     FutureList = []
                     
+                    # add latest MHWS from previous node to start
+                    # might need some logic here
+                    FirstNode = CoastLine.Transects[StartList[i-1]].get_RecentPosition()
+                    FutureList.append(FirstNode)
+
                     # loop through transects and get future positions
-                    
                     for Transect in CoastLine.Transects[StartList[i]:EndList[i]]:
                         FutureNode = Transect.get_FuturePosition(Year)
                         FutureList.append(FutureNode)
                         
+                    # add latest MHWS from next node to end
+                    # might need some logic here to finish
+                    LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition()
+                    FutureList.append(LastNode)
+
                     # create new line object for top
                     X = [FutureNode.X for FutureNode in FutureList]
                     Y = [FutureNode.Y for FutureNode in FutureList]
