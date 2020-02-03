@@ -1234,7 +1234,7 @@ class Coast:
             # generate transects along each line
             Line.GenerateTransects(TransectSpacing, TransectLength2Sea, TransectLength2Land, CheckTopology)
 
-    def GenerateTransectsNormal2Shp(self, ContourShp1, ContourShp2, Distance2Sea=5000., Distance2Land=5000., TransectSpacing=10., CheckTopology=True):
+    def GenerateTransectsNormal2Shp(self, ContourShp1, ContourShp2, Distance2Sea=5000., Distance2Land=8000., TransectSpacing=20., CheckTopology=True):
         """
         Wrapper to the function in the Line object
 
@@ -1286,6 +1286,21 @@ class Coast:
 
         for Line in self.CoastLines:
             Line.GenerateTransectsFromContour(ContourShp, TransectSpacing)
+
+    def CheckTransectTopology(self):
+
+        """
+        Wrapper function to check for overlapping transects and collect
+        Run this after transects have been updated for historical shoreline positions.
+        Will then need to rerun historical shoreline position analysis
+
+        MDH, Feb 2020
+
+        """
+
+        for Line in self.CoastLines:
+            Line.CheckTransectTopology()
+
 
     def GenerateNodes(self, NodeSpacing):
 
@@ -2075,7 +2090,12 @@ class Coast:
                         
                     # add latest MHWS from next node to end
                     # might need some logic here to finish
-                    LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition()
+                    try:
+                        LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition()
+                    except:
+                        print(EndList[i])
+                        print(CoastLine.NoTransects)
+                        sys.exit()
                     FutureList.append(LastNode)
 
                     # create new line object for top

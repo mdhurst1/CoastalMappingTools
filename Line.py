@@ -530,6 +530,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
         """
 
+        print("\tChecking Transect Topology...")
         # empty array of bools for flagging intersections
         IntersectionsFlags = np.zeros(len(self.Transects))
         DeleteFlags = np.ones(len(self.Transects))
@@ -555,6 +556,11 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         
         # get a list of the start and end points of contiguous barrier lines
         StartEndFlags = np.diff(IntersectionsFlags)
+
+        # if last line finishes on a intersection flag the last element as the end 
+        if StartEndFlags[StartEndFlags.nonzero()[0][-1]] == 1:
+            StartEndFlags[-1] = -1
+
         StartList = np.argwhere(StartEndFlags == 1).flatten()
         EndList = np.argwhere(StartEndFlags == -1).flatten()
 

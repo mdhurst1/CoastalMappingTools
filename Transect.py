@@ -1466,8 +1466,14 @@ class Transect:
 
         """
 
+        # catch if no shoreline
+        if len(self.HistoricShorelinesYears) == 0:
+            print(self)
+            sys.exit("Transect.get_RecentPosition: No recent position")
+
         # find index of most recent historical shoreline
         Index = np.argmax(self.HistoricShorelinesYears)
+
         Position = self.HistoricShorelinesPositions[Index]
         return Position 
 
