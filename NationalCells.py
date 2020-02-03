@@ -28,21 +28,28 @@ MHWS_1890 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1890_FINAL.
 MHWS_1970 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1970_FINAL.shp")
 MHWS_Soft = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Modern_Soft.shp")
 
+def ClipLines2Poly(LinesGDF,PolyGDF):
+
+    IntersectionGeometry = LinesGDF.intersection(PolyGDF)
+    Clipped = LinesGDF.copy()
+    Clipped["geometry"] = IntersectionGeometry
+    return Clipped[~Clipped.geometry.is_empty]
+
 for index, Row in Cells.iterrows():
 
     print(Row.Cell_sub)
     
-    # Intersection to isolate datasets for each cell
-    Bathy = BathyLines.intersection(Row.geometry)
-    Old = MHWS_1890.intersection(Row.geometry)
-    Inter = MHWS_1970.intersection(Row.geometry)
-    Soft = MHWS_Soft.intersection(Row.geometry)
+    # Intersection to isolate bathy for each cell
+    BathyClipped = ClipLines2Poly(BathyLines, Row.geometry)
+    Old = ClipLines2Poly(MHWS_1890,Row.geometry)
+    Inter = ClipLines2Poly(MHWS_1970,Row.geometry)
+    Soft = ClipLines2Poly(MHWS_Soft,Row.geometry)
     
     # Save these to new files
     RowName = "Cell_" + Row.Cell_sub
     
     try:
-        Bathy.to_file(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp"))
+        BathyClipped.to_file(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp"))
         Old.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp"))
         Inter.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp"))
         Soft.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp"))
