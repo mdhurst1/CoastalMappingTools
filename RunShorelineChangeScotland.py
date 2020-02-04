@@ -85,10 +85,6 @@ for CellSub in CellSubList:
         with open(str(Filename2SaveCoast), 'wb') as PFile:
             pickle.dump(CellCoast, PFile)
 
-    #### find historic shoreline positions and extend transect accordingly
-    CellCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")))
-    CellCoast.WriteTransectsShp(str(WorkingPath / "CoastalCells" / (RowName + "_Transects3.shp")))
-    
     # write future shorelines
     CellCoast.WriteFutureShorelinesShp(str(WorkingPath / "CoastalCells" / (RowName + "_Future.shp")),Smooth=False)
     CellCoast.WriteFutureShorelinesShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSmooth.shp")),Smooth=False)

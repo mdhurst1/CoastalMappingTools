@@ -518,6 +518,20 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
                 else:
                     NewEndNode = Transect.EndNode
                 
+                # if Transect.ID == "872":
+                #     for Line in Lines1:
+                #         x, y = Line.xy
+                #         plt.plot(x,y,'g--')
+                #     for Line in Lines2:
+                #         x, y = Line.xy
+                #         plt.plot(x,y,'b--')
+                #     plt.plot(Transect.StartNode.X,Transect.StartNode.Y, 'go')
+                #     plt.plot(Transect.EndNode.X,Transect.EndNode.Y, 'ro')
+                #     plt.plot([Transect.StartNode.X, Transect.EndNode.X],[Transect.StartNode.Y,Transect.EndNode.Y],'k--')
+                #     #plt.plot(Intersection.x,Intersection.y,'ko')
+                #     plt.show()
+                #     sys.exit()
+
                 # reinitialise transect with new startnode and new endnode
                 Transect.__init__(Transect.CoastNode, NewStartNode, NewEndNode, Transect.LineID, Transect.ID)
                 
@@ -530,7 +544,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
         if CheckTopology:
             self.DeleteOverlappingTransects()
-            
+
     def CheckTransectTopology(self,ThinFactor=2):
 
         """
