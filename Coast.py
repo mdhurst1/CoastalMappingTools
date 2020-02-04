@@ -1393,7 +1393,7 @@ class Coast:
                     Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection]
                     Index = Distances.index(min(Distances))
                     Intersection = Intersection[Index]
-
+                
                 # check if this is a new endnode by intersecting with line from startnode to endnode
                 Distance = Transect.LineString.distance(Intersection)
                 
