@@ -472,6 +472,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         self.GenerateTransects(Spacing,Distance2Sea,Distance2Land,CheckTopology=False)
 
         # flag to note interesections
+        CheckTopologyFlag = CheckTopology
         Intersections = True
 
         while Intersections:
@@ -521,18 +522,21 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
                 Transect.__init__(Transect.CoastNode, NewStartNode, NewEndNode, Transect.LineID, Transect.ID)
                 
             # check for overlaps?
-            if CheckTopology:
+            if CheckTopologyFlag:
                 Intersections = self.CheckTransectTopology()
-                CheckTopology = False
+                CheckTopologyFlag = False
             else:
                 Intersections = False   
 
+        if CheckTopology:
+            self.DeleteOverlappingTransects()
+            
     def CheckTransectTopology(self,ThinFactor=2):
 
         """
         Check for overlapping transects and correct by 
         setting new start/end points evenly spaced in the near shore 
-        between non-intersecting transects
+        between non-intersecting transects, then delete any remaining overlapping
 
         MDH, January 2020
 
@@ -613,7 +617,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
             return Intersections
 
-    def DeleteOverlappingTransects(self,ThinFactor=1):
+    def DeleteOverlappingTransects(self):
 
         """
         Check for overlapping transects and correct by 
@@ -623,9 +627,32 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
         """
 
-        print("\tChecking Transect Topology...")
+        print("\t" + str(self.__class__.__name__) + ": Deleting Overlapping transects..")
 
+        # setup array of flags for marking deletions
+        DeleteFlags = np.ones(len(self.Transects))
 
+        # loope through transects
+        # intersect each Transect with all the others to identify intersecting
+        for i, Transect1 in enumerate(self.Transects):
+            for j, Transect2 in enumerate(self.Transects):
+                    
+                # catch identical lines
+                if i == j:
+                    continue
+                
+                # otherwise check for intersection
+                if Transect1.LineString.intersects(Transect2.LineString):
+                    
+                    # find the longest transect and flag to delete
+                    if Transect1.Length > Transect2.Length:
+                        DeleteFlags[i] = 0
+                    else:
+                        DeleteFlags[j] = 0
+
+        # keep transects based on deletion flags
+        self.Transects = [Transect for i, Transect in enumerate(self.Transects) if DeleteFlags[i] == 1]    
+        
     def GeneratePoints(self, Spacing):
         """
         Generates regularly spaced points along the coastline
