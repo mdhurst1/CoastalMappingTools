@@ -2091,9 +2091,15 @@ class Coast:
                     FutureList = []
                     
                     # add latest MHWS from previous node to start
-                    # might need some logic here
-                    print("Start", StartList[i])
-                    FirstNode = CoastLine.Transects[StartList[i-1]].get_RecentPosition()
+                    # might need some logic here for first transect
+                    if StartList[i] == 0:
+                        FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
+                    else:
+                        try:
+                            FirstNode = CoastLine.Transects[StartList[i]-1].get_RecentPosition()
+                        except:
+                            FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
+                    
                     FutureList.append(FirstNode)
 
                     # loop through transects and get future positions
@@ -2103,29 +2109,27 @@ class Coast:
                         
                     # add latest MHWS from next node to end
                     # might need some logic here to finish
-                    try:
-                        LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition()
-
-                    except:
-                        sys.exit()
+                    if EndList[i] == CoastLine.NoTransects-1:
+                        LastNode = CoastLine.Transects[EndList[i]-1].get_RecentPosition()
+                    else:
+                        try:
+                            LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition()
+                        except:
+                            LastNode = CoastLine.Transects[EndList[i]-1].get_RecentPosition()
+                    
                     FutureList.append(LastNode)
 
                     # create new line object for top
                     X = [FutureNode.X for FutureNode in FutureList]
                     Y = [FutureNode.Y for FutureNode in FutureList]
                     
-                    plt.plot(X[1:-1],Y[1:-1],'k-')
-                    plt.plot(X[0],Y[0],'r.')
-                    plt.show()
-
                     TempLine = Line("FutureCoast_"+str(FutureCount), X, Y, Year=Year)
                     self.FutureShoreLines.append(TempLine)
                     
                     # update counter
                     FutureCount += 1
 
-                    return
-    
+
     def GetBarrierWidth(self):
 
         """
