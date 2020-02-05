@@ -287,19 +287,27 @@ class Coast:
             # get line node positions
             X, Y = Line.get_XY()
 
-            if Smooth:
+            if Smooth and len(X) > 5:
+
+                XSmooth = X[1:-1]
+                YSmooth = Y[1:-1]
                 # calculate distance
-                Dist = np.zeros(X.shape)
-                Dist[1:] = np.sqrt((X[1:] - X[:-1])**2 + (Y[1:] - Y[:-1])**2)
+                Dist = np.zeros(XSmooth.shape)
+                Dist[1:] = np.sqrt((XSmooth[1:] - XSmooth[:-1])**2 + (YSmooth[1:] - YSmooth[:-1])**2)
                 Dist = np.cumsum(Dist)
                 
                 # build a spline representation of the line
-                Spline, u = splprep([X, Y], u=Dist, s=0)
+                Spline, u = splprep([XSmooth, YSmooth], u=Dist, s=0)
 
                 # resample it at smaller distance intervals
-                Interp_Dist = np.arange(Dist[0], Dist[-1], 1.)
-                X, Y = splev(Interp_Dist, Spline)
+                Interp_Dist = np.arange(0, Dist[-1], 1.)
+                XSmooth, YSmooth = splev(Interp_Dist, Spline)
 
+                XSmooth = np.insert(XSmooth,0,X[0])
+                YSmooth = np.insert(YSmooth,0,Y[0])
+                X = np.append(XSmooth,X[-1])
+                Y = np.append(YSmooth,Y[-1])
+            
             # convert to list for writing to shapefile
             WriteLine = [np.column_stack([X,Y]).tolist()]
             
@@ -1422,9 +1430,9 @@ class Coast:
 
                 if Year not in Transect.HistoricShorelinesYears:
                     # add point to transect
-                    
+                    Position = Node(Intersection.x,Intersection.y)
                     Transect.HistoricShorelinesPositions.append(Position)
-                    Transect.HistoricShorelinesDistances.append(Transect.StartNodes.get_Distance(Position))
+                    Transect.HistoricShorelinesDistances.append(Transect.StartNode.get_Distance(Position))
                     Transect.HistoricShorelinesYears.append(Year)
 
                 else:
@@ -1432,7 +1440,7 @@ class Coast:
                     Index = Transect.HistoricShorelinesYears.index(Year)
                     Position = Node(Intersection.x,Intersection.y)
                     Transect.HistoricShorelinesPositions[Index] = Position
-                    Transect.HistoricShorelinesDistances[Index] = Transect.StartNodes.get_Distance(Position)
+                    Transect.HistoricShorelinesDistances[Index] = Transect.StartNode.get_Distance(Position)
 
     def ExtractContours(self,ContourShp):
 

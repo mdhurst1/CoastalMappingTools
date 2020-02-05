@@ -246,7 +246,11 @@ class Transect:
             self.Future = False
             return
 
-        elif len(self.HistoricShorelinesYears) < 3:
+        elif len(self.HistoricShorelinesYears) < 2:
+            self.Future = False
+            return
+
+        elif self.HistoricShorelinesYears[-1] < 2000:
             self.Future = False
             return
         
@@ -298,17 +302,14 @@ class Transect:
         self.ShorefaceSlope = self.ShorefaceDepth/self.ShorefaceDistance
         
         # Calibration term, remembering to convert relative sea level change rates to m/yr
-        self.VolumetricCalibrationRate = self.ShorefaceDepth*np.array(self.ChangeRates) + self.ShorefaceDistance*(self.InterpolatedRSLR)
+        self.VolumetricCalibrationRates = self.ShorefaceDepth*np.array(self.ChangeRates) + self.ShorefaceDistance*(self.InterpolatedRSLR)
         
-        #self.VolumetricCalibrationRate = self.ShorefaceDepth*np.array(self.ChangeRates) + self.ShorefaceDistance*(self.HistoricalRSLR/1000.)
-        
-        #print("Calibration Term")
-        #print(self.VolumetricCalibrationRate)
-
         # get sea level at latest time
-        self.HistoricShorelinesYears[-1]
-        Interp = (self.FutureSeaLevelYears[1]-self.HistoricShorelinesYears[-1])/(self.FutureSeaLevelYears[1]-self.FutureSeaLevelYears[0])
-        LatestRSL = self.FutureSeaLevels[0]+Interp*(self.FutureSeaLevels[1]-self.FutureSeaLevels[0])
+        if self.HistoricShorelinesYears[-1] < self.FutureSeaLevelYears[0]:
+            LatestRSL = self.FutureSeaLevels[0]
+        else:
+            Interp = (self.FutureSeaLevelYears[1]-self.HistoricShorelinesYears[-1])/(self.FutureSeaLevelYears[1]-self.FutureSeaLevelYears[0])
+            LatestRSL = self.FutureSeaLevels[0]+Interp*(self.FutureSeaLevels[1]-self.FutureSeaLevels[0])
         
         # Future shoreline positions
         for i in range(1, len(self.FutureSeaLevelYears)):
@@ -316,7 +317,7 @@ class Transect:
             
             # self.InterpolatedRSLR
             BruunRuleComponent = (-1./self.ShorefaceSlope)*(self.FutureSeaLevels[i]-LatestRSL)
-            CalibrationComponent = (1./self.ShorefaceDepth)*self.VolumetricCalibrationRate[-1]*dT
+            CalibrationComponent = (1./self.ShorefaceDepth)*self.VolumetricCalibrationRates[-1]*dT
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
             
             X1 = self.HistoricShorelinesPositions[-1].X - ShorelinePositionChange * np.sin( np.radians( self.Orientation ) )
@@ -324,7 +325,7 @@ class Transect:
 
             self.FutureShorelinesPositions.append(Node(X1,Y1))
             self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
-            
+
     def FindCliff(self):
 
         """
