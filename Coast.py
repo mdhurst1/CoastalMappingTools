@@ -364,19 +364,25 @@ class Coast:
 
             # get spline
             # get line node positions
-            X, Y = Line.get_XY()
-
+            Interp_X = X[1:-1]
+            Interp_Y = Y[1:-1]
             # calculate distance
-            Dist = np.zeros(X.shape)
-            Dist[1:] = np.sqrt((X[1:] - X[:-1])**2 + (Y[1:] - Y[:-1])**2)
+            Dist = np.zeros(Interp_X.shape)
+            Dist[1:] = np.sqrt((Interp_X[1:] - Interp_X[:-1])**2 + (Interp_Y[1:] - Interp_Y[:-1])**2)
             Dist = np.cumsum(Dist)
             
             # build a spline representation of the line
-            Spline, u = splprep([X, Y], u=Dist, s=0)
+            Spline, u = splprep([Interp_X, Interp_Y], u=Dist, s=0)
 
             # resample it at smaller distance intervals
-            Interp_Dist = np.arange(Dist[0], Dist[-1], 1.)
+            Interp_Dist = np.arange(0, Dist[-1], 1.)
             Interp_X, Interp_Y = splev(Interp_Dist, Spline)
+
+            # add start and end nodes
+            Interp_X = np.insert(Interp_X,0,X[0])
+            Interp_Y = np.insert(Interp_Y,0,Y[0])
+            Interp_X = np.append(Interp_X,X[-1])
+            Interp_Y = np.append(Interp_Y,Y[-1])
 
             # convert to a linestring
             SplineLine = LineString((tuple(zip(Interp_X,Interp_Y))))
@@ -386,10 +392,11 @@ class Coast:
             for CoastLine in self.CoastLines:
                 
                 # set up empty list of intersection indices with spline
-                IntersectionIndices = []
+                IntersectionBool = np.zeros(CoastLine.NoTransects)
+                IntersectionIndices = np.zeros(CoastLine.NoTransects)
 
                 # get a list of nearest indices on interpolated lines
-                for Transect in CoastLine.Transects:
+                for i, Transect in enumerate(CoastLine.Transects):
                     
                     # intersect with spline to find index
                     TransectLine = LineString(((Transect.StartNode.X,Transect.StartNode.Y),(Transect.EndNode.X,Transect.EndNode.Y)))
@@ -397,46 +404,37 @@ class Coast:
 
                     # catch no intersections and flag for deletion?
                     if Intersection.geom_type == "GeometryCollection":
-                        sys.exit("No intersection ERROR")
+                        continue
 
                     # check there arent multiple intersections, if there are just get the nearest
                     IntersectPoint = Intersection[0]
                     Distances = [SplinePoint.distance(IntersectPoint) for SplinePoint in SplinePoints]
-                    IntersectionIndices.append(Distances.index(min(Distances)))
-                                    
+                    IntersectionBool[i] = 1
+                    IntersectionIndices[i] = Distances.index(min(Distances)))
+
+                # loop across transects again
+                for i, Transect in enumerate(CoastLine.Transects):                    
                     
+                    if IntersectionBool[i] != 1:
+                        continue
+                    
+                    if i == 0:
+                        StartIndex = IntersectionIndices[i]
+                    else:
+                        StartIndex = (IntersectionIndices[i]-InteresectionIndices[i-1])/2
+
+                    if i == CoastLine.NoTransects-1:
+                        EndIndex = IntersectionIndices[i]
+                    else:
+                        EndIndex = (IntersectionIndices[i+1]-InteresectionIndices[i])/2
                     
                     # initiate dummy lists for nodes
-                    X = []
-                    Y = []
+                    X = Interp_X[StartIndex:EndIndex]
+                    Y = Interp_Y[StartIndex:EndIndex]
                     
                     # get shoreline position in the future
                     FutureNode = Transect.get_FuturePosition(Year)
 
-                    # get previous and next nodes (either future or current)
-                    # might need some logic for start and end nodes here
-                    if (i == 0):
-                        PreviousNode = FutureNode
-                    elif CoastLine.Transects[i-1].Future:
-                        PreviousNode = CoastLine.Transects[i-1].get_FuturePosition(Year)
-                    else:
-                        PreviousNode = FutureNode
-                    
-                    if (i == len(CoastLine.Transects)-1):
-                        NextNode = FutureNode
-                    elif CoastLine.Transects[i+1].Future:
-                        NextNode = CoastLine.Transects[i+1].get_FuturePosition(Year)
-                    else:
-                        NextNode = FutureNode
-
-                    # build line segments from the three nodes
-                    X.append((PreviousNode.X+FutureNode.X)/2.)
-                    Y.append((PreviousNode.Y+FutureNode.Y)/2.)
-                    X.append(FutureNode.X)
-                    Y.append(FutureNode.Y)
-                    X.append((NextNode.X+FutureNode.X)/2.)
-                    Y.append((NextNode.Y+FutureNode.Y)/2.)
-                    
                     # get line node positions
                     WriteLine = [np.column_stack([X,Y]).tolist()]
             
