@@ -544,6 +544,9 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
         if CheckTopology:
             self.DeleteOverlappingTransects()
+        
+        for i, Transect in enumerate(self.Transects):
+            Transect.ID = str(i)
 
     def CheckTransectTopology(self,ThinFactor=2):
 

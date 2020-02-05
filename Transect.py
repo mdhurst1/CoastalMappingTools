@@ -53,6 +53,7 @@ class Transect:
         # historic shoreline positions and change rates
         self.HistoricShorelinesYears = []
         self.HistoricShorelinesPositions = []
+        self.HistoricShorelinesDistances = []
 
         # change rates will be 1 less than no of positions
         self.ChangeRates = []
@@ -260,12 +261,12 @@ class Transect:
             
             # first do the whole length of the record
             if i == 0:
-                dEta = self.HistoricShorelinesPositions[-1].get_Distance(self.HistoricShorelinesPositions[0])
+                dEta = self.HistoricShorelinesDistances[-1] - self.HistoricShorelinesDistances[0]
                 dT = self.HistoricShorelinesYears[-1]-self.HistoricShorelinesYears[0]
             
             # otherwise do the shorter period
             else:
-                dEta = self.HistoricShorelinesPositions[i].get_Distance(self.HistoricShorelinesPositions[i-1])
+                dEta = self.HistoricShorelinesDistances[i] - self.HistoricShorelinesDistances[i-1]
                 dT = self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[i-1]
                 
             self.ChangeRates.append(-dEta/dT)

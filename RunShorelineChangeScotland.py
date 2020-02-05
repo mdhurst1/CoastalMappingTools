@@ -58,15 +58,15 @@ for CellSub in CellSubList:
         
         # may need to think carefully about how much to smooth
         CellCoast.SmoothCoastLines(WindowSize=SmoothingWindowSize)
-        CellCoast.ReconfigureCoastLines("e")
+        CellCoast.ReconfigureCoastLines("e") # THIS WILL BE PROBLEMATIC
         CellCoast.GenerateTransectsNormal2Shp(str(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Final.shp")),
                                                 str(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")), TransectSpacing=TransectSpacing, CheckTopology=True)
-
+        
         #### find historic shoreline positions and extend transect accordingly
         CellCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")))
         CellCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp")))
         CellCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp")))
-        CellCoast.WriteTransectsShp(str(WorkingPath / "CoastalCells" / (RowName + "_Transects2.shp")))
+        CellCoast.WriteTransectsShp(str(WorkingPath / "CoastalCells" / (RowName + "_Transects.shp")))
     
         #### get MHWS for each transect
         CellCoast.SampleMHWSElevation(str(WorkingPath / "MHWS_Lines" / "scotland_mhws_elev.tif"))
@@ -77,17 +77,17 @@ for CellSub in CellSubList:
         ### get future relative sea level time series
         CellCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL"))
     
-        ## predict future shorelines
-        CellCoast.PredictFutureShorelines()
-        
         # SAVE ENTIRE COAST OBJECT
         print("\tSaving Coast Object as ", Filename2SaveCoast)
         with open(str(Filename2SaveCoast), 'wb') as PFile:
             pickle.dump(CellCoast, PFile)
 
+    ## predict future shorelines
+    CellCoast.PredictFutureShorelines()
+        
     # write future shorelines
     CellCoast.WriteFutureShorelinesShp(str(WorkingPath / "CoastalCells" / (RowName + "_Future.shp")),Smooth=False)
-    CellCoast.WriteFutureShorelinesShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSmooth.shp")),Smooth=False)
+    CellCoast.WriteFutureShorelinesShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSmooth.shp")),Smooth=True)
     #CellCoast.WriteFutureShorelineSegmentsShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSegments.shp")))
     #CellCoast.WriteErodedAreaShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureErosion.shp")))
     

@@ -1422,13 +1422,17 @@ class Coast:
 
                 if Year not in Transect.HistoricShorelinesYears:
                     # add point to transect
-                    Transect.HistoricShorelinesPositions.append(Node(Intersection.x,Intersection.y))
+                    
+                    Transect.HistoricShorelinesPositions.append(Position)
+                    Transect.HistoricShorelinesDistances.append(Transect.StartNodes.get_Distance(Position))
                     Transect.HistoricShorelinesYears.append(Year)
 
                 else:
                     # find and replace
                     Index = Transect.HistoricShorelinesYears.index(Year)
-                    Transect.HistoricShorelinesPositions[Index] = Node(Intersection.x,Intersection.y)
+                    Position = Node(Intersection.x,Intersection.y)
+                    Transect.HistoricShorelinesPositions[Index] = Position
+                    Transect.HistoricShorelinesDistances[Index] = Transect.StartNodes.get_Distance(Position)
 
     def ExtractContours(self,ContourShp):
 
