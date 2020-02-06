@@ -19,7 +19,7 @@ import shapefile
 import itertools
 import rasterio
 import geopandas as gp
-from shapely.geometry import Point, LineString, MultiLineString
+from shapely.geometry import Point, LineString, MultiLineString, MultiPoint
 from shapely.ops import nearest_points
 
 from Line import *
@@ -344,8 +344,7 @@ class Coast:
         print("Coast.WriteFutureShorelineSegmentsShp: Writing future MHWS line objects to polyline shapefiles")
         
         
-        if len(self.FutureShoreLines) == 0:
-            self.GetFutureShoreLines()
+        self.GetFutureShoreLines()
         
         # open new shapefile        
         WL = shapefile.Writer(FutureShoreLinesShp,shapeType=shapefile.POLYLINE)
@@ -357,33 +356,46 @@ class Coast:
         WL.fields = self.Fields[1:] 
 
         # Loop through prediction years
-        for i, Line in enumerate(self.FutureShoreLines[1:]):
+        for i, Line in enumerate(self.FutureShoreLines):
             
+            print(i, Line.Year)
+
             # keep track of no of coastal segments for IDs
             FutureCount = 0
-
-            # get spline
+            
             # get line node positions
+            X, Y = Line.get_XY()
+            
+            # get nodes for spline
             Interp_X = X[1:-1]
             Interp_Y = Y[1:-1]
+
             # calculate distance
             Dist = np.zeros(Interp_X.shape)
             Dist[1:] = np.sqrt((Interp_X[1:] - Interp_X[:-1])**2 + (Interp_Y[1:] - Interp_Y[:-1])**2)
             Dist = np.cumsum(Dist)
             
             # build a spline representation of the line
-            Spline, u = splprep([Interp_X, Interp_Y], u=Dist, s=0)
+            K = 3 # by default
+
+            if len(Interp_X) < 2:
+                continue
+
+            elif len(Interp_X) < 4:
+                K = len(Interp_X)-1
+
+            Spline, u = splprep([Interp_X, Interp_Y], u=Dist, s=0, k=K)
 
             # resample it at smaller distance intervals
             Interp_Dist = np.arange(0, Dist[-1], 1.)
             Interp_X, Interp_Y = splev(Interp_Dist, Spline)
 
-            # add start and end nodes
-            Interp_X = np.insert(Interp_X,0,X[0])
-            Interp_Y = np.insert(Interp_Y,0,Y[0])
-            Interp_X = np.append(Interp_X,X[-1])
-            Interp_Y = np.append(Interp_Y,Y[-1])
-
+            # add start and end nodes back on
+            Interp_X = np.insert(Interp_X, 0, (X[0]+X[1])/2.)
+            Interp_Y = np.insert(Interp_Y, 0, (Y[0]+Y[1])/2.)
+            Interp_X = np.append(Interp_X, (X[-1]+X[-2])/2.)
+            Interp_Y = np.append(Interp_Y, (Y[-1]+Y[-2])/2.)
+            
             # convert to a linestring
             SplineLine = LineString((tuple(zip(Interp_X,Interp_Y))))
             SplinePoints = MultiPoint((tuple(zip(Interp_X,Interp_Y))))
@@ -392,14 +404,17 @@ class Coast:
             for CoastLine in self.CoastLines:
                 
                 # set up empty list of intersection indices with spline
-                IntersectionBool = np.zeros(CoastLine.NoTransects)
-                IntersectionIndices = np.zeros(CoastLine.NoTransects)
+                TransectsList = []
+                IntersectionIndices = []
 
                 # get a list of nearest indices on interpolated lines
-                for i, Transect in enumerate(CoastLine.Transects):
+                for j, Transect in enumerate(CoastLine.Transects):
                     
-                    # intersect with spline to find index
-                    TransectLine = LineString(((Transect.StartNode.X,Transect.StartNode.Y),(Transect.EndNode.X,Transect.EndNode.Y)))
+                    # intersect extended transect with spline to find index
+                    X1 = Transect.EndNode.X + 1000 * np.sin( np.radians( Transect.Orientation ) )
+                    Y1 = Transect.EndNode.Y + 1000 * np.cos( np.radians( Transect.Orientation ) )
+                    
+                    TransectLine = LineString(((Transect.StartNode.X,Transect.StartNode.Y),(X1,Y1)))
                     Intersection = TransectLine.intersection(SplineLine)
 
                     # catch no intersections and flag for deletion?
@@ -407,50 +422,64 @@ class Coast:
                         continue
 
                     # check there arent multiple intersections, if there are just get the nearest
-                    IntersectPoint = Intersection[0]
-                    Distances = [SplinePoint.distance(IntersectPoint) for SplinePoint in SplinePoints]
-                    IntersectionBool[i] = 1
-                    IntersectionIndices[i] = Distances.index(min(Distances)))
+                    elif Intersection.geom_type == "MultiPoint":
+                        Intersection = Intersection[0]
 
+                    Distances = [SplinePoint.distance(Intersection) for SplinePoint in SplinePoints]
+                    TransectsList.append(j)
+                    IntersectionIndices.append(Distances.index(min(Distances)))
+                
                 # loop across transects again
-                for i, Transect in enumerate(CoastLine.Transects):                    
+                for j in range(0, len(TransectsList)):
                     
-                    if IntersectionBool[i] != 1:
+                    if j == 0:
+                        StartIndex = IntersectionIndices[j]
+                    else:
+                        StartIndex = EndIndex
+                    
+                    if j == len(TransectsList)-1:
+                        EndIndex = IntersectionIndices[j]
+                    else:
+                        EndIndex = int((IntersectionIndices[j+1]+IntersectionIndices[j])/2)
+                    
+                    if StartIndex == EndIndex:
                         continue
-                    
-                    if i == 0:
-                        StartIndex = IntersectionIndices[i]
-                    else:
-                        StartIndex = (IntersectionIndices[i]-InteresectionIndices[i-1])/2
 
-                    if i == CoastLine.NoTransects-1:
-                        EndIndex = IntersectionIndices[i]
-                    else:
-                        EndIndex = (IntersectionIndices[i+1]-InteresectionIndices[i])/2
-                    
                     # initiate dummy lists for nodes
                     X = Interp_X[StartIndex:EndIndex]
                     Y = Interp_Y[StartIndex:EndIndex]
                     
                     # get shoreline position in the future
-                    FutureNode = Transect.get_FuturePosition(Year)
+                    Transect = CoastLine.Transects[TransectsList[j]]
+                    FutureNode = Transect.get_FuturePosition(Line.Year)
 
                     # get line node positions
                     WriteLine = [np.column_stack([X,Y]).tolist()]
             
                     # calculate additional attributes
                     RecentNode = Transect.get_RecentPosition()
+                    
+                    if not FutureNode:
+                        print(Transect.ID)
+                        print("No Future")
+                        continue
+
+                    if not FutureNode:
+                        print(Transect.ID)
+                        print("No Current")
+                        continue
+
                     Distance = np.sqrt((FutureNode.X-RecentNode.X)**2. + (FutureNode.Y-RecentNode.Y)**2.)
-                    Rate = Transect.get_FutureShorelineRate(Year)
+                    Rate = Transect.get_FutureShorelineRate(Line.Year)
 
                     # generate record (strs?)
                     Record = [str(CoastLine.ID), str(Transect.ID), str(Transect.Cell), str(Transect.SubCell),
-                    str(Transect.CMU), str(Year), str(Distance), str(Rate)]
+                    str(Transect.CMU), str(Line.Year), str(Distance), str(Rate)]
 
                     # write line and record
                     WL.line(WriteLine)
                     WL.record(*Record) ####### ISSUE WITH RECORDS NEEDS FIXING ########
-        
+
         # close the shapefiles and clean up
         WL.close()
             
