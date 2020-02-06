@@ -241,7 +241,7 @@ class Transect:
         self.FutureShorelinesRates = []
         self.InterpolatedRSLR = []
 
-        # calculate retreat rates
+        # cant make predictions without some historical shorelines
         if not self.HistoricShorelinesYears:
             self.Future = False
             return
@@ -320,11 +320,21 @@ class Transect:
             CalibrationComponent = (1./self.ShorefaceDepth)*self.VolumetricCalibrationRates[-1]*dT
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
             
-            X1 = self.HistoricShorelinesPositions[-1].X - ShorelinePositionChange * np.sin( np.radians( self.Orientation ) )
-            Y1 = self.HistoricShorelinesPositions[-1].Y - ShorelinePositionChange * np.cos( np.radians( self.Orientation ) )
+            # check rock head position not exceeded
+            HistoricalShorelineDistance = self.StartNode.get_Distance(self.HistoricalShorelinesPositions[-1])
+            FutureShorelineDistance = HistoricalShorelineDistance - ShorelinePositionChange
+            if FutureShorelineDistance > self.RockHeadDistance:
+                self.FutureShorelinesPositions.append(self.RockHeadPosition)
+                ShorelinePositionChange = self.RockHeadDistance-HistoricalShorelineDistance
+                self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
+            
+            # otherwise write new shoreline position as appropriate
+            else:
+                X1 = self.HistoricShorelinesPositions[-1].X - ShorelinePositionChange * np.sin( np.radians( self.Orientation ) )
+                Y1 = self.HistoricShorelinesPositions[-1].Y - ShorelinePositionChange * np.cos( np.radians( self.Orientation ) )
 
-            self.FutureShorelinesPositions.append(Node(X1,Y1))
-            self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
+                self.FutureShorelinesPositions.append(Node(X1,Y1))
+                self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
 
     def FindCliff(self):
 
