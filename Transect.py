@@ -59,6 +59,10 @@ class Transect:
         self.ChangeRates = []
         self.DeleteFlag = False
 
+        # rock head info
+        self.RockHeadDistance = None
+        self.RockHeadPosition = None
+
         # location of -10m depth contour
         self.Contours = []
         self.ClosureDepth = 10.
@@ -321,9 +325,10 @@ class Transect:
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
             
             # check rock head position not exceeded
-            HistoricalShorelineDistance = self.StartNode.get_Distance(self.HistoricalShorelinesPositions[-1])
+            HistoricalShorelineDistance = self.StartNode.get_Distance(self.HistoricShorelinesPositions[-1])
             FutureShorelineDistance = HistoricalShorelineDistance - ShorelinePositionChange
-            if FutureShorelineDistance > self.RockHeadDistance:
+            
+            if self.RockHeadDistance and (FutureShorelineDistance > self.RockHeadDistance):
                 self.FutureShorelinesPositions.append(self.RockHeadPosition)
                 ShorelinePositionChange = self.RockHeadDistance-HistoricalShorelineDistance
                 self.FutureShorelinesRates.append(ShorelinePositionChange/dT)

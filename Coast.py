@@ -1642,11 +1642,15 @@ class Coast:
                     RockHeadVector[RockHeadVector < 0] = np.nan
                     
                     # if everything is soft, carry on
-                    if not (RockHeadVector < 0.4).any():
+                    # ignore errors caused by NaNs
+                    with np.errstate(invalid='ignore'):
+                        RockBool = RockHeadVector < 0.4
+        
+                    if not RockBool.any():
                         continue
                     
                     # else find the position of the first appearance of 0.4
-                    JInd = np.argmax(RockHeadVector < 0.4)
+                    JInd = np.argmax(RockBool)
                     
                     if JInd == len(RockHeadVector)-1:
                         continue
@@ -1665,7 +1669,10 @@ class Coast:
                     RockHeadVector[RockHeadVector < 0] = np.nan
 
                     # else find the position of the first appearance of 0.4
-                    JInd = np.argmax(RockHeadVector < 0.4)
+                    # ignore errors caused by NaNs
+                    with np.errstate(invalid='ignore'):
+                        RockBool = RockHeadVector < 0.4
+                    JInd = np.argmax(RockBool)
 
                     # flag position as attribute of transect
                     Transect.RockHeadPosition = Node(X[JInd],Y[JInd])
