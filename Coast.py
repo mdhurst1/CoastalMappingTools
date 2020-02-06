@@ -1,5 +1,5 @@
 """
-Description of file goes here
+Coast object for analysing coastal morphology and predicting future coastal change
 
 Martin D. Hurst
 University of Glasgow
