@@ -1637,25 +1637,35 @@ class Coast:
                     NodeList = tuple(zip(X, Y))
 
                     # build a list of X,Y values to check along transect to find position of rock head if present
-                    RockHeadList = RockHeadDataset.sample(NodeList)
-
+                    #for val in RSLRDataset.sample([(Transect.CoastNode.X,Transect.CoastNode.Y)]):
+                    RockHeadVector = np.array([val[0] for val in RockHeadDataset.sample(NodeList)])
+                    RockHeadVector[RockHeadVector < 0] = np.nan
+                    
                     # if everything is soft, carry on
-                    if not RockHeadList.any < 0.4:
+                    if not (RockHeadVector < 0.4).any():
+                        continue
+                    
+                    # else find the position of the first appearance of 0.4
+                    JInd = np.argmax(RockHeadVector < 0.4)
+                    
+                    if JInd == len(RockHeadVector)-1:
                         continue
 
-                    # else find the position of the first appearance of 0.4
-                    JInd = next(j for j, Rockhead in enumerate(RockHeadList) if RockHeadList < 0.4)
-
                     # repeat to find to the nearest meter
-                    X = np.arange(X[JInd-1], X[JInd], 1.)
-                    Y = np.arange(Y[JInd-1], Y[JInd], 1.)
+                    dX = (X[JInd-1] - X[JInd+1])
+                    dY = (Y[JInd-1] - Y[JInd+1])
+                    NVals = np.int(np.sqrt(dX**2. + dY**2.))
+                    
+                    X = np.linspace(X[JInd-1], X[JInd+1], NVals)
+                    Y = np.linspace(Y[JInd-1], Y[JInd+1], NVals)
                     NodeList = tuple(zip(X, Y))
 
                     # build a list of X,Y values to check along transect to find position of rock head if present
-                    RockHeadList = RockHeadDataset.sample(NodeList)
+                    RockHeadVector = np.array([val[0] for val in RockHeadDataset.sample(NodeList)])
+                    RockHeadVector[RockHeadVector < 0] = np.nan
 
                     # else find the position of the first appearance of 0.4
-                    JInd = next(j for j, Rockhead in enumerate(RockHeadList) if RockHeadList < 0.4)
+                    JInd = np.argmax(RockHeadVector < 0.4)
 
                     # flag position as attribute of transect
                     Transect.RockHeadPosition = Node(X[JInd],Y[JInd])

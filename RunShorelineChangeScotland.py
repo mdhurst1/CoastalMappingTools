@@ -83,12 +83,13 @@ for CellSub in CellSubList:
             pickle.dump(CellCoast, PFile)
 
     ## predict future shorelines
+    CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
     #CellCoast.PredictFutureShorelines()
         
     # write future shorelines
     #CellCoast.WriteFutureShorelinesShp(str(WorkingPath / "CoastalCells" / (RowName + "_Future.shp")),Smooth=False)
     #CellCoast.WriteFutureShorelinesShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSmooth.shp")),Smooth=True)
-    CellCoast.WriteFutureShorelineSegmentsShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSegments.shp")))
+    #CellCoast.WriteFutureShorelineSegmentsShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSegments.shp")))
     #CellCoast.WriteErodedAreaShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureErosion.shp")))
     
     # SAVE ENTIRE COAST OBJECT
