@@ -342,6 +342,21 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
                 else:
                     TransectOrientation = TempOrientation - 90.
 
+                """ if self.ID == "3":
+                    print(TempOrientation)
+                    print(TransectOrientation)
+
+                    X1 = PointX + TransectLength2Sea * np.sin( np.radians( TransectOrientation ) )
+                    Y1 = PointY + TransectLength2Sea * np.cos( np.radians( TransectOrientation ) )
+                    X2 = PointX - TransectLength2Land * np.sin( np.radians( TransectOrientation ) )
+                    Y2 = PointY - TransectLength2Land * np.cos( np.radians( TransectOrientation ) )
+                    
+                    plt.plot(X1,Y1,'bo')
+                    plt.plot(X2,Y2,'ro')
+                    plt.plot([X1,X2],[Y1,Y2],'k--')
+                    plt.show()
+                    sys.exit() """
+
                 #Calculate start and end nodes and generate Transect
                 X1 = PointX + TransectLength2Sea * np.sin( np.radians( TransectOrientation ) )
                 Y1 = PointY + TransectLength2Sea * np.cos( np.radians( TransectOrientation ) )
@@ -485,15 +500,45 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         # get points to define initial transect line and make it nice and long
         self.GenerateTransects(Spacing,Distance2Sea,Distance2Land,CheckTopology=False)
 
-        # check orientation relative to the sea
-        if (self.Transects[0].Orientation < self.Orientation[0]) or (self.Transects[0].Orientation < (self.Orientation[0] - 180)):
+        # check orientation relative to the sea for first node and transect
+        # intersect first transect with each set of lines and get orientation from bathy to shore
+        # find intersection between transect line and shapefile lines
+        for i in range(0,self.NoTransects):
             
-            # get x and y to reverse lines
-            X, Y = self.get_XY()
-            self.__init__(self.ID, X[::-1], Y[::-1], self.Contour, self.Year, self.Cell, self.SubCell, self.CMU)
+            OffshoreIntersection = self.Transects[i].LineString.intersection(Lines2)
+            OnshoreIntersection = self.Transects[i].LineString.intersection(Lines1)
             
-            # regenerate transects
-            self.GenerateTransects(Spacing,Distance2Sea,Distance2Land,CheckTopology=False)
+            # catch no intersections
+            if ((OffshoreIntersection.geom_type == "GeometryCollection") 
+                or (OnshoreIntersection.geom_type == "GeometryCollection")):
+                continue
+            
+            if OffshoreIntersection.geom_type is "MultiPoint":
+                StartPoint = Point(self.Transects[i].CoastNode.X, self.Transects[i].CoastNode.Y)
+                Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in OffshoreIntersection]
+                Index = Distances.index(min(Distances))
+                OffshoreIntersection = OffshoreIntersection[Index]
+
+            if OnshoreIntersection.geom_type is "MultiPoint":
+                StartPoint = Point(self.Transects[i].CoastNode.X, self.Transects[i].CoastNode.Y)
+                Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in OnshoreIntersection]
+                Index = Distances.index(min(Distances))
+                OnshoreIntersection = OnshoreIntersection[Index]  
+            
+            OffshoreNode = Node(OffshoreIntersection.x,OffshoreIntersection.y)
+            TestOrientation = OffshoreNode.get_Orientation(Node(OnshoreIntersection.x,OnshoreIntersection.y))
+
+            if ((TestOrientation < self.Orientation[i]) 
+                or (self.Orientation[i] < 120. and TestOrientation > 240)):
+
+                # get x and y to reverse lines
+                X, Y = self.get_XY()
+                self.__init__(self.ID, X[::-1], Y[::-1], self.Contour, self.Year, self.Cell, self.SubCell, self.CMU)
+                
+                # regenerate transects
+                self.GenerateTransects(Spacing,Distance2Sea,Distance2Land,CheckTopology=False)
+            
+            break
 
         # flag to note interesections
         CheckTopologyFlag = CheckTopology

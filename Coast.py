@@ -1681,7 +1681,7 @@ class Coast:
         MDH, September 2019
 
         """
-
+        print("Coast.PredictFutureShorelines: predicting future shoreline positions")
         # loop through transects and sample
         for Line in self.CoastLines:
             for Transect in Line.Transects:

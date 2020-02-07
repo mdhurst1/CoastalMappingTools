@@ -25,8 +25,7 @@ Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCell_CA.shp")
 # loop through each cell
 #for index, Row in Cells.iterrows():
 CellSubList = ["2a","2b","2c","2d","3a","3b","3c","3e","3f","3g"]
-ReconfigureList = ["e",]
-CellSubList = ["2a",]
+CellSubList = ["3f","3g"]
 
 for CellSub in CellSubList:
 
@@ -87,7 +86,7 @@ for CellSub in CellSubList:
     # write future shorelines
     CellCoast.WriteFutureShorelinesShp(str(WorkingPath / "CoastalCells" / (RowName + "_Future.shp")),Smooth=False)
     CellCoast.WriteFutureShorelinesShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSmooth.shp")),Smooth=True)
-    CellCoast.WriteFutureShorelineSegmentsShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSegments.shp")))
+    #CellCoast.WriteFutureShorelineSegmentsShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSegments.shp")))
     #CellCoast.WriteErodedAreaShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureErosion.shp")))
     
     # SAVE ENTIRE COAST OBJECT
