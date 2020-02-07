@@ -89,7 +89,7 @@ class Coast:
 
         """
         """
-
+        print("Coast.Save: Saving Coast Object")
         with open(PickleFile, 'wb') as PFile:
             pickle.dump(self, PFile)
 
@@ -358,8 +358,6 @@ class Coast:
         # Loop through prediction years
         for i, Line in enumerate(self.FutureShoreLines):
             
-            print(i, Line.Year)
-
             # keep track of no of coastal segments for IDs
             FutureCount = 0
             
@@ -460,13 +458,9 @@ class Coast:
                     RecentNode = Transect.get_RecentPosition()
                     
                     if not FutureNode:
-                        print(Transect.ID)
-                        print("No Future")
                         continue
 
                     if not FutureNode:
-                        print(Transect.ID)
-                        print("No Current")
                         continue
 
                     Distance = np.sqrt((FutureNode.X-RecentNode.X)**2. + (FutureNode.Y-RecentNode.Y)**2.)

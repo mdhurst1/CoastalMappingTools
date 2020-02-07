@@ -58,7 +58,6 @@ for CellSub in CellSubList:
         
         # may need to think carefully about how much to smooth
         CellCoast.SmoothCoastLines(WindowSize=SmoothingWindowSize)
-        CellCoast.ReconfigureCoastLines("e") # THIS WILL BE PROBLEMATIC
         CellCoast.GenerateTransectsNormal2Shp(str(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Final.shp")),
                                                 str(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")), TransectSpacing=TransectSpacing, CheckTopology=True)
         
@@ -78,12 +77,11 @@ for CellSub in CellSubList:
         CellCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL"))
     
         # SAVE ENTIRE COAST OBJECT
-        print("\tSaving Coast Object as ", Filename2SaveCoast)
         with open(str(Filename2SaveCoast), 'wb') as PFile:
             pickle.dump(CellCoast, PFile)
 
     ## predict future shorelines
-    CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
+    #CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
     CellCoast.PredictFutureShorelines()
         
     # write future shorelines

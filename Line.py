@@ -347,7 +347,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
                 Y1 = PointY + TransectLength2Sea * np.cos( np.radians( TransectOrientation ) )
                 X2 = PointX - TransectLength2Land * np.sin( np.radians( TransectOrientation ) )
                 Y2 = PointY - TransectLength2Land * np.cos( np.radians( TransectOrientation ) )
-                self.Transects.append( Transect(Node(PointX, PointY), Node(X1, Y1), Node(X2, Y2), str(self.ID), str(TransectCount) ) )
+                self.Transects.append( Transect( Node(PointX, PointY), Node(X1, Y1), Node(X2, Y2), str(self.ID), str(TransectCount) ) )
 
                 # update to find next transect
                 TransectCount += 1
@@ -423,11 +423,25 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
         Parameters
         ----------
+
+        ContourShp1 : string
+            Name of a shapefile with the first line/contour to look for when
+            drawing transects. This should be the line nearest to the coast
+        ContourShp2: string
+            Name of a shapefile wit hthe second line/contour to look for when
+            drawing transects. This should be the offshore line.
         Spacing : float
             The distance between consecutive points along the CoastLines
             in map units, spatial units depend on units of the CoastLine read in,
             Should be [m]
-
+        Distance2Land : float
+            Distance in [m] to extent transects landward when looking for intersection
+            with ContourShp1
+        Distance2Sea : float
+            Distance in [m] to extent transects offshore when looking for intersection
+            with ContourShp2
+        CheckTopology : bool
+            Flag to check and correct overlapping transects
         """
 
         # load the contour shapefile
@@ -470,6 +484,16 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
         # get points to define initial transect line and make it nice and long
         self.GenerateTransects(Spacing,Distance2Sea,Distance2Land,CheckTopology=False)
+
+        # check orientation relative to the sea
+        if (self.Transects[0].Orientation < self.Orientation[0]) or (self.Transects[0].Orientation < (self.Orientation[0] - 180)):
+            
+            # get x and y to reverse lines
+            X, Y = self.get_XY()
+            self.__init__(self.ID, X[::-1], Y[::-1], self.Contour, self.Year, self.Cell, self.SubCell, self.CMU)
+            
+            # regenerate transects
+            self.GenerateTransects(Spacing,Distance2Sea,Distance2Land,CheckTopology=False)
 
         # flag to note interesections
         CheckTopologyFlag = CheckTopology
