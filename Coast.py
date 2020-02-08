@@ -1416,7 +1416,8 @@ class Coast:
                     Transect.DeleteFlag = True
                     continue
 
-                # check there arent multiple intersections, if there are just get the nearest
+                # check there arent multiple intersections
+                # store multiple intersections if so
                 if Intersection.geom_type is "MultiPoint":
                     StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
                     Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection]
@@ -1426,7 +1427,7 @@ class Coast:
                 # check if this is a new endnode by intersecting with line from startnode to endnode
                 Distance = Transect.LineString.distance(Intersection)
                 
-                if Distance > 0.001:
+                if Distance[0] > 0.001:
                     
                     # set this as the new end node
                     NewEndNode = Node(Intersection.x,Intersection.y)
@@ -1450,18 +1451,38 @@ class Coast:
                     sys.exit("Couldnt find survey year for MHWS historic shoreline position")
 
                 if Year not in Transect.HistoricShorelinesYears:
-                    # add point to transect
-                    Position = Node(Intersection.x,Intersection.y)
-                    Transect.HistoricShorelinesPositions.append(Position)
-                    Transect.HistoricShorelinesDistances.append(Transect.StartNode.get_Distance(Position))
+                    
+                    # generate lists of positions and distances
+                    Positions = []
+                    Distances = []
+
+                    for Intersection in Intersections:
+                        Position = Node(Intersection.x,Intersection.y)
+                        Positions.append(Position)
+                        Distances.append(Transect.StartNode.get_Distance(Position)
+
+                    # add to transect
+                    Transect.HistoricShorelinesPositions.append(Positions)
+                    Transect.HistoricShorelinesDistances.append(Distances)
                     Transect.HistoricShorelinesYears.append(Year)
 
                 else:
+                    
                     # find and replace
                     Index = Transect.HistoricShorelinesYears.index(Year)
-                    Position = Node(Intersection.x,Intersection.y)
-                    Transect.HistoricShorelinesPositions[Index] = Position
-                    Transect.HistoricShorelinesDistances[Index] = Transect.StartNode.get_Distance(Position)
+
+                    # add points to transect
+                    Positions = []
+                    Distances = []
+                    
+                    for Intersection in Intersections:
+                        Position = Node(Intersection.x,Intersection.y)
+                        Positions.append(Position)
+                        Distances.append(Transect.StartNode.get_Distance(Position)
+
+                    # add to transect
+                    Transect.HistoricShorelinesPositions[Index] = Positions
+                    Transect.HistoricShorelinesDistances[Index] = Transect.StartNode.get_Distance(Positions)
 
     def ExtractContours(self,ContourShp):
 
