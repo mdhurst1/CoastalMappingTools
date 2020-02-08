@@ -1401,6 +1401,8 @@ class Coast:
 
         for Line in self.CoastLines:
             for Transect in Line.Transects:
+
+                print(Transect.ID)
                 
                 # extend transect line inland to look for intersection
                 #Calculate start and end nodes and generate Transect
@@ -1409,25 +1411,30 @@ class Coast:
                 TransectLine = LineString(((Transect.StartNode.X,Transect.StartNode.Y),(X1,Y1)))
             
                 # intersect with historical shoreline
-                Intersection = TransectLine.intersection(MultiLines)
+                Intersections = TransectLine.intersection(MultiLines)
 
                 # catch no intersections and flag for deletion?
-                if Intersection.geom_type == "GeometryCollection":
+                if Intersections.geom_type == "GeometryCollection":
                     Transect.DeleteFlag = True
                     continue
 
                 # check there arent multiple intersections
                 # store multiple intersections if so
-                if Intersection.geom_type is "MultiPoint":
+                if Intersections.geom_type is "MultiPoint":
                     StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
-                    Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection]
+                    Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections]
                     Index = Distances.index(min(Distances))
-                    Intersection = Intersection[Index]
+                    IntersectionsList = Intersections
+                    Intersection = Intersections[Index]
+                    Distance = Distances[Index]
                 
-                # check if this is a new endnode by intersecting with line from startnode to endnode
-                Distance = Transect.LineString.distance(Intersection)
-                
-                if Distance[0] > 0.001:
+                else:
+                    # check if this is a new endnode by intersecting with line from startnode to endnode
+                    Distance = Transect.LineString.distance(Intersections)
+                    Intersection = Intersections
+                    IntersectionsList = [Intersection,]
+                    
+                if Distance > 0.001:
                     
                     # set this as the new end node
                     NewEndNode = Node(Intersection.x,Intersection.y)
@@ -1456,10 +1463,10 @@ class Coast:
                     Positions = []
                     Distances = []
 
-                    for Intersection in Intersections:
+                    for Intersection in IntersectionsList:
                         Position = Node(Intersection.x,Intersection.y)
                         Positions.append(Position)
-                        Distances.append(Transect.StartNode.get_Distance(Position)
+                        Distances.append(Transect.StartNode.get_Distance(Position))
 
                     # add to transect
                     Transect.HistoricShorelinesPositions.append(Positions)
@@ -1478,7 +1485,7 @@ class Coast:
                     for Intersection in Intersections:
                         Position = Node(Intersection.x,Intersection.y)
                         Positions.append(Position)
-                        Distances.append(Transect.StartNode.get_Distance(Position)
+                        Distances.append(Transect.StartNode.get_Distance(Position))
 
                     # add to transect
                     Transect.HistoricShorelinesPositions[Index] = Positions
