@@ -1503,8 +1503,8 @@ class Transect:
 
         # find index of most recent historical shoreline
         Index = np.argmax(self.HistoricShorelinesYears)
-
-        Position = self.HistoricShorelinesPositions[Index]
+        Position = self.HistoricShorelinesPosition[Index]
+        
         return Position 
 
     def get_OldestPosition(self):

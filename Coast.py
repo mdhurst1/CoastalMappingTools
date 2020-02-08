@@ -2177,7 +2177,6 @@ class Coast:
                             FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
                     
                     FutureList.append(FirstNode)
-
                     # loop through transects and get future positions
                     for Transect in CoastLine.Transects[StartList[i]:EndList[i]]:
                         FutureNode = Transect.get_FuturePosition(Year)
@@ -2194,7 +2193,7 @@ class Coast:
                             LastNode = CoastLine.Transects[EndList[i]-1].get_RecentPosition()
                     
                     FutureList.append(LastNode)
-
+                    
                     # create new line object for top
                     X = [FutureNode.X for FutureNode in FutureList]
                     Y = [FutureNode.Y for FutureNode in FutureList]
