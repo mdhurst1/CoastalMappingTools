@@ -1402,8 +1402,6 @@ class Coast:
         for Line in self.CoastLines:
             for Transect in Line.Transects:
 
-                print(Transect.ID)
-                
                 # extend transect line inland to look for intersection
                 #Calculate start and end nodes and generate Transect
                 X1 = Transect.EndNode.X + LookDistance * np.sin( np.radians( Transect.Orientation ) )

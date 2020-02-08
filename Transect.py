@@ -50,10 +50,12 @@ class Transect:
         self.Orientation = self.CalculateOrientation(self.StartNode, self.EndNode)
         self.Length = self.CalculateLength(self.StartNode, self.EndNode)
         
-        # historic shoreline positions and change rates
+        # historic shoreline positions, distances and change rates
         self.HistoricShorelinesYears = []
         self.HistoricShorelinesPositions = []
         self.HistoricShorelinesDistances = []
+        self.HistoricShorelinesPosition = []
+        self.HistoricShorelinesDistance = []
 
         # change rates will be 1 less than no of positions
         self.ChangeRates = []
@@ -260,13 +262,17 @@ class Transect:
         
         # some logic here to check if its sensible to make predictions
         for i in range(0,len(self.HistoricShorelinesYears)):
-            if len(self.HistoricalShorelinesDistances[i] == 1):
-                continue
-            elif self.HistoricalShorelineDistances[i][1] < self.HistoricalShorelineDistances[i+1][0]:
-                self.Future = False
-                return
-                
-        # boolean flag if making predicti
+            self.HistoricShorelinesDistance.append(self.HistoricShorelinesDistances[i][0])
+            self.HistoricShorelinesPosition.append(self.HistoricShorelinesPositions[i][0])
+
+        NoPositions = [len(Distances) for Distances in self.HistoricShorelinesDistances]
+        EqualBool = NoPositions[1:] == NoPositions[:-1]
+
+        if not EqualBool:
+            self.Future = False
+            return
+
+        # boolean flag if making prediction
         self.Future = True
 
         # reset change rates in case already calculated
@@ -277,12 +283,12 @@ class Transect:
             
             # first do the whole length of the record
             if i == 0:
-                dEta = self.HistoricShorelinesDistances[-1] - self.HistoricShorelinesDistances[0]
+                dEta = self.HistoricShorelinesDistance[-1] - self.HistoricShorelinesDistance[0]
                 dT = self.HistoricShorelinesYears[-1]-self.HistoricShorelinesYears[0]
             
             # otherwise do the shorter period
             else:
-                dEta = self.HistoricShorelinesDistances[i] - self.HistoricShorelinesDistances[i-1]
+                dEta = self.HistoricShorelinesDistance[i] - self.HistoricShorelinesDistance[i-1]
                 dT = self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[i-1]
                 
             self.ChangeRates.append(-dEta/dT)
@@ -309,7 +315,7 @@ class Transect:
 
         
         # get mean slope
-        self.ShorefaceDistance = self.StartNode.get_Distance(self.HistoricShorelinesPositions[-1])
+        self.ShorefaceDistance = self.StartNode.get_Distance(self.HistoricShorelinesPosition[-1])
         self.ShorefaceDepth = self.ClosureDepth + self.MHWS
         self.ShorefaceSlope = self.ShorefaceDepth/self.ShorefaceDistance
         
@@ -333,18 +339,18 @@ class Transect:
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
             
             # check rock head position not exceeded
-            HistoricalShorelineDistance = self.StartNode.get_Distance(self.HistoricShorelinesPositions[-1])
-            FutureShorelineDistance = HistoricalShorelineDistance - ShorelinePositionChange
+            HistoricShorelineDistance = self.StartNode.get_Distance(self.HistoricShorelinesPosition[-1])
+            FutureShorelineDistance = HistoricShorelineDistance - ShorelinePositionChange
             
             if self.RockHeadDistance and (FutureShorelineDistance > self.RockHeadDistance):
                 self.FutureShorelinesPositions.append(self.RockHeadPosition)
-                ShorelinePositionChange = self.RockHeadDistance-HistoricalShorelineDistance
+                ShorelinePositionChange = self.RockHeadDistance-HistoricShorelineDistance
                 self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
             
             # otherwise write new shoreline position as appropriate
             else:
-                X1 = self.HistoricShorelinesPositions[-1].X - ShorelinePositionChange * np.sin( np.radians( self.Orientation ) )
-                Y1 = self.HistoricShorelinesPositions[-1].Y - ShorelinePositionChange * np.cos( np.radians( self.Orientation ) )
+                X1 = self.HistoricShorelinesPosition[-1].X - ShorelinePositionChange * np.sin( np.radians( self.Orientation ) )
+                Y1 = self.HistoricShorelinesPosition[-1].Y - ShorelinePositionChange * np.cos( np.radians( self.Orientation ) )
 
                 self.FutureShorelinesPositions.append(Node(X1,Y1))
                 self.FutureShorelinesRates.append(ShorelinePositionChange/dT)

@@ -43,26 +43,25 @@ except:
     
     TireeCoast.WriteTransectsShp(str(WorkingPath / "CoastalCells" / ("Tiree_Transects.shp")))
     
+    #### find historic shoreline positions and extend transect accordingly
+    TireeCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / ("Tiree_MHWS_1890.shp")))
+    TireeCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / ("Tiree_MHWS_1970.shp")))
+    TireeCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / ("Tiree_Modern_Soft.shp")))
+    TireeCoast.WriteTransectsShp(str(WorkingPath / "CoastalCells" / ("Tiree_Transects.shp")))
+    
+    #### get MHWS for each transect
+    TireeCoast.SampleMHWSElevation(str(WorkingPath / "MHWS_Lines" / "scotland_mhws_elev.tif"))
+    
+    #### get historical rate of relative sea level change
+    TireeCoast.SampleHistoricalRSLR(str(WorkingPath / "RSL_Bradley_Model" / "Scotland_RSLR_Modern_BNG.tif"))
+    
+    ### get future relative sea level time series
+    TireeCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL"))
+    
     # SAVE ENTIRE COAST OBJECT
     with open(str(Filename2SaveCoast), 'wb') as PFile:
         pickle.dump(TireeCoast, PFile)
-
-
-#### find historic shoreline positions and extend transect accordingly
-TireeCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / ("Tiree_MHWS_1890.shp")))
-TireeCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / ("Tiree_MHWS_1970.shp")))
-TireeCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / ("Tiree_Modern_Soft.shp")))
-TireeCoast.WriteTransectsShp(str(WorkingPath / "CoastalCells" / ("Tiree_Transects.shp")))
-
-#### get MHWS for each transect
-TireeCoast.SampleMHWSElevation(str(WorkingPath / "MHWS_Lines" / "scotland_mhws_elev.tif"))
-
-#### get historical rate of relative sea level change
-TireeCoast.SampleHistoricalRSLR(str(WorkingPath / "RSL_Bradley_Model" / "Scotland_RSLR_Modern_BNG.tif"))
-
-### get future relative sea level time series
-TireeCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL"))
-
+            
 ## predict future shorelines
 #TireeCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
 TireeCoast.PredictFutureShorelines()
