@@ -258,6 +258,14 @@ class Transect:
             self.Future = False
             return
         
+        # some logic here to check if its sensible to make predictions
+        for i in range(0,len(self.HistoricShorelinesYears)):
+            if len(self.HistoricalShorelinesDistances[i] == 1):
+                continue
+            elif self.HistoricalShorelineDistances[i][1] < self.HistoricalShorelineDistances[i+1][0]:
+                self.Future = False
+                return
+                
         # boolean flag if making predicti
         self.Future = True
 
