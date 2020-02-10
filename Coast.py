@@ -1107,7 +1107,7 @@ class Coast:
             for ii, StartNode2 in enumerate(StartNodes):
                 if i == ii:
                     continue
-                Distance = StartNode.distance(StartNode2)
+                Distance = StartNode.get_Distance(StartNode2)
                 if Distance < SnapDistance:
                     print("Snapping")
                     self.CoastLines[ii].Nodes[0] = StartNode
@@ -1117,7 +1117,7 @@ class Coast:
             for j, EndNode in enumerate(EndNodes):
                 if i == j:
                     continue
-                Distance = StartNode.distance(EndNode)
+                Distance = StartNode.get_Distance(EndNode)
                 if Distance < SnapDistance:
                     print("Snapping")
                     self.CoastLines[j].Nodes[-1] = StartNode
@@ -1133,18 +1133,29 @@ class Coast:
         MultiLine = MultiLineString(LinesList)
         MergedLine = linemerge(MultiLine.simplify(0.2))
 
+        #reset object
+        self.CoastLines = []
+
+        # add line or multiple lines depending on result of merge
         if MergedLine.geom_type == "LineString":
-            self.CoastLines = []
+            
             X, Y = MergedLine.xy
             ThisLine = Line("0", X, Y)
             self.CoastLines.append(ThisLine)
-            self.NoCoastLines = len(self.CoastLines)
-        
+            
+        elif MergedLine.geom_type == "MultiLineString":
+            self.CoastLines = []
+            for i, Line in enumerate(MergedLine):
+                X, Y = Line.xy
+                ThisLine = Line(str(i), X, Y)
+                self.CoastLines.append(ThisLine)
+
         else:
-            print(len(MergedLine))
-            print(MergedLine.geom_type)
-            print("Multipart geometry not implemented yet")
+            print("Geometry not recognised!")
             sys.exit()
+        
+        # update no of coastlines
+        self.NoCoastLines = len(self.CoastLines)
 
     def SmoothCoastLines(self, WindowSize=1001, NoSmooths=2, Resample=True, NodeSpacing=10., PolyOrder=4):
         
