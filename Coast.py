@@ -1084,16 +1084,43 @@ class Coast:
         
         print("\r\t Done.")
 
-    def MergeCoastLines(self):
+    def MergeCoastLines(self, SnapDistance=1):
 
         """
         Identifies individual coast Lines that are touching at one end 
         and combines them into a single Line using shapely
 
+        Distance to snap points in m
+
         MDH, Feb, 2020
         """
 
         print("Coast.MergeCoastLines: Merging coastlines...")
+
+        # get start and end nodes from line sections
+        StartNodes = [CoastLine.Nodes[0] for CoastLine in self.CoastLines]
+        EndNodes = [CoastLine.Nodes[-1] for CoastLine in self.CoastLines]
+
+        # first check if any start nodes are the same within tolerance
+        Distances = np.ones(len(StartNodes))*-9999.
+        for i, StartNode in enumerate(StartNodes):
+            for ii, StartNode2 in enumerate(StartNodes):
+                if i == ii:
+                    continue
+                Distance = StartNode.distance(StartNode2)
+                if Distance < SnapDistance:
+                    print("Snapping")
+                    self.CoastLines[ii].Nodes[0] = StartNode
+
+        # now check if any end nodes are the same within tolerance
+        for i, StartNode in enumerate(StartNodes):
+            for j, EndNode in enumerate(EndNodes):
+                if i == j:
+                    continue
+                Distance = StartNode.distance(EndNode)
+                if Distance < SnapDistance:
+                    print("Snapping")
+                    self.CoastLines[j].Nodes[-1] = StartNode
 
         # create a list of linestrings to merge
         #LineString((tuple(zip(Interp_X,Interp_Y))))
@@ -1101,9 +1128,10 @@ class Coast:
         for Line in self.CoastLines:
             X,Y = Line.get_XY()
             LinesList.append(LineString((tuple(zip(X,Y)))))
+        
         # LinesList = [LineString(tuple(zip(Line.get_XY()))) for Line in self.CoastLines]
         MultiLine = MultiLineString(LinesList)
-        MergedLine = linemerge(MultiLine)
+        MergedLine = linemerge(MultiLine.simplify(0.2))
 
         if MergedLine.geom_type == "LineString":
             self.CoastLines = []
@@ -1113,6 +1141,8 @@ class Coast:
             self.NoCoastLines = len(self.CoastLines)
         
         else:
+            print(len(MergedLine))
+            print(MergedLine.geom_type)
             print("Multipart geometry not implemented yet")
             sys.exit()
 
