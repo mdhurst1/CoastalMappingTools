@@ -113,7 +113,7 @@ class Coast:
         # Generate coast nodes for each segment
         for i in range(0,self.NoCoastLines):
             
-            print(" \r\tCoastline %4d / %4d" % (i, self.NoCoastLines), end="")
+            print(" \r\tCoastline %4d / %4d" % (i+1, self.NoCoastLines), end="")
 
             # get X and Y coordinates of segment
             X, Y = np.array(Shapes[i].points).T
@@ -1084,13 +1084,13 @@ class Coast:
         
         print("\r\t Done.")
 
-    def MergeCoastLines(self, SnapDistance=1):
+    def MergeCoastLines(self, SnapDistance=5):
 
         """
         Identifies individual coast Lines that are touching at one end 
         and combines them into a single Line using shapely
 
-        Distance to snap points in m
+        Distance to snap end points in m
 
         MDH, Feb, 2020
         """
@@ -1125,8 +1125,8 @@ class Coast:
         # create a list of linestrings to merge
         #LineString((tuple(zip(Interp_X,Interp_Y))))
         LinesList = []
-        for Line in self.CoastLines:
-            X,Y = Line.get_XY()
+        for TempLine in self.CoastLines:
+            X,Y = TempLine.get_XY()
             LinesList.append(LineString((tuple(zip(X,Y)))))
         
         # LinesList = [LineString(tuple(zip(Line.get_XY()))) for Line in self.CoastLines]
@@ -1139,16 +1139,18 @@ class Coast:
         # add line or multiple lines depending on result of merge
         if MergedLine.geom_type == "LineString":
             
+            # get x and y and add to CoastLine object as Line
             X, Y = MergedLine.xy
-            ThisLine = Line("0", X, Y)
-            self.CoastLines.append(ThisLine)
+            self.CoastLines.append(Line("0", X, Y))
             
         elif MergedLine.geom_type == "MultiLineString":
-            self.CoastLines = []
-            for i, Line in enumerate(MergedLine):
-                X, Y = Line.xy
-                ThisLine = Line(str(i), X, Y)
-                self.CoastLines.append(ThisLine)
+            
+            # loop through lines in MultiLineString
+            for i, TempLine in enumerate(MergedLine):
+                
+                # get x and y and add to CoastLine object as Line
+                X, Y = TempLine.xy
+                self.CoastLines.append(Line(str(i), X, Y))
 
         else:
             print("Geometry not recognised!")
@@ -1220,8 +1222,13 @@ class Coast:
             find nearest on shoreline shape and calc orientation
             then use mean orientation to assess MDH, Feb 2020
 
-        MDH, June 2019
+        MDH, Feb 2020
         """
+
+        for Line in self.CoastLines:
+            Line.ReverseLine()
+
+        # could add something here to do look up based on distance from starts to ends
 
     def ReconfigureCoastLines(self, Direction2OpenWater):
         """
