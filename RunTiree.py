@@ -10,22 +10,25 @@ import pathlib
 from Coast import *
 
 # define file names for analysis
-Folder = "/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS1_Natural_Flood_Defences/"
+WorkingPath = pathlib.Path.cwd().parent
+
+# define file names for analysis
 Site = "Tiree"
-SiteFolder = Folder+Site+"/"
-PlotFolder = SiteFolder+"Plots/" 
-TransectsFolder = SiteFolder+"Transects/"
-LineShp = "Montrose_CoastTrend.shp"
-DTM = "DTM_1m.tif"
+SitePath = pathlib.Path(WorkingPath / Site)
+PlotPath = pathlib.Path(SitePath / "Plots")
+TransectsPath = pathlib.Path(SitePath / "Transects")
+
+LineShp = "Tiree_Modern_Soft.shp"
+DTM = "Tiree_2006_DTM.tif"
 
 # make folder for plots and transects if it doesnt already exist
-p = pathlib.Path(PlotFolder)
+p = pathlib.Path(PlotPath)
 p.mkdir(parents=True, exist_ok=True)
-p = pathlib.Path(TransectsFolder)
+p = pathlib.Path(TransectsPath)
 p.mkdir(parents=True, exist_ok=True)
 
 # set up a file name to save the coast object
-Filename2SaveCoast = SiteFolder+ "Coast.pydata"
+Filename2SaveCoast = Site + ".pydata"
 
 # this checks to see whether coast object already exists
 try:
@@ -36,52 +39,51 @@ except:
     print("Creating New Coast Object")
     
     # SET UP THE COAST
-    ThisCoast = Coast(SiteFolder+LineShp)
+    ThisCoast = Coast(str(SiteFolder / LineShp))
     
     
     # SIMPLIFY COASTLINE
     ThisCoast.MergeCoastLines()
     ThisCoast.SmoothCoastLines(WindowSize=51)
-    ThisCoast.ReconfigureCoastLines("E")
     
     # WRITE COASTLINE TO SHAPEFILE
-    ThisCoast.WriteCoastShp(SiteFolder+"Coast.shp")
+    ThisCoast.WriteCoastShp(str(SitePath / "SmoothedCoast.shp"))
     
     # GENERATE TRANSECTS
-    ThisCoast.GenerateTransectsNormals(10.,250.,500.)
-    ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
-    ThisCoast.ExtractTransectTopography(SiteFolder+DTM)
+    ThisCoast.GenerateTransectsNormals(10.,500.,500.)
+    ThisCoast.WriteTransectsShp(str(SitePath / "Transects.shp")
+    ThisCoast.ExtractTransectTopography(str(SitePath / DTM))
     
     # SAMPLE MHWS
-    ThisCoast.SampleMHWSElevation(Folder+"MHWS/"):
+    ThisCoast.SampleMHWSElevation(str(Folder / "MHWS" / "scotland_mhws_elev.tif"))
+
     # SAVE ENTIRE COAST OBJECT
     print("Saving Coast Object as " + Filename2SaveCoast)
-    with open(Filename2SaveCoast, 'wb') as PFile:
+    with open(str(SiteFolder / Filename2SaveCoast), 'wb') as PFile:
         pickle.dump(ThisCoast, PFile)
         
     # WRITE TRANSECTS TO CSV
-    ThisCoast.WriteTransectsCSV(Folder=TransectsFolder)
+    ThisCoast.WriteTransectsCSV(Folder=str(TransectsFolder))
 
 ## ANALYSE TRANSECTS
-ThisCoast.FindRockyCoast()
-ThisCoast.SetMHWS(MHWS)
-ThisCoast.AnalyseTransectMorphology()
-ThisCoast.AnalyseBarrierWidths([4.,5.,6.])
+#ThisCoast.FindRockyCoast()
+#ThisCoast.AnalyseTransectMorphology()
+#ThisCoast.AnalyseBarrierWidths([4.,5.,6.])
 
 # SAVE
-print("Saving Coast Object as " + Filename2SaveCoast)   
-with open(Filename2SaveCoast, 'wb') as PFile:
-        pickle.dump(ThisCoast, PFile)
+#print("Saving Coast Object as " + Filename2SaveCoast)   
+#with open(Filename2SaveCoast, 'wb') as PFile:
+#        pickle.dump(ThisCoast, PFile)
 
     
 ## plot the results
-ThisCoast.PlotTransects(PlotFolder)
+#ThisCoast.PlotTransects(PlotFolder)
 
 ## write some stuff
-ThisCoast.WriteCliffShp(SiteFolder+"Cliffs.shp")
-ThisCoast.WriteBarrierShp(SiteFolder+"Barriers.shp")
-ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
-ThisCoast.WriteCrestLinesShp(SiteFolder+"CrestLines.shp")
-ThisCoast.WriteCrestPointsShp(SiteFolder+"CrestPoints.shp")
-ThisCoast.WriteFrontPointsShp(SiteFolder+"FrontPoints.shp")
-ThisCoast.WriteExtremeLevelsShp(SiteFolder+"Extreme.shp")
+#ThisCoast.WriteCliffShp(SiteFolder+"Cliffs.shp")
+#ThisCoast.WriteBarrierShp(SiteFolder+"Barriers.shp")
+#ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
+#ThisCoast.WriteCrestLinesShp(SiteFolder+"CrestLines.shp")
+#ThisCoast.WriteCrestPointsShp(SiteFolder+"CrestPoints.shp")
+#ThisCoast.WriteFrontPointsShp(SiteFolder+"FrontPoints.shp")
+#ThisCoast.WriteExtremeLevelsShp(SiteFolder+"Extreme.shp")
