@@ -18,7 +18,7 @@ SitePath = pathlib.Path(WorkingPath / Site)
 PlotPath = pathlib.Path(SitePath / "Plots")
 TransectsPath = pathlib.Path(SitePath / "Transects")
 
-LineShp = "Tiree_Modern_Final.shp"
+LineShp = "Tiree_Modern_SinglePart.shp"
 DTM = "Tiree_2006_DTM.tif"
 
 # make folder for plots and transects if it doesnt already exist
@@ -41,16 +41,15 @@ except:
     # SET UP THE COAST
     ThisCoast = Coast(str(SitePath / LineShp))
     
-    
     # SIMPLIFY COASTLINE
-    ThisCoast.MergeCoastLines()
-    ThisCoast.SmoothCoastLines(WindowSize=51)
+    ThisCoast.ReverseCoastLines()
+    ThisCoast.SmoothCoastLines(WindowSize=101, NoSmooths=3)
     
     # WRITE COASTLINE TO SHAPEFILE
-    ThisCoast.WriteCoastShp(str(SitePath / "SmoothedCoast.shp"))
+    ThisCoast.WriteCoastShp(str(SitePath / (Site+"_SmoothedCoast.shp")))
     
     # GENERATE TRANSECTS
-    ThisCoast.GenerateTransectsNormals(10.,500.,500.)
+    ThisCoast.GenerateTransectsNormals(10.,200.,500., CheckTopology=False)
     ThisCoast.WriteTransectsShp(str(SitePath / "Transects.shp"))
     ThisCoast.ExtractTransectTopography(str(SitePath / DTM))
     

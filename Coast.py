@@ -984,7 +984,7 @@ class Coast:
 
         print("")
 
-    def MergeCoastLines(self):
+    def MergeReverseCoastLines(self):
 
         """
         Identifies individual coast Lines that are touching at one end 
@@ -1043,24 +1043,13 @@ class Coast:
                             FlagReverse = 1
             
             # get list of line sections to start at
-            print(JoinedByList)
             StartList = np.where(JoinedByList < 0)[0]
-            print(StartList)
-            print(len(self.CoastLines))
-            sys.exit()
-
+            
             for i, StartLine in enumerate(StartList):
                 
                 # print progress to screen
                 print(" \r\tLine %4d / %4d" % (i, len(StartList)), end="")
-                print()
-                print(i, StartLine)
                 
-                if i == 31:
-                    print(StartLine)
-                    print(self.NoCoastLines)
-                    print(len(self.CoastLines))
-                    print(self.CoastLines[StartLine])
                 # get vector of line section
                 X1, Y1 = self.CoastLines[StartLine].get_XY()
                 
@@ -1087,9 +1076,6 @@ class Coast:
                 # write new line, and update shape and records lists
                 NewCoastLines.append(Line(self.CoastLines[StartLine].ID, X1, Y1))
 
-            print("HERE")
-            sys.exit()
-
             # update object properties with merged geometries
             self.CoastLines = NewCoastLines
             
@@ -1097,6 +1083,23 @@ class Coast:
             self.NoCoastLines = len(self.CoastLines)
         
         print("\r\t Done.")
+
+    def MergeCoastLines(self):
+
+        """
+        Identifies individual coast Lines that are touching at one end 
+        and combines them into a single Line using shapely
+
+        MDH, Feb, 2020
+        """
+
+        print("Coast.MergeCoastLines: Merging coastlines...)
+
+        # create a list of linestrings to merge
+        LinesList = [LineString(Line) for Line in self.CoastLines]
+        MultiLine = MultiLineString(LinesList)
+        MergedLine = ops.linemerge(MultiLine)        
+        
 
     def SmoothCoastLines(self, WindowSize=1001, NoSmooths=2, Resample=True, NodeSpacing=10., PolyOrder=4):
         
@@ -1145,6 +1148,24 @@ class Coast:
                 if Resample:
                     Line.ResampleNodes(NodeSpacing)
 
+
+    def ReverseCoastLines(self):
+        """
+        Function to reverse lines are ordered along the coast
+        and line segments progress along the coast. The "along coast" direction
+        is always that which results in the water being on the left as you look
+        down the coastal vector.
+
+        This might be buggy as anything and need lots more work. Should be run
+        after MergeCoast and SmoothCoast but before Transects are built, though 
+        if Transects have been built they will get rebuilt
+
+        ***add argument to include shoreline shape then for each node
+            find nearest on shoreline shape and calc orientation
+            then use mean orientation to assess MDH, Feb 2020
+
+        MDH, June 2019
+        """
 
     def ReconfigureCoastLines(self, Direction2OpenWater):
         """
