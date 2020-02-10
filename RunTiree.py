@@ -42,7 +42,7 @@ except:
     ThisCoast = Coast(str(SitePath / LineShp))
     
     # SIMPLIFY COASTLINE
-    ThisCoast.ReverseCoastLines()
+    ThisCoast.MergeCoastLines()
     ThisCoast.SmoothCoastLines(WindowSize=101, NoSmooths=3)
     
     # WRITE COASTLINE TO SHAPEFILE

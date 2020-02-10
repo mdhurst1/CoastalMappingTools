@@ -20,7 +20,7 @@ import itertools
 import rasterio
 import geopandas as gp
 from shapely.geometry import Point, LineString, MultiLineString, MultiPoint
-from shapely.ops import nearest_points
+from shapely.ops import nearest_points, linemerge
 
 from Line import *
 from IPython.display import clear_output
@@ -1093,13 +1093,28 @@ class Coast:
         MDH, Feb, 2020
         """
 
-        print("Coast.MergeCoastLines: Merging coastlines...)
+        print("Coast.MergeCoastLines: Merging coastlines...")
 
         # create a list of linestrings to merge
-        LinesList = [LineString(Line) for Line in self.CoastLines]
+        #LineString((tuple(zip(Interp_X,Interp_Y))))
+        LinesList = []
+        for Line in self.CoastLines:
+            X,Y = Line.get_XY()
+            LinesList.append(LineString((tuple(zip(X,Y)))))
+        # LinesList = [LineString(tuple(zip(Line.get_XY()))) for Line in self.CoastLines]
         MultiLine = MultiLineString(LinesList)
-        MergedLine = ops.linemerge(MultiLine)        
+        MergedLine = linemerge(MultiLine)
+
+        if MergedLine.geom_type == "LineString":
+            self.CoastLines = []
+            X, Y = MergedLine.xy
+            ThisLine = Line("0", X, Y)
+            self.CoastLines.append(ThisLine)
+            self.NoCoastLines = len(self.CoastLines)
         
+        else:
+            print("Multipart geometry not implemented yet")
+            sys.exit()
 
     def SmoothCoastLines(self, WindowSize=1001, NoSmooths=2, Resample=True, NodeSpacing=10., PolyOrder=4):
         
