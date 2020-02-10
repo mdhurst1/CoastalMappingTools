@@ -18,7 +18,7 @@ SitePath = pathlib.Path(WorkingPath / Site)
 PlotPath = pathlib.Path(SitePath / "Plots")
 TransectsPath = pathlib.Path(SitePath / "Transects")
 
-LineShp = "Tiree_Modern_Soft.shp"
+LineShp = "Tiree_Modern_Final.shp"
 DTM = "Tiree_2006_DTM.tif"
 
 # make folder for plots and transects if it doesnt already exist
@@ -39,7 +39,7 @@ except:
     print("Creating New Coast Object")
     
     # SET UP THE COAST
-    ThisCoast = Coast(str(SiteFolder / LineShp))
+    ThisCoast = Coast(str(SitePath / LineShp))
     
     
     # SIMPLIFY COASTLINE
@@ -51,7 +51,7 @@ except:
     
     # GENERATE TRANSECTS
     ThisCoast.GenerateTransectsNormals(10.,500.,500.)
-    ThisCoast.WriteTransectsShp(str(SitePath / "Transects.shp")
+    ThisCoast.WriteTransectsShp(str(SitePath / "Transects.shp"))
     ThisCoast.ExtractTransectTopography(str(SitePath / DTM))
     
     # SAMPLE MHWS

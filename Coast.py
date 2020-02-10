@@ -125,6 +125,9 @@ class Coast:
             if ThisLine.TotalLength > MinLength:
                 self.CoastLines.append(ThisLine)
 
+        # get new number of coastal segments based on the list built
+        self.NoCoastLines = len(self.CoastLines)
+
         print("")    
 
         # get projection strings
@@ -1040,12 +1043,24 @@ class Coast:
                             FlagReverse = 1
             
             # get list of line sections to start at
+            print(JoinedByList)
             StartList = np.where(JoinedByList < 0)[0]
+            print(StartList)
+            print(len(self.CoastLines))
+            sys.exit()
+
             for i, StartLine in enumerate(StartList):
                 
                 # print progress to screen
                 print(" \r\tLine %4d / %4d" % (i, len(StartList)), end="")
-
+                print()
+                print(i, StartLine)
+                
+                if i == 31:
+                    print(StartLine)
+                    print(self.NoCoastLines)
+                    print(len(self.CoastLines))
+                    print(self.CoastLines[StartLine])
                 # get vector of line section
                 X1, Y1 = self.CoastLines[StartLine].get_XY()
                 
@@ -1071,7 +1086,10 @@ class Coast:
 
                 # write new line, and update shape and records lists
                 NewCoastLines.append(Line(self.CoastLines[StartLine].ID, X1, Y1))
-                    
+
+            print("HERE")
+            sys.exit()
+
             # update object properties with merged geometries
             self.CoastLines = NewCoastLines
             
