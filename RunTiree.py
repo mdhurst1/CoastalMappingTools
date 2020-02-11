@@ -5,6 +5,7 @@ Created on Fri Jun 21 11:25:01 2019
 @author: mh322u
 """
 
+import sys
 import pickle
 import pathlib
 from Coast import *
@@ -28,7 +29,7 @@ p = pathlib.Path(TransectsPath)
 p.mkdir(parents=True, exist_ok=True)
 
 # set up a file name to save the coast object
-Filename2SaveCoast = Site + ".pydata"
+Filename2SaveCoast = str(SitePath / (Site + ".pydata"))
 
 # this checks to see whether coast object already exists
 try:
@@ -36,6 +37,7 @@ try:
     print("Loaded Coast Object " + Filename2SaveCoast)
 
 except:
+    
     print("Creating New Coast Object")
     
     # SET UP THE COAST
@@ -54,9 +56,6 @@ except:
     ThisCoast.WriteTransectsShp(str(SitePath / "Transects.shp"))
     ThisCoast.ExtractTransectTopography(str(SitePath / DTM))
     
-    # SAMPLE MHWS
-    ThisCoast.SampleMHWSElevation(str(Folder / "MHWS" / "scotland_mhws_elev.tif"))
-
     # SAVE ENTIRE COAST OBJECT
     print("Saving Coast Object as " + Filename2SaveCoast)
     with open(str(SitePath / Filename2SaveCoast), 'wb') as PFile:
@@ -65,15 +64,20 @@ except:
     # WRITE TRANSECTS TO CSV
     ThisCoast.WriteTransectsCSV(Folder=str(TransectsPath))
 
+# SAMPLE MHWS
+ThisCoast.SampleMHWSElevation(str(WorkingPath / "MHWS" / "scotland_mhws_elev.tif"))
+
+# SAVE
+print("Saving Coast Object as " + Filename2SaveCoast)   
+with open(Filename2SaveCoast, 'wb') as PFile:
+    pickle.dump(ThisCoast, PFile)
+        
 ## ANALYSE TRANSECTS
 #ThisCoast.FindRockyCoast()
 #ThisCoast.AnalyseTransectMorphology()
 #ThisCoast.AnalyseBarrierWidths([4.,5.,6.])
 
-# SAVE
-#print("Saving Coast Object as " + Filename2SaveCoast)   
-#with open(Filename2SaveCoast, 'wb') as PFile:
-#        pickle.dump(ThisCoast, PFile)
+
 
     
 ## plot the results

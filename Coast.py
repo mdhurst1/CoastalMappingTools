@@ -1363,8 +1363,6 @@ class Coast:
         self.TransectsLength2Sea = TransectLength2Sea
         self.TransectsLength2Land = TransectLength2Land
 
-
-
         # generate transects along each line
         for Line in self.CoastLines:
 
