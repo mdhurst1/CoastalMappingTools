@@ -17,7 +17,7 @@ WorkingPath = pathlib.Path.cwd().parent
 
 # set the transect spacing (in m)
 TransectSpacing = 10.
-SmoothingWindowSize=1001
+SmoothingWindowSize=501
 
 # get all coastal cells to loop through
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCell_CA.shp")

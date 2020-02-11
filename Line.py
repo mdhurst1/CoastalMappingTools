@@ -466,7 +466,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         # make a multlinestring if there are multiple lines
         LineList = []
         for LineObj in Lines:
-            if not LineObj.geom_type:
+            if not LineObj:
                 continue
             elif (LineObj.geom_type == "MultiLineString"):
                 for ThisLine in LineObj:
@@ -489,7 +489,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         # make a multlinestring if there are multiple lines
         LineList = []
         for LineObj in Lines:
-            if not LineObj.geom_type:
+            if not LineObj:
                 continue
             elif (LineObj.geom_type == "MultiLineString"):
                 for ThisLine in LineObj:
