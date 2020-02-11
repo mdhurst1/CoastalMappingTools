@@ -16,7 +16,7 @@ from Coast import *
 WorkingPath = pathlib.Path.cwd().parent
 
 # set the transect spacing (in m)
-TransectSpacing = 50.
+TransectSpacing = 10.
 SmoothingWindowSize=1001
 
 # try opening bathy file as check on whether there is data
