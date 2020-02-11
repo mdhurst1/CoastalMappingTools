@@ -25,7 +25,7 @@ BathyLines = gp.read_file(WorkingPath / "Bathymetry" / "Scotland_10m_Bathy_Conto
 
 # and historic MHWS datasets
 MHWS_1890 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1890_FINAL.shp")
-MHWS_1970 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1970_FINAL.shp")
+MHWS_1970 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1970_Final.shp")
 MHWS_Soft = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Modern_Soft.shp")
 MHWS_Modern = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Modern_FINAL.shp")
 
