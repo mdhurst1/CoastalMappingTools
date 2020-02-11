@@ -43,6 +43,7 @@ except:
     
     # SIMPLIFY COASTLINE
     ThisCoast.MergeCoastLines()
+    ThisCoast.ReverseCoastLines()
     ThisCoast.SmoothCoastLines(WindowSize=101, NoSmooths=3)
     
     # WRITE COASTLINE TO SHAPEFILE
@@ -58,11 +59,11 @@ except:
 
     # SAVE ENTIRE COAST OBJECT
     print("Saving Coast Object as " + Filename2SaveCoast)
-    with open(str(SiteFolder / Filename2SaveCoast), 'wb') as PFile:
+    with open(str(SitePath / Filename2SaveCoast), 'wb') as PFile:
         pickle.dump(ThisCoast, PFile)
         
     # WRITE TRANSECTS TO CSV
-    ThisCoast.WriteTransectsCSV(Folder=str(TransectsFolder))
+    ThisCoast.WriteTransectsCSV(Folder=str(TransectsPath))
 
 ## ANALYSE TRANSECTS
 #ThisCoast.FindRockyCoast()
