@@ -466,11 +466,15 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         # make a multlinestring if there are multiple lines
         LineList = []
         for LineObj in Lines:
-            if (LineObj.geom_type == "MultiLineString"):
+            if not LineObj.geom_type:
+                continue
+            elif (LineObj.geom_type == "MultiLineString"):
                 for ThisLine in LineObj:
                     LineList.append(ThisLine)
-            else:
+            elif (LineObj.geom_type == "LineString"):
                 LineList.append(LineObj)
+            else:
+                sys.exit("problem reading lines")
 
         # catch situation where only one line
         if len(LineList) == 1:
@@ -485,11 +489,15 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         # make a multlinestring if there are multiple lines
         LineList = []
         for LineObj in Lines:
-            if (LineObj.geom_type == "MultiLineString"):
+            if not LineObj.geom_type:
+                continue
+            elif (LineObj.geom_type == "MultiLineString"):
                 for ThisLine in LineObj:
                     LineList.append(ThisLine)
-            else:
+            elif (LineObj.geom_type == "LineString"):
                 LineList.append(LineObj)
+            else:
+                sys.exit("problem reading lines")
 
         # catch situation where only one line
         if len(LineList) == 1:
