@@ -563,6 +563,12 @@ class Transect:
         self.FrontTopInd = MaxInd
 
         # if highest point is not above MHWS then cant be a barrier
+        if not self.MHWS:
+            print("No MHWS data for " + self.LineID + ", " + self.ID)
+            sys.exit()
+        elif not ElevMasked[MaxInd]:
+            print("No value for ElevMasked[MaxInd]" + self.LineID + ", " + self.ID)
+            sys.exit()
         if ElevMasked[MaxInd] < self.MHWS:
             #print("\n\tNot a barrier 3")
             self.Barrier = False
