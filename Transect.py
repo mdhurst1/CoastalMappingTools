@@ -152,6 +152,11 @@ class Transect:
         String += self.StartNode.__str__()
         String += "EndNode: "
         String += self.EndNode.__str__()
+
+        String += "Historical shorelines years and distances"
+        String += self.HistoricShorelinesYears
+        String += self.HistoricalShorelinesDistances
+
         return String
 
     def Redraw(self, StartNode, EndNode):

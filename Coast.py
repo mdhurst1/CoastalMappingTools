@@ -1552,6 +1552,8 @@ class Coast:
                     Year = int(NearestLine.Surv_End_C)
                 elif "Surv_End_D" in NearestLine:
                     Year = int(NearestLine.Surv_End_D)
+                elif "versiondat" in NearestLine:
+                    Year = int(NearestLine.versiondat[0:4])
                 else:
                     sys.exit("Couldnt find survey year for MHWS historic shoreline position")
 
