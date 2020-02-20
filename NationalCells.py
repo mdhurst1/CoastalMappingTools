@@ -39,6 +39,8 @@ def ClipLines2Poly(LinesGDF,PolyGDF):
 for index, Row in Cells.iterrows():
 
     print(Row.Cell_sub)
+    if Row.Cell_sub != "2a":
+        continue
     
     # Intersection to isolate bathy for each cell
     BathyClipped = ClipLines2Poly(BathyLines, Row.geometry)

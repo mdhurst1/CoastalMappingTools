@@ -282,6 +282,7 @@ class Transect:
 
         # reset change rates in case already calculated
         self.ChangeRates = []
+        self.FutureShorelinesDistances = []
 
         # historic shoreline positions and change rates
         for i in range(0,len(self.HistoricShorelinesYears)):
@@ -332,7 +333,7 @@ class Transect:
             LatestRSL = self.FutureSeaLevels[0]
         else:
             Interp = (self.FutureSeaLevelYears[1]-self.HistoricShorelinesYears[-1])/(self.FutureSeaLevelYears[1]-self.FutureSeaLevelYears[0])
-            LatestRSL = self.FutureSeaLevels[0]+Interp*(self.FutureSeaLevels[1]-self.FutureSeaLevels[0])
+            LatestRSL = self.FutureSeaLevels[1]-Interp*(self.FutureSeaLevels[1]-self.FutureSeaLevels[0])
         
         # Future shoreline positions
         for i in range(1, len(self.FutureSeaLevelYears)):
@@ -342,15 +343,25 @@ class Transect:
             BruunRuleComponent = (-1./self.ShorefaceSlope)*(self.FutureSeaLevels[i]-LatestRSL)
             CalibrationComponent = (1./self.ShorefaceDepth)*self.VolumetricCalibrationRates[-1]*dT
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
-            
+            if self.ID == "2181":
+                print(dT)
+                print(Interp)
+                print(self.FutureSeaLevels[i], LatestRSL)
+                
+                print(BruunRuleComponent)
+                print(CalibrationComponent)
+                print(ShorelinePositionChange)
+                sys.exit()
             # check rock head position not exceeded
             HistoricShorelineDistance = self.StartNode.get_Distance(self.HistoricShorelinesPosition[-1])
             FutureShorelineDistance = HistoricShorelineDistance - ShorelinePositionChange
             
             if self.RockHeadDistance and (FutureShorelineDistance > self.RockHeadDistance):
                 self.FutureShorelinesPositions.append(self.RockHeadPosition)
+                
                 ShorelinePositionChange = self.RockHeadDistance-HistoricShorelineDistance
                 self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
+                self.FutureShorelinesDistances.append(FutureShorelineDistance)
             
             # otherwise write new shoreline position as appropriate
             else:
@@ -359,6 +370,9 @@ class Transect:
 
                 self.FutureShorelinesPositions.append(Node(X1,Y1))
                 self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
+                self.FutureShorelinesDistances.append(FutureShorelineDistance)
+
+        #print(self.FutureShorelinesDistances)
 
     def FindCliff(self):
 

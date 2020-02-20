@@ -24,7 +24,7 @@ Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCell_CA.shp")
 
 # loop through each cell
 #for index, Row in Cells.iterrows():
-CellSubList = ["2a","2b","2c","2d","3a","3b","3c","3e","3f","3g"]
+CellSubList = ["2a",] #"2b","2c","2d","3a","3b","3c","3e","3f","3g"]
 
 for CellSub in CellSubList:
 
