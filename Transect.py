@@ -343,15 +343,7 @@ class Transect:
             BruunRuleComponent = (-1./self.ShorefaceSlope)*(self.FutureSeaLevels[i]-LatestRSL)
             CalibrationComponent = (1./self.ShorefaceDepth)*self.VolumetricCalibrationRates[-1]*dT
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
-            if self.ID == "2181":
-                print(dT)
-                print(Interp)
-                print(self.FutureSeaLevels[i], LatestRSL)
-                
-                print(BruunRuleComponent)
-                print(CalibrationComponent)
-                print(ShorelinePositionChange)
-                sys.exit()
+            
             # check rock head position not exceeded
             HistoricShorelineDistance = self.StartNode.get_Distance(self.HistoricShorelinesPosition[-1])
             FutureShorelineDistance = HistoricShorelineDistance - ShorelinePositionChange
