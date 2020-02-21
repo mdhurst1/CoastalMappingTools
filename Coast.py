@@ -1,5 +1,5 @@
 """
-Description of file goes here
+Coast object for analysing coastal morphology and predicting future coastal change
 
 Martin D. Hurst
 University of Glasgow
@@ -11,6 +11,7 @@ June 2019
 import os, sys, time, pickle
 from pathlib import Path
 import numpy as np
+from scipy.interpolate import splprep, splev
 import numpy.ma as ma
 from sklearn.cluster import KMeans
 
@@ -18,8 +19,8 @@ import shapefile
 import itertools
 import rasterio
 import geopandas as gp
-from shapely.geometry import Point, LineString, MultiLineString
-from shapely.ops import nearest_points
+from shapely.geometry import Point, LineString, MultiLineString, MultiPoint
+from shapely.ops import nearest_points, linemerge
 
 from Line import *
 from IPython.display import clear_output
@@ -88,7 +89,7 @@ class Coast:
 
         """
         """
-
+        print("Coast.Save: Saving Coast Object")
         with open(PickleFile, 'wb') as PFile:
             pickle.dump(self, PFile)
 
@@ -112,7 +113,7 @@ class Coast:
         # Generate coast nodes for each segment
         for i in range(0,self.NoCoastLines):
             
-            print(" \r\tCoastline %4d / %4d" % (i, self.NoCoastLines), end="")
+            print(" \r\tCoastline %4d / %4d" % (i+1, self.NoCoastLines), end="")
 
             # get X and Y coordinates of segment
             X, Y = np.array(Shapes[i].points).T
@@ -123,6 +124,9 @@ class Coast:
             # append to list of coast lines
             if ThisLine.TotalLength > MinLength:
                 self.CoastLines.append(ThisLine)
+
+        # get new number of coastal segments based on the list built
+        self.NoCoastLines = len(self.CoastLines)
 
         print("")    
 
@@ -254,7 +258,7 @@ class Coast:
         self.WriteLinesShp("WriteRecentLines", ErosionFrontShp)
         self.WritePatchesShp("WriteFutureLines", "WriteRecentLines", ErosionShp)
 
-    def WriteFutureShorelinesShp(self, FutureShoreLinesShp):
+    def WriteFutureShorelinesShp(self, FutureShoreLinesShp, Smooth=True):
 
         """
         Writes the contents of a list of future shoreline objects to polyline shape file
@@ -268,8 +272,8 @@ class Coast:
 
         """
 
-        if len(self.FutureShoreLines) == 0:
-            self.GetFutureShoreLines()
+        # extract future shoreline positions from transect
+        self.GetFutureShoreLines()
 
         # print action to screen
         print("Coast.WriteFutureShorelinesShp: Writing future MHWS line objects to polyline shapefiles")
@@ -286,20 +290,29 @@ class Coast:
             # get line node positions
             X, Y = Line.get_XY()
 
-            # calculate distance
-            Dist = np.zeros(X.shape)
-            Dist[1:] = np.sqrt((X[1:] - X[:-1])**2 + (Y[1:] - Y[:-1])**2)
-            Dist = np.cumsum(Dist)
-            
-            # build a spline representation of the line
-            Spline, u = scipy.interpolate.splprep([X, Y], u=Dist, s=0)
+            if Smooth and len(X) > 5:
 
-            # resample it at smaller distance intervals
-            Interp_Dist = np.arange(Dist[0], Dist[-1], 1.)
-            Interp_X, Interp_Y = scipy.interpolate.splev(Interp_Dist, Spline)
+                XSmooth = X[1:-1]
+                YSmooth = Y[1:-1]
+                # calculate distance
+                Dist = np.zeros(XSmooth.shape)
+                Dist[1:] = np.sqrt((XSmooth[1:] - XSmooth[:-1])**2 + (YSmooth[1:] - YSmooth[:-1])**2)
+                Dist = np.cumsum(Dist)
+                
+                # build a spline representation of the line
+                Spline, u = splprep([XSmooth, YSmooth], u=Dist, s=0)
+
+                # resample it at smaller distance intervals
+                Interp_Dist = np.arange(0, Dist[-1], 1.)
+                XSmooth, YSmooth = splev(Interp_Dist, Spline)
+
+                XSmooth = np.insert(XSmooth,0,X[0])
+                YSmooth = np.insert(YSmooth,0,Y[0])
+                X = np.append(XSmooth,X[-1])
+                Y = np.append(YSmooth,Y[-1])
             
             # convert to list for writing to shapefile
-            WriteLine = [np.column_stack([Interp_X,Interp_Y]).tolist()]
+            WriteLine = [np.column_stack([X,Y]).tolist()]
             
             # generate record
             Record = [str(Line.ID),str(Line.Year)]
@@ -396,8 +409,7 @@ class Coast:
         print("Coast.WriteFutureShorelineSegmentsShp: Writing future MHWS line objects to polyline shapefiles")
         
         
-        if len(self.FutureShoreLines) == 0:
-            self.GetFutureShoreLines()
+        self.GetFutureShoreLines()
         
         # open new shapefile        
         WL = shapefile.Writer(FutureShoreLinesShp,shapeType=shapefile.POLYLINE)
@@ -409,27 +421,44 @@ class Coast:
         WL.fields = self.Fields[1:] 
 
         # Loop through prediction years
-        for i, Line in enumerate(self.FutureShoreLines[1:]):
+        for i, Line in enumerate(self.FutureShoreLines):
             
             # keep track of no of coastal segments for IDs
             FutureCount = 0
-
-            # get spline
+            
             # get line node positions
             X, Y = Line.get_XY()
+            
+            # get nodes for spline
+            Interp_X = X[1:-1]
+            Interp_Y = Y[1:-1]
 
             # calculate distance
-            Dist = np.zeros(X.shape)
-            Dist[1:] = np.sqrt((X[1:] - X[:-1])**2 + (Y[1:] - Y[:-1])**2)
+            Dist = np.zeros(Interp_X.shape)
+            Dist[1:] = np.sqrt((Interp_X[1:] - Interp_X[:-1])**2 + (Interp_Y[1:] - Interp_Y[:-1])**2)
             Dist = np.cumsum(Dist)
             
             # build a spline representation of the line
-            Spline, u = scipy.interpolate.splprep([X, Y], u=Dist, s=0)
+            K = 3 # by default
+
+            if len(Interp_X) < 2:
+                continue
+
+            elif len(Interp_X) < 4:
+                K = len(Interp_X)-1
+
+            Spline, u = splprep([Interp_X, Interp_Y], u=Dist, s=0, k=K)
 
             # resample it at smaller distance intervals
-            Interp_Dist = np.arange(Dist[0], Dist[-1], 1.)
-            Interp_X, Interp_Y = scipy.interpolate.splev(Interp_Dist, Spline)
+            Interp_Dist = np.arange(0, Dist[-1], 1.)
+            Interp_X, Interp_Y = splev(Interp_Dist, Spline)
 
+            # add start and end nodes back on
+            Interp_X = np.insert(Interp_X, 0, (X[0]+X[1])/2.)
+            Interp_Y = np.insert(Interp_Y, 0, (Y[0]+Y[1])/2.)
+            Interp_X = np.append(Interp_X, (X[-1]+X[-2])/2.)
+            Interp_Y = np.append(Interp_Y, (Y[-1]+Y[-2])/2.)
+            
             # convert to a linestring
             SplineLine = LineString((tuple(zip(Interp_X,Interp_Y))))
             SplinePoints = MultiPoint((tuple(zip(Interp_X,Interp_Y))))
@@ -438,73 +467,78 @@ class Coast:
             for CoastLine in self.CoastLines:
                 
                 # set up empty list of intersection indices with spline
+                TransectsList = []
                 IntersectionIndices = []
 
                 # get a list of nearest indices on interpolated lines
-                for Transect in CoastLine.Transects:
+                for j, Transect in enumerate(CoastLine.Transects):
                     
-                    # intersect with spline to find index
-                    TransectLine = LineString(((Transect.StartNode.X,Transect.StartNode.Y),(Transect.EndNode.X,Transect.EndNode.Y)))
+                    # intersect extended transect with spline to find index
+                    X1 = Transect.EndNode.X + 1000 * np.sin( np.radians( Transect.Orientation ) )
+                    Y1 = Transect.EndNode.Y + 1000 * np.cos( np.radians( Transect.Orientation ) )
+                    
+                    TransectLine = LineString(((Transect.StartNode.X,Transect.StartNode.Y),(X1,Y1)))
                     Intersection = TransectLine.intersection(SplineLine)
 
                     # catch no intersections and flag for deletion?
                     if Intersection.geom_type == "GeometryCollection":
-                        sys.exit("No intersection ERROR")
+                        continue
 
                     # check there arent multiple intersections, if there are just get the nearest
-                    IntersectPoint = Intersection[0]
-                    Distances = [SplinePoint.distance(IntersectPoint) for SplinePoint in SplinePoints]
+                    elif Intersection.geom_type == "MultiPoint":
+                        Intersection = Intersection[0]
+
+                    Distances = [SplinePoint.distance(Intersection) for SplinePoint in SplinePoints]
+                    TransectsList.append(j)
                     IntersectionIndices.append(Distances.index(min(Distances)))
-                                    
+                
+                # loop across transects again
+                for j in range(0, len(TransectsList)):
                     
+                    if j == 0:
+                        StartIndex = IntersectionIndices[j]
+                    else:
+                        StartIndex = EndIndex
                     
+                    if j == len(TransectsList)-1:
+                        EndIndex = IntersectionIndices[j]
+                    else:
+                        EndIndex = int((IntersectionIndices[j+1]+IntersectionIndices[j])/2)
+                    
+                    if StartIndex == EndIndex:
+                        continue
+
                     # initiate dummy lists for nodes
-                    X = []
-                    Y = []
+                    X = Interp_X[StartIndex:EndIndex]
+                    Y = Interp_Y[StartIndex:EndIndex]
                     
                     # get shoreline position in the future
-                    FutureNode = Transect.get_FuturePosition(Year)
+                    Transect = CoastLine.Transects[TransectsList[j]]
+                    FutureNode = Transect.get_FuturePosition(Line.Year)
 
-                    # get previous and next nodes (either future or current)
-                    # might need some logic for start and end nodes here
-                    if (i == 0):
-                        PreviousNode = FutureNode
-                    elif CoastLine.Transects[i-1].Future:
-                        PreviousNode = CoastLine.Transects[i-1].get_FuturePosition(Year)
-                    else:
-                        PreviousNode = FutureNode
-                    
-                    if (i == len(CoastLine.Transects)-1):
-                        NextNode = FutureNode
-                    elif CoastLine.Transects[i+1].Future:
-                        NextNode = CoastLine.Transects[i+1].get_FuturePosition(Year)
-                    else:
-                        NextNode = FutureNode
-
-                    # build line segments from the three nodes
-                    X.append((PreviousNode.X+FutureNode.X)/2.)
-                    Y.append((PreviousNode.Y+FutureNode.Y)/2.)
-                    X.append(FutureNode.X)
-                    Y.append(FutureNode.Y)
-                    X.append((NextNode.X+FutureNode.X)/2.)
-                    Y.append((NextNode.Y+FutureNode.Y)/2.)
-                    
                     # get line node positions
                     WriteLine = [np.column_stack([X,Y]).tolist()]
             
                     # calculate additional attributes
                     RecentNode = Transect.get_RecentPosition()
+                    
+                    if not FutureNode:
+                        continue
+
+                    if not FutureNode:
+                        continue
+
                     Distance = np.sqrt((FutureNode.X-RecentNode.X)**2. + (FutureNode.Y-RecentNode.Y)**2.)
-                    Rate = Transect.get_FutureShorelineRate(Year)
+                    Rate = Transect.get_FutureShorelineRate(Line.Year)
 
                     # generate record (strs?)
                     Record = [str(CoastLine.ID), str(Transect.ID), str(Transect.Cell), str(Transect.SubCell),
-                    str(Transect.CMU), str(Year), str(Distance), str(Rate)]
+                    str(Transect.CMU), str(Line.Year), str(Distance), str(Rate)]
 
                     # write line and record
                     WL.line(WriteLine)
                     WL.record(*Record) ####### ISSUE WITH RECORDS NEEDS FIXING ########
-        
+
         # close the shapefiles and clean up
         WL.close()
             
@@ -1012,7 +1046,7 @@ class Coast:
 
         print("")
 
-    def MergeCoastLines(self):
+    def MergeReverseCoastLines(self):
 
         """
         Identifies individual coast Lines that are touching at one end 
@@ -1072,11 +1106,12 @@ class Coast:
             
             # get list of line sections to start at
             StartList = np.where(JoinedByList < 0)[0]
+            
             for i, StartLine in enumerate(StartList):
                 
                 # print progress to screen
                 print(" \r\tLine %4d / %4d" % (i, len(StartList)), end="")
-
+                
                 # get vector of line section
                 X1, Y1 = self.CoastLines[StartLine].get_XY()
                 
@@ -1102,7 +1137,7 @@ class Coast:
 
                 # write new line, and update shape and records lists
                 NewCoastLines.append(Line(self.CoastLines[StartLine].ID, X1, Y1))
-                    
+
             # update object properties with merged geometries
             self.CoastLines = NewCoastLines
             
@@ -1111,7 +1146,82 @@ class Coast:
         
         print("\r\t Done.")
 
-    def SmoothCoastLines(self, WindowSize=1001, NoSmooths=1, Resample=True, NodeSpacing=10., PolyOrder=4):
+    def MergeCoastLines(self, SnapDistance=5):
+
+        """
+        Identifies individual coast Lines that are touching at one end 
+        and combines them into a single Line using shapely
+
+        Distance to snap end points in m
+
+        MDH, Feb, 2020
+        """
+
+        print("Coast.MergeCoastLines: Merging coastlines...")
+
+        # get start and end nodes from line sections
+        StartNodes = [CoastLine.Nodes[0] for CoastLine in self.CoastLines]
+        EndNodes = [CoastLine.Nodes[-1] for CoastLine in self.CoastLines]
+
+        # first check if any start nodes are the same within tolerance
+        Distances = np.ones(len(StartNodes))*-9999.
+        for i, StartNode in enumerate(StartNodes):
+            for ii, StartNode2 in enumerate(StartNodes):
+                if i == ii:
+                    continue
+                Distance = StartNode.get_Distance(StartNode2)
+                if Distance < SnapDistance:
+                    print("Snapping")
+                    self.CoastLines[ii].Nodes[0] = StartNode
+
+        # now check if any end nodes are the same within tolerance
+        for i, StartNode in enumerate(StartNodes):
+            for j, EndNode in enumerate(EndNodes):
+                if i == j:
+                    continue
+                Distance = StartNode.get_Distance(EndNode)
+                if Distance < SnapDistance:
+                    print("Snapping")
+                    self.CoastLines[j].Nodes[-1] = StartNode
+
+        # create a list of linestrings to merge
+        #LineString((tuple(zip(Interp_X,Interp_Y))))
+        LinesList = []
+        for TempLine in self.CoastLines:
+            X,Y = TempLine.get_XY()
+            LinesList.append(LineString((tuple(zip(X,Y)))))
+        
+        # LinesList = [LineString(tuple(zip(Line.get_XY()))) for Line in self.CoastLines]
+        MultiLine = MultiLineString(LinesList)
+        MergedLine = linemerge(MultiLine.simplify(0.2))
+
+        #reset object
+        self.CoastLines = []
+
+        # add line or multiple lines depending on result of merge
+        if MergedLine.geom_type == "LineString":
+            
+            # get x and y and add to CoastLine object as Line
+            X, Y = MergedLine.xy
+            self.CoastLines.append(Line("0", X, Y))
+            
+        elif MergedLine.geom_type == "MultiLineString":
+            
+            # loop through lines in MultiLineString
+            for i, TempLine in enumerate(MergedLine):
+                
+                # get x and y and add to CoastLine object as Line
+                X, Y = TempLine.xy
+                self.CoastLines.append(Line(str(i), X, Y))
+
+        else:
+            print("Geometry not recognised!")
+            sys.exit()
+        
+        # update no of coastlines
+        self.NoCoastLines = len(self.CoastLines)
+
+    def SmoothCoastLines(self, WindowSize=1001, NoSmooths=2, Resample=True, NodeSpacing=10., PolyOrder=4):
         
         """
         Smooths the CoastLines contained in Coast object
@@ -1159,6 +1269,29 @@ class Coast:
                     Line.ResampleNodes(NodeSpacing)
 
 
+    def ReverseCoastLines(self):
+        """
+        Function to reverse lines are ordered along the coast
+        and line segments progress along the coast. The "along coast" direction
+        is always that which results in the water being on the left as you look
+        down the coastal vector.
+
+        This might be buggy as anything and need lots more work. Should be run
+        after MergeCoast and SmoothCoast but before Transects are built, though 
+        if Transects have been built they will get rebuilt
+
+        ***add argument to include shoreline shape then for each node
+            find nearest on shoreline shape and calc orientation
+            then use mean orientation to assess MDH, Feb 2020
+
+        MDH, Feb 2020
+        """
+
+        for Line in self.CoastLines:
+            Line.ReverseLine()
+
+        # could add something here to do look up based on distance from starts to ends
+
     def ReconfigureCoastLines(self, Direction2OpenWater):
         """
         Function to arrange coastline so that lines are ordered along the coast
@@ -1169,6 +1302,10 @@ class Coast:
         This might be buggy as anything and need lots more work. Should be run
         after MergeCoast and SmoothCoast but before Transects are built, though 
         if Transects have been built they will get rebuilt
+
+        ***add argument to include shoreline shape then for each node
+            find nearest on shoreline shape and calc orientation
+            then use mean orientation to assess MDH, Feb 2020
 
         MDH, June 2019
 
@@ -1288,15 +1425,13 @@ class Coast:
         self.TransectsLength2Sea = TransectLength2Sea
         self.TransectsLength2Land = TransectLength2Land
 
-
-
         # generate transects along each line
         for Line in self.CoastLines:
 
             # generate transects along each line
             Line.GenerateTransects(TransectSpacing, TransectLength2Sea, TransectLength2Land, CheckTopology)
 
-    def GenerateTransectsNormal2Shp(self, ContourShp1, ContourShp2, Distance2Sea=5000., Distance2Land=5000., TransectSpacing=10., CheckTopology=True):
+    def GenerateTransectsNormal2Shp(self, ContourShp1, ContourShp2, Distance2Sea=8000., Distance2Land=8000., TransectSpacing=20., CheckTopology=True):
         """
         Wrapper to the function in the Line object
 
@@ -1348,6 +1483,26 @@ class Coast:
 
         for Line in self.CoastLines:
             Line.GenerateTransectsFromContour(ContourShp, TransectSpacing)
+
+    def CheckTransectTopology(self):
+
+        """
+        Wrapper function to check for overlapping transects and collect
+        Run this after transects have been updated for historical shoreline positions.
+        Will then need to rerun historical shoreline position analysis
+
+        MDH, Feb 2020
+
+        """
+
+        for Line in self.CoastLines:
+            Line.CheckTransectTopology()
+
+    def RemoveNoHistoricalTransects(self):
+        """
+        Deletes transects with no historical shoreline positions at any time?
+
+        """
 
     def GenerateNodes(self, NodeSpacing):
 
@@ -1408,7 +1563,7 @@ class Coast:
 
         for Line in self.CoastLines:
             for Transect in Line.Transects:
-                
+
                 # extend transect line inland to look for intersection
                 #Calculate start and end nodes and generate Transect
                 X1 = Transect.EndNode.X + LookDistance * np.sin( np.radians( Transect.Orientation ) )
@@ -1416,23 +1571,29 @@ class Coast:
                 TransectLine = LineString(((Transect.StartNode.X,Transect.StartNode.Y),(X1,Y1)))
             
                 # intersect with historical shoreline
-                Intersection = TransectLine.intersection(MultiLines)
+                Intersections = TransectLine.intersection(MultiLines)
 
                 # catch no intersections and flag for deletion?
-                if Intersection.geom_type == "GeometryCollection":
+                if Intersections.geom_type == "GeometryCollection":
                     Transect.DeleteFlag = True
                     continue
 
-                # check there arent multiple intersections, if there are just get the nearest
-                if Intersection.geom_type is "MultiPoint":
+                # check there arent multiple intersections
+                # store multiple intersections if so
+                if Intersections.geom_type is "MultiPoint":
                     StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
-                    Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection]
+                    Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections]
                     Index = Distances.index(min(Distances))
-                    Intersection = Intersection[Index]
-
-                # check if this is a new endnode by intersecting with line from startnode to endnode
-                Distance = Transect.LineString.distance(Intersection)
+                    IntersectionsList = Intersections
+                    Intersection = Intersections[Index]
+                    Distance = Distances[Index]
                 
+                else:
+                    # check if this is a new endnode by intersecting with line from startnode to endnode
+                    Distance = Transect.LineString.distance(Intersections)
+                    Intersection = Intersections
+                    IntersectionsList = [Intersection,]
+                    
                 if Distance > 0.001:
                     
                     # set this as the new end node
@@ -1453,18 +1614,44 @@ class Coast:
                     Year = int(NearestLine.Surv_End_C)
                 elif "Surv_End_D" in NearestLine:
                     Year = int(NearestLine.Surv_End_D)
+                elif "versiondat" in NearestLine:
+                    Year = int(NearestLine.versiondat[0:4])
                 else:
                     sys.exit("Couldnt find survey year for MHWS historic shoreline position")
 
                 if Year not in Transect.HistoricShorelinesYears:
-                    # add point to transect
-                    Transect.HistoricShorelinesPositions.append(Node(Intersection.x,Intersection.y))
+                    
+                    # generate lists of positions and distances
+                    Positions = []
+                    Distances = []
+
+                    for Intersection in IntersectionsList:
+                        Position = Node(Intersection.x,Intersection.y)
+                        Positions.append(Position)
+                        Distances.append(Transect.StartNode.get_Distance(Position))
+
+                    # add to transect
+                    Transect.HistoricShorelinesPositions.append(Positions)
+                    Transect.HistoricShorelinesDistances.append(Distances)
                     Transect.HistoricShorelinesYears.append(Year)
 
                 else:
+                    
                     # find and replace
                     Index = Transect.HistoricShorelinesYears.index(Year)
-                    Transect.HistoricShorelinesPositions[Index] = Node(Intersection.x,Intersection.y)
+
+                    # add points to transect
+                    Positions = []
+                    Distances = []
+                    
+                    for Intersection in Intersections:
+                        Position = Node(Intersection.x,Intersection.y)
+                        Positions.append(Position)
+                        Distances.append(Transect.StartNode.get_Distance(Position))
+
+                    # add to transect
+                    Transect.HistoricShorelinesPositions[Index] = Positions
+                    Transect.HistoricShorelinesDistances[Index] = Transect.StartNode.get_Distance(Positions)
 
     def ExtractContours(self,ContourShp):
 
@@ -1634,25 +1821,42 @@ class Coast:
                     NodeList = tuple(zip(X, Y))
 
                     # build a list of X,Y values to check along transect to find position of rock head if present
-                    RockHeadList = RockHeadDataset.sample(NodeList)
-
+                    #for val in RSLRDataset.sample([(Transect.CoastNode.X,Transect.CoastNode.Y)]):
+                    RockHeadVector = np.array([val[0] for val in RockHeadDataset.sample(NodeList)])
+                    RockHeadVector[RockHeadVector < 0] = np.nan
+                    
                     # if everything is soft, carry on
-                    if not RockHeadList.any < 0.4:
+                    # ignore errors caused by NaNs
+                    with np.errstate(invalid='ignore'):
+                        RockBool = RockHeadVector < 0.4
+        
+                    if not RockBool.any():
+                        continue
+                    
+                    # else find the position of the first appearance of 0.4
+                    JInd = np.argmax(RockBool)
+                    
+                    if JInd == len(RockHeadVector)-1:
                         continue
 
-                    # else find the position of the first appearance of 0.4
-                    JInd = next(j for j, Rockhead in enumerate(RockHeadList) if RockHeadList < 0.4)
-
                     # repeat to find to the nearest meter
-                    X = np.arange(X[JInd-1], X[JInd], 1.)
-                    Y = np.arange(Y[JInd-1], Y[JInd], 1.)
+                    dX = (X[JInd-1] - X[JInd+1])
+                    dY = (Y[JInd-1] - Y[JInd+1])
+                    NVals = np.int(np.sqrt(dX**2. + dY**2.))
+                    
+                    X = np.linspace(X[JInd-1], X[JInd+1], NVals)
+                    Y = np.linspace(Y[JInd-1], Y[JInd+1], NVals)
                     NodeList = tuple(zip(X, Y))
 
                     # build a list of X,Y values to check along transect to find position of rock head if present
-                    RockHeadList = RockHeadDataset.sample(NodeList)
+                    RockHeadVector = np.array([val[0] for val in RockHeadDataset.sample(NodeList)])
+                    RockHeadVector[RockHeadVector < 0] = np.nan
 
                     # else find the position of the first appearance of 0.4
-                    JInd = next(j for j, Rockhead in enumerate(RockHeadList) if RockHeadList < 0.4)
+                    # ignore errors caused by NaNs
+                    with np.errstate(invalid='ignore'):
+                        RockBool = RockHeadVector < 0.4
+                    JInd = np.argmax(RockBool)
 
                     # flag position as attribute of transect
                     Transect.RockHeadPosition = Node(X[JInd],Y[JInd])
@@ -1667,7 +1871,7 @@ class Coast:
         MDH, September 2019
 
         """
-
+        print("Coast.PredictFutureShorelines: predicting future shoreline positions")
         # loop through transects and sample
         for Line in self.CoastLines:
             for Transect in Line.Transects:
@@ -2171,13 +2375,14 @@ class Coast:
         Extracts contiguous lines of future predicted MHWS
 
         """
+        self.FutureShoreLines = []
 
         # Loop through prediction years
         for Year in self.FutureShoreLinesYears[1:]:
 
             # keep track of no of coastal segments for IDs
             FutureCount = 0
-
+            
             # loop through transects and get contiguous cliff lines
             for CoastLine in self.CoastLines:
                 
@@ -2209,15 +2414,37 @@ class Coast:
                     if (EndList[i]-StartList[i]<2):
                         continue
 
-                    # create empty lists for storing clifftop and clifftoe nodes
+                    # create empty lists for storing future nodes
                     FutureList = []
                     
-                    # loop through transects and get future positions
+                    # add latest MHWS from previous node to start
+                    # might need some logic here for first transect
+                    if StartList[i] == 0:
+                        FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
+                    else:
+                        try:
+                            FirstNode = CoastLine.Transects[StartList[i]-1].get_RecentPosition()
+                        except:
+                            FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
                     
+                    FutureList.append(FirstNode)
+                    # loop through transects and get future positions
                     for Transect in CoastLine.Transects[StartList[i]:EndList[i]]:
                         FutureNode = Transect.get_FuturePosition(Year)
                         FutureList.append(FutureNode)
                         
+                    # add latest MHWS from next node to end
+                    # might need some logic here to finish
+                    if EndList[i] == CoastLine.NoTransects-1:
+                        LastNode = CoastLine.Transects[EndList[i]-1].get_RecentPosition()
+                    else:
+                        try:
+                            LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition()
+                        except:
+                            LastNode = CoastLine.Transects[EndList[i]-1].get_RecentPosition()
+                    
+                    FutureList.append(LastNode)
+                    
                     # create new line object for top
                     X = [FutureNode.X for FutureNode in FutureList]
                     Y = [FutureNode.Y for FutureNode in FutureList]

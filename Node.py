@@ -46,4 +46,33 @@ class Node:
     
     def get_Distance(self,OtherNode):
         return np.sqrt((self.X-OtherNode.X)**2.+(self.Y-OtherNode.Y)**2.)
+
+    def get_Orientation(self,OtherNode):
+        
+        """
+        
+        Maybe this could be a more general function external to class?
+        
+        MDH
+        
+        """
+        
+        #calculate the spatial change
+        dx = OtherNode.X - self.X
+        dy = OtherNode.Y - self.Y
+
+        #Calculate the orientation of the line
+        #N.B. this will depend on where the start segment is
+        #so that 270 is esseintially the same as 90 but depends
+        #which end of the line the cycle starts at
+        if dx > 0 and dy > 0:
+            Orientation = np.degrees( np.arctan( dx / dy ) )
+        elif dx > 0 and dy < 0:
+            Orientation = 180.0 + np.degrees( np.arctan( dx / dy ) )
+        elif dx < 0 and dy < 0:
+            Orientation = 180.0 + np.degrees( np.arctan( dx / dy ) )
+        elif dx < 0 and dy > 0:
+            Orientation = 360 + np.degrees( np.arctan( dx / dy ) )
+            
+        return Orientation
         

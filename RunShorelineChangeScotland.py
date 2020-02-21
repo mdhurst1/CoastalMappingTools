@@ -16,15 +16,15 @@ from Coast import *
 WorkingPath = pathlib.Path.cwd().parent
 
 # set the transect spacing (in m)
-TransectSpacing = 50.
-SmoothingWindowSize=1001
+TransectSpacing = 10.
+SmoothingWindowSize=501
 
 # get all coastal cells to loop through
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCell_CA.shp")
 
 # loop through each cell
 #for index, Row in Cells.iterrows():
-CellSubList = ["2a","2b","2c","2d","3a","3b","3c","3e","3f","3g"]
+CellSubList = ["2a",] #"2b","2c","2d","3a","3b","3c","3e","3f","3g"]
 
 for CellSub in CellSubList:
 
@@ -56,35 +56,36 @@ for CellSub in CellSubList:
         
         # may need to think carefully about how much to smooth
         CellCoast.SmoothCoastLines(WindowSize=SmoothingWindowSize)
-        CellCoast.GenerateTransectsNormal2Shp(str(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")),
-                                                str(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")), TransectSpacing=TransectSpacing)
-
+        CellCoast.GenerateTransectsNormal2Shp(str(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Final.shp")),
+                                                str(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")), TransectSpacing=TransectSpacing, CheckTopology=True)
+        
+        #### find historic shoreline positions and extend transect accordingly
+        CellCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")))
+        CellCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp")))
+        CellCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp")))
+        CellCoast.WriteTransectsShp(str(WorkingPath / "CoastalCells" / (RowName + "_Transects.shp")))
+    
+        #### get MHWS for each transect
+        CellCoast.SampleMHWSElevation(str(WorkingPath / "MHWS_Lines" / "scotland_mhws_elev.tif"))
+    
+        #### get historical rate of relative sea level change
+        CellCoast.SampleHistoricalRSLR(str(WorkingPath / "RSL_Bradley_Model" / "Scotland_RSLR_Modern_BNG.tif"))
+    
+        ### get future relative sea level time series
+        CellCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL"))
+    
         # SAVE ENTIRE COAST OBJECT
-        print("\tSaving Coast Object as ", Filename2SaveCoast)
         with open(str(Filename2SaveCoast), 'wb') as PFile:
             pickle.dump(CellCoast, PFile)
-        
-    #### find historic shoreline positions and extend transect accordingly
-    CellCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")))
-    CellCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp")))
-    CellCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp")))
-    CellCoast.WriteTransectsShp(str(WorkingPath / "CoastalCells" / (RowName + "_Transects.shp")))
-
-    #### get MHWS for each transect
-    CellCoast.SampleMHWSElevation(str(WorkingPath / "MHWS_Lines" / "scotland_mhws_elev.tif"))
-
-    #### get historical rate of relative sea level change
-    CellCoast.SampleHistoricalRSLR(str(WorkingPath / "RSL_Bradley_Model" / "Scotland_RSLR_Modern_BNG.tif"))
-
-    ### get future relative sea level time series
-    CellCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL"))
 
     ## predict future shorelines
+    #CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
     CellCoast.PredictFutureShorelines()
-
+        
     # write future shorelines
-    CellCoast.WriteFutureShorelinesShp(str(WorkingPath / "CoastalCells" / (RowName + "_Future.shp")))
-    CellCoast.WriteFutureShorelineSegmentsShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSegments.shp")))
+    CellCoast.WriteFutureShorelinesShp(str(WorkingPath / "CoastalCells" / (RowName + "_Future.shp")),Smooth=False)
+    CellCoast.WriteFutureShorelinesShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSmooth.shp")),Smooth=True)
+    #CellCoast.WriteFutureShorelineSegmentsShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSegments.shp")))
     #CellCoast.WriteErodedAreaShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureErosion.shp")))
     
     # SAVE ENTIRE COAST OBJECT
@@ -92,6 +93,6 @@ for CellSub in CellSubList:
     with open(str(Filename2SaveCoast), 'wb') as PFile:
         pickle.dump(CellCoast, PFile)
     
-    
+
     
 
