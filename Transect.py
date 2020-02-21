@@ -74,6 +74,8 @@ class Transect:
         self.FutureSeaLevels = []
         self.FutureShorelinesPositions = []
         self.FutureShorelinesRates = []
+        self.VegEdge = False
+
 
         # transect data
         self.NoValues = None
@@ -323,7 +325,30 @@ class Transect:
 
             self.FutureShorelinesPositions.append(Node(X1,Y1))
             self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
-            
+
+    def PredictFutureVegEdge(self):
+
+        """
+
+        Function to predict future vegetation edge positions
+        requires veg edge has been already added to transect attributes
+        requires PredictFutureShorelinePositions has already been run
+
+        MDH, Feb 2020
+        """
+
+        # measure difference between latest MHWS and veg edge
+        Offset = self.HistoricShorelinesDistances[-1] - self.VegEdgeDistance
+
+        # use difference to map future vegetation edges based on future MHWS
+        self.PredictFutureVegEdgePositions = []
+        for i in range(1, len(self.FutureSeaLevelYears)):
+
+            X1 = self.FutureShorelinesPositions[-1].X - Offset * np.sin( np.radians( self.Orientation ) )
+            Y1 = self.FutureShorelinesPositions[-1].Y - Offset * np.cos( np.radians( self.Orientation ) )
+            self.PredictFutureVegEdgePositions.append(Node(X1,Y1))
+
+
     def FindCliff(self):
 
         """
@@ -1451,6 +1476,33 @@ class Transect:
 
             # use to access future position
             Position = self.FutureShorelinesPositions[Index[0]]
+            return Position
+
+        else:
+            return
+    
+    def get_FutureVegEdge(self, Year):
+
+        """
+
+        Get the future position of the vegetation edge for a particular year
+        from Bruun Rule predictions
+
+        MDH, February 2020
+
+        """
+
+        # check there are predictions for this transect
+        if self.VegEdge:
+
+            # find year index
+            Index = [i for i, x in enumerate(self.FutureSeaLevelYears[1:]) if x == Year]
+            
+            if len(Index) == 0:
+                return
+
+            # use to access future position
+            Position = self.FutureVegEdgePositions[Index[0]]
             return Position
 
         else:

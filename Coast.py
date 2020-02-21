@@ -316,6 +316,68 @@ class Coast:
         f.write(self.Projection)
         f.close()
 
+    def WriteFutureVegEdgeShp(self, FutureVegEdgeShp):
+
+        """
+        Writes the contents of a list of future veg edge objects to polyline shape file
+
+        MDH, Feb 2020
+
+        Added functionality to write spline of future line prediction to get smoothed
+        shape that is faithful to predictions
+
+        MDH, Jan 2020
+
+        """
+
+        if len(self.FutureVegEdge) == 0:
+            self.GetFutureVegEdgeLines()
+
+        # print action to screen
+        print("Coast.WriteFutureVegEdgeShp: Writing future veg edge line objects to polyline shapefiles")
+
+        # open new shapefile        
+        WL = shapefile.Writer(FutureVegEdgeShp,shapeType=shapefile.POLYLINE)
+       
+        # Create Fields
+        self.Fields = [('DeletionFlag','C',1,0),['Line_ID', 'C', 20, 0],['Year','N', 4, 0]]
+        WL.fields = self.Fields[1:] 
+
+        for Line in self.FutureVegEdgeLines:
+            
+            # get line node positions
+            X, Y = Line.get_XY()
+
+            # calculate distance
+            Dist = np.zeros(X.shape)
+            Dist[1:] = np.sqrt((X[1:] - X[:-1])**2 + (Y[1:] - Y[:-1])**2)
+            Dist = np.cumsum(Dist)
+            
+            # build a spline representation of the line
+            Spline, u = scipy.interpolate.splprep([X, Y], u=Dist, s=0)
+
+            # resample it at smaller distance intervals
+            Interp_Dist = np.arange(Dist[0], Dist[-1], 1.)
+            Interp_X, Interp_Y = scipy.interpolate.splev(Interp_Dist, Spline)
+            
+            # convert to list for writing to shapefile
+            WriteLine = [np.column_stack([Interp_X,Interp_Y]).tolist()]
+            
+            # generate record
+            Record = [str(Line.ID),str(Line.Year)]
+
+            # write line and record
+            WL.line(WriteLine)
+            WL.record(*Record) ####### ISSUE WITH RECORDS NEEDS FIXING ########
+        
+        # close the shapefiles and clean up
+        WL.close()
+            
+        # create the projection file    
+        f = open(FutureVegEdgeShp.rstrip("shp")+"prj","w")
+        f.write(self.Projection)
+        f.close()
+
     def WriteFutureShorelineSegmentsShp(self, FutureShoreLinesShp):
 
         """
@@ -1611,6 +1673,93 @@ class Coast:
             for Transect in Line.Transects:
                 Transect.PredictFutureShorelines()
 
+    def PredictFutureVegEdge(self,VegEdgeShp):
+
+        """
+
+        Wrapper function to call Transects function to predict future shoreline position
+        based on position of vegetation edge provided in a shapefile.
+
+
+        MDH, Feb 2020
+
+        """
+
+        print("Coast.PredictFutureVegEdge: Finding position of future veg edge ", end="")
+        print(Path(HistoricalShorelinesShp).name)
+
+        # set a distance to look inland to check for intersections
+        LookDistance = 100.
+
+        # read shapefile using geopandas
+        GDF = gp.read_file(VegEdgeShp)
+        Lines = GDF['geometry']
+        
+        # catch situation where only one line
+        if len(Lines) == 1:
+            MultiLines = Lines[0]
+        else:
+            MultiLines = MultiLineString([Line for Line in Lines])
+            
+
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                
+                # extend transect line inland to look for intersection
+                #Calculate start and end nodes and generate Transect
+                X1 = Transect.EndNode.X + LookDistance * np.sin( np.radians( Transect.Orientation ) )
+                Y1 = Transect.EndNode.Y + LookDistance * np.cos( np.radians( Transect.Orientation ) )
+                TransectLine = LineString(((Transect.StartNode.X,Transect.StartNode.Y),(X1,Y1)))
+            
+                # intersect with historical shoreline
+                Intersection = TransectLine.intersection(MultiLines)
+
+                # catch no intersections and flag for deletion?
+                if Intersection.geom_type == "GeometryCollection":
+                    Transect.VegEdge = False
+                    continue
+
+                # check there arent multiple intersections, if there are just get the nearest
+                if Intersection.geom_type is "MultiPoint":
+                    StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
+                    Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection]
+                    Index = Distances.index(min(Distances))
+                    Intersection = Intersection[Index]
+
+                # check if this is a new endnode by intersecting with line from startnode to endnode
+                Distance = Transect.LineString.distance(Intersection)
+                
+                if Distance > 0.001:
+                    
+                    # set this as the new end node
+                    NewEndNode = Node(Intersection.x,Intersection.y)
+                    Transect.Redraw(Transect.StartNode, NewEndNode)
+
+                # use minimum of line.distance to find line
+                # need date attribute if rates are to be calculated
+                Distances = Lines.distance(Intersection)
+                NearestLine = GDF.iloc[Distances.idxmin()]
+                
+                # check it hasnt already been read
+                if "Surv_End_A" in NearestLine:
+                    Year = int(NearestLine.Surv_End_A)
+                elif "Surv_End_B" in NearestLine:
+                    Year = int(NearestLine.Surv_End_B)
+                elif "Surv_End_C" in NearestLine:
+                    Year = int(NearestLine.Surv_End_C)
+                elif "Surv_End_D" in NearestLine:
+                    Year = int(NearestLine.Surv_End_D)
+                else:
+                    sys.exit("Couldnt find survey year for MHWS historic shoreline position")
+
+                # add point to transect
+                Transect.VegEdgePosition = Node(Intersection.x,Intersection.y)
+                Transect.VegEdgeYear = Year
+
+                # analyse future veg edge
+                Transect.PredictFutureVegEdge()
+
+                
     def WriteFutureShorelines(self):
 
         """
@@ -2079,6 +2228,72 @@ class Coast:
                     # update counter
                     FutureCount += 1
     
+    def GetFutureVegEdgeLines():
+
+        """
+
+        Extracts contiguous lines of future predicted vegetation edge
+
+        MDH, Feb 2020
+
+        """
+
+        # Loop through prediction years
+        for Year in self.FutureShoreLinesYears[1:]:
+
+            # keep track of no of coastal segments for IDs
+            FutureCount = 0
+
+            # loop through transects and get contiguous cliff lines
+            for CoastLine in self.CoastLines:
+                
+                # find transects with future predictions
+                VegEdgeBool = [Transect.VegEdge for Transect in CoastLine.Transects]
+                VegEdgeBool.insert(0, False)
+                VegEdgeBool = np.array(VegEdgeBool).astype(int)
+
+                # check for lines with no predictions
+                if not any(VegEdgeBool):
+                    continue
+                
+                # get a list of the start and end points of contiguous cliff lines
+                StartEndFlags = np.diff(VegEdgeBool)
+
+                # if last line finishes on a cliff flag the last element as the end of the cliff
+                if StartEndFlags[StartEndFlags.nonzero()[0][-1]] == 1:
+                    StartEndFlags[-1] = -1
+
+                StartList = np.argwhere(StartEndFlags == 1).flatten()
+                EndList = np.argwhere(StartEndFlags == -1).flatten()
+                if not len(StartList) == len(EndList):
+                    print("Start and End lists not the same length")
+                    print(len(StartList),len(EndList))
+                    
+                for i in range(0,len(StartList)):
+                    
+                    # catch single node cliff lines and ignore
+                    if (EndList[i]-StartList[i]<2):
+                        continue
+
+                    # create empty lists for storing clifftop and clifftoe nodes
+                    FutureList = []
+                    
+                    # loop through transects and get future positions
+                    
+                    for Transect in CoastLine.Transects[StartList[i]:EndList[i]]:
+                        FutureNode = Transect.get_FutureVegEdge(Year)
+                        FutureList.append(FutureNode)
+                        
+                    # create new line object for top
+                    X = [FutureNode.X for FutureNode in FutureList]
+                    Y = [FutureNode.Y for FutureNode in FutureList]
+                    
+                    TempLine = Line("FutureVegEdge_"+str(FutureCount), X, Y, Year=Year)
+                    self.FutureVegEdgeLines.append(TempLine)
+                    
+                    # update counter
+                    FutureCount += 1
+
     def GetBarrierWidth(self):
 
         """
