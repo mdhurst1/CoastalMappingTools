@@ -370,6 +370,9 @@ class Transect:
 
         # add analysis of 2100 uncertainty based on historical position change
         self.VolumetricCalibrationRates.append(0.)
+        self.FutureShorelineMinDistance = 9999999.
+        self.FutureShorelineMaxDistance = 0
+
         for VolumetricCalibrationRate in self.VolumetricCalibrationRates:
             
             # self.InterpolatedRSLR
@@ -384,8 +387,13 @@ class Transect:
             X1 = self.HistoricShorelinesPosition[-1].X - ShorelinePositionChange * np.sin( np.radians( self.Orientation ) )
             Y1 = self.HistoricShorelinesPosition[-1].Y - ShorelinePositionChange * np.cos( np.radians( self.Orientation ) )
 
-            self.FutureShorelinesUncertainty.append(Node(X1,Y1))
-            self.FutureShorelinesUncertaintyDistances.append(FutureShorelineDistance)
+            if FutureShorelineDistance < self.FutureShorelineMinDistance:
+                self.FutureShorelineMinDistance = FutureShorelineDistance
+                self.FutureShorelinesMinNode = Node(X1,Y1)
+
+            if FutureShorelineDistance > self.FutureShorelineMaxDistance:
+                self.FutureShorelineMaxDistance = FutureShorelineDistance
+                self.FutureShorelinesMaxNode = Node(X1, Y1)
 
 def PredictFutureVegEdge(self):
 
