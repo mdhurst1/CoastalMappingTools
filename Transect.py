@@ -369,6 +369,7 @@ class Transect:
                 self.FutureShorelinesDistances.append(FutureShorelineDistance)
 
         # add analysis of 2100 uncertainty based on historical position change
+        self.VolumetricCalibrationRates.append(0.)
         for VolumetricCalibrationRate in self.VolumetricCalibrationRates:
             
             # self.InterpolatedRSLR
