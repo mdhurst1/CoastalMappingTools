@@ -15,9 +15,6 @@ from Coast import *
 # define file names for analysis
 WorkingPath = pathlib.Path.cwd().parent
 
-# # Mean High Water Springs
-MHWS = 2.0
-
 # smoothing window size
 WindowSize = 75
 
@@ -27,7 +24,7 @@ Distance2Sea = 100.
 Distance2Land = 1000.
 
 # set up a file name to save the coast object
-Filename2SaveCoast = WorkingPath / "SkaillChange.pydata"
+Filename2SaveCoast = WorkingPath / "Skaill_New" / "SkaillChange.pydata"
 
 
 # # this checks to see whether coast object already exists
@@ -58,7 +55,7 @@ SkaillCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" /
 SkaillCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Skaill_MHWS_1970_FINAL2.shp"))
 SkaillCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / "Skaill_MHWS_Modern_Soft_2018.shp"))
 
-SkaillCoast.WriteTransectsShp(str(WorkingPath / "Skaill_Transects.shp"))
+SkaillCoast.WriteTransectsShp(str(WorkingPath / "Skaill_New" / "Skaill_Transects.shp"))
 
 #### get historical rate of relative sea level change
 SkaillCoast.SampleHistoricalRSLR(str(WorkingPath / "RSL_Bradley_Model" / "Scotland_RSLR_Modern_BNG.tif"))
@@ -67,13 +64,14 @@ SkaillCoast.SampleHistoricalRSLR(str(WorkingPath / "RSL_Bradley_Model" / "Scotla
 SkaillCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL"))
 
 ## predict future shorelines
-SkaillCoast.SetMHWS(2.)
+#### get MHWS for each transect
+SkaillCoast.SampleMHWSElevation(str(WorkingPath / "MHWS_Lines" / "scotland_mhws_elev.tif"))
 SkaillCoast.SetShorefaceDepth(5.)
 SkaillCoast.PredictFutureShorelines()
 
  # write future shorelines
-SkaillCoast.WriteFutureShorelinesShp(str(WorkingPath / "CoastalCells" / "Skaill_Future.shp",Smooth=False)
-SkaillCoast.WriteFutureShorelinesShp(str(WorkingPath / "CoastalCells" / "Skaill_FutureSmooth.shp"),Smooth=True)
-Skaillcoast.WriteFutureUncertaintyShp(str(WorkingPath / "CoastalCells" / "Skaill_Uncertainty.shp"))
+SkaillCoast.WriteFutureShorelinesShp(str(WorkingPath / "Skaill_New" / "Skaill_Future.shp"), Smooth=False)
+SkaillCoast.WriteFutureShorelinesShp(str(WorkingPath / "Skaill_New" / "Skaill_FutureSmooth.shp"), Smooth=True)
+#Skaillcoast.WriteFutureUncertaintyShp(str(WorkingPath / "CoastalCells" / "Skaill_Uncertainty.shp"))
 
-SkaillCoast.WriteFutureShorelinesShp(str(WorkingPath / "SkaillTest.shp"))
+#SkaillCoast.WriteFutureShorelinesShp(str(WorkingPath / "SkaillTest.shp"))
