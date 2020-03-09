@@ -1293,6 +1293,23 @@ class Coast:
                 if Resample:
                     Line.ResampleNodes(NodeSpacing)
 
+    def SplineCoastLines(self):
+        
+        """
+        Splines and resamples the CoastLines contained in Coast object
+        Wrapper to the function in the Line object
+        
+        MDH, March 2020
+
+        """
+
+        print("Coast: Generating Spline of CoastLines")
+
+        for Line in self.CoastLines:
+            
+            # smooth the line
+            Line.SplineLine()
+
 
     def ReverseCoastLines(self):
         """

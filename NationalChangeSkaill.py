@@ -39,6 +39,7 @@ except:
     # SET UP THE COAST FROM -10m Contour
     SkaillCoast = Coast(str(WorkingPath / "Bathymetry" / "MTBathy_Skaill_5m_Contour_BNG.shp"))
     SkaillCoast.SmoothCoastLines(WindowSize)
+    SkaillCoast.SplineCoastLines()
     SkaillCoast.ReconfigureCoastLines("W")
     
     SkaillCoast.GenerateTransectsNormal2Shp(str(WorkingPath / "MHWS_Lines" / "Skaill_MHWS_Modern_Soft_2018.shp"),
