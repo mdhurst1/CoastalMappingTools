@@ -347,6 +347,8 @@ class Coast:
         FutureMinShp = UncertaintyShp.split(".")[0]+"_Min.shp"
         FutureMaxShp = UncertaintyShp.split(".")[0]+"_Max.shp"
 
+        # spleen for smooth line?
+        
         # write lines then patches
         self.WriteLinesShp("FutureMinUncertainty", FutureMinShp)
         self.WriteLinesShp("FutureMaxUncertainty", FutureMaxShp)
