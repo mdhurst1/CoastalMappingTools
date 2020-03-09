@@ -208,7 +208,35 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         
         """
 
-        # code goes here
+        # Get X and Y vectors from Nodes
+        X, Y = self.get_XY()
+
+        XSmooth = X[1:-1]
+        YSmooth = Y[1:-1]
+        
+        # calculate distance
+        Dist = np.zeros(XSmooth.shape)
+        Dist[1:] = np.sqrt((XSmooth[1:] - XSmooth[:-1])**2 + (YSmooth[1:] - YSmooth[:-1])**2)
+        Dist = np.cumsum(Dist)
+        
+        # build a spline representation of the line
+        Spline, u = splprep([XSmooth, YSmooth], u=Dist, s=0)
+
+        # resample it at smaller distance intervals
+        Interp_Dist = np.arange(0, Dist[-1], 1.)
+        XSmooth, YSmooth = splev(Interp_Dist, Spline)
+
+        XSmooth = np.insert(XSmooth,0,X[0])
+        YSmooth = np.insert(YSmooth,0,Y[0])
+        X = np.append(XSmooth,X[-1])
+        Y = np.append(YSmooth,Y[-1])
+
+        # copy nodes to raw
+        self.RawNodes = self.Nodes
+
+        # Write new X and Y vectors to Nodes
+        self.GenerateNodes(XSmooth,YSmooth)
+        self.CalculateGeometry()
 
     def GenerateBuffer(self, Dist1, Dist2):
         
