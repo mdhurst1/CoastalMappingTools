@@ -11,6 +11,7 @@ June 2019
 import sys
 import numpy as np
 from scipy.signal import savgol_filter
+from scipy.interpolate import splprep, splev
 import Transect
 from Node import *
 from Transect import *
