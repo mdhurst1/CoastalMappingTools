@@ -20,7 +20,7 @@ WindowSize = 75
 
 # transect spacing 
 TransectSpacing = 1.
-Distance2Sea = 100.
+Distance2Sea = 50.
 Distance2Land = 1000.
 
 # set up a file name to save the coast object
