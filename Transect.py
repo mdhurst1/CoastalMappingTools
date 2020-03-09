@@ -395,7 +395,7 @@ class Transect:
                 self.FutureShorelineMaxDistance = FutureShorelineDistance
                 self.FutureShorelinesMaxNode = Node(X1, Y1)
 
-def PredictFutureVegEdge(self):
+    def PredictFutureVegEdge(self):
 
         """
 
