@@ -85,10 +85,11 @@ for CellSub in CellSubList:
     CellCoast.PredictFutureShorelines()
         
     # write future shorelines
-    CellCoast.WriteFutureShorelinesShp(str(WorkingPath / "CoastalCells" / (RowName + "_Future.shp")),Smooth=False)
-    CellCoast.WriteFutureShorelinesShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSmooth.shp")),Smooth=True)
-    Cellcoast.WriteFutureUncertaintyShp(str(WorkingPath / "CoastalCells" / (RowName + "_Uncertainty.shp")),Smooth=False))
-    Cellcoast.WriteFutureUncertaintyShp(str(WorkingPath / "CoastalCells" / (RowName + "_Uncertainty.shp")),Smooth=True))
+    ResultsPath = WorkingPath / "Cell2a_Sensitivity1"
+    CellCoast.WriteFutureShorelinesShp(str(ResultsPath / (RowName + "_Future.shp")),Smooth=False)
+    CellCoast.WriteFutureShorelinesShp(str(ResultsPath / (RowName + "_FutureSmooth.shp")),Smooth=True)
+    CellCoast.WriteFutureUncertaintyShp(str(ResultsPath / (RowName + "_Uncertainty.shp"))) #,Smooth=False))
+    #Cellcoast.WriteFutureUncertaintyShp(str(ResultsPath / (RowName + "_Uncertainty.shp"))) #,Smooth=True))
     #CellCoast.WriteFutureShorelineSegmentsShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSegments.shp")))
     #CellCoast.WriteErodedAreaShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureErosion.shp")))
     
