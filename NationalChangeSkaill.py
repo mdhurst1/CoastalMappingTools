@@ -71,4 +71,9 @@ SkaillCoast.SetMHWS(2.)
 SkaillCoast.SetShorefaceDepth(5.)
 SkaillCoast.PredictFutureShorelines()
 
+ # write future shorelines
+SkaillCoast.WriteFutureShorelinesShp(str(WorkingPath / "CoastalCells" / "Skaill_Future.shp",Smooth=False)
+SkaillCoast.WriteFutureShorelinesShp(str(WorkingPath / "CoastalCells" / "Skaill_FutureSmooth.shp"),Smooth=True)
+Skaillcoast.WriteFutureUncertaintyShp(str(WorkingPath / "CoastalCells" / "Skaill_Uncertainty.shp"))
+
 SkaillCoast.WriteFutureShorelinesShp(str(WorkingPath / "SkaillTest.shp"))
