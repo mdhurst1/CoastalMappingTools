@@ -369,7 +369,7 @@ class Transect:
                 self.FutureShorelinesDistances.append(FutureShorelineDistance)
 
         # add analysis of 2100 uncertainty based on historical position change
-        self.VolumetricCalibrationRates.append(0.)
+        self.VolumetricCalibrationRates = np.append(self.VolumetricCalibrationRates, 0.)
         self.FutureShorelineMinDistance = 9999999.
         self.FutureShorelineMaxDistance = 0
 
