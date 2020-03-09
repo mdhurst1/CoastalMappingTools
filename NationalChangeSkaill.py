@@ -42,7 +42,7 @@ except:
     SkaillCoast.ReconfigureCoastLines("W")
     
     SkaillCoast.GenerateTransectsNormal2Shp(str(WorkingPath / "MHWS_Lines" / "Skaill_MHWS_Modern_Soft_2018.shp"),
-                                              str(WorkingPath / "Bathymetry" / "MTBathy_Skaill_Clip_Contour_BNG.shp"), Distance2Sea, Distance2Land, TransectSpacing)
+                                              str(WorkingPath / "Bathymetry" / "MTBathy_Skaill_Clip_Contour_BNG.shp"), Distance2Sea, Distance2Land, TransectSpacing, CheckTopology=False)
     
     # SAVE ENTIRE COAST OBJECT
     print("Saving Coast Object as ", Filename2SaveCoast)
