@@ -204,6 +204,9 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
         """
 
+        Function to populate a spline of the nodes and resample to regular distances
+        This could be called in several places within Coast object...
+
         MDH, March 2020
         
         """
