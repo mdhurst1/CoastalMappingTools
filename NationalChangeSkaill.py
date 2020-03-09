@@ -69,7 +69,7 @@ SkaillCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL"))
 SkaillCoast.SampleMHWSElevation(str(WorkingPath / "MHWS_Lines" / "scotland_mhws_elev.tif"))
 SkaillCoast.SetShorefaceDepth(5.)
 SkaillCoast.PredictFutureShorelines()
-SkaillCoast.PredictFutureVegEdge()
+SkaillCoast.PredictFutureVegEdge(str(WorkingPath / "VegEdges" / "Skaill_VegEdge_2019.shp"))
 
  # write future shorelines
 SkaillCoast.WriteFutureShorelinesShp(str(WorkingPath / "Skaill_New" / "Skaill_Future.shp"), Smooth=False)

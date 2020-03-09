@@ -1932,8 +1932,7 @@ class Coast:
         """
 
         print("Coast.PredictFutureVegEdge: Finding position of future veg edge ", end="")
-        print(Path(HistoricalShorelinesShp).name)
-
+        
         # set a distance to look inland to check for intersections
         LookDistance = 100.
 
