@@ -200,6 +200,16 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         self.GenerateNodes(XSmooth,YSmooth)
         self.CalculateGeometry()
     
+    def SplineLine(self, arguments):
+
+        """
+
+        MDH, March 2020
+        
+        """
+
+        # code goes here
+
     def GenerateBuffer(self, Dist1, Dist2):
         
         """

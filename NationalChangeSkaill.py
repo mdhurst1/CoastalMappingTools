@@ -19,7 +19,7 @@ WorkingPath = pathlib.Path.cwd().parent
 WindowSize = 75
 
 # transect spacing 
-TransectSpacing = 1.
+TransectSpacing = 5.
 Distance2Sea = 50.
 Distance2Land = 1000.
 
