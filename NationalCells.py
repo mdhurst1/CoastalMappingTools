@@ -18,15 +18,15 @@ WorkingPath = pathlib.Path.cwd().parent
 
 ### FUNCTIONALITY HERE TO SAMPLE FROM NATIONAL DATASETS BASED ON COASTAL CELLS ###
 # open shapefile of coastal cells
-Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCell_CA.shp")
+Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # open shapefiles of -10m contour
-BathyLines = gp.read_file(WorkingPath / "Bathymetry" / "Scotland_10m_Bathy_Contour.shp")
+BathyLines = gp.read_file(WorkingPath / "Bathymetry" / "Scotland_10m_Bathy_Contour_Simple.shp")
 
 # and historic MHWS datasets
 MHWS_1890 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1890_FINAL.shp")
 MHWS_1970 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1970_Final.shp")
-MHWS_Soft = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Modern_Soft.shp")
+MHWS_Soft = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Modern_Soft_Simple.shp")
 MHWS_Modern = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Modern_FINAL.shp")
 
 def ClipLines2Poly(LinesGDF,PolyGDF):
@@ -39,8 +39,6 @@ def ClipLines2Poly(LinesGDF,PolyGDF):
 for index, Row in Cells.iterrows():
 
     print(Row.Cell_sub)
-    if Row.Cell_sub != "2a":
-        continue
     
     # Intersection to isolate bathy for each cell
     BathyClipped = ClipLines2Poly(BathyLines, Row.geometry)
@@ -54,10 +52,25 @@ for index, Row in Cells.iterrows():
     
     try:
         BathyClipped.to_file(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp"))
-        Old.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp"))
-        Inter.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp"))
-        Soft.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp"))
-        Modern.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Final.shp"))
-
     except:
-        print("Unable to write some files for " + Row.Cell_sub)
+        print("Unable to write bathy for " + Row.Cell_sub)
+    
+    try:
+        Old.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp"))
+    except:
+        print("Unable to write 1890s for " + Row.Cell_sub)
+    
+    try:
+        Inter.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp"))
+    except:
+        print("Unable to write 1970s for " + Row.Cell_sub)
+    
+    try:    
+        Soft.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp"))
+    except:
+        print("Unable to write soft for " + Row.Cell_sub)
+    
+    try:
+        Modern.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Final.shp"))
+    except:
+        print("Unable to write modern for " + Row.Cell_sub)

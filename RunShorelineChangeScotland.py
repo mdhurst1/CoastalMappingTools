@@ -20,11 +20,13 @@ TransectSpacing = 10.
 SmoothingWindowSize=501
 
 # get all coastal cells to loop through
-Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCell_CA.shp")
+Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # loop through each cell
 #for index, Row in Cells.iterrows():
-CellSubList = ["2a",] #"2b","2c","2d","3a","3b","3c","3e","3f","3g"]
+#CellSubList = ["2a","2b","2c","2d","3a","3b","3c","3e","3f","3g"]
+#CellSubList = ["8b","8c","8d","9a","9b","9c","9d","9e","9e"]
+CellSubList = ["10a","10b","10c","10d","10e","11a","11b","11c","11d","11e","11f","11g"]
 
 for CellSub in CellSubList:
 
@@ -69,7 +71,7 @@ for CellSub in CellSubList:
         CellCoast.SampleMHWSElevation(str(WorkingPath / "MHWS_Lines" / "scotland_mhws_elev.tif"))
     
         #### get historical rate of relative sea level change
-        CellCoast.SampleHistoricalRSLR(str(WorkingPath / "RSL_Bradley_Model" / "Scotland_RSLR_Modern_BNG.tif"))
+        CellCoast.SampleHistoricalRSLR(str(WorkingPath / "RSL_Bradley_Model" / "Scotland_NEngland_RSLR_Modern_BNG.tif"))
     
         ### get future relative sea level time series
         CellCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL"))
