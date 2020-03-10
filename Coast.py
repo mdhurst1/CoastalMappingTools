@@ -1947,7 +1947,7 @@ class Coast:
         elif len(Lines) == 1:
             MultiLines = Lines[0]
         else:
-            MultiLines = MultiLineString([Line for Line in Lines])
+            MultiLines = MultiLineString([Line if Line.geom_type == "LineString" for Line in Lines])
             
 
         for Line in self.CoastLines:
