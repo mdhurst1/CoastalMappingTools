@@ -1939,9 +1939,12 @@ class Coast:
         # read shapefile using geopandas
         GDF = gp.read_file(VegEdgeShp)
         Lines = GDF['geometry']
-        
+        print(Lines)
+
         # catch situation where only one line
-        if len(Lines) == 1:
+        if len(Lines) == 0:
+            sys.exit("Error: No Veg Edge Lines!")
+        elif len(Lines) == 1:
             MultiLines = Lines[0]
         else:
             MultiLines = MultiLineString([Line for Line in Lines])
