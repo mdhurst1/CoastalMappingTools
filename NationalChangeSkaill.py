@@ -69,12 +69,12 @@ SkaillCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL"))
 SkaillCoast.SampleMHWSElevation(str(WorkingPath / "MHWS_Lines" / "scotland_mhws_elev.tif"))
 SkaillCoast.SetShorefaceDepth(5.)
 SkaillCoast.PredictFutureShorelines()
-SkaillCoast.PredictFutureVegEdge(str(WorkingPath / "VegEdges" / "Skaill_VegEdge_2019.shp"))
-1
+SkaillCoast.PredictFutureVegEdge(str(WorkingPath / "VegEdges" / "Skaill_VegEdge_2019.shp"), 2019)
+
  # write future shorelines
 SkaillCoast.WriteFutureShorelinesShp(str(WorkingPath / "Skaill_New" / "Skaill_Future.shp"), Smooth=False)
 SkaillCoast.WriteFutureShorelinesShp(str(WorkingPath / "Skaill_New" / "Skaill_FutureSmooth.shp"), Smooth=True)
-SkaillCoast.WriteFutureVegEdgeShp(str(WorkingPath / "Skaill_New" / "Skaill_Future_VegEdge_Smooth.shp"), Smooth=True)
+SkaillCoast.WriteFutureVegEdgeShp(str(WorkingPath / "Skaill_New" / "Skaill_Future_VegEdge_Smooth.shp"),  Smooth=True)
 #Skaillcoast.WriteFutureUncertaintyShp(str(WorkingPath / "CoastalCells" / "Skaill_Uncertainty.shp"))
 
 #SkaillCoast.WriteFutureShorelinesShp(str(WorkingPath / "SkaillTest.shp"))

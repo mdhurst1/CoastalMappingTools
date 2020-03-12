@@ -1919,7 +1919,7 @@ class Coast:
             for Transect in Line.Transects:
                 Transect.PredictFutureShorelines()
 
-    def PredictFutureVegEdge(self,VegEdgeShp):
+    def PredictFutureVegEdge(self,VegEdgeShp, Year=None):
 
         """
 
@@ -1939,15 +1939,15 @@ class Coast:
         # read shapefile using geopandas
         GDF = gp.read_file(VegEdgeShp)
         Lines = GDF['geometry']
-        print(Lines)
-
+        
         # catch situation where only one line
         if len(Lines) == 0:
             sys.exit("Error: No Veg Edge Lines!")
         elif len(Lines) == 1:
             MultiLines = Lines[0]
         else:
-            MultiLines = MultiLineString([Line if Line.geom_type == "LineString" for Line in Lines])
+            MultiLines = MultiLineString([Line for Line in Lines if Line])
+            MultiLines = MultiLineString([Line for Line in MultiLines if Line.geom_type == "LineString"])
             
 
         for Line in self.CoastLines:
@@ -1989,16 +1989,17 @@ class Coast:
                 NearestLine = GDF.iloc[Distances.idxmin()]
                 
                 # check it hasnt already been read
-                if "Surv_End_A" in NearestLine:
-                    Year = int(NearestLine.Surv_End_A)
-                elif "Surv_End_B" in NearestLine:
-                    Year = int(NearestLine.Surv_End_B)
-                elif "Surv_End_C" in NearestLine:
-                    Year = int(NearestLine.Surv_End_C)
-                elif "Surv_End_D" in NearestLine:
-                    Year = int(NearestLine.Surv_End_D)
-                else:
-                    sys.exit("Couldnt find survey year for MHWS historic shoreline position")
+                if not Year:
+                    if "Surv_End_A" in NearestLine:
+                        Year = int(NearestLine.Surv_End_A)
+                    elif "Surv_End_B" in NearestLine:
+                        Year = int(NearestLine.Surv_End_B)
+                    elif "Surv_End_C" in NearestLine:
+                        Year = int(NearestLine.Surv_End_C)
+                    elif "Surv_End_D" in NearestLine:
+                        Year = int(NearestLine.Surv_End_D)
+                    else:
+                        sys.exit("Couldnt find survey year for MHWS historic shoreline position")
 
                 # add point to transect
                 Transect.VegEdgePosition = Node(Intersection.x,Intersection.y)
