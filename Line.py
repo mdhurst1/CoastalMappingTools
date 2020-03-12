@@ -215,8 +215,8 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         # Get X and Y vectors from Nodes
         X, Y = self.get_XY()
 
-        XSmooth = X[1:-1]
-        YSmooth = Y[1:-1]
+        XSmooth = np.array(X[1:-1])
+        YSmooth = np.array(Y[1:-1])
         
         # calculate distance
         Dist = np.zeros(XSmooth.shape)
@@ -224,7 +224,15 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         Dist = np.cumsum(Dist)
         
         # build a spline representation of the line
-        Spline, u = splprep([XSmooth, YSmooth], u=Dist, s=0)
+        K = 3 # by default
+
+        if len(XSmooth) < 2:
+            return
+
+        elif len(XSmooth) < 4:
+            K = len(XSmooth)-1
+
+        Spline, u = splprep([XSmooth, YSmooth], u=Dist, s=0, k=K)
 
         # resample it at smaller distance intervals
         Interp_Dist = np.arange(0, Dist[-1], 1.)
@@ -871,5 +879,6 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         for Node in self.Nodes:
             X.append(Node.X)
             Y.append(Node.Y)
-        
+        #print(Node.X)
+        print(np.shape(np.array(X)))
         return np.array(X), np.array(Y)

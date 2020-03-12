@@ -63,6 +63,7 @@ class Coast:
         self.ExtBackLines_High = []
         self.FutureShoreLinesYears = []
         self.FutureShoreLines = []
+        self.FutureVegEdgeLines = []
         self.FutureMinUncertainty = []
         self.FutureMaxUncertainty = []
         self.WriteFutureLines = []
@@ -368,7 +369,7 @@ class Coast:
 
         """
 
-        if len(self.FutureVegEdge) == 0:
+        if len(self.FutureVegEdgeLines) == 0:
             self.GetFutureVegEdgeLines()
 
         # print action to screen
@@ -383,14 +384,15 @@ class Coast:
 
         for Line in self.FutureVegEdgeLines:
             
-            # get line node positions
-            X, Y = Line.get_XY()
-
             if Smooth:
                 Line.SplineLine()
 
+            # get line node positions
+            X, Y = Line.get_XY()
+
+            
             # convert to list for writing to shapefile
-            WriteLine = [np.column_stack([Interp_X,Interp_Y]).tolist()]
+            WriteLine = [np.column_stack([X, Y]).tolist()]
             
             # generate record
             Record = [str(Line.ID),str(Line.Year)]
@@ -1995,7 +1997,8 @@ class Coast:
                 # add point to transect
                 Transect.VegEdgePosition = Node(Intersection.x,Intersection.y)
                 Transect.VegEdgeYear = Year
-
+                Transect.VegEdge = True
+                
                 # analyse future veg edge
                 Transect.PredictFutureVegEdge()
 
@@ -2484,6 +2487,7 @@ class Coast:
                     # create new line object for top
                     X = [FutureNode.X for FutureNode in FutureList]
                     Y = [FutureNode.Y for FutureNode in FutureList]
+                    print("1 ", np.shape(X))
                     
                     TempLine = Line("FutureCoast_"+str(FutureCount), X, Y, Year=Year)
                     self.FutureShoreLines.append(TempLine)
@@ -2587,7 +2591,7 @@ class Coast:
                 FutureCount += 1
 
 
-    def GetFutureVegEdgeLines():
+    def GetFutureVegEdgeLines(self):
 
         """
 
@@ -2610,7 +2614,7 @@ class Coast:
                 VegEdgeBool = [Transect.VegEdge for Transect in CoastLine.Transects]
                 VegEdgeBool.insert(0, False)
                 VegEdgeBool = np.array(VegEdgeBool).astype(int)
-
+                
                 # check for lines with no predictions
                 if not any(VegEdgeBool):
                     continue
@@ -2646,6 +2650,9 @@ class Coast:
                     # create new line object for top
                     X = [FutureNode.X for FutureNode in FutureList]
                     Y = [FutureNode.Y for FutureNode in FutureList]
+                    print(FutureNode)
+                    print(FutureNode.X)
+                    print("2 ", np.shape(X))
                     
                     TempLine = Line("FutureVegEdge_"+str(FutureCount), X, Y, Year=Year)
                     self.FutureVegEdgeLines.append(TempLine)

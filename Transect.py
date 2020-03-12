@@ -409,7 +409,7 @@ class Transect:
         self.VegEdgeDistance = self.StartNode.get_Distance(self.VegEdgePosition)
 
         # measure difference between latest MHWS and veg edge
-        Offset = self.HistoricShorelinesDistances[-1] - self.VegEdgeDistance
+        Offset = self.HistoricShorelinesDistances[-1][0] - self.VegEdgeDistance
 
         # use difference to map future vegetation edges based on future MHWS
         self.FutureVegEdgePositions = []
@@ -417,7 +417,11 @@ class Transect:
 
             X1 = self.FutureShorelinesPositions[-1].X - Offset * np.sin( np.radians( self.Orientation ) )
             Y1 = self.FutureShorelinesPositions[-1].Y - Offset * np.cos( np.radians( self.Orientation ) )
+
             self.FutureVegEdgePositions.append(Node(X1,Y1))
+            
+
+        
             
     def FindCliff(self):
 

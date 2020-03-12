@@ -24,6 +24,11 @@ class Node:
         self.Dist = Dist
         self.ID = ID
 
+        if not isinstance(self.X, float):
+            print("PROBLEM")
+            print(type(self.X))
+            sys.exit()
+
     def __eq__(self,other):
         if (self.X == other.X) and (self.Y == other.Y):
             return True
