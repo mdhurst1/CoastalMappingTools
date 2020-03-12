@@ -2487,7 +2487,6 @@ class Coast:
                     # create new line object for top
                     X = [FutureNode.X for FutureNode in FutureList]
                     Y = [FutureNode.Y for FutureNode in FutureList]
-                    print("1 ", np.shape(X))
                     
                     TempLine = Line("FutureCoast_"+str(FutureCount), X, Y, Year=Year)
                     self.FutureShoreLines.append(TempLine)
@@ -2650,9 +2649,6 @@ class Coast:
                     # create new line object for top
                     X = [FutureNode.X for FutureNode in FutureList]
                     Y = [FutureNode.Y for FutureNode in FutureList]
-                    print(FutureNode)
-                    print(FutureNode.X)
-                    print("2 ", np.shape(X))
                     
                     TempLine = Line("FutureVegEdge_"+str(FutureCount), X, Y, Year=Year)
                     self.FutureVegEdgeLines.append(TempLine)

@@ -879,6 +879,5 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         for Node in self.Nodes:
             X.append(Node.X)
             Y.append(Node.Y)
-        #print(Node.X)
-        print(np.shape(np.array(X)))
+        
         return np.array(X), np.array(Y)
