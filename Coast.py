@@ -354,7 +354,7 @@ class Coast:
         self.WriteLinesShp("FutureMaxUncertainty", FutureMaxShp)
         self.WritePatchesShp("FutureMinUncertainty", "FutureMaxUncertainty", UncertaintyShp)
 
-    def WriteFutureVegEdgeShp(self, FutureVegEdgeShp):
+    def WriteFutureVegEdgeShp(self, FutureVegEdgeShp, Smooth=False):
 
         """
         Writes the contents of a list of future veg edge objects to polyline shape file
@@ -386,18 +386,9 @@ class Coast:
             # get line node positions
             X, Y = Line.get_XY()
 
-            # calculate distance
-            Dist = np.zeros(X.shape)
-            Dist[1:] = np.sqrt((X[1:] - X[:-1])**2 + (Y[1:] - Y[:-1])**2)
-            Dist = np.cumsum(Dist)
-            
-            # build a spline representation of the line
-            Spline, u = scipy.interpolate.splprep([X, Y], u=Dist, s=0)
+            if Smooth:
+                Line.SplineLine()
 
-            # resample it at smaller distance intervals
-            Interp_Dist = np.arange(Dist[0], Dist[-1], 1.)
-            Interp_X, Interp_Y = scipy.interpolate.splev(Interp_Dist, Spline)
-            
             # convert to list for writing to shapefile
             WriteLine = [np.column_stack([Interp_X,Interp_Y]).tolist()]
             
@@ -406,7 +397,7 @@ class Coast:
 
             # write line and record
             WL.line(WriteLine)
-            WL.record(*Record) ####### ISSUE WITH RECORDS NEEDS FIXING ########
+            WL.record(*Record) 
         
         # close the shapefiles and clean up
         WL.close()
