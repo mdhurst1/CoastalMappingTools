@@ -340,7 +340,10 @@ class Coast:
         MDH, March 2020
 
         """
-        
+
+        # extract future shoreline positions from transect
+        self.GetFutureShorelineUncertainty()
+
         # print action to screen
         print("Coast.WriteFutureUncertaintyShp: Writing uncertainty area to polygon file")
 
@@ -2494,7 +2497,7 @@ class Coast:
                     # update counter
                     FutureCount += 1
     
-    def GetFutureShorelineUncertainty():
+    def GetFutureShorelineUncertainty(self):
 
         """
         
@@ -2503,6 +2506,9 @@ class Coast:
         MDH, March 2020
 
         """
+
+        # keep track of no of coastal segments for IDs
+        FutureCount = 0
 
         # loop through transects and get contiguous locations where there are predictions
         for CoastLine in self.CoastLines:
@@ -2573,17 +2579,17 @@ class Coast:
                 FutureMaxList.append(LastNode)
                 
                 # create new line object for min and max
-                X = [FutureNode.X for FutureMinNode in FutureMinList]
-                Y = [FutureNode.Y for FutureMinNode in FutureMinList]
+                X = [FutureMinNode.X for FutureMinNode in FutureMinList]
+                Y = [FutureMinNode.Y for FutureMinNode in FutureMinList]
                 
-                TempLine = Line("FutureMin_"+str(FutureCount), X, Y, Year=Year)
+                TempLine = Line("FutureMin_"+str(FutureCount), X, Y)
                 self.FutureMinUncertainty.append(TempLine)
 
                 # create new line object for min and max
-                X = [FutureNode.X for FutureMaxNode in FutureMaxList]
-                Y = [FutureNode.Y for FutureMaxNode in FutureMaxList]
+                X = [FutureMaxNode.X for FutureMaxNode in FutureMaxList]
+                Y = [FutureMaxNode.Y for FutureMaxNode in FutureMaxList]
                 
-                TempLine = Line("FutureMax_"+str(FutureCount), X, Y, Year=Year)
+                TempLine = Line("FutureMax_"+str(FutureCount), X, Y)
                 self.FutureMaxUncertainty.append(TempLine)
                 
                 # update counter

@@ -75,6 +75,6 @@ SkaillCoast.PredictFutureVegEdge(str(WorkingPath / "VegEdges" / "Skaill_VegEdge_
 SkaillCoast.WriteFutureShorelinesShp(str(WorkingPath / "Skaill_New" / "Skaill_Future.shp"), Smooth=False)
 SkaillCoast.WriteFutureShorelinesShp(str(WorkingPath / "Skaill_New" / "Skaill_FutureSmooth.shp"), Smooth=True)
 SkaillCoast.WriteFutureVegEdgeShp(str(WorkingPath / "Skaill_New" / "Skaill_Future_VegEdge_Smooth.shp"),  Smooth=True)
-#Skaillcoast.WriteFutureUncertaintyShp(str(WorkingPath / "CoastalCells" / "Skaill_Uncertainty.shp"))
+SkaillCoast.WriteFutureUncertaintyShp(str(WorkingPath / "Skaill_New" / "Skaill_Uncertainty.shp"))
 
 #SkaillCoast.WriteFutureShorelinesShp(str(WorkingPath / "SkaillTest.shp"))
