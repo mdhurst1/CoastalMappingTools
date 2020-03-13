@@ -236,7 +236,7 @@ class Coast:
             # launch polygon patches shapefile writer
             self.WritePatchesShp("ExtFrontLines_"+Level, "ExtBackLines_"+Level, ExtPatchesShp)
     
-    def WriteErodedAreaShp(self, ErosionShp, Year):
+    def WriteErodedAreaShp(self, ErosionShp, Year=2100):
         
         """
         Writes future shorelines to polygon patches
@@ -568,96 +568,7 @@ class Coast:
         f.write(self.Projection)
         f.close()
 
-    def WriteErodedAreaShp(self, ErodedAreaShp, Year=2100):
-
-        """
-        Writes the contents of a list of future shoreline objects to a polygon showing area eroded
-
-        MDH, January 2020
-
-        """
-
-        # print action to screen
-        print("Coast.WriteFutureShorelineSegmentsShp: Writing future MHWS line objects to polyline shapefiles")
-
-        # open new shapefile        
-        WL = shapefile.Writer(ErodedAreaShp,shapeType=shapefile.POLYLINE)
-       
-        # Create Fields
-        self.Fields = [('DeletionFlag','C', 1, 0), ['Line_ID', 'C', 3, 0],
-                        ['Cell','N', 2, 0], ['SubCell','C', 2, 0]]
-        WL.fields = self.Fields[1:] 
-
-        # loop through transects and get contiguous future prediction lines
-        for CoastLine in self.CoastLines:
-            for i, Transect in enumerate(CoastLine.Transects):
-                    
-                    # check for prediction
-                    if not Transect.Future:
-                        continue
-                    
-                    # initiate dummy lists for nodes
-                    X = []
-                    Y = []
-                    
-                    # get shoreline position in the future
-                    FutureNode = Transect.get_FuturePosition(Year)
-
-                    # get previous and next nodes (either future or current)
-                    # might need some logic for start and end nodes here
-                    PreviousTransect = CoastLine.Transects[i-1]
-                    NextTransect = CoastLine.Transects[i+1]
-                    
-                    if (i == 0):
-                        PreviousNode = FutureNode
-                    elif CoastLine.Transects[i-1].Future:
-                        PreviousNode = CoastLine.Transects[i-1].get_FuturePosition(Year)
-                    else:
-                        PreviousNode = FutureNode
-                    
-                    if (i == len(CoastLine.Transects)-1):
-                        NextNode = FutureNode
-                    elif CoastLine.Transects[i+1].Future:
-                        NextNode = CoastLine.Transects[i+1].get_FuturePosition(Year)
-                    else:
-                        NextNode = FutureNode
-
-                    # build line segments from the three nodes
-                    X.append((PreviousNode.X+FutureNode.X)/2.)
-                    Y.append((PreviousNode.Y+FutureNode.Y)/2.)
-                    X.append(FutureNode.X)
-                    Y.append(FutureNode.Y)
-                    X.append((NextNode.X+FutureNode.X)/2.)
-                    Y.append((NextNode.Y+FutureNode.Y)/2.)
-                    
-                    self.Fields = [('DeletionFlag','C', 1, 0),['Line_ID', 'C', 20, 0],
-                        ['Cell','N', 2, 0],['SubCell','C', 2, 0],['CMU','C', 3, 0],
-                        ['Year','N', 4, 0],['EDist','N', 6, 2],['Rate','N', 4, 4]]
-
-                    # get line node positions
-                    WriteLine = [np.column_stack([X,Y]).tolist()]
-            
-                    # calculate additional attributes
-                    RecentNode = Transect.get_RecentPosition()
-                    Distance = np.sqrt((FutureNode.X-RecentNode.X)**2. + (FutureNode.Y-RecentNode.Y)**2.)
-                    Rate = Transect.get_FutureShorelineRate(Year)
-
-                    # generate record (strs?)
-                    Record = [str(Line.ID), str(Transect.ID), str(Transect.Cell), str(Transect.SubCell),
-                    str(Transect.CMU), str(Year), str(Distance), str(Rate)]
-
-                    # write line and record
-                    WL.line(WriteLine)
-                    WL.record(*Record) ####### ISSUE WITH RECORDS NEEDS FIXING ########
-        
-        # close the shapefiles and clean up
-        WL.close()
-            
-        # create the projection file    
-        f = open(ErodedAreaShp.rstrip("shp")+"prj","w")
-        f.write(self.Projection)
-        f.close()
-
+    
     def WriteLinesShp(self, DictionaryKey, CoastShp):
         
         """

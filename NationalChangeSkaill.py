@@ -76,5 +76,5 @@ SkaillCoast.WriteFutureShorelinesShp(str(WorkingPath / "Skaill_New" / "Skaill_Fu
 SkaillCoast.WriteFutureShorelinesShp(str(WorkingPath / "Skaill_New" / "Skaill_FutureSmooth.shp"), Smooth=True)
 SkaillCoast.WriteFutureVegEdgeShp(str(WorkingPath / "Skaill_New" / "Skaill_Future_VegEdge_Smooth.shp"),  Smooth=True)
 SkaillCoast.WriteFutureUncertaintyShp(str(WorkingPath / "Skaill_New" / "Skaill_Uncertainty.shp"))
-
+SkaillCoast.WriteErodedAreaShp(str(WorkingPath / "Skaill_New" / "Skaill_Erosion.shp"))
 #SkaillCoast.WriteFutureShorelinesShp(str(WorkingPath / "SkaillTest.shp"))

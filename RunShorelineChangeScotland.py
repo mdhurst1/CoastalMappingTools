@@ -23,16 +23,16 @@ SmoothingWindowSize=501
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # loop through each cell
-#for index, Row in Cells.iterrows():
+for index, Row in Cells.iterrows():
 #CellSubList = ["2a",]
 #CellSubList = ["2a","2b","2c","2d","3a","3b","3c","3e","3f","3g"]
 #CellSubList = ["8b","8c","8d","9a","9b","9c","9d","9e","9e"]
-CellSubList = ["1a","10a","10b","10c","10d","10e","10f","10g","8a","8e"]
+#CellSubList = ["1a","10a","10b","10c","10d","10e","10f","10g","8a","8e"]
 
 for CellSub in CellSubList:
 
     # print cell to screen
-    #CellSub = Row.Cell_sub
+    CellSub = Row.Cell_sub
     print(CellSub)
     RowName = "Cell_"+CellSub
     
@@ -89,10 +89,9 @@ for CellSub in CellSubList:
     ResultsPath = WorkingPath / "Cell2a_Sensitivity1"
     CellCoast.WriteFutureShorelinesShp(str(ResultsPath / (RowName + "_Future.shp")),Smooth=False)
     CellCoast.WriteFutureShorelinesShp(str(ResultsPath / (RowName + "_FutureSmooth.shp")),Smooth=True)
-    CellCoast.WriteFutureUncertaintyShp(str(ResultsPath / (RowName + "_Uncertainty.shp"))) #,Smooth=False))
-    #Cellcoast.WriteFutureUncertaintyShp(str(ResultsPath / (RowName + "_Uncertainty.shp"))) #,Smooth=True))
+    CellCoast.WriteFutureUncertaintyShp(str(ResultsPath / (RowName + "_Uncertainty.shp")))
     #CellCoast.WriteFutureShorelineSegmentsShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSegments.shp")))
-    #CellCoast.WriteErodedAreaShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureErosion.shp")))
+    CellCoast.WriteErodedAreaShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureErosion.shp")))
     
     # SAVE ENTIRE COAST OBJECT
     print("\tSaving Coast Object as ", Filename2SaveCoast)
