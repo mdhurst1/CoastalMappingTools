@@ -249,12 +249,14 @@ class Coast:
         print("Coast.WriteErodedAreaShp: Writing predicted erosion area to polygon file")
 
         # get lists of lines for year of prediction and most recent shoreline position
-        self.WriteFutureLines = self.FutureShoreLines[self.FutureShoreLines.Year == Year]
-        self.WriteRecentLines = self.FutureShoreLines[self.FutureShoreLines.Year == 2020]
+        Indices = [i for i, Line in enumerate(self.FutureShoreLines) if Line.Year == Year]
+        self.WriteFutureLines = [self.FutureShoreLines[i] for i in Indices]
+        Indices = [i for i, Line in enumerate(self.FutureShoreLines) if Line.Year == 2020]
+        self.WriteRecentLines = [self.FutureShoreLines[i] for i in Indices]
         
         # set up files to write
         ErosionFrontShp = ErosionShp.split(".")[0]+"_2020.shp"
-        ErosionBackShp = CliffShp.split(".")[0]+"_"+str(Year)+".shp"
+        ErosionBackShp = ErosionShp.split(".")[0]+"_"+str(Year)+".shp"
 
         # write lines then patches
         self.WriteLinesShp("WriteFutureLines", ErosionBackShp)
