@@ -334,7 +334,7 @@ class Coast:
         f.write(self.Projection)
         f.close()
 
-    def WriteFutureUncertaintyShp(self, UncertaintyShp):
+    def WriteFutureUncertaintyShp(self, UncertaintyShp, Year=2100):
 
         """
         Writes future shoreline uncertainty estimates to a polygon
@@ -343,7 +343,8 @@ class Coast:
 
         """
 
-        # extract future shoreline positions from transect
+        # predict and extract future shoreline positions from transects
+        self.PredictFutureShorelinesUncertainty(Year)
         self.GetFutureShorelineUncertainty()
 
         # print action to screen
@@ -1841,6 +1842,21 @@ class Coast:
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 Transect.PredictFutureShorelines()
+
+    def PredictFutureShorelinesUncertainty(self, Year=2100):
+
+        """
+
+        Wrapper to call Transects function to predict future shoreline positions
+
+        MDH, September 2019
+
+        """
+        print("Coast.PredictFutureShorelines: predicting future shoreline positions")
+        # loop through transects and sample
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                Transect.PredictFutureShorelinesUncertainty(Year)
 
     def PredictFutureVegEdge(self,VegEdgeShp, Year=None):
 
