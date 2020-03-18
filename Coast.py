@@ -1506,10 +1506,23 @@ class Coast:
         Lines = GDF['geometry']
         
         # catch situation where only one line
+        MultiLines = []
+
         if len(Lines) == 1:
             MultiLines = Lines[0]
+
+        # deal with invalid geometries on the fly? This is messy!
         else:
-            MultiLines = MultiLineString([Line for Line in Lines])
+            for Line in Lines:
+                if Line.geom_type == "LineString":
+                    MultiLines.append(Line)
+                elif Line.geom_type == "MultiLineString":
+                    for SubLine in Line:
+                        if SubLine.geom_type == "LineString":
+                            MultiLines.append(SubLine)
+
+            MultiLines = MultiLineString(MultiLines)    
+            #MultiLines = MultiLineString([Line for Line in Lines if Line.geom_type == "LineString"])
             
 
         for Line in self.CoastLines:
@@ -1555,6 +1568,7 @@ class Coast:
                 # need date attribute if rates are to be calculated
                 Distances = Lines.distance(Intersection)
                 NearestLine = GDF.iloc[Distances.idxmin()]
+                print(NearestLine)
                 
                 # check it hasnt already been read
                 if "Surv_End_A" in NearestLine:

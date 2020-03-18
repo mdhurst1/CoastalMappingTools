@@ -33,8 +33,9 @@ for index, Row in Cells.iterrows():
 
     # print cell to screen
     CellSub = Row.Cell_sub
-    print(CellSub)
+    print("RUNNING CELL ", CellSub)
     RowName = "Cell_"+CellSub
+    
     
     # try opening bathy file as check on whether there is data
     try:
@@ -53,7 +54,16 @@ for index, Row in Cells.iterrows():
     except:
         print("\tCreating New Coast Object")
 
-
+    # get soft coast position as most recent 
+        SoftPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp")
+        BathyPath = WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")
+        OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")
+        QuiteOldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp")
+        if not BathyPath.is_file():
+            continue
+        elif not SoftPath.is_file():
+            continue
+        
         # SET UP THE COAST FROM -10m Contour
         CellCoast = Coast(str(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")))
         
@@ -62,10 +72,25 @@ for index, Row in Cells.iterrows():
         CellCoast.GenerateTransectsNormal2Shp(str(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Final.shp")),
                                                 str(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")), TransectSpacing=TransectSpacing, CheckTopology=True)
         
-        #### find historic shoreline positions and extend transect accordingly
-        CellCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")))
-        CellCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp")))
-        CellCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp")))
+        # SAVE ENTIRE COAST OBJECT
+        with open(str(Filename2SaveCoast), 'wb') as PFile:
+            pickle.dump(CellCoast, PFile)
+            
+
+        if not OldPath.is_file():
+            print("No 1890s MHWS file")
+        else:
+            CellCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")))
+        
+        if not QuiteOldPath.is_file():
+            print("No 1970s MHWS file")
+        else:
+            CellCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp")))
+        
+        
+        
+        CellCoast.ExtractHistoricalShorelinePositions(str(SoftPath))
+            
         CellCoast.WriteTransectsShp(str(WorkingPath / "CoastalCells" / (RowName + "_Transects.shp")))
     
         #### get MHWS for each transect
@@ -77,9 +102,7 @@ for index, Row in Cells.iterrows():
         ### get future relative sea level time series
         CellCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL"))
     
-        # SAVE ENTIRE COAST OBJECT
-        with open(str(Filename2SaveCoast), 'wb') as PFile:
-            pickle.dump(CellCoast, PFile)
+        
 
     ## predict future shorelines
     #CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
@@ -90,6 +113,7 @@ for index, Row in Cells.iterrows():
     CellCoast.WriteFutureShorelinesShp(str(ResultsPath / (RowName + "_Future.shp")),Smooth=False)
     CellCoast.WriteFutureShorelinesShp(str(ResultsPath / (RowName + "_FutureSmooth.shp")),Smooth=True)
     CellCoast.WriteFutureUncertaintyShp(str(ResultsPath / (RowName + "_Uncertainty.shp")))
+    CellCoast.WriteFutureUncertaintyShp(str(ResultsPath / (RowName + "_Uncertainty.shp")),Year="2050")
     #CellCoast.WriteFutureShorelineSegmentsShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSegments.shp")))
     CellCoast.WriteErodedAreaShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureErosion.shp")))
     
