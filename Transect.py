@@ -370,13 +370,30 @@ class Transect:
 
         # add analysis of 2100 uncertainty based on historical position change
         self.VolumetricCalibrationRates = np.append(self.VolumetricCalibrationRates, 0.)
+        
+
+    def PredictFutureShorelineUncertainty(self, Year=2100):
+
+        """
+        Function to map uncertainty for shoreline position in a certain year based on range 
+        of historical coastal changes
+
+        MDH March 2020
+
+        """
+
+        # get future sea level and time difference
+        FutureSeaLevel = self.FutureSeaLevel[self.FutureSeaLevelYears == Year]
+        dT = Year-self.HistoricShorelinesYears[-1]
+
+        # reset min and max in case uncertainty has been previously assessed
         self.FutureShorelineMinDistance = 9999999.
         self.FutureShorelineMaxDistance = 0
 
         for VolumetricCalibrationRate in self.VolumetricCalibrationRates:
             
             # self.InterpolatedRSLR
-            BruunRuleComponent = (-1./self.ShorefaceSlope)*(self.FutureSeaLevels[-1]-LatestRSL)
+            BruunRuleComponent = (-1./self.ShorefaceSlope)*(FutureSeaLevel-LatestRSL)
             CalibrationComponent = (1./self.ShorefaceDepth)*VolumetricCalibrationRate*dT
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
             
@@ -404,6 +421,7 @@ class Transect:
         requires PredictFutureShorelinePositions has already been run
 
         MDH, Feb 2020
+        
         """
         # calculate distance along transect to veg edge
         self.VegEdgeDistance = self.StartNode.get_Distance(self.VegEdgePosition)
