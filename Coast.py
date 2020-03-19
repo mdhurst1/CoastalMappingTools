@@ -1961,11 +1961,17 @@ class Coast:
                 if Transect.Future:
                     Transect.ExtendTransect(Distance, 0)
 
-    def FindDEM(self, DEMIndexFile):
+    def FindDEM(self, DEMIndexFileShp):
 
         """
         Identifies which DEMs transects intersect with, where interesction is with
         more than one transect DEMs will get merged.
+
+        Need to think this through more carefully... dont want to end up having to repeatedly open the same DEM
+        Get a list of transects that intersect each DEM along the coast object?
+        Intersect Coast lines and transects with DEMIndexFileShp
+        Open each DEM and extract topography for all transects that fall within
+        What to do about transects crossing from one DEM to another?
 
         MDH, March 2020
 
@@ -1973,10 +1979,19 @@ class Coast:
 
         print("Coast.FindDEM: Identifying DEM for each transect to sample from")
 
+        # read the DEM index file
+        PolyGDF = gp.read_file(DEMIndexFileShp)
+        
         for Line in self.CoastLines:
             for Transect in Line.Transects:
-                TransectLine = LineString(((Transect.EndNode.X,Transect.EndNode.Y),(Transect.Hinterland.X,Transect.Hinterland.Y)))
-                Intersection = TransectLine.intersection(DEMIndexFile??)
+                LineGDF = gp.GeoDataFrame(geometry=LineString(((Transect.EndNode.X,Transect.EndNode.Y),(Transect.Hinterland.X,Transect.Hinterland.Y))))
+                JoinGDF = gp.sjoin(LineGDF, GDF, op='intersects')
+                
+                # get location of DEM file from attribute tables
+                for Record in JoinGDF:
+                    Transect.DEMs.append(Record.location)
+
+                Transect.DEMs
 
 
     def ExtractTransectTopography(self, DTMFile, SwathDistance=-9999):
