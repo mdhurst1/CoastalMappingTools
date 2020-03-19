@@ -46,6 +46,7 @@ class Transect:
         self.CoastNode = CoastNode
         self.StartNode = StartNode
         self.EndNode = EndNode
+        self.HinterlandNode = None
         self.LineString = LineString(((self.StartNode.X,self.StartNode.Y),(self.EndNode.X,self.EndNode.Y)))
         self.Orientation = self.CalculateOrientation(self.StartNode, self.EndNode)
         self.Length = self.CalculateLength(self.StartNode, self.EndNode)
@@ -216,7 +217,7 @@ class Transect:
         
         return np.sqrt(dx**2 + dy**2.)
 
-    def ExtendTransect(self,Distance2Land, Distance2Sea):
+    def ExtendTransect(self, Distance2Land, Distance2Sea):
 
         """
 

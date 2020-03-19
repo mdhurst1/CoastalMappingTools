@@ -1943,8 +1943,42 @@ class Coast:
 
         """
 
-        
-    
+    def ExtendTransects2Hinterland(self, Distance):
+
+        """
+        Extends transects by a fixed distance into the hinterland in order to 
+        measure hinterland topography. N.B. does not extend start/end point but 
+        creates a new node in the hinterland.
+
+        MDH, March 2020
+
+        """
+
+        print("Coast.ExtendTransects2Hinterland: Puts a new node landward of existing transect")
+
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                if Transect.Future:
+                    Transect.ExtendTransect(Distance, 0)
+
+    def FindDEM(self, DEMIndexFile):
+
+        """
+        Identifies which DEMs transects intersect with, where interesction is with
+        more than one transect DEMs will get merged.
+
+        MDH, March 2020
+
+        """
+
+        print("Coast.FindDEM: Identifying DEM for each transect to sample from")
+
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                TransectLine = LineString(((Transect.EndNode.X,Transect.EndNode.Y),(Transect.Hinterland.X,Transect.Hinterland.Y)))
+                Intersection = TransectLine.intersection(DEMIndexFile??)
+
+
     def ExtractTransectTopography(self, DTMFile, SwathDistance=-9999):
         """
         Profile to populate transects with topographic data
