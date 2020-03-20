@@ -2042,11 +2042,12 @@ class Coast:
         if SwathDistance < 0:
             SwathDistance = DTM_Resolution*2.
 
-        # get extent of DTM
+        # get extent of DTM and set up polygon of extent
         XMin = DTM_Dataset.bounds[0]
         XMax = DTM_Dataset.bounds[2]
         YMin = DTM_Dataset.bounds[1]
         YMax = DTM_Dataset.bounds[3]
+        DTM_Extent = Polygon([Xmin, YMin, XMax, YMax])
 
         # Get vectors of X and Y coordinates, NB reversal of Y in line with 
         # DTM indexing from top left
@@ -2056,28 +2057,21 @@ class Coast:
         # Track progress
         NoTransects = np.sum([Line.NoTransects for Line in self.CoastLines])
         CurrentTransect = 0
-        for Line in self.CoastLines:
-            for i, Transect in enumerate(Line.Transects[:]):
-                
-                #Get line points
-                X1, Y1 = Transect.StartNode.get_XY()
-                X2, Y2 = Transect.EndNode.get_XY()
-
-                # check transect lies within DEM extent
-                #if X1 < XMin or X2 < XMin:
-                
+                        
         for Line in self.CoastLines:
             for Transect in Line.Transects:
-                # pass DTM
-                # this needs to be changed to pass to transect object
-                # fix this later
-
+                
                 # print progress to screen
                 print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
 
                 #Get line points
                 X1, Y1 = Transect.StartNode.get_XY()
                 X2, Y2 = Transect.EndNode.get_XY()
+                TransectLine = LineString([(X1, Y1), (X2, Y2)])
+
+                # check for intersection
+                if not TransectLine.intersects(DTM_Extent):
+                    continue
 
                 #find indices for bounding box
                 #need to be careful with reverse indexing
