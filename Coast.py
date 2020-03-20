@@ -1969,6 +1969,7 @@ class Coast:
 
         Need to think this through more carefully... dont want to end up having to repeatedly open the same DEM
         Get a list of transects that intersect each DEM along the coast object?
+        Get a list of unique DEMs that are intersected.
         Intersect Coast lines and transects with DEMIndexFileShp
         Open each DEM and extract topography for all transects that fall within
         What to do about transects crossing from one DEM to another?
@@ -1982,17 +1983,20 @@ class Coast:
         # read the DEM index file
         PolyGDF = gp.read_file(DEMIndexFileShp)
         
+        # list of unique DEMs
+        DEMList = []
+
         for Line in self.CoastLines:
-            for Transect in Line.Transects:
-                LineGDF = gp.GeoDataFrame(geometry=LineString(((Transect.EndNode.X,Transect.EndNode.Y),(Transect.Hinterland.X,Transect.Hinterland.Y))))
-                JoinGDF = gp.sjoin(LineGDF, GDF, op='intersects')
-                
-                # get location of DEM file from attribute tables
-                for Record in JoinGDF:
-                    Transect.DEMs.append(Record.location)
+            
+            # get multilinestring of transects
+            LineGDF = MultiLineString([gp.GeoDataFrame(geometry=LineString(((Transect.EndNode.X,Transect.EndNode.Y),(Transect.Hinterland.X,Transect.Hinterland.Y)))) for Transect in Line])
 
-                Transect.DEMs
-
+            # interesect with DEM references
+            JoinGDF = gp.sjoin(LineGDF, GDF, op='intersects')
+            TempDEMList = GDF.iloc[JoinGDF.right].unique()
+            
+            # append new DEMs to list
+            DEMList = [DEMList.append(DEM) for DEM in TempDEMList if DEM not in DEMList]
 
     def ExtractTransectTopography(self, DTMFile, SwathDistance=-9999):
         """
