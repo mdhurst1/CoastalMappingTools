@@ -1849,14 +1849,14 @@ class Coast:
 
         Wrapper to call Transects function to predict future shoreline positions
 
-        MDH, September 2019
-
+        MDH, September 2019=
         """
         print("Coast.PredictFutureShorelines: predicting future shoreline positions")
         # loop through transects and sample
         for Line in self.CoastLines:
             for Transect in Line.Transects:
-                Transect.PredictFutureShorelinesUncertainty(Year)
+                if Transect.Future:
+                    Transect.PredictFutureShorelineUncertainty(Year)
 
     def PredictFutureVegEdge(self,VegEdgeShp, Year=None):
 

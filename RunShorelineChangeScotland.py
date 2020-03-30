@@ -112,8 +112,8 @@ for index, Row in Cells.iterrows():
     ResultsPath = WorkingPath / "CoastalCells"
     CellCoast.WriteFutureShorelinesShp(str(ResultsPath / (RowName + "_Future.shp")),Smooth=False)
     CellCoast.WriteFutureShorelinesShp(str(ResultsPath / (RowName + "_FutureSmooth.shp")),Smooth=True)
-    CellCoast.WriteFutureUncertaintyShp(str(ResultsPath / (RowName + "_Uncertainty.shp")))
-    CellCoast.WriteFutureUncertaintyShp(str(ResultsPath / (RowName + "_Uncertainty.shp")),Year="2050")
+    CellCoast.WriteFutureUncertaintyShp(str(ResultsPath / (RowName + "_Uncertainty_2100.shp")))
+    CellCoast.WriteFutureUncertaintyShp(str(ResultsPath / (RowName + "_Uncertainty_2050.shp")),Year=2050)
     #CellCoast.WriteFutureShorelineSegmentsShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSegments.shp")))
     CellCoast.WriteErodedAreaShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureErosion.shp")))
     

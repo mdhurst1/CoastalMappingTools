@@ -334,17 +334,17 @@ class Transect:
         
         # get sea level at latest time
         if self.HistoricShorelinesYears[-1] < self.FutureSeaLevelYears[0]:
-            LatestRSL = self.FutureSeaLevels[0]
+            self.LatestRSL = self.FutureSeaLevels[0]
         else:
             Interp = (self.FutureSeaLevelYears[1]-self.HistoricShorelinesYears[-1])/(self.FutureSeaLevelYears[1]-self.FutureSeaLevelYears[0])
-            LatestRSL = self.FutureSeaLevels[1]-Interp*(self.FutureSeaLevels[1]-self.FutureSeaLevels[0])
+            self.LatestRSL = self.FutureSeaLevels[1]-Interp*(self.FutureSeaLevels[1]-self.FutureSeaLevels[0])
         
         # Future shoreline positions
         for i in range(1, len(self.FutureSeaLevelYears)):
             dT = self.FutureSeaLevelYears[i]-self.HistoricShorelinesYears[-1]
             
             # self.InterpolatedRSLR
-            BruunRuleComponent = (-1./self.ShorefaceSlope)*(self.FutureSeaLevels[i]-LatestRSL)
+            BruunRuleComponent = (-1./self.ShorefaceSlope)*(self.FutureSeaLevels[i]-self.LatestRSL)
             CalibrationComponent = (1./self.ShorefaceDepth)*self.VolumetricCalibrationRates[-1]*dT
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
             
@@ -383,7 +383,7 @@ class Transect:
         """
 
         # get future sea level and time difference
-        FutureSeaLevel = self.FutureSeaLevel[self.FutureSeaLevelYears == Year]
+        FutureSeaLevel = self.FutureSeaLevels[self.FutureSeaLevelYears == Year]
         dT = Year-self.HistoricShorelinesYears[-1]
 
         # reset min and max in case uncertainty has been previously assessed
@@ -393,7 +393,7 @@ class Transect:
         for VolumetricCalibrationRate in self.VolumetricCalibrationRates:
             
             # self.InterpolatedRSLR
-            BruunRuleComponent = (-1./self.ShorefaceSlope)*(FutureSeaLevel-LatestRSL)
+            BruunRuleComponent = (-1./self.ShorefaceSlope)*(FutureSeaLevel-self.LatestRSL)
             CalibrationComponent = (1./self.ShorefaceDepth)*VolumetricCalibrationRate*dT
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
             
