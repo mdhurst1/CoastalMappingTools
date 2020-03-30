@@ -76,6 +76,7 @@ class Coast:
         self.TransectsLength2Land = 1000.
         self.ExtremeWaterLevels = []
         self.MHWS = None
+        self.UniqueDEMList = []
 
         if CoastShp:
             self.ReadCoastShp(CoastShp)
@@ -1984,7 +1985,7 @@ class Coast:
         PolyGDF = gp.read_file(DEMIndexFileShp)
         
         # list of unique DEMs
-        DEMList = []
+        self.UniqueDEMList = []
 
         for Line in self.CoastLines:
             
@@ -1996,7 +1997,9 @@ class Coast:
             TempDEMList = GDF.iloc[JoinGDF.right].unique()
             
             # append new DEMs to list
-            DEMList = [DEMList.append(DEM) for DEM in TempDEMList if DEM not in DEMList]
+            self.UniqueDEMList = [self.UniqueDEMList.append(DEM) for DEM in TempDEMList if DEM not in DEMList]
+
+        print(self.UniqueDEMList)
 
     def ExtractTransectTopography(self, DTMFile, SwathDistance=-9999):
         """
