@@ -1998,10 +1998,69 @@ class Coast:
             
             # set DEMs to list
             self.UniqueDEMList = JoinGDF.location.unique()
-            
-        
 
-    def ExtractTransectTopography(self, DTMFile, SwathDistance=-9999):
+    def ExtractTransectTopography(self, DEMFileList=None)
+
+        """
+        Function to sample elevations for transect lines from list of DEM files
+        
+        MDH, March 2020
+
+        """      
+        
+        if DEMFileList:
+            self.UniqueDEMList = DEMFileList
+
+        for DEM in self.UniqueDEMList:
+            
+            DTM_Dataset = rasterio.open(DEM)
+            DTMArray = DTM_Dataset.read(1)
+            NCols = DTM_Dataset.width
+            NRows = DTM_Dataset.height
+            NDV = DTM_Dataset.nodata
+            Resolutions = DTM_Dataset.res
+            
+            # check for square pixels
+            if not DTM_Dataset.res[0] == DTM_Dataset.res[1]:
+                raise SystemExit("DTM has non-square cells")
+        
+            # get resolution
+            DTM_Resolution = DTM_Dataset.res[0]
+
+            # get extent of DTM and set up polygon of extent
+            XMin = DTM_Dataset.bounds[0]
+            XMax = DTM_Dataset.bounds[2]
+            YMin = DTM_Dataset.bounds[1]
+            YMax = DTM_Dataset.bounds[3]
+            DTM_Extent = Polygon([Xmin, YMin, XMax, YMax])
+
+            # Get vectors of X and Y coordinates, NB reversal of Y in line with 
+            # DTM indexing from top left
+            XVector = XMin+np.arange(0,NCols)*DTM_Resolution+0.5*DTM_Resolution
+            YVector = YMin+DTM_Resolution*np.arange(0,NRows)[::-1]+0.5*DTM_Resolution
+
+            for Line in self.CoastLines:
+                for Transect in Line.Transects:
+                    
+                    # check we have nodes to sample
+                    if not Transect.DistanceNodes:
+                        Transect.DistanceSpacing = DTM_Dataset.res[0]
+                        Transect.GenerateNodes()
+
+                    #Get line points
+                    X1, Y1 = Transect.StartNode.get_XY()
+                    X2, Y2 = Transect.EndNode.get_XY()
+                    TransectLine = LineString([(X1, Y1), (X2, Y2)])
+
+                    # check for intersection
+                    if not TransectLine.intersects(DTM_Extent):
+                        continue
+
+
+
+
+
+    def ExtractTransectTopographySwath(self, DTMFile, SwathDistance=-9999):
         """
         Profile to populate transects with topographic data
         Uses swath profile routine to collect elevations within a certain distance
@@ -2022,7 +2081,7 @@ class Coast:
 
         """
         
-        print("Coast.EstractTransectTopography: Sampling the DTM for each transect")
+        print("Coast.EstractTransectTopography: Sampling DTMs for each transect")
         
         # load the DTM and get its properties
         print("\tLoading DTM... ", end="")
