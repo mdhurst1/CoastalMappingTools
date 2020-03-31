@@ -1987,18 +1987,24 @@ class Coast:
         # list of unique DEMs
         self.UniqueDEMList = []
 
+        import pandas as pd
+        pd.set_option('display.max_rows', None)
+        pd.set_option('display.max_columns', None)
+        pd.set_option('display.width', None)
+        pd.set_option('display.max_colwidth', -1)
+
         for Line in self.CoastLines:
             
             # get multilinestring of transects
-            LineGDF = MultiLineString([gp.GeoDataFrame(geometry=LineString(((Transect.EndNode.X,Transect.EndNode.Y),(Transect.Hinterland.X,Transect.Hinterland.Y)))) for Transect in Line])
-
-            # interesect with DEM references
-            JoinGDF = gp.sjoin(LineGDF, GDF, op='intersects')
-            TempDEMList = GDF.iloc[JoinGDF.right].unique()
+            Lines = [LineString([(Transect.EndNode.X,Transect.EndNode.Y),(Transect.StartNode.X,Transect.StartNode.Y)]) for Transect in Line.Transects]
+            LineGDF = gp.GeoDataFrame(geometry=Lines,crs=PolyGDF.crs)
             
-            # append new DEMs to list
-            self.UniqueDEMList = [self.UniqueDEMList.append(DEM) for DEM in TempDEMList if DEM not in DEMList]
-
+            # interesect with DEM references
+            JoinGDF = gp.sjoin(LineGDF, PolyGDF, op='intersects')
+            
+            # set DEMs to list
+            self.UniqueDEMList = JoinGDF.location.unique()
+            
         print(self.UniqueDEMList)
 
     def ExtractTransectTopography(self, DTMFile, SwathDistance=-9999):
