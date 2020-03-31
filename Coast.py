@@ -2045,17 +2045,21 @@ class Coast:
                     # check we have nodes to sample
                     if not Transect.DistanceNodes:
                         Transect.DistanceSpacing = DTM_Dataset.res[0]
-                        Transect.GenerateNodes()
-
-                    #Get line points
-                    X1, Y1 = Transect.StartNode.get_XY()
-                    X2, Y2 = Transect.EndNode.get_XY()
-                    TransectLine = LineString([(X1, Y1), (X2, Y2)])
+                        Transect.GenerateSampleNodes()
 
                     # check for intersection
-                    if not TransectLine.intersects(DTM_Extent):
+                    if not Transect.LineString.intersects(DTM_Extent):
                         continue
 
+                    for SampleNode in Transect.DistanceNodes:
+                        SampleNode.Z = 
+
+                    #c sample DEM at node positions if no value already exists
+                    coords = [(ThisNode.X, ThisNode.Y) for ThisNode in Transect.DistanceNodes]
+                    Elevations = DTM_Dataset.sample(coords)
+                    for i, ThisNode in enumerate(Transect.DistanceNodes):
+                        if not ThisNode.Z:
+                            ThisNode.Z = Elevations[i]
 
 
 
