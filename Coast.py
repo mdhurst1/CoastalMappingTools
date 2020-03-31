@@ -2061,9 +2061,6 @@ class Coast:
                         if not ThisNode.Z:
                             ThisNode.Z = Elevations[i]
 
-
-
-
     def ExtractTransectTopographySwath(self, DTMFile, SwathDistance=-9999):
         """
         Profile to populate transects with topographic data
