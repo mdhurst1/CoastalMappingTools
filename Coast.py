@@ -1987,12 +1987,6 @@ class Coast:
         # list of unique DEMs
         self.UniqueDEMList = []
 
-        import pandas as pd
-        pd.set_option('display.max_rows', None)
-        pd.set_option('display.max_columns', None)
-        pd.set_option('display.width', None)
-        pd.set_option('display.max_colwidth', -1)
-
         for Line in self.CoastLines:
             
             # get multilinestring of transects
@@ -2005,7 +1999,7 @@ class Coast:
             # set DEMs to list
             self.UniqueDEMList = JoinGDF.location.unique()
             
-        print(self.UniqueDEMList)
+        
 
     def ExtractTransectTopography(self, DTMFile, SwathDistance=-9999):
         """
