@@ -90,6 +90,7 @@ class Transect:
         # transect data
         self.NoValues = None
         self.DistanceSpacing = None
+        self.DistanceNodes = None
         self.Distance = None
         self.Elevation = None
         self.ElevationMin = None
@@ -237,6 +238,26 @@ class Transect:
         self.EndNode = Node(X1,Y1)
 
         self.Length = self.CalculateLength(self.StartNode, self.EndNode)
+
+    def GenerateSampleNodes(self,Spacing=None):
+
+        """ 
+        Function to generate regularly spaced nodes along the transect
+
+        MDH, March 2020
+        
+        """
+
+        if Spacing:
+            self.DistanceSpacing = Spacing
+        
+        self.NoNodes = int(np.ceil(self.Length/self.DistanceSpacing))
+
+        # create nodes
+        XNodes = np.linspace(self.StartNode.X, self.Endnode.X, self.NoNodes-1)
+        YNodes = np.linspace(self.StartNode.Y, self.Endnode.Y, self.NoNodes-1)
+        self.DistanceNodes = [Node(X,Y) for X, Y in zip(XNodes,YNodes)]
+        self.Distance = [self.StartNode.get_Distance(ThisNode) for Thisnode in self.DistanceNodes]
 
     def PredictFutureShorelines(self):
 
