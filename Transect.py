@@ -257,7 +257,7 @@ class Transect:
         XNodes = np.linspace(self.StartNode.X, self.Endnode.X, self.NoNodes-1)
         YNodes = np.linspace(self.StartNode.Y, self.Endnode.Y, self.NoNodes-1)
         self.DistanceNodes = [Node(X,Y) for X, Y in zip(XNodes,YNodes)]
-z        self.Distance = [self.StartNode.get_Distance(ThisNode) for Thisnode in self.DistanceNodes]
+        self.Distance = [self.StartNode.get_Distance(ThisNode) for Thisnode in self.DistanceNodes]
 
     def PredictFutureShorelines(self):
 

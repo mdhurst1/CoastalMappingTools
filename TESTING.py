@@ -107,6 +107,7 @@ for CellSub in CellSubList:
     HinterlandDistance = 200
     CellCoast.ExtendTransects2Hinterland(HinterlandDistance)    
     CellCoast.FindDEM(str(NationalDEMPath / "OSTerrain5_fullcoastindex.shp"))
+    CellCoast.ExtractTransectTopography()
     
     ## predict future shorelines
     #CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))

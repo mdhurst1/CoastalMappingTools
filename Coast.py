@@ -1999,7 +1999,7 @@ class Coast:
             # set DEMs to list
             self.UniqueDEMList = JoinGDF.location.unique()
 
-    def ExtractTransectTopography(self, DEMFileList=None)
+    def ExtractTransectTopography(self, DEMFileList=None):
 
         """
         Function to sample elevations for transect lines from list of DEM files
@@ -2012,6 +2012,8 @@ class Coast:
             self.UniqueDEMList = DEMFileList
 
         for DEM in self.UniqueDEMList:
+            
+            print("\t" + DEM.split("/")[-1])
             
             DTM_Dataset = rasterio.open(DEM)
             DTMArray = DTM_Dataset.read(1)
@@ -2050,9 +2052,6 @@ class Coast:
                     # check for intersection
                     if not Transect.LineString.intersects(DTM_Extent):
                         continue
-
-                    for SampleNode in Transect.DistanceNodes:
-                        SampleNode.Z = 
 
                     #c sample DEM at node positions if no value already exists
                     coords = [(ThisNode.X, ThisNode.Y) for ThisNode in Transect.DistanceNodes]
