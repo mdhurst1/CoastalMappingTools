@@ -15,7 +15,7 @@ from Coast import *
 # define file names for analysis
 WorkingPath = pathlib.Path.cwd().parent
 NationalDEMPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2Final/99_NationalData/OSTerrain5")
-
+OutputPath = WorkingPath/"FinalNationalRun"
 # set the transect spacing (in m)
 TransectSpacing = 10.
 SmoothingWindowSize=501
@@ -46,7 +46,7 @@ for CellSub in CellSubList:
         continue
 
     # # this checks to see whether coast object already exists
-    Filename2SaveCoast = WorkingPath / "CoastalCells" / (RowName+"_Change.pydata")
+    Filename2SaveCoast = OutputPath / (RowName+"_Change.pydata")
 
     try:
         CellCoast = pickle.load( open( Filename2SaveCoast, "rb" ) )
@@ -55,44 +55,46 @@ for CellSub in CellSubList:
     except:
         print("\tCreating New Coast Object")
 
-    # get soft coast position as most recent 
+        # get soft coast position as most recent
+        ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Final.shp")
         SoftPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp")
         BathyPath = WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")
         OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")
         QuiteOldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp")
+        
         if not BathyPath.is_file():
             continue
         elif not SoftPath.is_file():
             continue
         
         # SET UP THE COAST FROM -10m Contour
-        CellCoast = Coast(str(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")))
+        CellCoast = Coast(str(BathyPath))
         
         # may need to think carefully about how much to smooth
         CellCoast.SmoothCoastLines(WindowSize=SmoothingWindowSize)
-        CellCoast.GenerateTransectsNormal2Shp(str(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Final.shp")),
-                                                str(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")), TransectSpacing=TransectSpacing, CheckTopology=True)
+        CellCoast.GenerateTransectsNormal2Shp(str(ModernPath), str(BathyPath), 
+                                            TransectSpacing=TransectSpacing, CheckTopology=True)
         
         # SAVE ENTIRE COAST OBJECT
         with open(str(Filename2SaveCoast), 'wb') as PFile:
             pickle.dump(CellCoast, PFile)
             
-
         if not OldPath.is_file():
             print("No 1890s MHWS file")
         else:
-            CellCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")))
+            CellCoast.ExtractHistoricalShorelinePositions(str(OldPath))
         
         if not QuiteOldPath.is_file():
             print("No 1970s MHWS file")
         else:
-            CellCoast.ExtractHistoricalShorelinePositions(str(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp")))
+            CellCoast.ExtractHistoricalShorelinePositions(str(QuiteOldPath))
         
-        
-        
-        CellCoast.ExtractHistoricalShorelinePositions(str(SoftPath))
+        if not SoftPath.is_file():
+            print("No soft MHWS file")
+        else:
+            CellCoast.ExtractHistoricalShorelinePositions(str(SoftPath))
             
-        CellCoast.WriteTransectsShp(str(WorkingPath / "CoastalCells" / (RowName + "_Transects.shp")))
+        CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects.shp")))
     
         #### get MHWS for each transect
         CellCoast.SampleMHWSElevation(str(WorkingPath / "MHWS_Lines" / "scotland_mhws_elev.tif"))

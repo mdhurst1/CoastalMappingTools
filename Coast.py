@@ -19,7 +19,7 @@ import shapefile
 import itertools
 import rasterio
 import geopandas as gp
-from shapely.geometry import Point, LineString, MultiLineString, MultiPoint
+from shapely.geometry import Point, Polygon, LineString, MultiLineString, MultiPoint
 from shapely.ops import nearest_points, linemerge
 
 from Line import *
@@ -2014,7 +2014,7 @@ class Coast:
         for DEM in self.UniqueDEMList:
             
             print("\t" + DEM.split("/")[-1])
-            
+
             DTM_Dataset = rasterio.open(DEM)
             DTMArray = DTM_Dataset.read(1)
             NCols = DTM_Dataset.width
@@ -2022,6 +2022,10 @@ class Coast:
             NDV = DTM_Dataset.nodata
             Resolutions = DTM_Dataset.res
             
+            # check if we're missing no data
+            if not DTM_Dataset.nodata:
+                sys.exit("missing no data value")
+
             # check for square pixels
             if not DTM_Dataset.res[0] == DTM_Dataset.res[1]:
                 raise SystemExit("DTM has non-square cells")
@@ -2034,7 +2038,7 @@ class Coast:
             XMax = DTM_Dataset.bounds[2]
             YMin = DTM_Dataset.bounds[1]
             YMax = DTM_Dataset.bounds[3]
-            DTM_Extent = Polygon([Xmin, YMin, XMax, YMax])
+            DTM_Extent = Polygon([[XMin, YMin], [XMin, YMax], [XMax, YMax], [XMax, YMin]])
 
             # Get vectors of X and Y coordinates, NB reversal of Y in line with 
             # DTM indexing from top left
@@ -2044,6 +2048,9 @@ class Coast:
             for Line in self.CoastLines:
                 for Transect in Line.Transects:
                     
+                    if Transect.ID != "171":
+                        continue
+
                     # check we have nodes to sample
                     if not Transect.DistanceNodes:
                         Transect.DistanceSpacing = DTM_Dataset.res[0]
@@ -2052,13 +2059,39 @@ class Coast:
                     # check for intersection
                     if not Transect.LineString.intersects(DTM_Extent):
                         continue
+                    
+                    # get list of points that intersect DTM only
+                    Coords = [(ThisNode.X, ThisNode.Y) for ThisNode in Transect.DistanceNodes]
+                    Points = [Point(Coord) for Coord in Coords]
+                    #Points = [Pt for Pt in Points if Pt.intersects(DTM_Extent)]
+                    #Intersects = [True if Pt.intersects(DTM_Extent) else False for Pt in Points]
+                    Elevations = [Sample[0] if Sample[0] else -9999 for Sample in DTM_Dataset.sample(Coords)]
+                    print(Elevations)
+                    sys.exit()
 
-                    #c sample DEM at node positions if no value already exists
-                    coords = [(ThisNode.X, ThisNode.Y) for ThisNode in Transect.DistanceNodes]
-                    Elevations = DTM_Dataset.sample(coords)
+                    #sample the elevations
+                    Coords = [(Point.x, Point.y) for Point in Points]
+                    
+                    if Transect.ID == "171":
+                        Points = [ThisPoint if ThisPoint.within(DTM_Extent) else Point((0,0)) for ThisPoint in Points]
+                        Coords = [(Point.x, Point.y) for Point in Points]
+                        print(DTM_Dataset.nodata)
+                        result = [Sample[0] for Sample in DTM_Dataset.sample(Coords)]
+                        print(result)
+                        #result = [list(g) for g in result if g != -9999 ]
+                        #print(result)
+                        sys.exit()
+
+                    Elevations = [Sample[0] if Sample[0] else -9999 for Sample in DTM_Dataset.sample(Coords)]
+                    
+                    
+                    # problem here gettign back to transects
                     for i, ThisNode in enumerate(Transect.DistanceNodes):
-                        if not ThisNode.Z:
+                        
+                        if not ThisNode.Z and Elevations[i] > 0:
                             ThisNode.Z = Elevations[i]
+
+                    
 
     def ExtractTransectTopographySwath(self, DTMFile, SwathDistance=-9999):
         """
