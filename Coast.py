@@ -1997,7 +1997,11 @@ class Coast:
             JoinGDF = gp.sjoin(LineGDF, PolyGDF, op='intersects')
             
             # set DEMs to list
-            self.UniqueDEMList = JoinGDF.location.unique()
+            self.UniqueDEMList.extend(list(JoinGDF.location.unique()))
+        
+        # replace extension with *.tif
+        for i, DEMPath in enumerate(self.UniqueDEMList):
+            self.UniqueDEMList[i] = DEMPath.rstrip("asc")+"tif"
 
     def ExtractTransectTopography(self, DEMFileList=None):
 
