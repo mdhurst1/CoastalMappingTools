@@ -2028,7 +2028,7 @@ class Coast:
             
             # check if we're missing no data
             if not DTM_Dataset.nodata:
-                sys.exit("missing no data value")
+                raise SystemExit("DTM missing no data value")
 
             # check for square pixels
             if not DTM_Dataset.res[0] == DTM_Dataset.res[1]:
@@ -2065,16 +2065,19 @@ class Coast:
                         continue
                     
                     # get list of points that intersect DTM only
-                    Coords = [(ThisNode.X, ThisNode.Y) for ThisNode in Transect.DistanceNodes]
+                    dzCoords = [(ThisNode.X, ThisNode.Y) for ThisNode in Transect.DistanceNodes]
                     Points = [Point(Coord) for Coord in Coords]
                     #Points = [Pt for Pt in Points if Pt.intersects(DTM_Extent)]
                     #Intersects = [True if Pt.intersects(DTM_Extent) else False for Pt in Points]
-                    Elevations = [Sample[0] if Sample[0] else -9999 for Sample in DTM_Dataset.sample(Coords)]
-                    print(Elevations)
-                    sys.exit()
+                    #print(Intersects)
+                    #Samples = [Sample for Sample in DTM_Dataset.sample(Coords[Intersects==True])]
+                    #print(Samples)
+                    #Elevations = [Sample[0] if Intersect else NDV for Sample, Intersect in zip(DTM_Dataset.sample(Coords),Intersects)]
+                    #print(Elevations)
+                    #sys.exit()
 
                     #sample the elevations
-                    Coords = [(Point.x, Point.y) for Point in Points]
+                    #Coords = [(Point.x, Point.y) for Point in Points]
                     
                     if Transect.ID == "171":
                         Points = [ThisPoint if ThisPoint.within(DTM_Extent) else Point((0,0)) for ThisPoint in Points]
