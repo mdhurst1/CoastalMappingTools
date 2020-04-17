@@ -2065,40 +2065,16 @@ class Coast:
                         continue
                     
                     # get list of points that intersect DTM only
-                    dzCoords = [(ThisNode.X, ThisNode.Y) for ThisNode in Transect.DistanceNodes]
-                    Points = [Point(Coord) for Coord in Coords]
-                    #Points = [Pt for Pt in Points if Pt.intersects(DTM_Extent)]
-                    #Intersects = [True if Pt.intersects(DTM_Extent) else False for Pt in Points]
-                    #print(Intersects)
-                    #Samples = [Sample for Sample in DTM_Dataset.sample(Coords[Intersects==True])]
-                    #print(Samples)
-                    #Elevations = [Sample[0] if Intersect else NDV for Sample, Intersect in zip(DTM_Dataset.sample(Coords),Intersects)]
-                    #print(Elevations)
-                    #sys.exit()
-
-                    #sample the elevations
-                    #Coords = [(Point.x, Point.y) for Point in Points]
-                    
-                    if Transect.ID == "171":
-                        Points = [ThisPoint if ThisPoint.within(DTM_Extent) else Point((0,0)) for ThisPoint in Points]
-                        Coords = [(Point.x, Point.y) for Point in Points]
-                        print(DTM_Dataset.nodata)
-                        result = [Sample[0] for Sample in DTM_Dataset.sample(Coords)]
-                        print(result)
-                        #result = [list(g) for g in result if g != -9999 ]
-                        #print(result)
-                        sys.exit()
-
-                    Elevations = [Sample[0] if Sample[0] else -9999 for Sample in DTM_Dataset.sample(Coords)]
-                    
+                    Points = [Point(ThisNode.X,ThisNode.Y) for ThisNode in Transect.DistanceNodes]
+                    Points = [ThisPoint if ThisPoint.within(DTM_Extent) else Point((0,0)) for ThisPoint in Points]
+                    Coords = [(Point.x, Point.y) for Point in Points]
+                    Elevations = [Sample[0] for Sample in DTM_Dataset.sample(Coords)]
                     
                     # problem here gettign back to transects
                     for i, ThisNode in enumerate(Transect.DistanceNodes):
                         
                         if not ThisNode.Z and Elevations[i] > 0:
                             ThisNode.Z = Elevations[i]
-
-                    
 
     def ExtractTransectTopographySwath(self, DTMFile, SwathDistance=-9999):
         """
