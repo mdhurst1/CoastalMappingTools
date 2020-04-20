@@ -1959,8 +1959,7 @@ class Coast:
 
         for Line in self.CoastLines:
             for Transect in Line.Transects:
-                if Transect.Future:
-                    Transect.ExtendTransect(Distance, 0)
+                Transect.ExtendTransect(Distance, 0)
 
     def FindDEM(self, DEMIndexFileShp):
 
@@ -2074,6 +2073,9 @@ class Coast:
                             ThisNode.Z = Elevations[i]
 
                     Transect.HaveTopography = True
+
+                    Transect.CalculateHinterlandSlope()
+
 
     def ExtractTransectTopographySwath(self, DTMFile, SwathDistance=-9999):
         """

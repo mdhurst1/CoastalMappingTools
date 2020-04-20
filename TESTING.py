@@ -108,7 +108,7 @@ for CellSub in CellSubList:
     # Extend transects landward by a fixed distance
     HinterlandDistance = 200
     CellCoast.ExtendTransects2Hinterland(HinterlandDistance)
-    CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects.shp")))
+    CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_ExtendedTransects.shp")))
     CellCoast.FindDEM(str(NationalDEMPath / "OSTerrain5_fullcoastindex.shp"))
     CellCoast.ExtractTransectTopography()
     
