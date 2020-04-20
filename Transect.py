@@ -229,10 +229,7 @@ class Transect:
         MDH, August 2019
 
         """
-        print(self.StartNode)
-        print(self.EndNode)
-        plt.plot([self.StartNode.X, self.EndNode.X],[self.StartNode.Y, self.EndNode.Y],'k-')
-
+        
         # extend transect landward and seaward?
         X1 = self.StartNode.X - Distance2Sea * np.sin( np.radians( self.Orientation ) )
         Y1 = self.StartNode.Y - Distance2Sea * np.cos( np.radians( self.Orientation ) )
@@ -243,10 +240,6 @@ class Transect:
         self.EndNode = Node(X1,Y1)
 
         self.Length = self.CalculateLength(self.StartNode, self.EndNode)
-        
-        plt.plot([self.StartNode.X, self.EndNode.X],[self.StartNode.Y, self.EndNode.Y],'ro')
-        plt.show()
-        sys.exit()
 
     def GenerateSampleNodes(self,Spacing=None):
 
