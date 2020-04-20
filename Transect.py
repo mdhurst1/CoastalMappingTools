@@ -220,7 +220,7 @@ class Transect:
         
         return np.sqrt(dx**2 + dy**2.)
 
-    def ExtendTransect(self, Distance2Land, Distance2Sea):
+    def ExtendTransect(self, Distance2Land=0, Distance2Sea=0):
 
         """
 
@@ -229,17 +229,24 @@ class Transect:
         MDH, August 2019
 
         """
-        
-        # extend transect landward and seaward?
-        X1 = self.StartNode.X - Distance2Land * np.sin( np.radians( self.Orientation ) )
-        Y1 = self.StartNode.Y - Distance2Land * np.cos( np.radians( self.Orientation ) )
-        self.StartNode = Node(X1,Y1)
+        print(self.StartNode)
+        print(self.EndNode)
+        plt.plot([self.StartNode.X, self.EndNode.X],[self.StartNode.Y, self.EndNode.Y],'k-')
 
-        X1 = self.StartNode.X + Distance2Sea * np.sin( np.radians( self.Orientation ) )
-        Y1 = self.StartNode.Y + Distance2Sea * np.cos( np.radians( self.Orientation ) )
+        # extend transect landward and seaward?
+        X1 = self.StartNode.X - Distance2Sea * np.sin( np.radians( self.Orientation ) )
+        Y1 = self.StartNode.Y - Distance2Sea * np.cos( np.radians( self.Orientation ) )
+        self.StartNode = Node(X1,Y1)
+        
+        X1 = self.EndNode.X + Distance2Land * np.sin( np.radians( self.Orientation ) )
+        Y1 = self.EndNode.Y + Distance2Land * np.cos( np.radians( self.Orientation ) )
         self.EndNode = Node(X1,Y1)
 
         self.Length = self.CalculateLength(self.StartNode, self.EndNode)
+        
+        plt.plot([self.StartNode.X, self.EndNode.X],[self.StartNode.Y, self.EndNode.Y],'ro')
+        plt.show()
+        sys.exit()
 
     def GenerateSampleNodes(self,Spacing=None):
 
@@ -275,13 +282,18 @@ class Transect:
             sys.exit("No topography")
 
         # isolate distance and elevation
-        Nodes = [ThisNode if ThisNode.Z > 0 for ThisNode in self.DistanceNodes]
-        Distances = [ThisNode.get_Distance(StartNode) for ThisNode in Nodes]
-        Elevations = [ThisNode.Z for ThisNode in Nodes]
+        Nodes = [ThisNode for ThisNode in self.DistanceNodes if ThisNode.Z]
+        Distances = np.array([ThisNode.get_Distance(self.StartNode) for ThisNode in Nodes if ThisNode.Z > 0])
+        Elevations = np.array([ThisNode.Z for ThisNode in Nodes if ThisNode.Z > 0])
 
-        Slope, Intercept = np.polytfit(Distance,Elevation,1)
-
+        Slope, Intercept = np.polyfit(Distances,Elevations,1)
+        print(Distances)
+        print(Slope, Intercept)
         self.HinterlandSlope = np.abs(Slope)
+
+        plt.plot(Distances, Elevations,'ko-')
+        plt.plot(Distances, Slope*Distances+Intercept,'r-')
+        plt.show()
 
     def PredictFutureShorelines(self):
 
