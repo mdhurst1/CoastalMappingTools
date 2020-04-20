@@ -2052,9 +2052,6 @@ class Coast:
             for Line in self.CoastLines:
                 for Transect in Line.Transects:
                     
-                    if Transect.ID != "171":
-                        continue
-
                     # check we have nodes to sample
                     if not Transect.DistanceNodes:
                         Transect.DistanceSpacing = DTM_Dataset.res[0]
@@ -2075,6 +2072,8 @@ class Coast:
                         
                         if not ThisNode.Z and Elevations[i] > 0:
                             ThisNode.Z = Elevations[i]
+
+                    Transect.HaveTopography = True
 
     def ExtractTransectTopographySwath(self, DTMFile, SwathDistance=-9999):
         """

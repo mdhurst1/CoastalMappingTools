@@ -71,6 +71,7 @@ class Transect:
         self.ClosureDepth = 10.
         self.ShorefaceDistance = None
         self.ShorefaceSlope = None
+        self.HinterlandSlope = None
 
         # relative sea level rise history (rate in mm/year)
         self.HistoricalRSLR = None
@@ -88,6 +89,7 @@ class Transect:
         self.VegEdge = False
 
         # transect data
+        self.HaveTopography = False
         self.NoValues = None
         self.DistanceSpacing = None
         self.DistanceNodes = None
@@ -259,6 +261,28 @@ class Transect:
         self.DistanceNodes = [Node(X,Y) for X, Y in zip(XNodes,YNodes)]
         self.Distance = [self.StartNode.get_Distance(ThisNode) for ThisNode in self.DistanceNodes]
 
+    def CalculateHinterlandSlope(self):
+
+        """
+        function to calculate the mean hinterland slope for transects with hinterland topography
+        extracted. Fits linear regression to elevation as function of distance
+
+        MDH, April 2020
+
+        """
+
+        if not self.HaveTopography:
+            sys.exit("No topography")
+
+        # isolate distance and elevation
+        Nodes = [ThisNode if ThisNode.Z > 0 for ThisNode in self.DistanceNodes]
+        Distances = [ThisNode.get_Distance(StartNode) for ThisNode in Nodes]
+        Elevations = [ThisNode.Z for ThisNode in Nodes]
+
+        Slope, Intercept = np.polytfit(Distance,Elevation,1)
+
+        self.HinterlandSlope = np.abs(Slope)
+
     def PredictFutureShorelines(self):
 
         """
@@ -346,7 +370,7 @@ class Transect:
             #self.InterpolatedRSLR.append(self.HistoricalRSLR/1000.+RSLRGradient*InterpFraction)
 
         
-        # get mean slope
+        # get mean slopes of shoreface
         self.ShorefaceDistance = self.StartNode.get_Distance(self.HistoricShorelinesPosition[-1])
         self.ShorefaceDepth = self.ClosureDepth + self.MHWS
         self.ShorefaceSlope = self.ShorefaceDepth/self.ShorefaceDistance
