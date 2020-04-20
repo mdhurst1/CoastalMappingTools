@@ -8,7 +8,6 @@ Created on Fri Apr 17 10:43:46 2020
 
 import numpy as np
 import rasterio
-from shapely.geometry import Polygon, Point
 
 # dummy raster
 x = np.linspace(-4.0, 4.0, 240)
@@ -38,8 +37,6 @@ XMin = SRC.bounds[0]
 XMax = SRC.bounds[2]
 YMin = SRC.bounds[1]
 YMax = SRC.bounds[3]
-Extent = Polygon([[XMin, YMin], [XMin, YMax], [XMax, YMax], [XMax, YMin]])
-print(Extent)
 
 # set up some points to sample
 X = np.arange(XMin-10, XMax+20, 10)
