@@ -280,13 +280,7 @@ class Transect:
         Elevations = np.array([ThisNode.Z for ThisNode in Nodes if ThisNode.Z > 0])
 
         Slope, Intercept = np.polyfit(Distances,Elevations,1)
-        print(Distances)
-        print(Slope, Intercept)
         self.HinterlandSlope = np.abs(Slope)
-
-        plt.plot(Distances, Elevations,'ko-')
-        plt.plot(Distances, Slope*Distances+Intercept,'r-')
-        plt.show()
 
     def PredictFutureShorelines(self):
 
