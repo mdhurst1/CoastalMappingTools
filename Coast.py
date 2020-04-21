@@ -2074,9 +2074,6 @@ class Coast:
 
                     Transect.HaveTopography = True
 
-                    Transect.CalculateHinterlandSlope()
-
-
     def ExtractTransectTopographySwath(self, DTMFile, SwathDistance=-9999):
         """
         Profile to populate transects with topographic data

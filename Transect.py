@@ -391,6 +391,11 @@ class Transect:
         self.ShorefaceDepth = self.ClosureDepth + self.MHWS
         self.ShorefaceSlope = self.ShorefaceDepth/self.ShorefaceDistance
         
+        if self.HinterlandSlope < self.ShorefaceSlope:
+            self.BruunSlope = self.HinterlandSlope
+        else:
+            self.BruunSlope = self.ShorefaceSlope
+
         # Calibration term, remembering to convert relative sea level change rates to m/yr
         self.VolumetricCalibrationRates = self.ShorefaceDepth*np.array(self.ChangeRates) + self.ShorefaceDistance*(self.InterpolatedRSLR)
         
@@ -406,7 +411,7 @@ class Transect:
             dT = self.FutureSeaLevelYears[i]-self.HistoricShorelinesYears[-1]
             
             # self.InterpolatedRSLR
-            BruunRuleComponent = (-1./self.ShorefaceSlope)*(self.FutureSeaLevels[i]-LatestRSL)
+            BruunRuleComponent = (-1./self.BruunSlope)*(self.FutureSeaLevels[i]-LatestRSL)
             CalibrationComponent = (1./self.ShorefaceDepth)*self.VolumetricCalibrationRates[-1]*dT
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
             
