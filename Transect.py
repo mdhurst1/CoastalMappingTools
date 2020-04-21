@@ -279,8 +279,23 @@ class Transect:
         Distances = np.array([ThisNode.get_Distance(self.StartNode) for ThisNode in Nodes if ThisNode.Z > 0])
         Elevations = np.array([ThisNode.Z for ThisNode in Nodes if ThisNode.Z > 0])
 
-        Slope, Intercept = np.polyfit(Distances,Elevations,1)
+        # normalise distances to minimum value (i.e. make lowest = zero)
+        Distances = Distances-np.min(Distances)
+
+        # weight solution inversely with distance
+        Weights = np.sqrt(np.max(Distances)-Distances)
+
+        # claculated weighted values
+        WeightedDistances = Distances * Weights
+        WeightedElevations = Elevations * Weights
+
+        # weighted linear regression with forced intercept of zero
+        Slope = np.linalg.lstsq(WeightedDistances[:,np.newaxis],WeightedElevations)[0]
+        #Slope = np.linalg.lstsq(Distances[:,np.newaxis], Elevations)[0]
+        
+        # shouldnt need abs here
         self.HinterlandSlope = np.abs(Slope)
+        
 
     def PredictFutureShorelines(self):
 
@@ -368,7 +383,9 @@ class Transect:
         self.InterpolatedRSLR = self.HistoricalRSLR/1000.+RSLRDiff*InterpFractions
             #self.InterpolatedRSLR.append(self.HistoricalRSLR/1000.+RSLRGradient*InterpFraction)
 
-        
+        # get hinterland slope
+        self.CalculateHinterlandSlope()
+
         # get mean slopes of shoreface
         self.ShorefaceDistance = self.StartNode.get_Distance(self.HistoricShorelinesPosition[-1])
         self.ShorefaceDepth = self.ClosureDepth + self.MHWS
@@ -585,16 +602,6 @@ class Transect:
                 #print("Cliff Toe change from", self.Distance[self.CliffToeInd],"to", self.Distance[np.argmin(ElevDetrend)])
                 self.CliffToeInd = np.argmin(ElevDetrend)
                 CliffPositionChangeFlag = True
-            
-            # else:
-            #     print("")
-            #     print(self.CliffToeInd, np.argmin(ElevDetrend))
-            #     plt.subplot(211)
-            #     plt.plot(self.Distance[np.invert(Mask)],self.Elevation[np.invert(Mask)])
-            #     plt.subplot(212)
-            #     plt.plot(self.Distance,ElevDetrend)
-            #     plt.show()
-            #     sys.exit()
 
         # Check if found a cliff
         self.CliffHeight = self.Elevation[self.CliffTopInd]-self.Elevation[self.CliffToeInd]
