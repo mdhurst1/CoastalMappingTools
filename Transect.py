@@ -371,18 +371,12 @@ class Transect:
         for i in range(0,len(self.HistoricShorelinesYears)):
             if i == 0:
                 InterpolationYears.append(self.HistoricShorelinesYears[0]+0.5*(self.HistoricShorelinesYears[-1]-self.HistoricShorelinesYears[0]))
-                
             else:
                 InterpolationYears.append((self.HistoricShorelinesYears[0]+self.HistoricShorelinesYears[i-1]-self.HistoricShorelinesYears[0])+0.5*(self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[i-1]))
-                    
-            #        0.5*(self.HistoricShorelinesYears[-1]-self.HistoricShorelinesYears[0]))
-            #    InterpFraction = (self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[0])/(self.FutureSeaLevelYears[0]-self.HistoricShorelinesYears[0]) 
-            #    + 0.5*(self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[i-1])/(self.FutureSeaLevelYears[0]-self.HistoricShorelinesYears[0])
-
+            
         InterpFractions = (np.array(InterpolationYears)-self.HistoricShorelinesYears[0])/(self.FutureSeaLevelYears[0]-self.HistoricShorelinesYears[0])
         self.InterpolatedRSLR = self.HistoricalRSLR/1000.+RSLRDiff*InterpFractions
-            #self.InterpolatedRSLR.append(self.HistoricalRSLR/1000.+RSLRGradient*InterpFraction)
-
+        
         # get hinterland slope
         self.CalculateHinterlandSlope()
 
@@ -577,8 +571,7 @@ class Transect:
             
             # Find Maximum detrended elevation. Must be positive to be considered a change in cliff top position
             if ((np.argmax(ElevDetrend) < self.CliffTopInd) and (ElevDetrend[np.argmax(ElevDetrend)] > 0.001)):
-                #print("Cliff Position change from", self.Distance[self.CliffTopInd], "to", self.Distance[np.argmax(ElevDetrend)])
-                self.CliffTopInd = np.argmax(ElevDetrend)
+                 self.CliffTopInd = np.argmax(ElevDetrend)
                 CliffPositionChangeFlag = True
              
             # THEN CLIFF TOE

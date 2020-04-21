@@ -1569,7 +1569,6 @@ class Coast:
                 # need date attribute if rates are to be calculated
                 Distances = Lines.distance(Intersection)
                 NearestLine = GDF.iloc[Distances.idxmin()]
-                print(NearestLine)
                 
                 # check it hasnt already been read
                 if "Surv_End_A" in NearestLine:
@@ -2455,11 +2454,9 @@ class Coast:
         Counter = 0
         for CoastLine in self.CoastLines:
             for i, Transect in enumerate(CoastLine.Transects):
-                #print(str(Transect.ID) + " " + str(Counter)+"/"+str(NoTransects))
                 Transect.Rocky = GroupList[Counter]
                 Counter += 1
-                #print(len(GroupList))
-
+                
     def GetFutureShoreLines(self):
 
         """
