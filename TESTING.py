@@ -34,9 +34,8 @@ for CellSub in CellSubList:
 
     # print cell to screen
     #CellSub = Row.Cell_sub
-    print("RUNNING CELL ", CellSub)
+    print("RUNNING CELL", CellSub)
     RowName = "Cell_"+CellSub
-    
     
     # try opening bathy file as check on whether there is data
     try:
@@ -50,10 +49,10 @@ for CellSub in CellSubList:
 
     try:
         CellCoast = pickle.load( open( Filename2SaveCoast, "rb" ) )
-        print("\tLoaded Coast Object ", Filename2SaveCoast)
+        print("Loaded Coast Object ", Filename2SaveCoast)
 
     except:
-        print("\tCreating New Coast Object")
+        print("Creating New Coast Object")
 
         # get soft coast position as most recent
         ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Final.shp")
@@ -104,30 +103,35 @@ for CellSub in CellSubList:
     
         ### get future relative sea level time series
         CellCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL"))
+        
+        # SAVE ENTIRE COAST OBJECT
+        print("\tSaving Coast Object as ", Filename2SaveCoast)
+        with open(str(Filename2SaveCoast), 'wb') as PFile:
+            pickle.dump(CellCoast, PFile)
     
     # Extend transects landward by a fixed distance
-    HinterlandDistance = 200
-    CellCoast.ExtendTransects2Hinterland(HinterlandDistance)
-    CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_ExtendedTransects.shp")))
-    CellCoast.FindDEM(str(NationalDEMPath / "OSTerrain5_fullcoastindex.shp"))
-    CellCoast.ExtractTransectTopography()
+    #HinterlandDistance = 200
+    #CellCoast.ExtendTransects2Hinterland(HinterlandDistance)
+    #CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_ExtendedTransects.shp")))
+    #CellCoast.FindDEM(str(NationalDEMPath / "OSTerrain5_fullcoastindex.shp"))
+    #CellCoast.ExtractTransectTopography()
     
     ## predict future shorelines
     #CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
     CellCoast.PredictFutureShorelines()
-       
+
     # write future shorelines
     CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future.shp")),Smooth=False)
-    CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_FutureSmooth.shp")),Smooth=True)
-    CellCoast.WriteFutureUncertaintyShp(str(OutputPath / (RowName + "_Uncertainty.shp")))
-    CellCoast.WriteFutureUncertaintyShp(str(OutputPath / (RowName + "_Uncertainty.shp")),Year="2050")
-    CellCoast.WriteFutureShorelineSegmentsShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSegments.shp")))
-    CellCoast.WriteErodedAreaShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureErosion.shp")))
+    #CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_FutureSmooth.shp")),Smooth=True)
+    #CellCoast.WriteFutureUncertaintyShp(str(OutputPath / (RowName + "_Uncertainty.shp")))
+    #CellCoast.WriteFutureUncertaintyShp(str(OutputPath / (RowName + "_Uncertainty_2050.shp")),Year="2050")
+    #CellCoast.WriteFutureShorelineSegmentsShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSegments.shp")))
+    #CellCoast.WriteErodedAreaShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureErosion.shp")))
     
     # SAVE ENTIRE COAST OBJECT
-    print("\tSaving Coast Object as ", Filename2SaveCoast)
-    with open(str(Filename2SaveCoast), 'wb') as PFile:
-        pickle.dump(CellCoast, PFile)
+    #print("\tSaving Coast Object as ", Filename2SaveCoast)
+    #with open(str(Filename2SaveCoast), 'wb') as PFile:
+    #    pickle.dump(CellCoast, PFile)
     
 
     
