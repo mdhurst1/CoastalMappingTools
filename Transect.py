@@ -291,11 +291,11 @@ class Transect:
         WeightedElevations = Elevations * Weights
 
         # weighted linear regression with forced intercept of zero
-        Slope = np.linalg.lstsq(WeightedDistances[:,np.newaxis],WeightedElevations)[0]
+        Slope = np.linalg.lstsq(WeightedDistances[:,np.newaxis],WeightedElevations,rcond=None)[0]
         #Slope = np.linalg.lstsq(Distances[:,np.newaxis], Elevations)[0]
         
         # shouldnt need abs here
-        self.HinterlandSlope = np.abs(Slope)
+        self.HinterlandSlope = np.abs(Slope[0])
         
 
     def PredictFutureShorelines(self):
@@ -319,17 +319,17 @@ class Transect:
 
         # cant make predictions without some historical shorelines
         if not self.HistoricShorelinesYears:
-            print("No historical shorelines", self.ID)
+            #print("No historical shorelines", self.ID)
             self.Future = False
             return
 
         elif len(self.HistoricShorelinesYears) < 2:
-            print("Not enough historical shorelines", self.ID)
+            #print("Not enough historical shorelines", self.ID)
             self.Future = False
             return
 
         elif self.HistoricShorelinesYears[-1] < 2000:
-            print("No recent historical shorelines", self.ID)
+            #print("No recent historical shorelines", self.ID)
             self.Future = False
             return
         
@@ -342,7 +342,7 @@ class Transect:
         EqualBool = NoPositions[1:] == NoPositions[:-1]
 
         if not EqualBool:
-            print("issue")
+            #print("issue")
             self.Future = False
             return
 
@@ -392,6 +392,7 @@ class Transect:
 
         # set slope for Bruun Rule    
         if self.HinterlandSlope < self.ShorefaceSlope:
+            print("Transect" + str(Transect.ID) + "Hinterland Slope" + str(self.HinterlandSlope))
             self.BruunSlope = self.HinterlandSlope
         else:
             self.BruunSlope = self.ShorefaceSlope
@@ -401,17 +402,17 @@ class Transect:
         
         # get sea level at latest time
         if self.HistoricShorelinesYears[-1] < self.FutureSeaLevelYears[0]:
-            LatestRSL = self.FutureSeaLevels[0]
+            self.LatestRSL = self.FutureSeaLevels[0]
         else:
             Interp = (self.FutureSeaLevelYears[1]-self.HistoricShorelinesYears[-1])/(self.FutureSeaLevelYears[1]-self.FutureSeaLevelYears[0])
-            LatestRSL = self.FutureSeaLevels[1]-Interp*(self.FutureSeaLevels[1]-self.FutureSeaLevels[0])
+            self.LatestRSL = self.FutureSeaLevels[1]-Interp*(self.FutureSeaLevels[1]-self.FutureSeaLevels[0])
         
         # Future shoreline positions
         for i in range(1, len(self.FutureSeaLevelYears)):
             dT = self.FutureSeaLevelYears[i]-self.HistoricShorelinesYears[-1]
             
             # self.InterpolatedRSLR
-            BruunRuleComponent = (-1./self.BruunSlope)*(self.FutureSeaLevels[i]-LatestRSL)
+            BruunRuleComponent = (-1./self.BruunSlope)*(self.FutureSeaLevels[i]-self.LatestRSL)
             CalibrationComponent = (1./self.ShorefaceDepth)*self.VolumetricCalibrationRates[-1]*dT
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
             
@@ -450,17 +451,24 @@ class Transect:
         """
 
         # get future sea level and time difference
-        FutureSeaLevel = self.FutureSeaLevel[self.FutureSeaLevelYears == Year]
+        FutureSeaLevel = self.FutureSeaLevels[self.FutureSeaLevelYears == Year]
         dT = Year-self.HistoricShorelinesYears[-1]
 
         # reset min and max in case uncertainty has been previously assessed
         self.FutureShorelineMinDistance = 9999999.
         self.FutureShorelineMaxDistance = 0
 
+        # get sea level at latest time
+        if self.HistoricShorelinesYears[-1] < self.FutureSeaLevelYears[0]:
+            self.LatestRSL = self.FutureSeaLevels[0]
+        else:
+            Interp = (self.FutureSeaLevelYears[1]-self.HistoricShorelinesYears[-1])/(self.FutureSeaLevelYears[1]-self.FutureSeaLevelYears[0])
+            self.LatestRSL = self.FutureSeaLevels[1]-Interp*(self.FutureSeaLevels[1]-self.FutureSeaLevels[0])
+
         for VolumetricCalibrationRate in self.VolumetricCalibrationRates:
             
             # self.InterpolatedRSLR
-            BruunRuleComponent = (-1./self.BruunSlope)*(FutureSeaLevel-LatestRSL)
+            BruunRuleComponent = (-1./self.BruunSlope)*(FutureSeaLevel-self.LatestRSL)
             CalibrationComponent = (1./self.ShorefaceDepth)*VolumetricCalibrationRate*dT
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
             

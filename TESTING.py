@@ -110,28 +110,27 @@ for CellSub in CellSubList:
             pickle.dump(CellCoast, PFile)
     
     # Extend transects landward by a fixed distance
-    #HinterlandDistance = 200
-    #CellCoast.ExtendTransects2Hinterland(HinterlandDistance)
-    #CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_ExtendedTransects.shp")))
-    #CellCoast.FindDEM(str(NationalDEMPath / "OSTerrain5_fullcoastindex.shp"))
-    #CellCoast.ExtractTransectTopography()
+    HinterlandDistance = 200
+    CellCoast.ExtendTransects2Hinterland(HinterlandDistance)
+    CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_ExtendedTransects.shp")))
+    CellCoast.FindDEM(str(NationalDEMPath / "OSTerrain5_fullcoastindex.shp"))
+    CellCoast.ExtractTransectTopography()
     
     ## predict future shorelines
     #CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
     CellCoast.PredictFutureShorelines()
 
     # write future shorelines
-    CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future.shp")),Smooth=False)
-    #CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_FutureSmooth.shp")),Smooth=True)
-    #CellCoast.WriteFutureUncertaintyShp(str(OutputPath / (RowName + "_Uncertainty.shp")))
-    #CellCoast.WriteFutureUncertaintyShp(str(OutputPath / (RowName + "_Uncertainty_2050.shp")),Year="2050")
+    CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future.shp")),Smooth=True)
+    CellCoast.WriteFutureUncertaintyShp(str(OutputPath / (RowName + "_Uncertainty_2100.shp")))
+    CellCoast.WriteFutureUncertaintyShp(str(OutputPath / (RowName + "_Uncertainty_2050.shp")),Year="2050")
+    CellCoast.WriteErodedAreaShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureErosion.shp")))
     #CellCoast.WriteFutureShorelineSegmentsShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSegments.shp")))
-    #CellCoast.WriteErodedAreaShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureErosion.shp")))
     
     # SAVE ENTIRE COAST OBJECT
-    #print("\tSaving Coast Object as ", Filename2SaveCoast)
-    #with open(str(Filename2SaveCoast), 'wb') as PFile:
-    #    pickle.dump(CellCoast, PFile)
+    print("\tSaving Coast Object as ", Filename2SaveCoast)
+    with open(str(Filename2SaveCoast), 'wb') as PFile:
+        pickle.dump(CellCoast, PFile)
     
 
     

@@ -1999,8 +1999,8 @@ class Coast:
             self.UniqueDEMList.extend(list(JoinGDF.location.unique()))
         
         # replace extension with *.tif
-        for i, DEMPath in enumerate(self.UniqueDEMList):
-            self.UniqueDEMList[i] = DEMPath.rstrip("asc")+"tif"
+        #for i, DEMPath in enumerate(self.UniqueDEMList):
+        #    self.UniqueDEMList[i] = DEMPath.rstrip("asc")+"tif"
 
     def ExtractTransectTopography(self, DEMFileList=None):
 
