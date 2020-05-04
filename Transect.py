@@ -272,7 +272,8 @@ class Transect:
         """
 
         if not self.HaveTopography:
-            sys.exit("No topography")
+            self.HinterlandSlope = 1.
+            return
 
         # isolate distance and elevation
         Nodes = [ThisNode for ThisNode in self.DistanceNodes if ThisNode.Z]
@@ -318,14 +319,17 @@ class Transect:
 
         # cant make predictions without some historical shorelines
         if not self.HistoricShorelinesYears:
+            print("No historical shorelines", self.ID)
             self.Future = False
             return
 
         elif len(self.HistoricShorelinesYears) < 2:
+            print("Not enough historical shorelines", self.ID)
             self.Future = False
             return
 
         elif self.HistoricShorelinesYears[-1] < 2000:
+            print("No recent historical shorelines", self.ID)
             self.Future = False
             return
         
@@ -338,6 +342,7 @@ class Transect:
         EqualBool = NoPositions[1:] == NoPositions[:-1]
 
         if not EqualBool:
+            print("issue")
             self.Future = False
             return
 
@@ -377,19 +382,20 @@ class Transect:
         InterpFractions = (np.array(InterpolationYears)-self.HistoricShorelinesYears[0])/(self.FutureSeaLevelYears[0]-self.HistoricShorelinesYears[0])
         self.InterpolatedRSLR = self.HistoricalRSLR/1000.+RSLRDiff*InterpFractions
         
-        # get hinterland slope
-        self.CalculateHinterlandSlope()
-
         # get mean slopes of shoreface
         self.ShorefaceDistance = self.StartNode.get_Distance(self.HistoricShorelinesPosition[-1])
         self.ShorefaceDepth = self.ClosureDepth + self.MHWS
         self.ShorefaceSlope = self.ShorefaceDepth/self.ShorefaceDistance
         
+        # get hinterland slope 
+        self.CalculateHinterlandSlope()
+
+        # set slope for Bruun Rule    
         if self.HinterlandSlope < self.ShorefaceSlope:
             self.BruunSlope = self.HinterlandSlope
         else:
             self.BruunSlope = self.ShorefaceSlope
-
+        
         # Calibration term, remembering to convert relative sea level change rates to m/yr
         self.VolumetricCalibrationRates = self.ShorefaceDepth*np.array(self.ChangeRates) + self.ShorefaceDistance*(self.InterpolatedRSLR)
         
@@ -454,7 +460,7 @@ class Transect:
         for VolumetricCalibrationRate in self.VolumetricCalibrationRates:
             
             # self.InterpolatedRSLR
-            BruunRuleComponent = (-1./self.ShorefaceSlope)*(FutureSeaLevel-LatestRSL)
+            BruunRuleComponent = (-1./self.BruunSlope)*(FutureSeaLevel-LatestRSL)
             CalibrationComponent = (1./self.ShorefaceDepth)*VolumetricCalibrationRate*dT
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
             
@@ -571,7 +577,7 @@ class Transect:
             
             # Find Maximum detrended elevation. Must be positive to be considered a change in cliff top position
             if ((np.argmax(ElevDetrend) < self.CliffTopInd) and (ElevDetrend[np.argmax(ElevDetrend)] > 0.001)):
-                 self.CliffTopInd = np.argmax(ElevDetrend)
+                self.CliffTopInd = np.argmax(ElevDetrend)
                 CliffPositionChangeFlag = True
              
             # THEN CLIFF TOE
