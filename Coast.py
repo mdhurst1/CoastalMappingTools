@@ -335,10 +335,11 @@ class Coast:
         f.write(self.Projection)
         f.close()
 
-    def WriteFutureUncertaintyShp(self, UncertaintyShp):
+    def WriteFutureUncertaintyShp(self, UncertaintyShp, Year=2100):
 
         """
         Writes future shoreline uncertainty estimates to a polygon
+        for a particular year
 
         MDH, March 2020
 
@@ -2544,7 +2545,7 @@ class Coast:
                     # update counter
                     FutureCount += 1
     
-    def GetFutureShorelineUncertainty(self):
+    def GetFutureShorelineUncertainty(self, Year=2100):
 
         """
         
@@ -2607,6 +2608,7 @@ class Coast:
 
                 # loop through transects and get min and max future positions
                 for Transect in CoastLine.Transects[StartList[i]:EndList[i]]:
+                    Transect.PredictFutureShorelineUncertainty(Year)
                     FutureMinNode = Transect.FutureShorelinesMinNode
                     FutureMaxNode = Transect.FutureShorelinesMaxNode
                     FutureMinList.append(FutureMinNode)
