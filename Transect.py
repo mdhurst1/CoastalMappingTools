@@ -467,8 +467,8 @@ class Transect:
 
         for VolumetricCalibrationRate in self.VolumetricCalibrationRates:
             
-            # self.InterpolatedRSLR
             BruunRuleComponent = (-1./self.BruunSlope)*(FutureSeaLevel-self.LatestRSL)
+
             CalibrationComponent = (1./self.ShorefaceDepth)*VolumetricCalibrationRate*dT
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
             
