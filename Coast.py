@@ -19,7 +19,7 @@ import shapefile
 import itertools
 import rasterio
 import geopandas as gp
-from shapely.geometry import Point, LineString, MultiLineString, MultiPoint
+from shapely.geometry import Point, Polygon, LineString, MultiLineString, MultiPoint
 from shapely.ops import nearest_points, linemerge
 
 from Line import *
@@ -76,6 +76,7 @@ class Coast:
         self.TransectsLength2Land = 1000.
         self.ExtremeWaterLevels = []
         self.MHWS = None
+        self.UniqueDEMList = []
 
         if CoastShp:
             self.ReadCoastShp(CoastShp)
@@ -338,6 +339,7 @@ class Coast:
 
         """
         Writes future shoreline uncertainty estimates to a polygon
+        for a particular year
 
         MDH, March 2020
 
@@ -1569,7 +1571,6 @@ class Coast:
                 # need date attribute if rates are to be calculated
                 Distances = Lines.distance(Intersection)
                 NearestLine = GDF.iloc[Distances.idxmin()]
-                print(NearestLine)
                 
                 # check it hasnt already been read
                 if "Surv_End_A" in NearestLine:
@@ -1959,9 +1960,137 @@ class Coast:
 
         """
 
+    def ExtendTransects2Hinterland(self, Distance):
+
+        """
+        Extends transects by a fixed distance into the hinterland in order to 
+        measure hinterland topography. N.B. does not extend start/end point but 
+        creates a new node in the hinterland.
+
+        MDH, March 2020
+
+        """
+
+        print("Coast.ExtendTransects2Hinterland: Puts a new node landward of existing transect")
+
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                Transect.ExtendTransect(Distance, 0)
+
+    def FindDEM(self, DEMIndexFileShp):
+
+        """
+        Identifies which DEMs transects intersect with, where interesction is with
+        more than one transect DEMs will get merged.
+
+        Need to think this through more carefully... dont want to end up having to repeatedly open the same DEM
+        Get a list of transects that intersect each DEM along the coast object?
+        Get a list of unique DEMs that are intersected.
+        Intersect Coast lines and transects with DEMIndexFileShp
+        Open each DEM and extract topography for all transects that fall within
+        What to do about transects crossing from one DEM to another?
+
+        MDH, March 2020
+
+        """
+
+        print("Coast.FindDEM: Identifying DEM for each transect to sample from")
+
+        # read the DEM index file
+        PolyGDF = gp.read_file(DEMIndexFileShp)
         
-    
-    def ExtractTransectTopography(self, DTMFile, SwathDistance=-9999):
+        # list of unique DEMs
+        self.UniqueDEMList = []
+
+        for Line in self.CoastLines:
+            
+            # get multilinestring of transects
+            Lines = [LineString([(Transect.EndNode.X,Transect.EndNode.Y),(Transect.StartNode.X,Transect.StartNode.Y)]) for Transect in Line.Transects]
+            LineGDF = gp.GeoDataFrame(geometry=Lines,crs=PolyGDF.crs)
+            
+            # interesect with DEM references
+            JoinGDF = gp.sjoin(LineGDF, PolyGDF, op='intersects')
+            
+            # set DEMs to list
+            self.UniqueDEMList.extend(list(JoinGDF.location.unique()))
+        
+        # replace extension with *.tif
+        #for i, DEMPath in enumerate(self.UniqueDEMList):
+        #    self.UniqueDEMList[i] = DEMPath.rstrip("asc")+"tif"
+
+    def ExtractTransectTopography(self, DEMFileList=None):
+
+        """
+        Function to sample elevations for transect lines from list of DEM files
+        
+        MDH, March 2020
+
+        """      
+        
+        if DEMFileList:
+            self.UniqueDEMList = DEMFileList
+
+        for DEM in self.UniqueDEMList:
+            
+            print("\t" + DEM.split("/")[-1])
+
+            DTM_Dataset = rasterio.open(DEM)
+            DTMArray = DTM_Dataset.read(1)
+            NCols = DTM_Dataset.width
+            NRows = DTM_Dataset.height
+            NDV = DTM_Dataset.nodata
+            Resolutions = DTM_Dataset.res
+            
+            # check if we're missing no data
+            if not DTM_Dataset.nodata:
+                raise SystemExit("DTM missing no data value")
+
+            # check for square pixels
+            if not DTM_Dataset.res[0] == DTM_Dataset.res[1]:
+                raise SystemExit("DTM has non-square cells")
+        
+            # get resolution
+            DTM_Resolution = DTM_Dataset.res[0]
+
+            # get extent of DTM and set up polygon of extent
+            XMin = DTM_Dataset.bounds[0]
+            XMax = DTM_Dataset.bounds[2]
+            YMin = DTM_Dataset.bounds[1]
+            YMax = DTM_Dataset.bounds[3]
+            DTM_Extent = Polygon([[XMin, YMin], [XMin, YMax], [XMax, YMax], [XMax, YMin]])
+
+            # Get vectors of X and Y coordinates, NB reversal of Y in line with 
+            # DTM indexing from top left
+            XVector = XMin+np.arange(0,NCols)*DTM_Resolution+0.5*DTM_Resolution
+            YVector = YMin+DTM_Resolution*np.arange(0,NRows)[::-1]+0.5*DTM_Resolution
+
+            for Line in self.CoastLines:
+                for Transect in Line.Transects:
+                    
+                    # check we have nodes to sample
+                    if not Transect.DistanceNodes:
+                        Transect.DistanceSpacing = DTM_Dataset.res[0]
+                        Transect.GenerateSampleNodes()
+
+                    # check for intersection
+                    if not Transect.LineString.intersects(DTM_Extent):
+                        continue
+                    
+                    # get list of points that intersect DTM only
+                    Points = [Point(ThisNode.X,ThisNode.Y) for ThisNode in Transect.DistanceNodes]
+                    Points = [ThisPoint if ThisPoint.within(DTM_Extent) else Point((0,0)) for ThisPoint in Points]
+                    Coords = [(Point.x, Point.y) for Point in Points]
+                    Elevations = [Sample[0] for Sample in DTM_Dataset.sample(Coords)]
+                    
+                    # problem here gettign back to transects
+                    for i, ThisNode in enumerate(Transect.DistanceNodes):
+                        
+                        if not ThisNode.Z and Elevations[i] > 0:
+                            ThisNode.Z = Elevations[i]
+
+                    Transect.HaveTopography = True
+
+    def ExtractTransectTopographySwath(self, DTMFile, SwathDistance=-9999):
         """
         Profile to populate transects with topographic data
         Uses swath profile routine to collect elevations within a certain distance
@@ -1982,7 +2111,7 @@ class Coast:
 
         """
         
-        print("Coast.EstractTransectTopography: Sampling the DTM for each transect")
+        print("Coast.EstractTransectTopography: Sampling DTMs for each transect")
         
         # load the DTM and get its properties
         print("\tLoading DTM... ", end="")
@@ -2005,11 +2134,12 @@ class Coast:
         if SwathDistance < 0:
             SwathDistance = DTM_Resolution*2.
 
-        # get extent of DTM
+        # get extent of DTM and set up polygon of extent
         XMin = DTM_Dataset.bounds[0]
         XMax = DTM_Dataset.bounds[2]
         YMin = DTM_Dataset.bounds[1]
         YMax = DTM_Dataset.bounds[3]
+        DTM_Extent = Polygon([Xmin, YMin, XMax, YMax])
 
         # Get vectors of X and Y coordinates, NB reversal of Y in line with 
         # DTM indexing from top left
@@ -2019,28 +2149,21 @@ class Coast:
         # Track progress
         NoTransects = np.sum([Line.NoTransects for Line in self.CoastLines])
         CurrentTransect = 0
-        for Line in self.CoastLines:
-            for i, Transect in enumerate(Line.Transects[:]):
-                
-                #Get line points
-                X1, Y1 = Transect.StartNode.get_XY()
-                X2, Y2 = Transect.EndNode.get_XY()
-
-                # check transect lies within DEM extent
-                #if X1 < XMin or X2 < XMin:
-                
+                        
         for Line in self.CoastLines:
             for Transect in Line.Transects:
-                # pass DTM
-                # this needs to be changed to pass to transect object
-                # fix this later
-
+                
                 # print progress to screen
                 print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
 
                 #Get line points
                 X1, Y1 = Transect.StartNode.get_XY()
                 X2, Y2 = Transect.EndNode.get_XY()
+                TransectLine = LineString([(X1, Y1), (X2, Y2)])
+
+                # check for intersection
+                if not TransectLine.intersects(DTM_Extent):
+                    continue
 
                 #find indices for bounding box
                 #need to be careful with reverse indexing
@@ -2348,11 +2471,9 @@ class Coast:
         Counter = 0
         for CoastLine in self.CoastLines:
             for i, Transect in enumerate(CoastLine.Transects):
-                #print(str(Transect.ID) + " " + str(Counter)+"/"+str(NoTransects))
                 Transect.Rocky = GroupList[Counter]
                 Counter += 1
-                #print(len(GroupList))
-
+                
     def GetFutureShoreLines(self):
 
         """
@@ -2440,7 +2561,7 @@ class Coast:
                     # update counter
                     FutureCount += 1
     
-    def GetFutureShorelineUncertainty(self):
+    def GetFutureShorelineUncertainty(self, Year=2100):
 
         """
         
@@ -2503,6 +2624,7 @@ class Coast:
 
                 # loop through transects and get min and max future positions
                 for Transect in CoastLine.Transects[StartList[i]:EndList[i]]:
+                    Transect.PredictFutureShorelineUncertainty(Year)
                     FutureMinNode = Transect.FutureShorelinesMinNode
                     FutureMaxNode = Transect.FutureShorelinesMaxNode
                     FutureMinList.append(FutureMinNode)
