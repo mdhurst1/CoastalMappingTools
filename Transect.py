@@ -392,7 +392,7 @@ class Transect:
 
         # set slope for Bruun Rule    
         if self.HinterlandSlope < self.ShorefaceSlope:
-            print("Transect" + str(Transect.ID) + "Hinterland Slope" + str(self.HinterlandSlope))
+            print("Transect" + str(self.ID) + "Hinterland Slope" + str(self.HinterlandSlope))
             self.BruunSlope = self.HinterlandSlope
         else:
             self.BruunSlope = self.ShorefaceSlope

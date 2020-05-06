@@ -24,17 +24,11 @@ SmoothingWindowSize=501
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # loop through each cell
-#for index, Row in Cells.iterrows():
-CellSubList = ["2a",]
-#CellSubList = ["2a","2b","2c","2d","3a","3b","3c","3e","3f","3g"]
-#CellSubList = ["8b","8c","8d","9a","9b","9c","9d","9e","9e"]
-#CellSubList = ["1a","10a","10b","10c","10d","10e","10f","10g","8a","8e"]
-
-for CellSub in CellSubList:
+for index, Row in Cells.iterrows():
 
     # print cell to screen
-    #CellSub = Row.Cell_sub
-    print("RUNNING CELL", CellSub)
+    CellSub = Row.Cell_sub
+    print("\nRUNNING CELL", CellSub)
     RowName = "Cell_"+CellSub
     
     # try opening bathy file as check on whether there is data
