@@ -46,6 +46,7 @@ class Transect:
         self.CoastNode = CoastNode
         self.StartNode = StartNode
         self.EndNode = EndNode
+        self.HinterlandNode = None
         self.LineString = LineString(((self.StartNode.X,self.StartNode.Y),(self.EndNode.X,self.EndNode.Y)))
         self.Orientation = self.CalculateOrientation(self.StartNode, self.EndNode)
         self.Length = self.CalculateLength(self.StartNode, self.EndNode)
@@ -70,6 +71,7 @@ class Transect:
         self.ClosureDepth = 10.
         self.ShorefaceDistance = None
         self.ShorefaceSlope = None
+        self.HinterlandSlope = None
 
         # relative sea level rise history (rate in mm/year)
         self.HistoricalRSLR = None
@@ -87,8 +89,10 @@ class Transect:
         self.VegEdge = False
 
         # transect data
+        self.HaveTopography = False
         self.NoValues = None
         self.DistanceSpacing = None
+        self.DistanceNodes = None
         self.Distance = None
         self.Elevation = None
         self.ElevationMin = None
@@ -216,7 +220,7 @@ class Transect:
         
         return np.sqrt(dx**2 + dy**2.)
 
-    def ExtendTransect(self,Distance2Land, Distance2Sea):
+    def ExtendTransect(self, Distance2Land=0, Distance2Sea=0):
 
         """
 
@@ -227,15 +231,72 @@ class Transect:
         """
         
         # extend transect landward and seaward?
-        X1 = self.StartNode.X - Distance2Land * np.sin( np.radians( self.Orientation ) )
-        Y1 = self.StartNode.Y - Distance2Land * np.cos( np.radians( self.Orientation ) )
+        X1 = self.StartNode.X - Distance2Sea * np.sin( np.radians( self.Orientation ) )
+        Y1 = self.StartNode.Y - Distance2Sea * np.cos( np.radians( self.Orientation ) )
         self.StartNode = Node(X1,Y1)
-
-        X1 = self.StartNode.X + Distance2Sea * np.sin( np.radians( self.Orientation ) )
-        Y1 = self.StartNode.Y + Distance2Sea * np.cos( np.radians( self.Orientation ) )
+        
+        X1 = self.EndNode.X + Distance2Land * np.sin( np.radians( self.Orientation ) )
+        Y1 = self.EndNode.Y + Distance2Land * np.cos( np.radians( self.Orientation ) )
         self.EndNode = Node(X1,Y1)
 
         self.Length = self.CalculateLength(self.StartNode, self.EndNode)
+
+    def GenerateSampleNodes(self,Spacing=None):
+
+        """ 
+        Function to generate regularly spaced nodes along the transect
+
+        MDH, March 2020
+        
+        """
+
+        if Spacing:
+            self.DistanceSpacing = Spacing
+        
+        self.NoNodes = int(np.ceil(self.Length/self.DistanceSpacing))
+
+        # create nodes
+        XNodes = np.linspace(self.StartNode.X, self.EndNode.X, self.NoNodes-1)
+        YNodes = np.linspace(self.StartNode.Y, self.EndNode.Y, self.NoNodes-1)
+        self.DistanceNodes = [Node(X,Y) for X, Y in zip(XNodes,YNodes)]
+        self.Distance = [self.StartNode.get_Distance(ThisNode) for ThisNode in self.DistanceNodes]
+
+    def CalculateHinterlandSlope(self):
+
+        """
+        function to calculate the mean hinterland slope for transects with hinterland topography
+        extracted. Fits linear regression to elevation as function of distance
+
+        MDH, April 2020
+
+        """
+
+        if not self.HaveTopography:
+            self.HinterlandSlope = 1.
+            return
+
+        # isolate distance and elevation
+        Nodes = [ThisNode for ThisNode in self.DistanceNodes if ThisNode.Z]
+        Distances = np.array([ThisNode.get_Distance(self.StartNode) for ThisNode in Nodes if ThisNode.Z > 0])
+        Elevations = np.array([ThisNode.Z for ThisNode in Nodes if ThisNode.Z > 0])
+
+        # normalise distances to minimum value (i.e. make lowest = zero)
+        Distances = Distances-np.min(Distances)
+
+        # weight solution inversely with distance
+        Weights = np.sqrt(np.max(Distances)-Distances)
+
+        # claculated weighted values
+        WeightedDistances = Distances * Weights
+        WeightedElevations = Elevations * Weights
+
+        # weighted linear regression with forced intercept of zero
+        Slope = np.linalg.lstsq(WeightedDistances[:,np.newaxis],WeightedElevations,rcond=None)[0]
+        #Slope = np.linalg.lstsq(Distances[:,np.newaxis], Elevations)[0]
+        
+        # shouldnt need abs here
+        self.HinterlandSlope = np.abs(Slope[0])
+        
 
     def PredictFutureShorelines(self):
 
@@ -258,14 +319,17 @@ class Transect:
 
         # cant make predictions without some historical shorelines
         if not self.HistoricShorelinesYears:
+            #print("No historical shorelines", self.ID)
             self.Future = False
             return
 
         elif len(self.HistoricShorelinesYears) < 2:
+            #print("Not enough historical shorelines", self.ID)
             self.Future = False
             return
 
         elif self.HistoricShorelinesYears[-1] < 2000:
+            #print("No recent historical shorelines", self.ID)
             self.Future = False
             return
         
@@ -278,6 +342,7 @@ class Transect:
         EqualBool = NoPositions[1:] == NoPositions[:-1]
 
         if not EqualBool:
+            #print("issue")
             self.Future = False
             return
 
@@ -311,23 +376,26 @@ class Transect:
         for i in range(0,len(self.HistoricShorelinesYears)):
             if i == 0:
                 InterpolationYears.append(self.HistoricShorelinesYears[0]+0.5*(self.HistoricShorelinesYears[-1]-self.HistoricShorelinesYears[0]))
-                
             else:
                 InterpolationYears.append((self.HistoricShorelinesYears[0]+self.HistoricShorelinesYears[i-1]-self.HistoricShorelinesYears[0])+0.5*(self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[i-1]))
-                    
-            #        0.5*(self.HistoricShorelinesYears[-1]-self.HistoricShorelinesYears[0]))
-            #    InterpFraction = (self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[0])/(self.FutureSeaLevelYears[0]-self.HistoricShorelinesYears[0]) 
-            #    + 0.5*(self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[i-1])/(self.FutureSeaLevelYears[0]-self.HistoricShorelinesYears[0])
-
+            
         InterpFractions = (np.array(InterpolationYears)-self.HistoricShorelinesYears[0])/(self.FutureSeaLevelYears[0]-self.HistoricShorelinesYears[0])
         self.InterpolatedRSLR = self.HistoricalRSLR/1000.+RSLRDiff*InterpFractions
-            #self.InterpolatedRSLR.append(self.HistoricalRSLR/1000.+RSLRGradient*InterpFraction)
-
         
-        # get mean slope
+        # get mean slopes of shoreface
         self.ShorefaceDistance = self.StartNode.get_Distance(self.HistoricShorelinesPosition[-1])
         self.ShorefaceDepth = self.ClosureDepth + self.MHWS
         self.ShorefaceSlope = self.ShorefaceDepth/self.ShorefaceDistance
+        
+        # get hinterland slope 
+        self.CalculateHinterlandSlope()
+
+        # set slope for Bruun Rule    
+        if self.HinterlandSlope < self.ShorefaceSlope:
+            print("Transect" + str(self.ID) + "Hinterland Slope" + str(self.HinterlandSlope))
+            self.BruunSlope = self.HinterlandSlope
+        else:
+            self.BruunSlope = self.ShorefaceSlope
         
         # Calibration term, remembering to convert relative sea level change rates to m/yr
         self.VolumetricCalibrationRates = self.ShorefaceDepth*np.array(self.ChangeRates) + self.ShorefaceDistance*(self.InterpolatedRSLR)
@@ -344,7 +412,7 @@ class Transect:
             dT = self.FutureSeaLevelYears[i]-self.HistoricShorelinesYears[-1]
             
             # self.InterpolatedRSLR
-            BruunRuleComponent = (-1./self.ShorefaceSlope)*(self.FutureSeaLevels[i]-self.LatestRSL)
+            BruunRuleComponent = (-1./self.BruunSlope)*(self.FutureSeaLevels[i]-self.LatestRSL)
             CalibrationComponent = (1./self.ShorefaceDepth)*self.VolumetricCalibrationRates[-1]*dT
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
             
@@ -390,10 +458,17 @@ class Transect:
         self.FutureShorelineMinDistance = 9999999.
         self.FutureShorelineMaxDistance = 0
 
+        # get sea level at latest time
+        if self.HistoricShorelinesYears[-1] < self.FutureSeaLevelYears[0]:
+            self.LatestRSL = self.FutureSeaLevels[0]
+        else:
+            Interp = (self.FutureSeaLevelYears[1]-self.HistoricShorelinesYears[-1])/(self.FutureSeaLevelYears[1]-self.FutureSeaLevelYears[0])
+            self.LatestRSL = self.FutureSeaLevels[1]-Interp*(self.FutureSeaLevels[1]-self.FutureSeaLevels[0])
+
         for VolumetricCalibrationRate in self.VolumetricCalibrationRates:
             
-            # self.InterpolatedRSLR
-            BruunRuleComponent = (-1./self.ShorefaceSlope)*(FutureSeaLevel-self.LatestRSL)
+            BruunRuleComponent = (-1./self.BruunSlope)*(FutureSeaLevel-self.LatestRSL)
+
             CalibrationComponent = (1./self.ShorefaceDepth)*VolumetricCalibrationRate*dT
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
             
@@ -510,7 +585,6 @@ class Transect:
             
             # Find Maximum detrended elevation. Must be positive to be considered a change in cliff top position
             if ((np.argmax(ElevDetrend) < self.CliffTopInd) and (ElevDetrend[np.argmax(ElevDetrend)] > 0.001)):
-                #print("Cliff Position change from", self.Distance[self.CliffTopInd], "to", self.Distance[np.argmax(ElevDetrend)])
                 self.CliffTopInd = np.argmax(ElevDetrend)
                 CliffPositionChangeFlag = True
              
@@ -540,16 +614,6 @@ class Transect:
                 #print("Cliff Toe change from", self.Distance[self.CliffToeInd],"to", self.Distance[np.argmin(ElevDetrend)])
                 self.CliffToeInd = np.argmin(ElevDetrend)
                 CliffPositionChangeFlag = True
-            
-            # else:
-            #     print("")
-            #     print(self.CliffToeInd, np.argmin(ElevDetrend))
-            #     plt.subplot(211)
-            #     plt.plot(self.Distance[np.invert(Mask)],self.Elevation[np.invert(Mask)])
-            #     plt.subplot(212)
-            #     plt.plot(self.Distance,ElevDetrend)
-            #     plt.show()
-            #     sys.exit()
 
         # Check if found a cliff
         self.CliffHeight = self.Elevation[self.CliffTopInd]-self.Elevation[self.CliffToeInd]
