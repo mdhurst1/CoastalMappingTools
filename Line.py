@@ -327,7 +327,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         return Line(XL,YL,"LeftBuffer"), Line(XL,YL,"RightBuffer")
 
 
-    def GenerateTransects(self, Spacing, TransectLength2Sea, TransectLength2Land, CheckTopology=True):
+    def GenerateTransects(self, Spacing, TransectLength2Sea, TransectLength2Land, NoIntersectionDistance=2000., CheckTopology=True):
         """
         Generates transects perpendicular to the coastline
 
@@ -345,6 +345,8 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         TransectLength2Land : float
             The length of the transect in the direction of land in map units, 
             spatial units depend on units of the CoastLine read in, Should be [m]
+        NoIntersectionDistance : float
+            Distance away from line in which transects should not intersect in [m] 
         CheckTopology : bool
             Check for overlapping transects and correct. Default is True
         
@@ -365,14 +367,27 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         NextPosition = Spacing
 
         # Track spacing and generate profile at desired distances
-        for i in range(0, self.NoNodes):
+        for i in range(1, self.NoNodes):
 
             #Update the cumulative length of the line
             CumulativeLength += self.SegmentLength[i]
 
-            # get orientation
+            # get orientation and angle of imaginary circle
+            if i == 1:
+                LastOrientation = self.Orientation[i-1]
             TempOrientation = self.Orientation[i]
+            dOrientation = TempOrientation - LastOrientation
             
+            #this logic for round the back issues
+            if dOrientation > 180:
+                dOrientation = 360-dOrientation
+            elif dOrientation < -180:
+                dOrientation = -360-dOrientation
+            
+            # get a minimum arc length for delta orientation
+            MinArcLength = 2.*np.pi*NoIntersectionDistance*(dOrientation/360.)
+            NextPosition += (MinArcLength-Spacing)
+
             # Test to see if we're going to create a cross section
             while CumulativeLength > NextPosition:
 
@@ -417,6 +432,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
                 # update to find next transect
                 TransectCount += 1
                 NextPosition += Spacing
+                LastOrientation = TempOrientation
         
         # record number of transects
         self.NoTransects = TransectCount   
