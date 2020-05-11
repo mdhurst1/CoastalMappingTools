@@ -476,6 +476,114 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
                 # build transect using these two points
                 self.Transects.append(Transect(str(self.ID), str(ThisPoint.ID), Node(NearestPoint.x, NearestPoint.y), Node(BasePoint.x, BasePoint.y), Node(NearestPoint.x, NearestPoint.y)))
 
+    def CheckLineOrientation(self, ShorelineShp, OffshoreShp):
+
+        """
+
+        Checks a line is in the right orientation by comparison to a coastline and a bathymetry line
+    
+        MDH, May 2020
+
+        Parameters
+        ----------
+
+        ContourShp1 : string
+            Name of a shapefile with the first line/contour to look for when
+            drawing transects. This should be the line nearest to the coast
+        ContourShp2: string
+            Name of a shapefile wit hthe second line/contour to look for when
+            drawing transects. This should be the offshore line.
+        """
+
+        # load the contour shapefile
+        GDF = gp.read_file(ShorelineShp)
+        Lines = GDF['geometry']
+        
+        # make a multlinestring if there are multiple lines
+        LineList = []
+        for LineObj in Lines:
+            if not LineObj:
+                continue
+            elif (LineObj.geom_type == "MultiLineString"):
+                for ThisLine in LineObj:
+                    LineList.append(ThisLine)
+            elif (LineObj.geom_type == "LineString"):
+                LineList.append(LineObj)
+            else:
+                sys.exit("problem reading lines")
+
+        # catch situation where only one line
+        if len(LineList) == 1:
+            ShoreLines = LineList[0]
+        else:
+            ShoreLines = MultiLineString(LineList)
+
+        # load the second contour shapefile
+        GDF = gp.read_file(OffshoreShp)
+        Lines = GDF['geometry']
+        
+        # make a multlinestring if there are multiple lines
+        LineList = []
+        for LineObj in Lines:
+            if not LineObj:
+                continue
+            elif (LineObj.geom_type == "MultiLineString"):
+                for ThisLine in LineObj:
+                    LineList.append(ThisLine)
+            elif (LineObj.geom_type == "LineString"):
+                LineList.append(LineObj)
+            else:
+                sys.exit("problem reading lines")
+
+        # catch situation where only one line
+        if len(LineList) == 1:
+            BathyLines = LineList[0]
+        else:
+            BathyLines = MultiLineString(LineList)
+
+        #  define some temporary initial transect lines
+        self.GenerateTransects(CheckTopology=False)
+
+        # check orientation relative to the sea for a 
+        # intersect first transect with each set of lines and get orientation from bathy to shore
+        # find intersection between transect line and shapefile lines
+        i = self.NoTransects/2.
+            
+        OffshoreIntersection = self.Transects[i].LineString.intersection(Lines2)
+        OnshoreIntersection = self.Transects[i].LineString.intersection(Lines1)
+        
+        # catch no intersections
+        if ((OffshoreIntersection.geom_type == "GeometryCollection") 
+            or (OnshoreIntersection.geom_type == "GeometryCollection")):
+            continue
+        
+        if OffshoreIntersection.geom_type is "MultiPoint":
+            StartPoint = Point(self.Transects[i].CoastNode.X, self.Transects[i].CoastNode.Y)
+            Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in OffshoreIntersection]
+            Index = Distances.index(min(Distances))
+            OffshoreIntersection = OffshoreIntersection[Index]
+
+        if OnshoreIntersection.geom_type is "MultiPoint":
+            StartPoint = Point(self.Transects[i].CoastNode.X, self.Transects[i].CoastNode.Y)
+            Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in OnshoreIntersection]
+            Index = Distances.index(min(Distances))
+            OnshoreIntersection = OnshoreIntersection[Index]  
+        
+        OffshoreNode = Node(OffshoreIntersection.x,OffshoreIntersection.y)
+        TestOrientation = OffshoreNode.get_Orientation(Node(OnshoreIntersection.x,OnshoreIntersection.y))
+
+        if ((TestOrientation < self.Orientation[i]) 
+            or (self.Orientation[i] < 120. and TestOrientation > 240)):
+
+            # get x and y to reverse lines
+            X, Y = self.get_XY()
+            self.__init__(self.ID, X[::-1], Y[::-1], self.Contour, self.Year, self.Cell, self.SubCell, self.CMU)
+            
+            # regenerate transects
+            self.GenerateTransects(Spacing,Distance2Sea,Distance2Land,CheckTopology=False)
+        
+        break
+
     def GenerateTransectsNormal2Contours(self, ContourShp1, ContourShp2, Spacing, Distance2Sea=5000., Distance2Land=5000., CheckTopology=True):
 
         """
