@@ -40,7 +40,6 @@ class Line:
         self.Orientation = []
         self.Curvature = []
         self.SegmentLength = []
-        self.CumulativeLength = []
         self.TotalLength = 0
         self.Transects = []
         self.NoTransects = 0
@@ -138,7 +137,6 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         # reset arrays
         self.Orientation = np.ones(self.NoNodes)*-9999
         self.SegmentLength = np.ones(self.NoNodes)*-9999
-        self.CumulativeLength = np.ones(self.NoNodes)*-9999
         self.TotalLength = 0
 
         # loop through the nodes
@@ -167,7 +165,6 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
             #Update the cumulative length of the line
             self.TotalLength += self.SegmentLength[i]
-            self.CumulativeLength[i] = self.TotalLength
 
         # Properties of last node
         self.Orientation[-1] = self.Orientation[-2]
@@ -188,8 +185,8 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         
         # smooth X and Y individually with Savitzky Golay filter
         # window size and polyorder must be integers you idiot!
-        XSmooth = savgol_filter(X,WindowSize,PolyOrder, mode="nearest")
-        YSmooth = savgol_filter(Y,WindowSize,PolyOrder, mode="nearest")
+        XSmooth = savgol_filter(X,WindowSize,PolyOrder, mode="mirror")
+        YSmooth = savgol_filter(Y,WindowSize,PolyOrder, mode="mirror")
 
         # add functions to insert first and last node again
         XSmooth = np.insert(XSmooth,0,X[0])
@@ -330,10 +327,9 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         return Line(XL,YL,"LeftBuffer"), Line(XL,YL,"RightBuffer")
 
 
-    def GenerateTransects(self, Spacing, TransectLength2Sea, TransectLength2Land, NoIntersectionDistance=2000., CheckTopology=True):
+    def GenerateTransects(self, Spacing, TransectLength2Sea, TransectLength2Land, CheckTopology=True):
         """
-        Generates transects perpendicular to the coastline that don intersect within a particular distance
-        by adjusting the transect spacing dynamically
+        Generates transects perpendicular to the coastline
 
         MDH, June 2019
 
@@ -349,8 +345,6 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         TransectLength2Land : float
             The length of the transect in the direction of land in map units, 
             spatial units depend on units of the CoastLine read in, Should be [m]
-        NoIntersectionDistance : float
-            Distance away from line in which transects should not intersect in [m] 
         CheckTopology : bool
             Check for overlapping transects and correct. Default is True
         
@@ -367,76 +361,69 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         TransectCount = 0
         
         # Parameters for tracing along length
-        LastOrientation = self.Orientation[0]
-        LastPosition = 0.0
+        CumulativeLength = 0.0
         NextPosition = Spacing
-        LineEnd = False
 
-        # step along the line adding transects
-        while NextPosition < self.TotalLength:
-            
-            # Find Position along the line
-            Index = np.searchsorted(self.CumulativeLength, NextPosition)
+        # Track spacing and generate profile at desired distances
+        for i in range(0, self.NoNodes):
 
-            # check if we should draw a transect and if not update next position
-            dOrientation = self.Orientation[Index] - LastOrientation
-            
-            #this logic for round the back issues
-            if dOrientation > 180:
-                dOrientation = 360-dOrientation
-            elif dOrientation < -180:
-                dOrientation = -360-dOrientation
-            
-            # get a minimum arc length for delta orientation
-            if dOrientation > 0:
-                ArcLength = 2.*np.pi*NoIntersectionDistance*(dOrientation/360.)
-            elif dOrientation < 0:
-                ArcLength = (NextPosition-LastPosition) + 2.*NoIntersectionDistance*np.tan(np.radians(dOrientation/2.))
-            else:
-                ArcLength = 0
+            #Update the cumulative length of the line
+            CumulativeLength += self.SegmentLength[i]
 
-            if (LastPosition + ArcLength) > NextPosition:
-                NextPosition = LastPosition + ArcLength
-                continue
+            # get orientation
+            TempOrientation = self.Orientation[i]
+            
+            # Test to see if we're going to create a cross section
+            while CumulativeLength > NextPosition:
+
+                #calculate point for section
+                DistanceToStepBack = CumulativeLength - NextPosition
+                dX = DistanceToStepBack * np.sin( np.radians( TempOrientation ) )
+                dY = DistanceToStepBack * np.cos( np.radians( TempOrientation ) )
                 
-            # otherwise create a transect
+                # find the point for the transect along the line
+                PointX = self.Nodes[i+1].X - dX
+                PointY = self.Nodes[i+1].Y - dY
 
-            #calculate point for section
-            DistanceToStepOn = NextPosition - self.CumulativeLength[Index]
-            dX = DistanceToStepOn * np.sin( np.radians( self.Orientation[Index] ) )
-            dY = DistanceToStepOn* np.cos( np.radians( self.Orientation[Index] ) )
-                
-            # find the point for the transect along the line
-            PointX = self.Nodes[Index].X + dX
-            PointY = self.Nodes[Index].Y + dY
+                #Create cross section line
+                #Get line orientation
+                if TempOrientation < 0:
+                    TransectOrientation = TempOrientation + 90.
+                else:
+                    TransectOrientation = TempOrientation - 90.
 
-            #Create cross section line
-            #Get line orientation
-            if self.Orientation[Index] < 0:
-                print("is this ever the case?")
-                TransectOrientation = self.Orientation[Index] + 90.
-            else:
-                TransectOrientation = self.Orientation[Index] - 90.
+                """ if self.ID == "3":
+                    print(TempOrientation)
+                    print(TransectOrientation)
 
-            #Calculate start and end nodes and generate Transect
-            X1 = PointX + TransectLength2Sea * np.sin( np.radians( TransectOrientation ) )
-            Y1 = PointY + TransectLength2Sea * np.cos( np.radians( TransectOrientation ) )
-            X2 = PointX - TransectLength2Land * np.sin( np.radians( TransectOrientation ) )
-            Y2 = PointY - TransectLength2Land * np.cos( np.radians( TransectOrientation ) )
-            self.Transects.append( Transect( Node(PointX, PointY), Node(X1, Y1), Node(X2, Y2), str(self.ID), str(TransectCount) ) )
+                    X1 = PointX + TransectLength2Sea * np.sin( np.radians( TransectOrientation ) )
+                    Y1 = PointY + TransectLength2Sea * np.cos( np.radians( TransectOrientation ) )
+                    X2 = PointX - TransectLength2Land * np.sin( np.radians( TransectOrientation ) )
+                    Y2 = PointY - TransectLength2Land * np.cos( np.radians( TransectOrientation ) )
+                    
+                    plt.plot(X1,Y1,'bo')
+                    plt.plot(X2,Y2,'ro')
+                    plt.plot([X1,X2],[Y1,Y2],'k--')
+                    plt.show()
+                    sys.exit() """
 
-            # update positions and orientations
-            TransectCount += 1
-            LastPosition = NextPosition
-            NextPosition += Spacing
-            LastOrientation = self.Orientation[Index]
+                #Calculate start and end nodes and generate Transect
+                X1 = PointX + TransectLength2Sea * np.sin( np.radians( TransectOrientation ) )
+                Y1 = PointY + TransectLength2Sea * np.cos( np.radians( TransectOrientation ) )
+                X2 = PointX - TransectLength2Land * np.sin( np.radians( TransectOrientation ) )
+                Y2 = PointY - TransectLength2Land * np.cos( np.radians( TransectOrientation ) )
+                self.Transects.append( Transect( Node(PointX, PointY), Node(X1, Y1), Node(X2, Y2), str(self.ID), str(TransectCount) ) )
 
+                # update to find next transect
+                TransectCount += 1
+                NextPosition += Spacing
+        
         # record number of transects
         self.NoTransects = TransectCount   
 
         # check for overlaps?
-        #if CheckTopology:
-        #    self.CheckTransectTopology()     
+        if CheckTopology:
+            self.CheckTransectTopology()     
 
     def GenerateTransectsFromContour(self, ContourShp, Spacing):
 
@@ -570,7 +557,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
         # get points to define initial transect line and make it nice and long
         self.GenerateTransects(Spacing,Distance2Sea,Distance2Land,CheckTopology=False)
-        
+
         # check orientation relative to the sea for first node and transect
         # intersect first transect with each set of lines and get orientation from bathy to shore
         # find intersection between transect line and shapefile lines
@@ -610,16 +597,13 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
                 self.GenerateTransects(Spacing,Distance2Sea,Distance2Land,CheckTopology=False)
             
             break
-        
-        return
+
         # flag to note interesections
         CheckTopologyFlag = CheckTopology
         Intersections = True
 
         while Intersections:
             
-            print(Intersections, CheckTopologyFlag)
-
             # intersect Transect with shapefile to find new end node of transect
             for Transect in self.Transects:
             
@@ -661,6 +645,20 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
                 else:
                     NewEndNode = Transect.EndNode
                 
+                # if Transect.ID == "872":
+                #     for Line in Lines1:
+                #         x, y = Line.xy
+                #         plt.plot(x,y,'g--')
+                #     for Line in Lines2:
+                #         x, y = Line.xy
+                #         plt.plot(x,y,'b--')
+                #     plt.plot(Transect.StartNode.X,Transect.StartNode.Y, 'go')
+                #     plt.plot(Transect.EndNode.X,Transect.EndNode.Y, 'ro')
+                #     plt.plot([Transect.StartNode.X, Transect.EndNode.X],[Transect.StartNode.Y,Transect.EndNode.Y],'k--')
+                #     #plt.plot(Intersection.x,Intersection.y,'ko')
+                #     plt.show()
+                #     sys.exit()
+
                 # reinitialise transect with new startnode and new endnode
                 Transect.__init__(Transect.CoastNode, NewStartNode, NewEndNode, Transect.LineID, Transect.ID)
                 
@@ -669,8 +667,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
                 Intersections = self.CheckTransectTopology()
                 CheckTopologyFlag = False
             else:
-                Intersections = False
-                print(Intersections)   
+                Intersections = False   
 
         if CheckTopology:
             self.DeleteOverlappingTransects()
