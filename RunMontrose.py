@@ -10,11 +10,10 @@ import pathlib
 from Coast import *
 
 # define file names for analysis
-Folder = "/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS1_Natural_Flood_Defences/"
-Site = "Montrose"
-SiteFolder = Folder+Site+"/"
-PlotFolder = SiteFolder+"Plots/" 
-TransectsFolder = SiteFolder+"Transects/"
+WorkingPath = pathlib.Path.cwd().parent
+SitePath = WorkingPath / "Montrose"
+PlotPath = SitePath / "Plots/" 
+TransectPath = SitePath / "Transects/"
 LineShp = "Montrose_CoastTrend.shp"
 DTM = "DTM_1m.tif"
 
@@ -22,14 +21,13 @@ DTM = "DTM_1m.tif"
 MHWS = 2.
 
 # make folder for plots and transects if it doesnt already exist
-p = pathlib.Path(PlotFolder)
+p = pathlib.Path(PlotPath)
 p.mkdir(parents=True, exist_ok=True)
-p = pathlib.Path(TransectsFolder)
+p = pathlib.Path(TransectPath)
 p.mkdir(parents=True, exist_ok=True)
 
 # set up a file name to save the coast object
-Filename2SaveCoast = SiteFolder+ "Coast.pydata"
-#Filename2SaveCoast = SiteFolder+ "Coast.pydata_DUMMY"
+Filename2SaveCoast = str(SitePath / "Coast.pydata")
 
 # this checks to see whether coast object already exists
 try:
@@ -40,8 +38,7 @@ except:
     print("Creating New Coast Object")
     
     # SET UP THE COAST
-    ThisCoast = Coast(SiteFolder+LineShp)
-    ThisCoast.SetMHWS(MHWS)
+    ThisCoast = Coast(str(SitePath / LineShp))
     
     # SIMPLIFY COASTLINE
     ThisCoast.MergeCoastLines()
@@ -49,20 +46,23 @@ except:
     ThisCoast.ReconfigureCoastLines("E")
     
     # WRITE COASTLINE TO SHAPEFILE
-    ThisCoast.WriteCoastShp(SiteFolder+"Coast.shp")
+    ThisCoast.WriteCoastShp(str(SitePath / "Coast.shp"))
     
     # GENERATE TRANSECTS
     ThisCoast.GenerateTransectsNormals(10.,250.,500.)
-    ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
-    ThisCoast.ExtractTransectTopography(SiteFolder+DTM)
+    ThisCoast.WriteTransectsShp(str(SitePath / "Transects.shp"))
+    ThisCoast.ExtractTransectTopography(str(SitePath / DTM))
     
+    #### get MHWS for each transect
+    ThisCoast.SampleMHWSElevation(str(WorkingPath / "MHWS_Lines" / "scotland_mhws_elev.tif"))
+
     # SAVE ENTIRE COAST OBJECT
     print("Saving Coast Object as " + Filename2SaveCoast)
     with open(Filename2SaveCoast, 'wb') as PFile:
         pickle.dump(ThisCoast, PFile)
         
-    # WRITE TRANSECTS TO CSV
-    ThisCoast.WriteTransectsCSV(Folder=TransectsFolder)
+# WRITE TRANSECTS TO CSV
+ThisCoast.WriteTransectsCSV(Folder=str(TransectsPath))
 
 ## ANALYSE TRANSECTS
 ThisCoast.FindRockyCoast()
@@ -80,10 +80,10 @@ with open(Filename2SaveCoast, 'wb') as PFile:
 ThisCoast.PlotTransects(PlotFolder)
 
 ## write some stuff
-ThisCoast.WriteCliffShp(SiteFolder+"Cliffs.shp")
-ThisCoast.WriteBarrierShp(SiteFolder+"Barriers.shp")
-ThisCoast.WriteTransectsShp(SiteFolder+"Transects.shp")
-ThisCoast.WriteCrestLinesShp(SiteFolder+"CrestLines.shp")
-ThisCoast.WriteCrestPointsShp(SiteFolder+"CrestPoints.shp")
-ThisCoast.WriteFrontPointsShp(SiteFolder+"FrontPoints.shp")
-ThisCoast.WriteExtremeLevelsShp(SiteFolder+"Extreme.shp")
+ThisCoast.WriteCliffShp(SitePath+"Cliffs.shp")
+ThisCoast.WriteBarrierShp(SitePath+"Barriers.shp")
+ThisCoast.WriteTransectsShp(SitePath+"Transects.shp")
+ThisCoast.WriteCrestLinesShp(SitePath+"CrestLines.shp")
+ThisCoast.WriteCrestPointsShp(SitePath+"CrestPoints.shp")
+ThisCoast.WriteFrontPointsShp(SitePath+"FrontPoints.shp")
+ThisCoast.WriteExtremeLevelsShp(SitePath+"Extreme.shp")

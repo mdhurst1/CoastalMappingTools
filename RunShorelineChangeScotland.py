@@ -68,8 +68,12 @@ for index, Row in Cells.iterrows():
         
         # write smoothed coast/bathy to file
         CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
-        CellCoast.GenerateTransectsNormal2Shp(str(ModernPath), str(BathyPath), 
-                                            TransectSpacing=TransectSpacing, CheckTopology=True)
+
+        CellCoast.GenerateTransectsBetweenContoursShp(str(ModernPath), str(BathyPath), 
+                                            TransectSpacing=TransectSpacing, CheckTopology=False)
+        
+        CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Test.shp")))
+        sys.exit()
         
         # SAVE ENTIRE COAST OBJECT
         with open(str(Filename2SaveCoast), 'wb') as PFile:

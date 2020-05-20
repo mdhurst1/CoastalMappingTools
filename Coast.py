@@ -1130,7 +1130,13 @@ class Coast:
         
         # LinesList = [LineString(tuple(zip(Line.get_XY()))) for Line in self.CoastLines]
         MultiLine = MultiLineString(LinesList)
-        MergedLine = linemerge(MultiLine.simplify(0.2))
+        SimplifiedMultiLine = MultiLine.simplify(0.2)
+
+        # check geom_type before attempting merge
+        if SimplifiedMultiLine.geom_type == "MultiLineString": 
+            MergedLine = linemerge(SimplifiedMultiLine)
+        else:
+            MergedLine = SimplifiedMultiLine
 
         #reset object
         self.CoastLines = []
@@ -1363,7 +1369,7 @@ class Coast:
 
             # generate transects along each line
             Line.CheckOrientation(ShorelineShp, BathyShp)
-            
+
     # function to do something    
     def GenerateTransectsNormals(self, TransectSpacing, TransectLength2Sea, TransectLength2Land, CheckTopology=True):
         """
@@ -1401,7 +1407,7 @@ class Coast:
             # generate transects along each line
             Line.GenerateTransects(TransectSpacing, TransectLength2Sea, TransectLength2Land, CheckTopology)
 
-    def GenerateTransectsNormal2Shp(self, ContourShp1, ContourShp2, Distance2Sea=8000., Distance2Land=8000., TransectSpacing=20., CheckTopology=True):
+    def GenerateTransectsBetweenContoursShp(self, ContourShp1, ContourShp2, Distance2Sea=8000., Distance2Land=8000., TransectSpacing=20., CheckTopology=True):
         """
         Wrapper to the function in the Line object
 
@@ -1420,14 +1426,14 @@ class Coast:
             in map units, spatial units depend on units of the CoastLine read in,
             Should be [m]
         """
-        print("Coast.GenerateTransectsNormal2Shp: Generating CoastLine transects perpendicular to the coast")
+        print("Coast.GenerateTransectsBetweenContoursShp: Generating CoastLine transects perpendicular to the coast")
 
         self.TransectsSpacing = TransectSpacing
         
         for Line in self.CoastLines:
 
             # generate transects along each line
-            Line.GenerateTransectsNormal2Contours(ContourShp1,ContourShp2,TransectSpacing,Distance2Sea,Distance2Land,CheckTopology)
+            Line.GenerateTransectsBetweenContours(ContourShp1,ContourShp2,TransectSpacing,Distance2Sea,Distance2Land,CheckTopology)
 
     def GenerateTransectsFromContours(self,ContourShp,TransectSpacing=10.):
 
@@ -2043,9 +2049,14 @@ class Coast:
 
         """      
         
+        # set up dem file list
         if DEMFileList:
+            # check if list and make list if not
+            if not isinstance(DEMFileList, list):
+                DEMFileList = [DEMFileList,]
             self.UniqueDEMList = DEMFileList
 
+        # loop through DEMs
         for DEM in self.UniqueDEMList:
             
             print("\t" + DEM.split("/")[-1])
