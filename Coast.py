@@ -2029,14 +2029,21 @@ class Coast:
         
         # list of unique DEMs
         self.UniqueDEMList = []
-
+        
+        #print(len(self.CoastLines))
         for Line in self.CoastLines:
             
+
             # get multilinestring of transects
             Lines = [LineString([(Transect.EndNode.X,Transect.EndNode.Y),(Transect.StartNode.X,Transect.StartNode.Y)]) for Transect in Line.Transects]
             LineGDF = gp.GeoDataFrame(geometry=Lines,crs=PolyGDF.crs)
             
             # interesect with DEM references
+            #print(Line.TotalLength)
+            #print(len(Line.Transects))
+            #print(Lines)
+            #print(PolyGDF)
+
             JoinGDF = gp.sjoin(LineGDF, PolyGDF, op='intersects')
             
             # set DEMs to list
