@@ -81,7 +81,7 @@ class Coast:
         # some tracking bools
         self.BuiltTransects = False
         self.GotHistoricShorelines = False
-        self.SampledDEMS = False
+        self.SampledDEMs = False
         self.PredictedFutureShorelines = False
 
         if CoastShp:

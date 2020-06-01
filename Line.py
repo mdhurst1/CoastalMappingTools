@@ -495,7 +495,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             drawing transects. This should be the offshore line.
         """
 
-        print("Checking Geometry",self.ID)
+        print("\tChecking Geometry, Line", self.ID)
 
         # load the contour shapefile
         GDF = gp.read_file(ShorelineShp)
