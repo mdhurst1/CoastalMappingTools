@@ -78,6 +78,12 @@ class Coast:
         self.MHWS = None
         self.UniqueDEMList = []
 
+        # some tracking bools
+        self.BuiltTransects = False
+        self.GotHistoricShorelines = False
+        self.SampledDEMS = False
+        self.PredictedFutureShorelines = False
+
         if CoastShp:
             self.ReadCoastShp(CoastShp)
             
