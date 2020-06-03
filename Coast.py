@@ -1377,7 +1377,7 @@ class Coast:
             Line.CheckOrientation(ShorelineShp, BathyShp)
 
     # function to do something    
-    def GenerateTransectsNormals(self, TransectSpacing, TransectLength2Sea, TransectLength2Land, CheckTopology=True):
+    def GenerateTransects(self, TransectSpacing, TransectLength2Sea=5000, TransectLength2Land=5000, CheckTopology=True):
         """
         Wrapper to the function in the Line object
 

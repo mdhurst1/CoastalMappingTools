@@ -17,8 +17,8 @@ WorkingPath = pathlib.Path.cwd().parent
 NationalDEMPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2Final/99_NationalData/OSTerrain5")
 OutputPath = WorkingPath/"FinalNationalRun"
 # set the transect spacing (in m)
-TransectSpacing = 10.
-SmoothingWindowSize=501
+TransectSpacing = 50.
+SmoothingWindowSize = 251
 
 # get all coastal cells to loop through
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
@@ -71,10 +71,14 @@ for index, Row in Cells.iterrows():
         # write smoothed coast/bathy to file
         CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
 
+        CellCoast.GenerateTransects(TransectSpacing=TransectSpacing, CheckTopology=False)
+        
+        CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Raw.shp")))
+        
         CellCoast.GenerateTransectsBetweenContoursShp(str(ModernPath), str(BathyPath), 
                                             TransectSpacing=TransectSpacing, CheckTopology=False)
         
-        CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Raw.shp")))
+        CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Contours.shp")))
         
         CellCoast.BuiltTransects = True
         
