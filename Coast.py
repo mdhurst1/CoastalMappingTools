@@ -1089,7 +1089,7 @@ class Coast:
         
         print("\r\t Done.")
 
-    def MergeCoastLines(self, SnapDistance=5):
+    def MergeCoastLines(self, SnapDistance=0.1):
 
         """
         Identifies individual coast Lines that are touching at one end 
@@ -1441,6 +1441,7 @@ class Coast:
             # generate transects along each line
             Line.GenerateTransectsBetweenContours(ContourShp1,ContourShp2,TransectSpacing,Distance2Sea,Distance2Land,CheckTopology)
 
+
     def GenerateTransectsFromContours(self,ContourShp,TransectSpacing=10.):
 
         """
@@ -1465,6 +1466,19 @@ class Coast:
 
         for Line in self.CoastLines:
             Line.GenerateTransectsFromContour(ContourShp, TransectSpacing)
+
+    def IntersectTransectsWithIntertidal(self, IntertidalPolyShp):
+
+        """
+        Wrapper function to loop through transects and intersect with 
+        a polygon defining the intertidal zone
+
+        MDH, June 2020
+
+        """
+
+        for Line in self.CoastLines:
+            Line.IntersectTransectsWithIntertidal(IntertidalPolyShp)
 
     def CheckTransectTopology(self):
 

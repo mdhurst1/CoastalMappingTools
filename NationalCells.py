@@ -29,6 +29,7 @@ MHWS_1970 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1970_Final.
 MHWS_Soft = gp.read_file(WorkingPath / "MHWS_Lines" / "MHWS_OS_smart2020_soft_simple.shp")
 MHWS_Modern = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Modern_FINAL.shp")
 
+
 def ClipLines2Poly(LinesGDF,PolyGDF):
 
     IntersectionGeometry = LinesGDF.intersection(PolyGDF)

@@ -17,7 +17,7 @@ from Node import *
 from Transect import *
 
 import geopandas as gp
-from shapely.geometry import Point, LineString, MultiLineString
+from shapely.geometry import Point, LineString, MultiLineString, Polygon, MultiPolygon
 from shapely.ops import nearest_points
 
 class Line:
@@ -697,6 +697,109 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
                 
                     # check there arent multiple intersections, if there are just get the nearest
                     if Intersection.geom_type is "MultiPoint":
+                        StartPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                        Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection]
+                        Index = Distances.index(min(Distances))
+                        Intersection = Intersection[Index]
+                    
+                    # set this as the new start node
+                    NewStartNode = Node(Intersection.x,Intersection.y)
+                
+                else:
+                    NewStartNode = Transect.StartNode
+
+                # rebuild transect with new start node here.
+                Transect.__init__(Transect.CoastNode, NewStartNode, Transect.EndNode, Transect.LineID, Transect.ID)
+
+                # now do the same with the raw coastline data (i.e. the original contour)
+                Intersection = Transect.LineString.intersection(Lines1)
+                
+                # catch no intersections
+                if Intersection.geom_type != "GeometryCollection":
+                    
+                    # check there arent multiple intersections, if there are just get the nearest
+                    if Intersection.geom_type is "MultiPoint":
+                        StartPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                        Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection]
+                        Index = Distances.index(min(Distances))
+                        Intersection = Intersection[Index]
+                        
+                    # set this as the new end node
+                    NewEndNode = Node(Intersection.x,Intersection.y)
+
+                    # reinitialise transect with new startnode and new endnode
+                    Transect.__init__(Transect.CoastNode, NewStartNode, NewEndNode, Transect.LineID, Transect.ID)
+
+                else:
+                    DeleteFlags[i] = 0
+                
+            self.Transects = [Transect for n, Transect in enumerate(self.Transects) if DeleteFlags[n] == 1]
+                
+            # check for overlaps?
+            if CheckTopologyFlag:
+                Intersections = self.CheckTransectTopology()
+                CheckTopologyFlag = False
+            else:
+                Intersections = False   
+
+        if CheckTopology:
+            self.DeleteOverlappingTransects()
+        
+        for i, Transect in enumerate(self.Transects):
+            Transect.ID = str(i)
+
+    def IntersectTransectsWithIntertidal(self, IntertidalPolyShp):
+
+        """
+        MDH, June 2020
+        
+        """
+
+        # load the contour shapefile
+        GDF = gp.read_file(IntertidalPolyShp)
+        Polys = GDF['geometry']
+        
+        # make a multipolygon if there are multiple polys
+        PolyList = []
+        for PolyObj in Polys:
+            if not PolyObj:
+                continue
+            elif (PolyObj.geom_type == "MultiPolygon"):
+                for ThisPoly in PolyObj:
+                    PolyList.append(ThisPoly)
+            elif (PolyObj.geom_type == "Polygon"):
+                PolyList.append(PolyObj)
+            else:
+                sys.exit("problem reading lines")
+
+        # catch situation where only one poly
+        if len(PolyList) == 1:
+            Polys = PolyList[0]
+        else:
+            Polys = MultiPolygon(PolyList)
+
+        # flag to note interesections
+        CheckTopologyFlag = CheckTopology
+        Intersections = True
+
+        while Intersections:
+            
+            # intersect Transect with shapefile to find new end node of transect
+            DeleteFlags = np.ones(len(self.Transects))
+
+            for i, Transect in enumerate(self.Transects):
+            
+                # find intersection between transect line and shapefile lines
+                IntersectionLines = Transect.LineString.intersection(Polys)
+                print(IntersectionLines)
+                sys.exit()
+                
+                # catch no intersections
+                if IntersectionLines.geom_type != "GeometryCollection":
+                
+                    # check there arent multiple intersections, if there are just get the nearest
+                    if Intersection.geom_type is "MultiLine":
+                        print(IntersectionLines)
                         StartPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
                         Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection]
                         Index = Distances.index(min(Distances))

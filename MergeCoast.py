@@ -1,6 +1,6 @@
 """
-Driver for assessment of future shoreline change in Scotland
-Bruun Rule approach
+Driver for assessment of foreshore width in Scotland
+For finding beaches mostl likely to be visited post-Covid
 
 Martin Hurst
 University of Glasgow
@@ -15,55 +15,13 @@ from Coast import *
 # define file names for analysis
 WorkingPath = pathlib.Path.cwd().parent
 NationalDEMPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2Final/99_NationalData/OSTerrain5")
-OutputPath = WorkingPath/"FinalNationalRun"
-# set the transect spacing (in m)
-TransectSpacing = 10.
-SmoothingWindowSize = 251
-
-# get all coastal cells to loop through
-Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
-
-# loop through each cell
-for index, Row in Cells.iterrows():
-
-    # print cell to screen
-    CellSub = Row.Cell_sub
-    print("\nRUNNING CELL", CellSub)
-    RowName = "Cell_"+CellSub
+OutputPath = WorkingPath/"CovidBeaches"
     
-    # try opening bathy file as check on whether there is data
-    try:
-        gp.read_file(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp"))
-    except:
-        print("\tUnable to access files for " + RowName)
-        continue
-
-    # # this checks to see whether coast object already exists
-    Filename2SaveCoast = OutputPath / (RowName+"_Change.pydata")
+# get soft coast position as most recent
+MHWSPath = WorkingPath / "MHWS_Lines" / ("mhws_sept19_simple.shp")
     
-    # get soft coast position as most recent
-    ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Final.shp")
-    SoftPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp")
-    BathyPath = WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")
-    OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")
-    QuiteOldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp")
-    
-    if not BathyPath.is_file():
-        print("No Bathy")
-        continue
-    elif not SoftPath.is_file():
-        print("No Soft")
-        continue
-        
-    try:
-        CellCoast = pickle.load( open( Filename2SaveCoast, "rb" ) )
-        print("Loaded Coast Object ", Filename2SaveCoast)
-
-    except:
-        print("Creating New Coast Object")
-
-        # SET UP THE COAST FROM -10m Contour
-        CellCoast = Coast(str(BathyPath))
+# Set up the coast
+CellCoast = Coast(str(ModernPath))
     
     if not CellCoast.BuiltTransects:
         
@@ -71,16 +29,11 @@ for index, Row in Cells.iterrows():
         CellCoast.SmoothCoastLines(WindowSize=SmoothingWindowSize)
         
         # write smoothed coast/bathy to file
-        CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
+        CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Coast.shp")))
 
         CellCoast.GenerateTransects(TransectSpacing=TransectSpacing, CheckTopology=False)
         
         CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Raw.shp")))
-        
-        CellCoast.GenerateTransectsBetweenContoursShp(str(ModernPath), str(BathyPath), 
-                                            TransectSpacing=TransectSpacing)
-        
-        CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Contours.shp")))
         
         CellCoast.BuiltTransects = True
         
