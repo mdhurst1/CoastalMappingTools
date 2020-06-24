@@ -42,6 +42,9 @@ for index, Row in Cells.iterrows():
 
     print(Row.Cell_sub)
     
+    if Row.Cell_sub not in ["1a","1b","1c","1d"]:
+        continue
+    
     # Intersection to isolate bathy for each cell
     BathyClipped = ClipLines2Poly(BathyLines, Row.geometry)
     Old = ClipLines2Poly(MHWS_1890,Row.geometry)

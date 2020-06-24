@@ -25,7 +25,7 @@ class Line:
     """
     """
 
-    def __init__(self, ID, X, Y, Contour=None, Year=None, Cell=None, SubCell=None, CMU=None):
+    def __init__(self, ID, X, Y, Contour=None, Year=None, Cell=None, SubCell=None, CMU=None, Flag=None):
         """
         """
         self.ID = ID
@@ -47,6 +47,7 @@ class Line:
         self.NoPoints = 0
         self.Contour = Contour
         self.GenerateNodes(X, Y)
+        self.Flag = Flag
 
     def __str__(self):
         """
@@ -736,11 +737,12 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             self.Transects = [Transect for n, Transect in enumerate(self.Transects) if DeleteFlags[n] == 1]
                 
             # check for overlaps?
-            if CheckTopologyFlag:
-                Intersections = self.CheckTransectTopology()
-                CheckTopologyFlag = False
-            else:
-                Intersections = False   
+            # if CheckTopologyFlag:
+            #    Intersections = self.CheckTransectTopology()
+            #    CheckTopologyFlag = False
+            #else:
+            
+            Intersections = False   
 
         if CheckTopology:
             self.DeleteOverlappingTransects()
@@ -779,77 +781,60 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             Polys = MultiPolygon(PolyList)
 
         # flag to note interesections
-        CheckTopologyFlag = CheckTopology
         Intersections = True
 
-        while Intersections:
-            
-            # intersect Transect with shapefile to find new end node of transect
-            DeleteFlags = np.ones(len(self.Transects))
+        # intersect Transect with shapefile to find new end node of transect
+        DeleteFlags = np.ones(len(self.Transects))
 
-            for i, Transect in enumerate(self.Transects):
-            
-                # find intersection between transect line and shapefile lines
-                IntersectionLines = Transect.LineString.intersection(Polys)
-                print(IntersectionLines)
-                sys.exit()
-                
-                # catch no intersections
-                if IntersectionLines.geom_type != "GeometryCollection":
-                
-                    # check there arent multiple intersections, if there are just get the nearest
-                    if Intersection.geom_type is "MultiLine":
-                        print(IntersectionLines)
-                        StartPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
-                        Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection]
-                        Index = Distances.index(min(Distances))
-                        Intersection = Intersection[Index]
-                    
-                    # set this as the new start node
-                    NewStartNode = Node(Intersection.x,Intersection.y)
-                
-                else:
-                    NewStartNode = Transect.StartNode
-
-                # rebuild transect with new start node here.
-                Transect.__init__(Transect.CoastNode, NewStartNode, Transect.EndNode, Transect.LineID, Transect.ID)
-
-                # now do the same with the raw coastline data (i.e. the original contour)
-                Intersection = Transect.LineString.intersection(Lines1)
-                
-                # catch no intersections
-                if Intersection.geom_type != "GeometryCollection":
-                    
-                    # check there arent multiple intersections, if there are just get the nearest
-                    if Intersection.geom_type is "MultiPoint":
-                        StartPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
-                        Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection]
-                        Index = Distances.index(min(Distances))
-                        Intersection = Intersection[Index]
-                        
-                    # set this as the new end node
-                    NewEndNode = Node(Intersection.x,Intersection.y)
-
-                    # reinitialise transect with new startnode and new endnode
-                    Transect.__init__(Transect.CoastNode, NewStartNode, NewEndNode, Transect.LineID, Transect.ID)
-
-                else:
-                    DeleteFlags[i] = 0
-                
-            self.Transects = [Transect for n, Transect in enumerate(self.Transects) if DeleteFlags[n] == 1]
-                
-            # check for overlaps?
-            if CheckTopologyFlag:
-                Intersections = self.CheckTransectTopology()
-                CheckTopologyFlag = False
-            else:
-                Intersections = False   
-
-        if CheckTopology:
-            self.DeleteOverlappingTransects()
+        for i, Transect in enumerate(self.Transects):
         
+            print("\tLine", self.ID, "Transect", i, "/", self.NoTransects)
+            
+            # find intersection between transect line and shapefile lines
+            try:
+                IntersectionLines = Transect.LineString.intersection(Polys)
+            except:
+                print(self.ID, Transect.ID)
+                continue
+            
+            # catch no intersections
+            if IntersectionLines.geom_type != "GeometryCollection":
+            
+                # check there arent multiple intersections, if there are just get the nearest
+                if IntersectionLines.geom_type is "MultiLineString":
+                    StartPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                    
+                    MidPoints = []
+                    for IntersectLine in IntersectionLines:
+                        X, Y = IntersectLine.coords.xy
+                        MeanX = np.mean(X)
+                        MeanY = np.mean(Y)
+                        MidPoints.append(Point(MeanX,MeanY))
+                    
+                    Distances = [MidPoint.distance(StartPoint) for MidPoint in MidPoints]
+                    Index = Distances.index(min(Distances))
+                    ClosestLine = IntersectionLines[Index]
+                    
+                else:
+                    ClosestLine = IntersectionLines
+                
+                # set this as the new start and end node
+                #print(ClosestLine)
+                X, Y = zip(*ClosestLine.coords)
+                NewStartNode = Node(X[0], Y[0])
+                NewEndNode = Node(X[-1], Y[-1])
+            
+                # reinitialise transect with new startnode and new endnode
+                Transect.__init__(Transect.CoastNode, NewStartNode, NewEndNode, Transect.LineID, Transect.ID)
+
+            else:
+                DeleteFlags[i] = 0
+            
+        self.Transects = [Transect for n, Transect in enumerate(self.Transects) if DeleteFlags[n] == 1]
+                
         for i, Transect in enumerate(self.Transects):
             Transect.ID = str(i)
+            Transect.ExtendTransect(1., 1.)
 
     def CheckTransectTopology(self,ThinFactor=2):
 
@@ -960,7 +945,11 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
                 # catch identical lines
                 if i == j:
                     continue
-                
+                elif DeleteFlags[i] == 0:
+                    continue
+                elif DeleteFlags[j] == 0:
+                    continue
+
                 # otherwise check for intersection
                 if Transect1.LineString.intersects(Transect2.LineString):
                     

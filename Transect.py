@@ -79,6 +79,7 @@ class Transect:
         
         # future sea level rise
         self.Future = False
+        self.LongTermOnly = False
         self.FutureSeaLevelYears = []
         self.FutureSeaLevels = []
         self.FutureShorelinesPositions = []
@@ -312,7 +313,7 @@ class Transect:
         MDH, September 2019
 
         """
-
+        
         self.FutureShorelinesPositions = []
         self.FutureShorelinesRates = []
         self.InterpolatedRSLR = []
@@ -323,16 +324,15 @@ class Transect:
             self.Future = False
             return
 
-        elif len(self.HistoricShorelinesYears) < 2:
+        elif len(self.HistoricShorelinesYears) < 3:
             #print("Not enough historical shorelines", self.ID)
             self.Future = False
             return
 
-        elif self.HistoricShorelinesYears[-1] < 2000:
+        if self.HistoricShorelinesYears[-1] < 2000:
             #print("No recent historical shorelines", self.ID)
-            self.Future = False
-            return
-        
+            self.LongTermOnly = True
+            
         # some logic here to check if its sensible to make predictions
         for i in range(0,len(self.HistoricShorelinesYears)):
             self.HistoricShorelinesDistance.append(self.HistoricShorelinesDistances[i][0])
@@ -400,6 +400,8 @@ class Transect:
         # Calibration term, remembering to convert relative sea level change rates to m/yr
         self.VolumetricCalibrationRates = self.ShorefaceDepth*np.array(self.ChangeRates) + self.ShorefaceDistance*(self.InterpolatedRSLR)
         
+        # need some logic somewhere in here to fix issue where most recent two years are close together.
+
         # get sea level at latest time
         if self.HistoricShorelinesYears[-1] < self.FutureSeaLevelYears[0]:
             self.LatestRSL = self.FutureSeaLevels[0]
@@ -407,13 +409,19 @@ class Transect:
             Interp = (self.FutureSeaLevelYears[1]-self.HistoricShorelinesYears[-1])/(self.FutureSeaLevelYears[1]-self.FutureSeaLevelYears[0])
             self.LatestRSL = self.FutureSeaLevels[1]-Interp*(self.FutureSeaLevels[1]-self.FutureSeaLevels[0])
         
+        # set index for calibration
+        if self.LongTermOnly:
+            Index = 0
+        else:
+            Index = -1
+
         # Future shoreline positions
         for i in range(1, len(self.FutureSeaLevelYears)):
             dT = self.FutureSeaLevelYears[i]-self.HistoricShorelinesYears[-1]
             
             # self.InterpolatedRSLR
             BruunRuleComponent = (-1./self.BruunSlope)*(self.FutureSeaLevels[i]-self.LatestRSL)
-            CalibrationComponent = (1./self.ShorefaceDepth)*self.VolumetricCalibrationRates[-1]*dT
+            CalibrationComponent = (1./self.ShorefaceDepth)*self.VolumetricCalibrationRates[Index]*dT
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
             
             # check rock head position not exceeded

@@ -29,7 +29,7 @@ ModernPath = WorkingPath / "MHWS_Lines" / "Coastline_250k_Lines.shp"
 MHWS_2019 = WorkingPath / "MHWS_Lines" / "mhws_sept19_simple.shp"
 MLWS_2019 = WorkingPath / "MHWS_Lines" / "mlws_sept19_sc_simp.shp"
 IntertidalPolyShp = WorkingPath / "MHWS_Lines" / "OSMM_Intertidal_Poly.shp"
-    
+  
 if not ModernPath.is_file():
     sys.exit()
     
@@ -50,10 +50,12 @@ except:
     ScotlandCoast.WriteCoastShp(str(OutputPath / ("Scotland_Smoothed_Coast.shp")))
     
     #save here
+    with open(str(Filename2SaveCoast), 'wb') as PFile:
+        pickle.dump(ScotlandCoast, PFile)
 
 if not ScotlandCoast.BuiltTransects:
     
-    ScotlandCoast.GenerateTransects(TransectSpacing, 500, 500, CheckTopology=False)
+    ScotlandCoast.GenerateTransects(TransectSpacing, 1000, 1000, CheckTopology=False)
             
     ScotlandCoast.WriteTransectsShp(str(OutputPath / ("Scotland_Transects_Raw.shp")))
     
