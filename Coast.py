@@ -35,6 +35,7 @@ class Coast:
     """
 
     def __init__(self, CoastShp=""):
+        
         """
         MDH, June 2019
         """
