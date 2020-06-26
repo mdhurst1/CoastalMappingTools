@@ -1560,7 +1560,9 @@ class Coast:
         # deal with invalid geometries on the fly? This is messy!
         else:
             for Line in Lines:
-                if Line.geom_type == "LineString":
+                if not Line:
+                    continue
+                elif Line.geom_type == "LineString":
                     MultiLines.append(Line)
                 elif Line.geom_type == "MultiLineString":
                     for SubLine in Line:
@@ -2555,23 +2557,16 @@ class Coast:
                 FutureBool.insert(0, False)
                 FutureBool = np.array(FutureBool).astype(int)
 
-                # find transects where calibration is long-term only
-                LongTermBool = [Transect.LongTermOnly for Transect in CoastLine.Transects]
-                LongTermBool.insert(0, False)
-                LongTermBool = np.array(FutureBool).astype(int)
-
+                #for i in range(0, len(FutureBool)):
+                    #if FutureBool[i]
+                
                 # check for lines with no predictions
                 if not any(FutureBool):
                     continue
                 
                 # get a list of the start and end points of contiguous lines
                 StartEndFlags = np.diff(FutureBool)
-                ChangeFlags = np.diff(LongTermBool)
-                for i in range(0,len(StartEndFlags)):
-                    if (StartEndFlags[i] == 0) and (ChangeFlags[i] != 0):
-                        StartEndFlags[i] = -1
-                        StartEndFlags[i+1] = 1
-
+                
                 # if last line finishes on a flag the last element as the end
                 if StartEndFlags[StartEndFlags.nonzero()[0][-1]] == 1:
                     StartEndFlags[-1] = -1
@@ -2607,15 +2602,7 @@ class Coast:
                     for Transect in CoastLine.Transects[StartList[i]:EndList[i]]:
                         FutureNode = Transect.get_FuturePosition(Year)
                         FutureList.append(FutureNode)
-                        LongTermList.append(Transect.LongTermOnly)
-                    
-                    LongTermFlag = LongTermList[0]
-                    if LongTermList.any() != LongTermFlag:
-                        print("problem")
-                        import pdb
-                        pdb.set_trace()
-
-                        
+                                                
                     # add latest MHWS from next node to end
                     # might need some logic here to finish
                     if EndList[i] == CoastLine.NoTransects-1:
@@ -2632,7 +2619,7 @@ class Coast:
                     X = [FutureNode.X for FutureNode in FutureList]
                     Y = [FutureNode.Y for FutureNode in FutureList]
                     
-                    TempLine = Line("FutureCoast_"+str(FutureCount), X, Y, Year=Year, Flag=LongTermFlag)
+                    TempLine = Line("FutureCoast_"+str(FutureCount), X, Y, Year=Year)
                     self.FutureShoreLines.append(TempLine)
                     
                     # update counter

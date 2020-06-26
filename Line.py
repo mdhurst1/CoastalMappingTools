@@ -594,7 +594,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             # regenerate transects
             self.GenerateTransects(CheckTopology=False)
 
-    def GenerateTransectsBetweenContours(self, ContourShp1, ContourShp2, Spacing, Distance2Sea=5000., Distance2Land=5000., CheckTopology=True):
+    def GenerateTransectsBetweenContours(self, ContourShp1, ContourShp2, Spacing, Distance2Sea=5000., Distance2Land=8000., CheckTopology=True):
 
         """
 
@@ -628,6 +628,8 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         """
 
         self.CheckLineOrientation(ContourShp1, ContourShp2)
+
+        self.GenerateTransects(Spacing, Distance2Sea, Distance2Land, CheckTopology=False)
 
         # load the contour shapefile
         GDF = gp.read_file(ContourShp1)

@@ -334,6 +334,7 @@ class Transect:
             self.LongTermOnly = True
             
         # some logic here to check if its sensible to make predictions
+        # wtf does this even do!?
         for i in range(0,len(self.HistoricShorelinesYears)):
             self.HistoricShorelinesDistance.append(self.HistoricShorelinesDistances[i][0])
             self.HistoricShorelinesPosition.append(self.HistoricShorelinesPositions[i][0])
@@ -342,12 +343,25 @@ class Transect:
         EqualBool = NoPositions[1:] == NoPositions[:-1]
 
         if not EqualBool:
-            #print("issue")
+            print("issue")
+            sys.exit()
             self.Future = False
             return
 
         # boolean flag if making prediction
         self.Future = True
+
+        # check if there is more than one post 2000 position and only retain the most recent
+        RecentFlags = np.array((self.HistoricShorelinesYears > 2000))
+        NRecentFlags = np.cumsum(RecentFlags)
+        if NRecentFlags > 1:
+            import pdb
+            pdb.set_trace()
+            for i in range(1,NRecentFlags):
+                del(self.HistoricShorelinesYears[-2])
+                del(self.HistoricShorelinesDistances[-2])
+                del(self.HistoricShorelinesPositions[-2])
+
 
         # reset change rates in case already calculated
         self.ChangeRates = []

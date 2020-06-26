@@ -28,7 +28,7 @@ MHWS_1890 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1890_FINAL.
 MHWS_1970 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1970_Final.shp")
 MHWS_Soft = gp.read_file(WorkingPath / "MHWS_Lines" / "MHWS_OS_smart2020_soft_simple.shp")
 MHWS_Modern = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Modern_FINAL.shp")
-
+MHWS_LiDAR = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Modern_LiDAR.shp")
 
 def ClipLines2Poly(LinesGDF,PolyGDF):
 
@@ -42,7 +42,7 @@ for index, Row in Cells.iterrows():
 
     print(Row.Cell_sub)
     
-    if Row.Cell_sub not in ["1a","1b","1c","1d"]:
+    if Row.Cell_sub not in ["1a","1b","1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g","4"]:
         continue
     
     # Intersection to isolate bathy for each cell
@@ -51,6 +51,7 @@ for index, Row in Cells.iterrows():
     Inter = ClipLines2Poly(MHWS_1970,Row.geometry)
     Soft = ClipLines2Poly(MHWS_Soft,Row.geometry)
     Modern = ClipLines2Poly(MHWS_Modern,Row.geometry)
+    LiDAR = ClipLines2Poly(MHWS_LiDAR, Row.geometry)
     
     # Save these to new files
     RowName = "Cell_" + Row.Cell_sub
@@ -79,3 +80,10 @@ for index, Row in Cells.iterrows():
         Modern.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Final.shp"))
     except:
         print("Unable to write modern for " + Row.Cell_sub)
+        
+    try:
+        LiDAR.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR.shp"))
+    except:
+        print("Unable to write LiDAR for " + Row.Cell_sub)
+        
+    

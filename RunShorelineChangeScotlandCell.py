@@ -46,9 +46,11 @@ for CellSub in CellList:
     # get soft coast position as most recent
     ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Final.shp")
     SoftPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp")
+    LiDARPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR.shp")
     BathyPath = WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")
     OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")
     QuiteOldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp")
+    
     
     if not BathyPath.is_file():
         print("No Bathy")
@@ -106,6 +108,11 @@ for CellSub in CellList:
             print("No soft MHWS file")
         else:
             CellCoast.ExtractHistoricalShorelinePositions(str(SoftPath))
+        
+        if not LiDARPath.is_file():
+            print("No LiDAR MHWS file")
+        else:
+            CellCoast.ExtractHistoricalShorelinePositions(str(LiDARPath))
             
         CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Sampled.shp")))
     
