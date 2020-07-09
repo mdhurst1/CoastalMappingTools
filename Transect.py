@@ -282,6 +282,10 @@ class Transect:
         Elevations = np.array([ThisNode.Z for ThisNode in Nodes if ThisNode.Z > 0])
 
         # normalise distances to minimum value (i.e. make lowest = zero)
+        if len(Distances) == 0:
+            self.HinterlandSlope = 1.
+            return
+            
         Distances = Distances-np.min(Distances)
 
         # weight solution inversely with distance
@@ -295,8 +299,11 @@ class Transect:
         Slope = np.linalg.lstsq(WeightedDistances[:,np.newaxis],WeightedElevations,rcond=None)[0]
         #Slope = np.linalg.lstsq(Distances[:,np.newaxis], Elevations)[0]
         
-        # shouldnt need abs here
-        self.HinterlandSlope = np.abs(Slope[0])
+        if Slope[0] <= 0:
+            print("Zero or negative Hinterland Slope")
+            self.HinterlandSlope = 0.001
+        else:
+            self.HinterlandSlope = Slope[0]
         
 
     def PredictFutureShorelines(self):
@@ -334,7 +341,7 @@ class Transect:
             self.LongTermOnly = True
             
         # some logic here to check if its sensible to make predictions
-        # wtf does this even do!?
+        # do not make predicitions if there are multiple lines in a single year
         for i in range(0,len(self.HistoricShorelinesYears)):
             self.HistoricShorelinesDistance.append(self.HistoricShorelinesDistances[i][0])
             self.HistoricShorelinesPosition.append(self.HistoricShorelinesPositions[i][0])
@@ -343,8 +350,6 @@ class Transect:
         EqualBool = NoPositions[1:] == NoPositions[:-1]
 
         if not EqualBool:
-            print("issue")
-            sys.exit()
             self.Future = False
             return
 
@@ -352,11 +357,9 @@ class Transect:
         self.Future = True
 
         # check if there is more than one post 2000 position and only retain the most recent
-        RecentFlags = np.array((self.HistoricShorelinesYears > 2000))
-        NRecentFlags = np.cumsum(RecentFlags)
+        RecentFlags = (np.array(self.HistoricShorelinesYears) > 2000).astype(int)
+        NRecentFlags = np.sum(RecentFlags)
         if NRecentFlags > 1:
-            import pdb
-            pdb.set_trace()
             for i in range(1,NRecentFlags):
                 del(self.HistoricShorelinesYears[-2])
                 del(self.HistoricShorelinesDistances[-2])
@@ -445,7 +448,7 @@ class Transect:
             if self.RockHeadDistance and (FutureShorelineDistance > self.RockHeadDistance):
                 self.FutureShorelinesPositions.append(self.RockHeadPosition)
                 
-                ShorelinePositionChange = self.RockHeadDistance-HistoricShorelineDistance
+                ShorelinePositionChange = self.RockHeadDistance-HistoricShorelineDistances
                 self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
                 self.FutureShorelinesDistances.append(FutureShorelineDistance)
             
@@ -1708,8 +1711,9 @@ class Transect:
 
         # find index of most recent historical shoreline
         Index = np.argmax(self.HistoricShorelinesYears)
-        Position = self.HistoricShorelinesPosition[Index]
+        Position = self.HistoricShorelinesPositions[Index][0]
         
+            
         return Position 
 
     def get_OldestPosition(self):
@@ -1724,7 +1728,7 @@ class Transect:
 
         # find index of most recent historical shoreline
         Index = np.argmin(self.HistoricShorelinesYears)
-        Position = self.HistoricShorelinesPositions[Index]
+        Position = self.HistoricShorelinesPositions[Index][0]
         return Position 
     
     def get_FutureShorelineRate(self, Year):

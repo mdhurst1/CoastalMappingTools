@@ -1551,6 +1551,11 @@ class Coast:
         GDF = gp.read_file(HistoricalShorelinesShp)
         Lines = GDF['geometry']
         
+        if len(Lines) == 0:
+            print("No Lines")
+            import pdb
+            pdb.set_trace()
+        
         # catch situation where only one line
         MultiLines = []
 
@@ -1583,8 +1588,12 @@ class Coast:
                 TransectLine = LineString(((Transect.StartNode.X,Transect.StartNode.Y),(X1,Y1)))
             
                 # intersect with historical shoreline
-                Intersections = TransectLine.intersection(MultiLines)
-
+                try:
+                    Intersections = TransectLine.intersection(MultiLines)
+                except:
+                    import pdb
+                    pdb.set_trace()
+                    
                 # catch no intersections and flag for deletion?
                 if Intersections.geom_type == "GeometryCollection":
                     Transect.DeleteFlag = True

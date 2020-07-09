@@ -40,9 +40,7 @@ def ClipLines2Poly(LinesGDF,PolyGDF):
 
 for index, Row in Cells.iterrows():
 
-    print(Row.Cell_sub)
-    
-    if Row.Cell_sub not in ["1a","1b","1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g","4"]:
+    if Row.Cell_sub not in ["8b","8c"]:
         continue
     
     # Intersection to isolate bathy for each cell
