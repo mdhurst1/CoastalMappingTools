@@ -786,7 +786,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
         # flag here to check if transects already exist and if not call function
         if not self.Transects:
-            self.GenerateMidpointLineBetweenContours(ContourShp1, ContourShp2, Spacing, Distance2Sea, Distance2Land, CheckTopology)
+            self.GenerateTransectsBetweenContours(ContourShp1, ContourShp2, Spacing, Distance2Sea, Distance2Land, CheckTopology)
 
         # loop through transects and get midpoints as a new list of nodes
         Midpoints = [Transect.get_Midpoint() for Transect in self.Transects]

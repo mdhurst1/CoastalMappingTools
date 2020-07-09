@@ -1509,6 +1509,16 @@ class Transect:
         
         return np.array(X), np.array(Y)
 
+    def get_Midpoint(self):
+        """
+        Returns a node object for the midpoint on a transect
+        MDH, July 2020
+
+        """
+        MidX = (self.StartNode.X + self.EndNode.X)/2.
+        MidY = (self.StartNode.Y + self.EndNode.Y)/2.
+        return Node(MidX, MidY)
+
     def get_CliffPosition(self):
 
         if not self.Cliff:
