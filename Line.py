@@ -752,6 +752,50 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         for i, Transect in enumerate(self.Transects):
             Transect.ID = str(i)
 
+    def GenerateMidpointLineBetweenContours(self, ContourShp1, ContourShp2, Spacing, Distance2Sea=5000., Distance2Land=8000., CheckTopology=True):
+
+        """
+
+        Generates a line comprising points based on the midpoint of regulaarly spaced
+        transects between two contours
+    
+        MDH, July 2020
+
+        Parameters
+        ----------
+
+        ContourShp1 : string
+            Name of a shapefile with the first line/contour to look for when
+            drawing transects. This should be the line nearest to the coast
+        ContourShp2: string
+            Name of a shapefile wit hthe second line/contour to look for when
+            drawing transects. This should be the offshore line.
+        Spacing : float
+            The distance between consecutive points along the CoastLines
+            in map units, spatial units depend on units of the CoastLine read in,
+            Should be [m]
+        Distance2Land : float
+            Distance in [m] to extent transects landward when looking for intersection
+            with ContourShp1
+        Distance2Sea : float
+            Distance in [m] to extent transects offshore when looking for intersection
+            with ContourShp2
+        CheckTopology : bool
+            Flag to check and correct overlapping transects
+        """
+
+        # flag here to check if transects already exist and if not call function
+        if not self.Transects:
+            self.GenerateMidpointLineBetweenContours(ContourShp1, ContourShp2, Spacing, Distance2Sea, Distance2Land, CheckTopology)
+
+        # loop through transects and get midpoints as a new list of nodes
+        Midpoints = [Transect.get_Midpoint() for Transect in self.Transects]
+        X = [Midpoint.X for Midpoint in Midpoints]
+        Y = [Midpoint.Y for Midpoint in Midpoints]
+
+        # use Midpoints to initialise a new line
+        self.__init__(self.ID, X, Y, Contour=None, Year=None, Cell = self.Cell, SubCell = self.SubCell, CMU = self.CMU)
+
     def IntersectTransectsWithIntertidal(self, IntertidalPolyShp):
 
         """

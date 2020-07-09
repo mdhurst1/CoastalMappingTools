@@ -1441,6 +1441,33 @@ class Coast:
             # generate transects along each line
             Line.GenerateTransectsBetweenContours(ContourShp1,ContourShp2,TransectSpacing,Distance2Sea,Distance2Land,CheckTopology)
 
+    def GenerateMidpointLinesBetweenContoursShp(self, ContourShp1, ContourShp2, Distance2Sea=8000., Distance2Land=8000., TransectSpacing=20., CheckTopology=True):
+        """
+        Wrapper to the function in the Line object
+
+        Generates a midpoint line between two contours for use as a base line
+        required to help adjust for differences between bathy and coastal orientations
+
+        MDH, July 2020
+
+        Parameters
+        ----------
+        ContourShp : str
+            The name of a shapefile containing a contour/contours 
+            to base transects on.
+        TransectSpacing : float
+            The distance between consecutive transects along the CoastLines
+            in map units, spatial units depend on units of the CoastLine read in,
+            Should be [m]
+        """
+        print("Coast.GenerateTransectsBetweenContoursShp: Generating CoastLine transects perpendicular to the coast")
+
+        self.TransectsSpacing = TransectSpacing
+        
+        for Line in self.CoastLines:
+
+            # generate transects along each line
+            Line.GenerateMidpointLineBetweenContours(ContourShp1,ContourShp2,TransectSpacing,Distance2Sea,Distance2Land,CheckTopology)
 
     def GenerateTransectsFromContours(self,ContourShp,TransectSpacing=10.):
 
