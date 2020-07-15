@@ -2048,7 +2048,8 @@ class Coast:
         MDH, March 2020
 
         """      
-        
+        print("Coast.ExtractTransectTopography: Sampling DEM(s) along transects")
+
         # set up dem file list
         if DEMFileList:
             # check if list and make list if not
@@ -2108,12 +2109,18 @@ class Coast:
                     Points = [ThisPoint if ThisPoint.within(DTM_Extent) else Point((0,0)) for ThisPoint in Points]
                     Coords = [(Point.x, Point.y) for Point in Points]
                     Elevations = [Sample[0] for Sample in DTM_Dataset.sample(Coords)]
-                    
+                    Transect.Elevation = Elevations
+
                     # problem here gettign back to transects
                     for i, ThisNode in enumerate(Transect.DistanceNodes):
                         
                         if not ThisNode.Z and Elevations[i] > 0:
-                            ThisNode.Z = Elevations[i]
+                            Transect.DistanceNodes[i].Z = Elevations[i]
+
+                    # Set up the mask from NDVs
+                    Mask = Elevations == NDV
+                    Transect.Distance = ma.masked_where(Mask,Transect.Distance)
+                    Transect.Elevation = ma.masked_where(Mask,Elevations)
 
                     Transect.HaveTopography = True
 

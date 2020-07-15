@@ -17,9 +17,6 @@ TransectPath = SitePath / "Transects/"
 LineShp = "Montrose_CoastTrend.shp"
 DTM = "DTM_1m.tif"
 
-# Montrose Mean High Water Springs
-MHWS = 2.
-
 # make folder for plots and transects if it doesnt already exist
 p = pathlib.Path(PlotPath)
 p.mkdir(parents=True, exist_ok=True)
@@ -53,20 +50,19 @@ except:
     ThisCoast.WriteTransectsShp(str(SitePath / "Transects.shp"))
     ThisCoast.ExtractTransectTopography(str(SitePath / DTM))
     
-    #### get MHWS for each transect
-    ThisCoast.SampleMHWSElevation(str(WorkingPath / "MHWS_Lines" / "scotland_mhws_elev.tif"))
-
     # SAVE ENTIRE COAST OBJECT
     print("Saving Coast Object as " + Filename2SaveCoast)
     with open(Filename2SaveCoast, 'wb') as PFile:
         pickle.dump(ThisCoast, PFile)
         
 # WRITE TRANSECTS TO CSV
-ThisCoast.WriteTransectsCSV(Folder=str(TransectsPath))
+ThisCoast.WriteTransectsCSV(Folder=str(TransectPath))
+
+#### get MHWS for each transect
+ThisCoast.SampleMHWSElevation(str(WorkingPath / "MHWS" / "scotland_mhws_elev.tif"))
 
 ## ANALYSE TRANSECTS
 ThisCoast.FindRockyCoast()
-ThisCoast.SetMHWS(MHWS)
 ThisCoast.AnalyseTransectMorphology()
 ThisCoast.AnalyseBarrierWidths([4.,5.,6.])
 
