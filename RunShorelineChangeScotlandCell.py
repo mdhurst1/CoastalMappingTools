@@ -24,13 +24,12 @@ SmoothingWindowSize = 251
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # Cell list
-#CellList = ["1a","1b","1c","1d"]
+CellList = ["1a","1b","1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g","4"]
 
 # loop through each cell
-for index, Row in Cells.iterrows():
+for CellSub in CellList:
 
     # print cell to screen
-    CellSub = Row.Cell_sub
     print("\nRUNNING CELL", CellSub)
     RowName = "Cell_"+CellSub
     
@@ -47,9 +46,11 @@ for index, Row in Cells.iterrows():
     # get soft coast position as most recent
     ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Final.shp")
     SoftPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp")
+    LiDARPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR.shp")
     BathyPath = WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")
     OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")
     QuiteOldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp")
+    
     
     if not BathyPath.is_file():
         print("No Bathy")
@@ -61,7 +62,7 @@ for index, Row in Cells.iterrows():
     try:
         CellCoast = pickle.load( open( Filename2SaveCoast, "rb" ) )
         print("Loaded Coast Object ", Filename2SaveCoast)
-
+        
     except:
         print("Creating New Coast Object")
 
@@ -81,7 +82,7 @@ for index, Row in Cells.iterrows():
         CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Raw.shp")))
         
         CellCoast.GenerateTransectsBetweenContoursShp(str(ModernPath), str(BathyPath), 
-                                            TransectSpacing=TransectSpacing)
+                                            TransectSpacing=TransectSpacing, CheckTopology=True)
         
         CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Contours.shp")))
         
@@ -107,6 +108,11 @@ for index, Row in Cells.iterrows():
             print("No soft MHWS file")
         else:
             CellCoast.ExtractHistoricalShorelinePositions(str(SoftPath))
+        
+        if not LiDARPath.is_file():
+            print("No LiDAR MHWS file")
+        else:
+            CellCoast.ExtractHistoricalShorelinePositions(str(LiDARPath))
             
         CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Sampled.shp")))
     

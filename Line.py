@@ -17,7 +17,7 @@ from Node import *
 from Transect import *
 
 import geopandas as gp
-from shapely.geometry import Point, LineString, MultiLineString
+from shapely.geometry import Point, LineString, MultiLineString, Polygon, MultiPolygon
 from shapely.ops import nearest_points
 
 class Line:
@@ -25,7 +25,7 @@ class Line:
     """
     """
 
-    def __init__(self, ID, X, Y, Contour=None, Year=None, Cell=None, SubCell=None, CMU=None):
+    def __init__(self, ID, X, Y, Contour=None, Year=None, Cell=None, SubCell=None, CMU=None, Flag=None):
         """
         """
         self.ID = ID
@@ -47,6 +47,7 @@ class Line:
         self.NoPoints = 0
         self.Contour = Contour
         self.GenerateNodes(X, Y)
+        self.Flag = Flag
 
     def __str__(self):
         """
@@ -495,7 +496,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             drawing transects. This should be the offshore line.
         """
 
-        print("Checking Geometry",self.ID)
+        print("\tChecking Geometry, Line", self.ID)
 
         # load the contour shapefile
         GDF = gp.read_file(ShorelineShp)
@@ -544,7 +545,12 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             BathyLines = MultiLineString(LineList)
 
         #  define some temporary initial transect lines
-        self.GenerateTransects(CheckTopology=False)
+        if not self.NoTransects:
+            print(self.NoTransects)
+            self.GenerateTransects(CheckTopology=False)
+
+        # set up some flags for deciding on whether to reverse
+        self.ReverseFlags = np.zeros(self.NoTransects)
 
         # check orientation relative to the sea for a 
         # intersect first transect with each set of lines and get orientation from bathy to shore
@@ -572,32 +578,23 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
                 OnshoreIntersection = OnshoreIntersection[Index]  
             
             OffshoreNode = Node(OffshoreIntersection.x,OffshoreIntersection.y)
-            TestOrientation = OffshoreNode.get_Orientation(Node(OnshoreIntersection.x,OnshoreIntersection.y))
+            OnshoreNode = Node(OnshoreIntersection.x,OnshoreIntersection.y)
+            TestOrientation = OffshoreNode.get_Orientation(OnshoreNode)
+            # check for reverses    
+            if (abs(TestOrientation-self.Transects[i].Orientation) > 0.1): self.ReverseFlags[i] = 1
 
-            if self.ID == "2":
-                print(TestOrientation, self.Orientation[i])
-                X = [X for Node.X in self.Nodes]
-                Y = [Y for Node.Y in self.Nodes]
-                plt.plot(X,Y, 'k-')
-                plt.plot([self.Transects[i].StartNode.X, self.Transects[i].EndNode.X],[self.Transects[i].StartNode.Y, self.Transects[i].EndNode.Y],'r--')
-                plt.plot([OffshoreIntersection.x, OnshoreIntersection.x],[OffshoreIntersection.y, OnshoreIntersection],'b--')
-                plt.axis('equal')
-                plt.show()
-                sys.exit()
-                
-            if ((TestOrientation > self.Orientation[i]) 
-                or (self.Orientation[i] < 120. and TestOrientation > 240)):
+        # get x and y to reverse lines
+        NReverse = np.count_nonzero(self.ReverseFlags == 1)
+        NXReverse = np.count_nonzero(self.ReverseFlags == 0)
 
-                # get x and y to reverse lines
-                X, Y = self.get_XY()
-                self.__init__(self.ID, X[::-1], Y[::-1], self.Contour, self.Year, self.Cell, self.SubCell, self.CMU)
-                
-                # regenerate transects
-                self.GenerateTransects(CheckTopology=False)
+        if NReverse > NXReverse:
+            X, Y = self.get_XY()
+            self.__init__(self.ID, X[::-1], Y[::-1], self.Contour, self.Year, self.Cell, self.SubCell, self.CMU)
             
-            return
+            # regenerate transects
+            self.GenerateTransects(CheckTopology=False)
 
-    def GenerateTransectsBetweenContours(self, ContourShp1, ContourShp2, Spacing, Distance2Sea=5000., Distance2Land=5000., CheckTopology=True):
+    def GenerateTransectsBetweenContours(self, ContourShp1, ContourShp2, Spacing, Distance2Sea=5000., Distance2Land=8000., CheckTopology=True):
 
         """
 
@@ -631,6 +628,8 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         """
 
         self.CheckLineOrientation(ContourShp1, ContourShp2)
+
+        self.GenerateTransects(Spacing, Distance2Sea, Distance2Land, CheckTopology=False)
 
         # load the contour shapefile
         GDF = gp.read_file(ContourShp1)
@@ -677,6 +676,10 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             Lines2 = LineList[0]
         else:
             Lines2 = MultiLineString(LineList)
+
+        # get points to define initial transect line and make it nice and long
+        #\ add if statement here
+        #self.GenerateTransects(Spacing, Distance2Sea, Distance2Land, CheckTopology=False)
 
         # flag to note interesections
         CheckTopologyFlag = CheckTopology
@@ -736,17 +739,104 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             self.Transects = [Transect for n, Transect in enumerate(self.Transects) if DeleteFlags[n] == 1]
                 
             # check for overlaps?
-            if CheckTopologyFlag:
-                Intersections = self.CheckTransectTopology()
-                CheckTopologyFlag = False
-            else:
-                Intersections = False   
+            # if CheckTopologyFlag:
+            #    Intersections = self.CheckTransectTopology()
+            #    CheckTopologyFlag = False
+            #else:
+            
+            Intersections = False   
 
         if CheckTopology:
             self.DeleteOverlappingTransects()
         
         for i, Transect in enumerate(self.Transects):
             Transect.ID = str(i)
+
+    def IntersectTransectsWithIntertidal(self, IntertidalPolyShp):
+
+        """
+        MDH, June 2020
+        
+        """
+
+        # load the contour shapefile
+        GDF = gp.read_file(IntertidalPolyShp)
+        Polys = GDF['geometry']
+        
+        # make a multipolygon if there are multiple polys
+        PolyList = []
+        for PolyObj in Polys:
+            if not PolyObj:
+                continue
+            elif (PolyObj.geom_type == "MultiPolygon"):
+                for ThisPoly in PolyObj:
+                    PolyList.append(ThisPoly)
+            elif (PolyObj.geom_type == "Polygon"):
+                PolyList.append(PolyObj)
+            else:
+                sys.exit("problem reading lines")
+
+        # catch situation where only one poly
+        if len(PolyList) == 1:
+            Polys = PolyList[0]
+        else:
+            Polys = MultiPolygon(PolyList)
+
+        # flag to note interesections
+        Intersections = True
+
+        # intersect Transect with shapefile to find new end node of transect
+        DeleteFlags = np.ones(len(self.Transects))
+
+        for i, Transect in enumerate(self.Transects):
+        
+            print("\tLine", self.ID, "Transect", i, "/", self.NoTransects)
+            
+            # find intersection between transect line and shapefile lines
+            try:
+                IntersectionLines = Transect.LineString.intersection(Polys)
+            except:
+                print(self.ID, Transect.ID)
+                continue
+            
+            # catch no intersections
+            if IntersectionLines.geom_type != "GeometryCollection":
+            
+                # check there arent multiple intersections, if there are just get the nearest
+                if IntersectionLines.geom_type is "MultiLineString":
+                    StartPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                    
+                    MidPoints = []
+                    for IntersectLine in IntersectionLines:
+                        X, Y = IntersectLine.coords.xy
+                        MeanX = np.mean(X)
+                        MeanY = np.mean(Y)
+                        MidPoints.append(Point(MeanX,MeanY))
+                    
+                    Distances = [MidPoint.distance(StartPoint) for MidPoint in MidPoints]
+                    Index = Distances.index(min(Distances))
+                    ClosestLine = IntersectionLines[Index]
+                    
+                else:
+                    ClosestLine = IntersectionLines
+                
+                # set this as the new start and end node
+                #print(ClosestLine)
+                X, Y = zip(*ClosestLine.coords)
+                NewStartNode = Node(X[0], Y[0])
+                NewEndNode = Node(X[-1], Y[-1])
+            
+                # reinitialise transect with new startnode and new endnode
+                Transect.__init__(Transect.CoastNode, NewStartNode, NewEndNode, Transect.LineID, Transect.ID)
+
+            else:
+                DeleteFlags[i] = 0
+            
+        self.Transects = [Transect for n, Transect in enumerate(self.Transects) if DeleteFlags[n] == 1]
+                
+        for i, Transect in enumerate(self.Transects):
+            Transect.ID = str(i)
+            Transect.ExtendTransect(1., 1.)
 
     def CheckTransectTopology(self,ThinFactor=2):
 
@@ -857,7 +947,11 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
                 # catch identical lines
                 if i == j:
                     continue
-                
+                elif DeleteFlags[i] == 0:
+                    continue
+                elif DeleteFlags[j] == 0:
+                    continue
+
                 # otherwise check for intersection
                 if Transect1.LineString.intersects(Transect2.LineString):
                     

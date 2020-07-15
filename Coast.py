@@ -35,6 +35,7 @@ class Coast:
     """
 
     def __init__(self, CoastShp=""):
+        
         """
         MDH, June 2019
         """
@@ -77,6 +78,12 @@ class Coast:
         self.ExtremeWaterLevels = []
         self.MHWS = None
         self.UniqueDEMList = []
+            
+        # some tracking bools
+        self.BuiltTransects = False
+        self.GotHistoricShorelines = False
+        self.SampledDEMs = False
+        self.PredictedFutureShorelines = False
 
         if CoastShp:
             self.ReadCoastShp(CoastShp)
@@ -288,7 +295,7 @@ class Coast:
         WL = shapefile.Writer(FutureShoreLinesShp,shapeType=shapefile.POLYLINE)
        
         # Create Fields
-        self.Fields = [('DeletionFlag','C',1,0),['Line_ID', 'C', 20, 0],['Year','N', 4, 0]]
+        self.Fields = [('DeletionFlag','C',1,0),['Line_ID', 'C', 20, 0],['Year','N', 4, 0],['Flag','C', 10, 0]]
         WL.fields = self.Fields[1:] 
 
         for Line in self.FutureShoreLines:
@@ -321,7 +328,7 @@ class Coast:
             WriteLine = [np.column_stack([X,Y]).tolist()]
             
             # generate record
-            Record = [str(Line.ID),str(Line.Year)]
+            Record = [str(Line.ID),str(Line.Year),str(Line.Flag)]
 
             # write line and record
             WL.line(WriteLine)
@@ -716,14 +723,13 @@ class Coast:
         """
 
         # print action to screen
-        print("Coast.WriteTransectShp: Writing coastal transects and attributes to a shapefile")
+        print("Coast.WriteTransectsShp: Writing coastal transects and attributes to a shapefile")
 
         # open new shapefile        
         WL = shapefile.Writer(TransectsShp,shapeType=shapefile.POLYLINE)
         
         # Check length of extreme water levels
         if len(self.ExtremeWaterLevels) != 3:
-            print("Coast.WriteTransectsShp (Error): No extreme water levels info to write to attributes")
             self.ExtremeWaterLevels = [[],[],[]]
 
         # Create Fields
@@ -1083,7 +1089,7 @@ class Coast:
         
         print("\r\t Done.")
 
-    def MergeCoastLines(self, SnapDistance=5):
+    def MergeCoastLines(self, SnapDistance=0.1):
 
         """
         Identifies individual coast Lines that are touching at one end 
@@ -1371,7 +1377,7 @@ class Coast:
             Line.CheckOrientation(ShorelineShp, BathyShp)
 
     # function to do something    
-    def GenerateTransectsNormals(self, TransectSpacing, TransectLength2Sea, TransectLength2Land, CheckTopology=True):
+    def GenerateTransects(self, TransectSpacing, TransectLength2Sea=5000, TransectLength2Land=5000, CheckTopology=True):
         """
         Wrapper to the function in the Line object
 
@@ -1435,6 +1441,7 @@ class Coast:
             # generate transects along each line
             Line.GenerateTransectsBetweenContours(ContourShp1,ContourShp2,TransectSpacing,Distance2Sea,Distance2Land,CheckTopology)
 
+
     def GenerateTransectsFromContours(self,ContourShp,TransectSpacing=10.):
 
         """
@@ -1459,6 +1466,20 @@ class Coast:
 
         for Line in self.CoastLines:
             Line.GenerateTransectsFromContour(ContourShp, TransectSpacing)
+
+    def IntersectTransectsWithIntertidal(self, IntertidalPolyShp):
+
+        """
+        Wrapper function to loop through transects and intersect with 
+        a polygon defining the intertidal zone
+
+        MDH, June 2020
+
+        """
+        print("Coast.IntersectTransectsWithIntertidal: Truncating transects to polygons")
+        for Line in self.CoastLines:
+            print("Line", Line.ID)
+            Line.IntersectTransectsWithIntertidal(IntertidalPolyShp)
 
     def CheckTransectTopology(self):
 
@@ -1539,7 +1560,9 @@ class Coast:
         # deal with invalid geometries on the fly? This is messy!
         else:
             for Line in Lines:
-                if Line.geom_type == "LineString":
+                if not Line:
+                    continue
+                elif Line.geom_type == "LineString":
                     MultiLines.append(Line)
                 elif Line.geom_type == "MultiLineString":
                     for SubLine in Line:
@@ -1552,7 +1575,7 @@ class Coast:
 
         for Line in self.CoastLines:
             for Transect in Line.Transects:
-
+                
                 # extend transect line inland to look for intersection
                 #Calculate start and end nodes and generate Transect
                 X1 = Transect.EndNode.X + LookDistance * np.sin( np.radians( Transect.Orientation ) )
@@ -1595,7 +1618,9 @@ class Coast:
                 NearestLine = GDF.iloc[Distances.idxmin()]
                 
                 # check it hasnt already been read
-                if "Surv_End_A" in NearestLine:
+                if "FULLSHP_YR" in NearestLine:
+                    Year = int(NearestLine.FULLSHP_YR)
+                elif "Surv_End_A" in NearestLine:
                     Year = int(NearestLine.Surv_End_A)
                 elif "Surv_End_B" in NearestLine:
                     Year = int(NearestLine.Surv_End_B)
@@ -1613,12 +1638,13 @@ class Coast:
                     # generate lists of positions and distances
                     Positions = []
                     Distances = []
-
+                    
                     for Intersection in IntersectionsList:
                         Position = Node(Intersection.x,Intersection.y)
                         Positions.append(Position)
                         Distances.append(Transect.StartNode.get_Distance(Position))
 
+                    
                     # add to transect
                     Transect.HistoricShorelinesPositions.append(Positions)
                     Transect.HistoricShorelinesDistances.append(Distances)
@@ -1633,14 +1659,14 @@ class Coast:
                     Positions = []
                     Distances = []
                     
-                    for Intersection in Intersections:
+                    for Intersection in IntersectionsList:
                         Position = Node(Intersection.x,Intersection.y)
                         Positions.append(Position)
                         Distances.append(Transect.StartNode.get_Distance(Position))
-
+                    
                     # add to transect
                     Transect.HistoricShorelinesPositions[Index] = Positions
-                    Transect.HistoricShorelinesDistances[Index] = Transect.StartNode.get_Distance(Positions)
+                    Transect.HistoricShorelinesDistances[Index] = Distances
 
     def ExtractContours(self,ContourShp):
 
@@ -2023,14 +2049,21 @@ class Coast:
         
         # list of unique DEMs
         self.UniqueDEMList = []
-
+        
+        #print(len(self.CoastLines))
         for Line in self.CoastLines:
             
+
             # get multilinestring of transects
             Lines = [LineString([(Transect.EndNode.X,Transect.EndNode.Y),(Transect.StartNode.X,Transect.StartNode.Y)]) for Transect in Line.Transects]
             LineGDF = gp.GeoDataFrame(geometry=Lines,crs=PolyGDF.crs)
             
             # interesect with DEM references
+            #print(Line.TotalLength)
+            #print(len(Line.Transects))
+            #print(Lines)
+            #print(PolyGDF)
+
             JoinGDF = gp.sjoin(LineGDF, PolyGDF, op='intersects')
             
             # set DEMs to list
@@ -2531,14 +2564,17 @@ class Coast:
                 FutureBool.insert(0, False)
                 FutureBool = np.array(FutureBool).astype(int)
 
+                #for i in range(0, len(FutureBool)):
+                    #if FutureBool[i]
+                
                 # check for lines with no predictions
                 if not any(FutureBool):
                     continue
                 
-                # get a list of the start and end points of contiguous cliff lines
+                # get a list of the start and end points of contiguous lines
                 StartEndFlags = np.diff(FutureBool)
-
-                # if last line finishes on a cliff flag the last element as the end of the cliff
+                
+                # if last line finishes on a flag the last element as the end
                 if StartEndFlags[StartEndFlags.nonzero()[0][-1]] == 1:
                     StartEndFlags[-1] = -1
 
@@ -2556,6 +2592,7 @@ class Coast:
 
                     # create empty lists for storing future nodes
                     FutureList = []
+                    LongTermList = []
                     
                     # add latest MHWS from previous node to start
                     # might need some logic here for first transect
@@ -2572,7 +2609,7 @@ class Coast:
                     for Transect in CoastLine.Transects[StartList[i]:EndList[i]]:
                         FutureNode = Transect.get_FuturePosition(Year)
                         FutureList.append(FutureNode)
-                        
+                                                
                     # add latest MHWS from next node to end
                     # might need some logic here to finish
                     if EndList[i] == CoastLine.NoTransects-1:
