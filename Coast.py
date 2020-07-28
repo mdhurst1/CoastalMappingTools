@@ -989,6 +989,32 @@ class Coast:
 
         print("")
 
+    def WriteBarriersTextFile(self, Filename, delimiter=","):
+        
+        """
+        MDH, July 2020
+        """
+        
+        # define filename and open for writing
+        f = open(Filename,'w')
+        
+        # write headers
+        f.write("LineID" + delimiter + "TransectID" + delimiter + "FrontToeElev" + delimiter + "BackToeElev" + delimiter + "CrestElev" + delimiter + "ToeWidth" + delimiter + "Volume" + "\n")
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                if Transect.Barrier:
+                    Width, Volume = Transect.ExtractBarrierWidthVolume()
+                    f.write(str(Line.ID) + delimiter)
+                    f.write(str(Transect.ID) + delimiter)
+                    f.write(str(Transect.Elevation[Transect.FrontToeInd]) + delimiter)
+                    f.write(str(Transect.Elevation[Transect.BackToeInd]) + delimiter)
+                    f.write(str(Transect.Elevation[Transect.CrestInd]) + delimiter)
+                    f.write(str(Width) + delimiter)
+                    f.write(str(Volume) + "\n")
+                
+        f.close()
+        
     def MergeReverseCoastLines(self):
 
         """
@@ -1340,7 +1366,7 @@ class Coast:
                 Line.ID = str(i)
 
         if len(self.CoastLines[0].Transects) != 0:
-            self.GenerateTransectsNormals(self.TransectsSpacing, self.TransectsLength2Sea, self.TransectsLength2Land)
+            self.GenerateTransects(self.TransectsSpacing, self.TransectsLength2Sea, self.TransectsLength2Land)
 
         # calculate overall orientation
         StartNode = self.CoastLines[0].Nodes[0]
@@ -2206,8 +2232,10 @@ class Coast:
         XMax = DTM_Dataset.bounds[2]
         YMin = DTM_Dataset.bounds[1]
         YMax = DTM_Dataset.bounds[3]
-        DTM_Extent = Polygon([Xmin, YMin, XMax, YMax])
-
+        
+        DTM_Extent = Polygon([[XMin, YMin], [XMin,YMax], [XMax, YMax], [XMax, YMin]])
+            
+            
         # Get vectors of X and Y coordinates, NB reversal of Y in line with 
         # DTM indexing from top left
         XVector = XMin+np.arange(0,NCols)*DTM_Resolution+0.5*DTM_Resolution
@@ -3279,8 +3307,7 @@ class Coast:
                 print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
 
                 # call plotting function
-                if (Line.ID == 1) and (Transect.ID == 969):
-                    Transect.Plot(PlotFolder, ReverseFlag)
+                Transect.Plot(PlotFolder, ReverseFlag)
                     
                 CurrentTransect += 1
 

@@ -132,7 +132,7 @@ class Transect:
         # other barrier metrics for extreme water levels
         # will need short term and long term here?
         self.MHWS = None
-        self.ExtremeWaterLevels = ["","",""]
+        self.ExtremeWaterLevels = None
         self.Intersection = None
         self.IntersectionIndices = None
         self.IntersectionNodes = []
@@ -562,10 +562,11 @@ class Transect:
         MinInd = np.argmin(self.Elevation)
         self.CliffToeInd = MinInd
         
-        # mask distances and elevations seaward of minimum
+        # mask distances and elevations seaward of minimum and landward of last real value
         Mask = self.Elevation.mask.copy()
         Mask[0:MinInd] = True
-        Mask[LastInd:] = True
+        if LastInd < len(self.Elevation):
+            Mask[LastInd+1:] = True
         self.Elevation = ma.masked_where(Mask, self.Elevation)
         self.Distance = ma.masked_where(Mask, self.Distance)
 
@@ -668,10 +669,17 @@ class Transect:
         """
 
         # mask by elevation
-        Mask = self.Elevation.mask.copy()
-        Mask[self.Elevation > Elev] = True
-        Mask[self.Elevation < -1] = True
-        
+        if not ma.is_masked(self.Elevation):
+            Mask = np.where(self.Elevation > Elev, True, False)
+        else:
+            Mask = self.Elevation.mask.copy()
+            Mask[self.Elevation > Elev] = True
+       
+        try:
+            Mask[self.Elevation < -1] = True
+        except:
+            import pdb
+            pdb.set_trace()
         # apply mask
         ElevMasked = ma.masked_where(Mask, self.Elevation)
         
@@ -685,15 +693,12 @@ class Transect:
         #self.SlopeRoughness = np.max(Slope)-np.min(Slope)
         #print(np.percentile(Slope, 95),np.percentile(Slope, 5),np.std(Slope))
         self.SlopeRoughness = np.percentile(Slope, 95) - np.percentile(Slope, 5)
-        self.ElevationRoughness = np.mean(self.ElevStd)
+        self.ElevationRoughness = np.std(self.Elevation)
 
         if self.SlopeRoughness > 10.:
             print("ARGH!!!")
 
-        #self.ElevationRoughness = np.mean(self.ElevStd.compressed())
-        #self.ElevationRoughness = ma.mean(self.ElevationMax-self.ElevationMin)
-        #print(self.SlopeRoughness, end=", ")
-
+        
         #print(self.SlopeRoughness, self.ElevationRoughness)
         if (self.SlopeRoughness > 0.05) and (self.ElevationRoughness > 0.2):
             self.Rocky = True
@@ -726,7 +731,6 @@ class Transect:
         # check that the whole topography has not been masked
         # this would indicate there is no barrier
         if ElevMasked.mask.all():
-            print("\n\tNot a barrier 2")
             self.Barrier = False
             return
 
@@ -755,16 +759,7 @@ class Transect:
 
         # check highest point is not on seaward end
         if MaxInd == FirstInd:
-            print("\n\tNot a barrier 4")
             self.Barrier = False
-            plt.plot(self.Distance,ElevMasked,'k-')
-            plt.plot(self.Distance[self.FrontTopInd],self.Elevation[self.FrontTopInd],'bo')
-            plt.plot(self.Distance[self.FrontToeInd],self.Elevation[self.FrontToeInd],'bs')
-            #plt.plot(self.Distance[self.BackTopInd],self.Elevation[self.BackTopInd],'ro')
-            #plt.plot(self.Distance[self.BackToeInd],self.Elevation[self.BackToeInd],'rs')
-            #plt.plot(self.Distance,ElevDetrend,'r-')
-            plt.show()
-            sys.exit()
             return
 
         # flag for changing position
@@ -791,17 +786,17 @@ class Transect:
                 sys.exit()
 
             # Get Angle to detrend towards the coast
-            Angle = np.degrees(np.arctan((ElevMasked[MaxInd]-ElevMasked[self.FrontToeInd]) 
-                                        / (DistanceMasked[MaxInd]-DistanceMasked[self.FrontToeInd])))
+            Angle = np.degrees(np.arctan((ElevMasked[self.FrontTopInd]-ElevMasked[FirstInd]) 
+                                        / (DistanceMasked[self.FrontTopInd]-DistanceMasked[FirstInd])))
         
             # Get detrended elevation
-            ElevDetrend = ((ElevMasked-ElevMasked[self.FrontToeInd])+(DistanceMasked[self.FrontToeInd]-DistanceMasked) \
+            ElevDetrend = ((ElevMasked-ElevMasked[FirstInd])+(DistanceMasked[FirstInd]-DistanceMasked) \
                                 * np.tan(np.radians(Angle)))
 
             # mask values beyond the peak
             Mask = ElevMasked.mask.copy()
-            Mask[0:self.FrontToeInd] = True
-            Mask[MaxInd+1:] = True
+            Mask[0:FirstInd] = True
+            Mask[self.FrontTopInd+1:] = True
             ElevDetrend = ma.masked_where(Mask, ElevDetrend)
             NewInd = np.argmax(ElevDetrend)
             
@@ -847,7 +842,7 @@ class Transect:
 
             # mask values beyond the barrier front top
             Mask = ElevMasked.mask.copy()
-            Mask[:self.FrontToeInd] = True
+            #Mask[:self.FrontToeInd] = True
             Mask[self.FrontTopInd+1:] = True
             ElevDetrend = ma.masked_where(Mask, ElevDetrend)
             NewInd = np.argmin(ElevDetrend)
@@ -870,7 +865,6 @@ class Transect:
                     NewInd -= 1
 
                 self.FrontToeInd = NewInd
-                FirstInd = NewInd
                 BarrierPositionChangeFlag = True
                 
         # check toe is not inland of barrier due to MHWS     
@@ -881,7 +875,6 @@ class Transect:
 
         # Check if coincides with a cliff
         if self.FrontTopInd == LastInd:
-            print("\n\tNot a barrier 7")
             self.Barrier = False
             return
 
@@ -893,9 +886,12 @@ class Transect:
         self.BackTopInd = self.FrontTopInd
         Mask = ElevMasked.mask.copy()
         Mask[0:self.FrontTopInd] = True
+        ElevMasked = ma.masked_where(Mask,ElevMasked)
 
         # MIN IND OR LAST IND HERE?
-        MinInd = np.argmin(ma.masked_where(Mask, ElevMasked))
+        MinInd = np.argmin(np.abs(self.Distance-(self.Distance[self.FrontTopInd]+300)))
+        if MinInd > LastInd:
+            MinInd = LastInd
         self.BackToeInd = MinInd
         #plt.plot(DistanceMasked[MinInd],ElevMasked[MinInd],'k+',ms=20)
 
@@ -905,20 +901,40 @@ class Transect:
         
         # flag for changing position
         BarrierPositionChangeFlag = True
-
+        
         while BarrierPositionChangeFlag:
-
+            
+            # FIRST Back Barrier TOE
+            
             # reset flag
             BarrierPositionChangeFlag = False
 
-            # Get Angle to detrend towards away from the coast
-            # catch divide by zero
-            if DistanceMasked[self.FrontToeInd] == DistanceMasked[self.FrontTopInd]:
-                print("Divide by zero getting top!")
-                print(self.FrontToeInd, self.FrontTopInd)
-                print(DistanceMasked[self.FrontToeInd],DistanceMasked[self.FrontTopInd])
-                sys.exit()
+            # Get Angle to detrend towards the coast
+            Angle = np.degrees(np.arctan((ElevMasked[MinInd]-ElevMasked[self.FrontTopInd]) 
+                                        / (DistanceMasked[MinInd]-DistanceMasked[self.FrontTopInd])))
+            
+            # Get detrended elevation
+            ElevDetrend = ((ElevMasked-ElevMasked[self.FrontTopInd]) + (DistanceMasked[self.FrontTopInd] - DistanceMasked) \
+                            * np.tan(np.radians(Angle)))
 
+            # mask values seaward of the barrier front top
+            Mask = ElevMasked.mask.copy()
+            Mask[0:self.BackTopInd] = True
+            Mask[MinInd+1:] = True
+            ElevDetrend = ma.masked_where(Mask, ElevDetrend)
+            NewInd = np.argmin(ElevDetrend)
+            #plt.plot(DistanceMasked,ElevDetrend,'r-')
+            
+            # Find Minimum detrended elevation, must be negative to be considered a low (probably never a worry)
+            if not NewInd == self.BackToeInd:
+                if ((NewInd < self.BackToeInd) and (ElevDetrend[NewInd] < -0.001) and (NewInd > self.BackTopInd)):
+                    self.BackToeInd = NewInd
+                    BarrierPositionChangeFlag = True
+
+            # THEN Back Top
+            
+            # Get Angle to detrend towards away from the coast
+            
             Angle = np.degrees(np.arctan((ElevMasked[self.BackToeInd]-ElevMasked[self.FrontTopInd])
                                         / (DistanceMasked[self.BackToeInd]-DistanceMasked[self.FrontTopInd])))
             
@@ -928,61 +944,24 @@ class Transect:
 
             # mask values up to the peak
             Mask = ElevMasked.mask.copy()
-            Mask[self.BackToeInd+1:] = True
-            ElevDetrend = ma.masked_where(Mask,ElevDetrend)
-
-            # Find Maximum detrended elevation. Must be positive to be considered a change in barrier back top position
-            if ((np.argmax(ElevDetrend) > self.BackTopInd) and (ElevDetrend[np.argmax(ElevDetrend)] > 0.001)):
-
-                self.BackTopInd = np.argmax(ElevDetrend)
-                BarrierPositionChangeFlag = True
-                
-            # THEN Barrier TOE
-            
-            # Get Angle to detrend towards the coast
-            # catch divide by zero
-            if DistanceMasked[self.BackToeInd] == DistanceMasked[self.BackTopInd]:
-                print("Divide by zero getting toe!")
-                print(self.BackToeInd, self.BackTopInd)
-                print(DistanceMasked[self.BackToeInd], DistanceMasked[self.BackTopInd])
-                plt.plot(self.Distance,ElevMasked,'k-')
-                plt.plot(self.Distance[self.FrontTopInd],self.Elevation[self.FrontTopInd],'bo')
-                plt.plot(self.Distance[self.FrontToeInd],self.Elevation[self.FrontToeInd],'bs')
-                plt.plot(self.Distance[self.BackTopInd],self.Elevation[self.BackTopInd],'ro')
-                plt.plot(self.Distance[self.BackToeInd],self.Elevation[self.BackToeInd],'rs')
-                plt.plot(self.Distance,ElevDetrend,'r-')
-                plt.show()
-                
-                sys.exit()
-
-            Angle = np.degrees(np.arctan((ElevMasked[self.BackToeInd]-ElevMasked[self.FrontTopInd]) 
-                                        / (DistanceMasked[self.BackToeInd]-DistanceMasked[self.FrontTopInd])))
-            
-            # Get detrended elevation
-            ElevDetrend = ((ElevMasked-ElevMasked[self.FrontTopInd]) + (DistanceMasked[self.FrontTopInd] - DistanceMasked) \
-                            * np.tan(np.radians(Angle)))
-
-            # mask values seaward of the barrier front top
-            Mask = ElevMasked.mask.copy()
             Mask[0:self.FrontTopInd] = True
             Mask[self.BackToeInd+1:] = True
-            ElevDetrend = ma.masked_where(Mask, ElevDetrend)
-            NewInd = np.argmin(ElevDetrend)
-            #plt.plot(DistanceMasked,ElevDetrend,'r-')
+            ElevDetrend = ma.masked_where(Mask,ElevDetrend)
+            NewInd = np.argmax(ElevDetrend)
             
-            # Find Minimum detrended elevation, must be negative to be considered a low (probably never a worry)
-            if ((NewInd < self.BackToeInd) and (ElevDetrend[NewInd] < -0.001) and (NewInd > self.BackTopInd)):
-            #if ((NewInd < self.BackToeInd) and (ElevDetrend[NewInd] < -0.001)):
-                self.BackToeInd = NewInd
-                BarrierPositionChangeFlag = True
-
+            # Find Maximum detrended elevation. Must be positive to be considered a change in barrier back top position
+            if not self.BackTopInd == NewInd:
+                if ((NewInd < self.BackToeInd) and (ElevDetrend[np.argmax(ElevDetrend)] > 0.001)):
+                    self.BackTopInd = np.argmax(ElevDetrend)
+                    BarrierPositionChangeFlag = True
+                    
         if self.BackTopInd == LastInd:
             print("\n\tNot a barrier 8")
             self.Barrier = False
             return        
             
         # Get Barrier Crest
-        Mask = ElevMasked.mask.copy()
+        Mask = self.Elevation.mask.copy()
         Mask[0:self.FrontToeInd] = True
         Mask[self.BackToeInd] = True
         ElevMasked = ma.masked_where(Mask,self.Elevation)
@@ -1013,12 +992,118 @@ class Transect:
 
         # switch flag to indicate a barrier has been found
         self.Barrier = True
+    
+    def ExtractBarrierWidthVolume(self,Elevation=None):
+
+        """
+        Extract barrier width at a given elevation, 
+        default is elevation of back barrier toe
+
+        MDH, July 2020
+
+        """
+
+        if not self.Barrier:
+            return
         
+        # default elevation is the back barrier toe
+        if not Elevation:
+            Elevation = self.Elevation[self.BackToeInd]
+        
+        # vector at fixed elevation running the length of the transect
+        Start, End = ma.notmasked_edges(self.Distance)
+        X1, Y1 = self.Distance[Start], Elevation
+        X2, Y2 = self.Distance[End], Elevation
+        
+        # calculate differences
+        dX12 = X2-X1
+        dY12 = Y2-Y1
+        
+        # count and record locations of intersection
+        IntersectionCounter = 0
+        IntersectionIndices = []
+        InterpolateFractions = []
+        
+        # temporary fix for no assignment, need a function for reading in transect topo
+        # rather than having it set externally?
+        # self.NoValues = len(self.Distance)
+        # self.DistanceSpacing = self.Distance[End]-self.Distance[End-1]
+        
+        # loop across barrier topography
+        for i in range(Start, End):
+
+            # cut and paste interesction analysis
+            # do we want this to be a separate function somewhere?
+            # Loop through transects and count no of intersections with the barrier
+            # get transect line ends        
+            X3,Y3 = self.Distance[i], self.Elevation[i]
+            X4,Y4 = self.Distance[i+1], self.Elevation[i+1]
+            
+            # differences
+            dX34 = X4-X3
+            dY34 = Y4-Y3
+            
+            #Find the cross product of the two vectors
+            XProd = dX12*dY34 - dX34*dY12
+                
+            if (XProd != 0):
+                if (XProd > 0):
+                    XProdPos = 1
+                else:
+                    XProdPos = 0
+                    
+                #assign third test segment
+                dX31 = X1-X3
+                dY31 = Y1-Y3
+                    
+                #get cross products
+                S = dX12*dY31 - dY12*dX31
+                T = dX34*dY31 - dY34*dX31
+                
+                #logic for collision occurence
+                if ((S < 0) == XProdPos):
+                    continue
+                elif ((T < 0) == XProdPos):
+                    continue
+                elif ((S > XProd) == XProdPos):
+                    continue
+                elif ((T > XProd) == XProdPos):
+                    continue
+                else:
+                    IntersectionCounter += 1
+                    IntersectionIndices.append(i)
+                    Fraction = np.abs((Elevation-Y3)/dY34)
+                    InterpolateFractions.append(Fraction)
+                    if IntersectionCounter == 2:
+                        break
+        
+        # calculate width and volume at this elevation
+        # if no intersection then either barrier crest is too low
+        # or back barrier is too high
+        if IntersectionCounter == 0:
+            return 0, 0
+        
+        elif IntersectionCounter == 1:
+            return -9999, -9999
+
+        elif IntersectionCounter > 1:
+
+            # Define Intersection Distance and Elevation by Interpolating
+            Dist1 = self.Distance[IntersectionIndices[0]] + InterpolateFractions[0]*self.DistanceSpacing
+            Dist2 = self.Distance[IntersectionIndices[1]] + InterpolateFractions[1]*self.DistanceSpacing
+            
+            Width = Dist2-Dist1
+            Volume = np.sum(self.Elevation[IntersectionIndices[0]+1:IntersectionIndices[1]+1]-Elevation)*self.DistanceSpacing
+
+            return Width, Volume
+
     def ExtractBarrierWidths(self,WaterElevations=[0, 2.5, 5]):
 
         """
         Extract Barrier widths at all given elevations
         e.g. variable extreme water or projected extreme water
+
+        This needs rewritten to be simpler and more flexible
 
         MDH, June 2019
         
@@ -1279,8 +1364,8 @@ class Transect:
             ax.set_ylim([self.Elevation[Start],np.max(self.Elevation[Start:End])+1])
         
         # temporary over-ride to fix axis limits
-        ax.set_xlim([0.,600.])
-        ax.set_ylim([0.,15.])
+        #ax.set_xlim([0.,600.])
+        #ax.set_ylim([0.,15.])
 
         # flip the plot in the horizontal?
         if ReverseFlag:
@@ -1363,39 +1448,41 @@ class Transect:
             ax.plot(self.Distance[self.BackToeInd], self.Elevation[self.BackToeInd], 'ko', ms=2, zorder=32)
         
         # add extreme water lines and volumes
-        print(self.Intersections)
-
-        for i, WaterLevel in enumerate(self.ExtremeWaterLevels):
+        self.ExtremeWaterLevels = None
+        if not self.ExtremeWaterLevels:
+            Blah = "hello"
+        else:
+            for i, WaterLevel in enumerate(self.ExtremeWaterLevels):
                 
-            if self.Intersections[i]:
-                if (self.ExtremeWidths[i] is None) or (self.ExtremeWidths[i] == -99):
-                    continue
-
-                # get colour
-                Colour = 1.5*float(i)/(len(self.ExtremeWaterLevels))
-                LineColour = ColourMap(Colour)
+                if self.Intersections[i]:
+                    if (self.ExtremeWidths[i] is None) or (self.ExtremeWidths[i] == -99):
+                        continue
     
-                # plot line and extend seaward
-                LineDists = self.ExtremeDistances[i].copy()
-                LineDists[0] -= 20.
-                ax.plot(LineDists, [WaterLevel,WaterLevel], '-', lw=1., color=LineColour, zorder=20)
-                
-                # colour in, this will have minor bug for now due to abs argmin returning either node before or node after
-                Inds = self.ExtremeIndicesLists[i]
-                DistFill = np.insert(self.ExtremeDistances[i], 1, self.Distance[Inds[0]+1:Inds[1]])
-                ElevFill = np.insert(np.array([WaterLevel, WaterLevel]), 1, self.Elevation[Inds[0]+1:Inds[1]])
-                LowerFill = np.linspace(ElevFill[0],ElevFill[-1],len(ElevFill))
-                
-                # lighten the colour slightly
-                LighterColour = ColourMap(Colour+0.1)
-                
-                # and shade in the region above the extreme elevation
-                ax.fill_between(DistFill, ElevFill, LowerFill, color=LighterColour, zorder=11+i)
-
-                # label elevations
-                plt.text(LineDists[0],WaterLevel,
-                        str(WaterLevel)+" m OD", 
-                        color=ColourMap(Colour), ha=Alignment,size="smaller")
+                    # get colour
+                    Colour = 1.5*float(i)/(len(self.ExtremeWaterLevels))
+                    LineColour = ColourMap(Colour)
+        
+                    # plot line and extend seaward
+                    LineDists = self.ExtremeDistances[i].copy()
+                    LineDists[0] -= 20.
+                    ax.plot(LineDists, [WaterLevel,WaterLevel], '-', lw=1., color=LineColour, zorder=20)
+                    
+                    # colour in, this will have minor bug for now due to abs argmin returning either node before or node after
+                    Inds = self.ExtremeIndicesLists[i]
+                    DistFill = np.insert(self.ExtremeDistances[i], 1, self.Distance[Inds[0]+1:Inds[1]])
+                    ElevFill = np.insert(np.array([WaterLevel, WaterLevel]), 1, self.Elevation[Inds[0]+1:Inds[1]])
+                    LowerFill = np.linspace(ElevFill[0],ElevFill[-1],len(ElevFill))
+                    
+                    # lighten the colour slightly
+                    LighterColour = ColourMap(Colour+0.1)
+                    
+                    # and shade in the region above the extreme elevation
+                    ax.fill_between(DistFill, ElevFill, LowerFill, color=LighterColour, zorder=11+i)
+    
+                    # label elevations
+                    plt.text(LineDists[0],WaterLevel,
+                            str(WaterLevel)+" m OD", 
+                            color=ColourMap(Colour), ha=Alignment,size="smaller")
 
             # add label for volume
             #plt.text(LineDists[0],WaterLevel,
@@ -1430,7 +1517,7 @@ class Transect:
         
         # temporary over-ride to fix axis limits
         ax.set_xlim([0.,600.])
-        ax.set_ylim([0.,15.])
+        ax.set_ylim([0.,20.])
 
         # flip the plot in the horizontal?
         if ReverseFlag:
@@ -1446,8 +1533,8 @@ class Transect:
         # tight layout!
         plt.tight_layout()
 
-        # save the figure        
-        fig.savefig(PlotFolder+"Transect_"+ str(self.LineID) + "_" +str(self.ID)+".png", dpi=300)
+        # save the figure   
+        fig.savefig(PlotFolder+"/Transect_"+ str(self.LineID) + "_" +str(self.ID)+".png", dpi=300)
 
         # close the figure
         plt.close(fig)
@@ -1767,7 +1854,7 @@ class Transect:
         """
 
         # define filename and open for writing
-        Filename=Folder+"Transect_"+str(self.ID)+".csv"
+        Filename=Folder+"/Transect_"+str(self.ID)+".csv"
         f = open(Filename,'w')
         
         # write headers
