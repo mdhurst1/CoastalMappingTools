@@ -26,7 +26,7 @@ BathyLines = gp.read_file(WorkingPath / "Bathymetry" / "Scotland_10m_Bathy_Conto
 # and historic MHWS datasets
 MHWS_1890 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1890_FINAL.shp")
 MHWS_1970 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1970_Final.shp")
-MHWS_Soft = gp.read_file(WorkingPath / "MHWS_Lines" / "MHWS_OS_smart2020_soft_simple.shp")
+MHWS_Soft = gp.read_file(WorkingPath / "MHWS_Lines" / "MHWS_OS_smarter2020_soft.shp")
 MHWS_Modern = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Modern_FINAL.shp")
 MHWS_LiDAR = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Modern_LiDAR.shp")
 
@@ -40,10 +40,8 @@ def ClipLines2Poly(LinesGDF,PolyGDF):
 
 for index, Row in Cells.iterrows():
 
-    print(Row.Cell_sub)
-    
-    if Row.Cell_sub not in ["1a","1b","1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g","4"]:
-        continue
+    #if Row.Cell_sub not in ["8b","8c"]:
+    #    continue
     
     # Intersection to isolate bathy for each cell
     BathyClipped = ClipLines2Poly(BathyLines, Row.geometry)

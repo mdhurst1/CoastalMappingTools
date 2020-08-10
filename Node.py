@@ -37,7 +37,6 @@ class Node:
             return False
         else:
             return False
-    
         
     def __str__(self):
         String = "Node Object\nX: %.2f\nY: %.2f\n" %(self.X, self.Y)

@@ -15,10 +15,8 @@ from Coast import *
 # define file names for analysis
 WorkingPath = pathlib.Path.cwd().parent
 NationalDEMPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2Final/99_NationalData/OSTerrain5")
-OutputPath = WorkingPath/"Midpoint_Testing"
-
+OutputPath = WorkingPath/"FinalNationalRun"
 # set the transect spacing (in m)
-InitialTransectSpacing = 50.
 TransectSpacing = 10.
 SmoothingWindowSize = 251
 
@@ -26,17 +24,20 @@ SmoothingWindowSize = 251
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # Cell list
-CellList = ["1a","1b"] #,"1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g","4"]
-#CellList = ["5i","5j","5k","6a","6b","6c","6d","6e","6f","7"]
+#CellList = ["1a","1b","1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g","4"]
+CellList = ["10a","10b","10c","10d","10e","10f","10g"]
 
 # loop through each cell
-# for index, Row in Cells.iterrows():
 for CellSub in CellList:
+#for index, Row in Cells.iterrows():
 
     # print cell to screen
     #CellSub = Row.Cell_sub
     print("\nRUNNING CELL", CellSub)
     RowName = "Cell_"+CellSub    
+    
+    if CellSub in ["8b","8c"]:
+        continue
     
     # try opening bathy file as check on whether there is data
     try:
@@ -78,22 +79,14 @@ for CellSub in CellList:
         
         # may need to think carefully about how much to smooth
         CellCoast.SmoothCoastLines(WindowSize=SmoothingWindowSize)
-        CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Bathy.shp")))
-
-        # build initial transects at coarse spacing to find midpoints
-        # truncate them to the bathymetric line and the coast
-        # midpoint lines become the new baselines
-        CellCoast.GenerateMidpointLinesBetweenContoursShp(str(ModernPath), str(BathyPath), 
-                                            TransectSpacing=InitialTransectSpacing, CheckTopology=True)
-        CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_MidpointLines.shp")))    
-
-        # smooth the midpoint line
-        # may need to think carefully about how much to smooth
-        CellCoast.SmoothCoastLines(WindowSize=SmoothingWindowSize)
-
+        
         # write smoothed coast/bathy to file
         CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
 
+        CellCoast.GenerateTransects(TransectSpacing=TransectSpacing, CheckTopology=False)
+        
+        CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Raw.shp")))
+        
         CellCoast.GenerateTransectsBetweenContoursShp(str(ModernPath), str(BathyPath), 
                                             TransectSpacing=TransectSpacing, CheckTopology=True)
         

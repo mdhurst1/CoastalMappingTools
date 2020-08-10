@@ -1467,6 +1467,33 @@ class Coast:
             # generate transects along each line
             Line.GenerateTransectsBetweenContours(ContourShp1,ContourShp2,TransectSpacing,Distance2Sea,Distance2Land,CheckTopology)
 
+    def GenerateMidpointLinesBetweenContoursShp(self, ContourShp1, ContourShp2, Distance2Sea=8000., Distance2Land=8000., TransectSpacing=20., CheckTopology=True):
+        """
+        Wrapper to the function in the Line object
+
+        Generates a midpoint line between two contours for use as a base line
+        required to help adjust for differences between bathy and coastal orientations
+
+        MDH, July 2020
+
+        Parameters
+        ----------
+        ContourShp : str
+            The name of a shapefile containing a contour/contours 
+            to base transects on.
+        TransectSpacing : float
+            The distance between consecutive transects along the CoastLines
+            in map units, spatial units depend on units of the CoastLine read in,
+            Should be [m]
+        """
+        print("Coast.GenerateTransectsBetweenContoursShp: Generating CoastLine transects perpendicular to the coast")
+
+        self.TransectsSpacing = TransectSpacing
+        
+        for Line in self.CoastLines:
+
+            # generate transects along each line
+            Line.GenerateMidpointLineBetweenContours(ContourShp1,ContourShp2,TransectSpacing,Distance2Sea,Distance2Land,CheckTopology)
 
     def GenerateTransectsFromContours(self,ContourShp,TransectSpacing=10.):
 
@@ -1577,6 +1604,11 @@ class Coast:
         GDF = gp.read_file(HistoricalShorelinesShp)
         Lines = GDF['geometry']
         
+        if len(Lines) == 0:
+            print("No Lines")
+            import pdb
+            pdb.set_trace()
+        
         # catch situation where only one line
         MultiLines = []
 
@@ -1609,8 +1641,12 @@ class Coast:
                 TransectLine = LineString(((Transect.StartNode.X,Transect.StartNode.Y),(X1,Y1)))
             
                 # intersect with historical shoreline
-                Intersections = TransectLine.intersection(MultiLines)
-
+                try:
+                    Intersections = TransectLine.intersection(MultiLines)
+                except:
+                    import pdb
+                    pdb.set_trace()
+                    
                 # catch no intersections and flag for deletion?
                 if Intersections.geom_type == "GeometryCollection":
                     Transect.DeleteFlag = True
@@ -2050,7 +2086,23 @@ class Coast:
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 Transect.ExtendTransect(Distance, 0)
+                
+    def ExtendTransects2Line(self, LineShp):
 
+        """
+        Extends transects to a line shp file
+
+        MDH, August 2020
+
+        """
+
+        print("Coast.ExtendTransects2Hinterland: Puts a new node landward of existing transect")
+
+        # read in the lines object file
+        
+        for Line in self.CoastLines:
+            Line.ExtendTransectsToLineShp(LineShp)
+                
     def FindDEM(self, DEMIndexFileShp):
 
         """
