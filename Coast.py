@@ -2060,7 +2060,23 @@ class Coast:
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 Transect.ExtendTransect(Distance, 0)
+                
+    def ExtendTransects2Line(self, LineShp):
 
+        """
+        Extends transects to a line shp file
+
+        MDH, August 2020
+
+        """
+
+        print("Coast.ExtendTransects2Hinterland: Puts a new node landward of existing transect")
+
+        # read in the lines object file
+        
+        for Line in self.CoastLines:
+            Line.ExtendTransectsToLineShp(LineShp)
+                
     def FindDEM(self, DEMIndexFileShp):
 
         """

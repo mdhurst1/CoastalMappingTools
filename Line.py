@@ -546,7 +546,6 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
         #  define some temporary initial transect lines
         if not self.NoTransects:
-            print(self.NoTransects)
             self.GenerateTransects(CheckTopology=False)
 
         # set up some flags for deciding on whether to reverse
@@ -796,6 +795,83 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         # use Midpoints to initialise a new line
         self.__init__(self.ID, X, Y, Contour=None, Year=None, Cell = self.Cell, SubCell = self.SubCell, CMU = self.CMU)
 
+    def ExtendTransectsToLineShp(self, LineShp, CheckTopology=False):
+        
+        """
+        MDH, August 2020
+        
+        """
+        
+        # load the contour shapefile
+        GDF = gp.read_file(LineShp)
+        Lines = GDF['geometry']
+        
+        # make a multlinestring if there are multiple lines
+        LineList = []
+        for LineObj in Lines:
+            if not LineObj:
+                continue
+            elif (LineObj.geom_type == "MultiLineString"):
+                for ThisLine in LineObj:
+                    LineList.append(ThisLine)
+            elif (LineObj.geom_type == "LineString"):
+                LineList.append(LineObj)
+            else:
+                sys.exit("problem reading lines")
+
+        # catch situation where only one line
+        if len(LineList) == 1:
+            Lines = LineList[0]
+        else:
+            Lines = MultiLineString(LineList)
+
+        # flag to note interesections
+        Intersections = True
+
+        while Intersections:
+            
+            # intersect Transect with shapefile to find new end node of transect
+            DeleteFlags = np.ones(len(self.Transects))
+
+            for i, Transect in enumerate(self.Transects):
+                
+                # copy transect and extend
+                TransectCopy = Transect
+                TransectCopy.ExtendTransect(1000.,1000.)
+            
+                # find intersection between transect line and shapefile lines
+                Intersection = TransectCopy.LineString.intersection(Lines)
+                
+                # catch no intersections
+                if Intersection.geom_type != "GeometryCollection":
+                
+                    # check there arent multiple intersections, if there are just get the nearest
+                    if Intersection.geom_type is "MultiPoint":
+                        StartPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                        Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection]
+                        Index = Distances.index(min(Distances))
+                        Intersection = Intersection[Index]
+                    
+                    # set this as the new start node
+                    NewStartNode = Node(Intersection.x,Intersection.y)
+                
+                else:
+                    NewStartNode = Transect.StartNode
+
+                # rebuild transect with new start node here.
+                Transect.__init__(Transect.CoastNode, NewStartNode, Transect.EndNode, Transect.LineID, Transect.ID)
+
+            self.Transects = [Transect for n, Transect in enumerate(self.Transects) if DeleteFlags[n] == 1]
+                
+            Intersections = False   
+
+        if CheckTopology:
+            self.DeleteOverlappingTransects()
+        
+        for i, Transect in enumerate(self.Transects):
+            Transect.ID = str(i)
+            
+        
     def IntersectTransectsWithIntertidal(self, IntertidalPolyShp):
 
         """
