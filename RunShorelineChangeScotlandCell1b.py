@@ -53,6 +53,7 @@ for CellSub in CellList:
     SoftPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp")
     LiDARPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR.shp")
     BathyPath = WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")
+    MidlinePath = OutputPath / (RowName + "_Midline.shp")
     OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")
     QuiteOldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp")
     
@@ -85,17 +86,20 @@ for CellSub in CellList:
         # midpoint lines become the new baselines
         CellCoast.GenerateMidpointLinesBetweenContoursShp(str(ModernPath), str(BathyPath), 
                                             TransectSpacing=InitialTransectSpacing, CheckTopology=True)
-        CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_MidpointLines.shp")))    
+        CellCoast.WriteCoastShp(str(MidlinePath))
 
         # smooth the midpoint line
         # may need to think carefully about how much to smooth
-        CellCoast.SmoothCoastLines(WindowSize=SmoothingWindowSize)
+        CellCoast.SmoothCoastLines(WindowSize=SmoothingWindowSize/2)
 
         # write smoothed coast/bathy to file
         CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
 
-        CellCoast.GenerateTransectsBetweenContoursShp(str(ModernPath), str(BathyPath), 
+        CellCoast.GenerateTransectsBetweenContoursShp(str(ModernPath), str(MidlinePath), 
                                             TransectSpacing=TransectSpacing, CheckTopology=True)
+        
+        # extend to bathy line
+        CellCoast.ExtendTransects2Line(BathyPath)
         
         CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Contours.shp")))
         
@@ -126,7 +130,9 @@ for CellSub in CellList:
             print("No LiDAR MHWS file")
         else:
             CellCoast.ExtractHistoricalShorelinePositions(str(LiDARPath))
-            
+        
+        CellCoast.CheckTransectTopology()
+        
         CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Sampled.shp")))
     
         #### get MHWS for each transect

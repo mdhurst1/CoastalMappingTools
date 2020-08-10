@@ -989,6 +989,32 @@ class Coast:
 
         print("")
 
+    def WriteBarriersTextFile(self, Filename, delimiter=","):
+        
+        """
+        MDH, July 2020
+        """
+        
+        # define filename and open for writing
+        f = open(Filename,'w')
+        
+        # write headers
+        f.write("LineID" + delimiter + "TransectID" + delimiter + "FrontToeElev" + delimiter + "BackToeElev" + delimiter + "CrestElev" + delimiter + "ToeWidth" + delimiter + "Volume" + "\n")
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                if Transect.Barrier:
+                    Width, Volume = Transect.ExtractBarrierWidthVolume()
+                    f.write(str(Line.ID) + delimiter)
+                    f.write(str(Transect.ID) + delimiter)
+                    f.write(str(Transect.Elevation[Transect.FrontToeInd]) + delimiter)
+                    f.write(str(Transect.Elevation[Transect.BackToeInd]) + delimiter)
+                    f.write(str(Transect.Elevation[Transect.CrestInd]) + delimiter)
+                    f.write(str(Width) + delimiter)
+                    f.write(str(Volume) + "\n")
+                
+        f.close()
+        
     def MergeReverseCoastLines(self):
 
         """
@@ -1340,7 +1366,7 @@ class Coast:
                 Line.ID = str(i)
 
         if len(self.CoastLines[0].Transects) != 0:
-            self.GenerateTransectsNormals(self.TransectsSpacing, self.TransectsLength2Sea, self.TransectsLength2Land)
+            self.GenerateTransects(self.TransectsSpacing, self.TransectsLength2Sea, self.TransectsLength2Land)
 
         # calculate overall orientation
         StartNode = self.CoastLines[0].Nodes[0]
@@ -1441,6 +1467,33 @@ class Coast:
             # generate transects along each line
             Line.GenerateTransectsBetweenContours(ContourShp1,ContourShp2,TransectSpacing,Distance2Sea,Distance2Land,CheckTopology)
 
+    def GenerateMidpointLinesBetweenContoursShp(self, ContourShp1, ContourShp2, Distance2Sea=8000., Distance2Land=8000., TransectSpacing=20., CheckTopology=True):
+        """
+        Wrapper to the function in the Line object
+
+        Generates a midpoint line between two contours for use as a base line
+        required to help adjust for differences between bathy and coastal orientations
+
+        MDH, July 2020
+
+        Parameters
+        ----------
+        ContourShp : str
+            The name of a shapefile containing a contour/contours 
+            to base transects on.
+        TransectSpacing : float
+            The distance between consecutive transects along the CoastLines
+            in map units, spatial units depend on units of the CoastLine read in,
+            Should be [m]
+        """
+        print("Coast.GenerateTransectsBetweenContoursShp: Generating CoastLine transects perpendicular to the coast")
+
+        self.TransectsSpacing = TransectSpacing
+        
+        for Line in self.CoastLines:
+
+            # generate transects along each line
+            Line.GenerateMidpointLineBetweenContours(ContourShp1,ContourShp2,TransectSpacing,Distance2Sea,Distance2Land,CheckTopology)
 
     def GenerateTransectsFromContours(self,ContourShp,TransectSpacing=10.):
 
@@ -2034,7 +2087,23 @@ class Coast:
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 Transect.ExtendTransect(Distance, 0)
+                
+    def ExtendTransects2Line(self, LineShp):
 
+        """
+        Extends transects to a line shp file
+
+        MDH, August 2020
+
+        """
+
+        print("Coast.ExtendTransects2Hinterland: Puts a new node landward of existing transect")
+
+        # read in the lines object file
+        
+        for Line in self.CoastLines:
+            Line.ExtendTransectsToLineShp(LineShp)
+                
     def FindDEM(self, DEMIndexFileShp):
 
         """
@@ -2091,7 +2160,8 @@ class Coast:
         MDH, March 2020
 
         """      
-        
+        print("Coast.ExtractTransectTopography: Sampling DEM(s) along transects")
+
         # set up dem file list
         if DEMFileList:
             # check if list and make list if not
@@ -2151,12 +2221,18 @@ class Coast:
                     Points = [ThisPoint if ThisPoint.within(DTM_Extent) else Point((0,0)) for ThisPoint in Points]
                     Coords = [(Point.x, Point.y) for Point in Points]
                     Elevations = [Sample[0] for Sample in DTM_Dataset.sample(Coords)]
-                    
+                    Transect.Elevation = Elevations
+
                     # problem here gettign back to transects
                     for i, ThisNode in enumerate(Transect.DistanceNodes):
                         
                         if not ThisNode.Z and Elevations[i] > 0:
-                            ThisNode.Z = Elevations[i]
+                            Transect.DistanceNodes[i].Z = Elevations[i]
+
+                    # Set up the mask from NDVs
+                    Mask = Elevations == NDV
+                    Transect.Distance = ma.masked_where(Mask,Transect.Distance)
+                    Transect.Elevation = ma.masked_where(Mask,Elevations)
 
                     Transect.HaveTopography = True
 
@@ -2209,8 +2285,10 @@ class Coast:
         XMax = DTM_Dataset.bounds[2]
         YMin = DTM_Dataset.bounds[1]
         YMax = DTM_Dataset.bounds[3]
-        DTM_Extent = Polygon([Xmin, YMin, XMax, YMax])
-
+        
+        DTM_Extent = Polygon([[XMin, YMin], [XMin,YMax], [XMax, YMax], [XMax, YMin]])
+            
+            
         # Get vectors of X and Y coordinates, NB reversal of Y in line with 
         # DTM indexing from top left
         XVector = XMin+np.arange(0,NCols)*DTM_Resolution+0.5*DTM_Resolution
@@ -3282,8 +3360,7 @@ class Coast:
                 print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
 
                 # call plotting function
-                if (Line.ID == 1) and (Transect.ID == 969):
-                    Transect.Plot(PlotFolder, ReverseFlag)
+                Transect.Plot(PlotFolder, ReverseFlag)
                     
                 CurrentTransect += 1
 

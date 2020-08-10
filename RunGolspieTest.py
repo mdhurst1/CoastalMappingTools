@@ -11,11 +11,11 @@ from Coast import *
 
 # define file names for analysis
 WorkingPath = pathlib.Path.cwd().parent
-SitePath = WorkingPath / "Montrose"
+SitePath = WorkingPath / "Test"
 PlotPath = SitePath / "Plots/" 
 TransectPath = SitePath / "Transects/"
-LineShp = "Montrose_CoastTrend.shp"
-DTM = "DTM_1m.tif"
+LineShp = "Coul_20160510_BlueskyDSM_MHWS.shp"
+DTM = "Coul_20160510_Bluesky_2mDSM.tif"
 
 # make folder for plots and transects if it doesnt already exist
 p = pathlib.Path(PlotPath)
@@ -61,7 +61,7 @@ except:
 ## ANALYSE TRANSECTS
 #ThisCoast.FindRockyCoast()
 ThisCoast.AnalyseTransectMorphology()
-#ThisCoast.AnalyseBarrierWidths([4.,5.,6.])
+ThisCoast.AnalyseBarrierWidths([4.,5.,6.])
 
 ## plot the results
 #ThisCoast.PlotTransects(str(PlotPath))
@@ -74,7 +74,7 @@ ThisCoast.WriteCrestLinesShp(str(SitePath / "CrestLines.shp"))
 ThisCoast.WriteCrestPointsShp(str(SitePath / "CrestPoints.shp"))
 ThisCoast.WriteFrontPointsShp(str(SitePath / "FrontPoints.shp"))
 
-ThisCoast.WriteBarriersTextFile(str(SitePath / "MontroseBarriers.csv"))
+ThisCoast.WriteBarriersTextFile(str(SitePath / "Barriers.csv"))
 #ThisCoast.WriteExtremeLevelsShp(str(SitePath / "Extreme.shp"))
 
 
