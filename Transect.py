@@ -390,7 +390,12 @@ class Transect:
             self.ChangeRates.append(-dEta/dT)
         
         # interpolate to get average RSLR in each time stamp between 1870s and 2020
-        FutureSeaLevelRate = (self.FutureSeaLevels[1] - self.FutureSeaLevels[0])/(self.FutureSeaLevelYears[1] - self.FutureSeaLevelYears[0])
+        try:
+            FutureSeaLevelRate = (self.FutureSeaLevels[1] - self.FutureSeaLevels[0])/(self.FutureSeaLevelYears[1] - self.FutureSeaLevelYears[0])
+        except:
+            import pdb
+            pdb.set_trace()
+            
         RSLRDiff= FutureSeaLevelRate-self.HistoricalRSLR/1000.
         
         InterpolationYears = []
@@ -413,7 +418,7 @@ class Transect:
 
         # set slope for Bruun Rule    
         if self.HinterlandSlope < self.ShorefaceSlope:
-            print("Transect" + str(self.ID) + "Hinterland Slope" + str(self.HinterlandSlope))
+            #print("Transect" + str(self.ID) + "Hinterland Slope" + str(self.HinterlandSlope))
             self.BruunSlope = self.HinterlandSlope
         else:
             self.BruunSlope = self.ShorefaceSlope

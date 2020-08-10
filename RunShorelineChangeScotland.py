@@ -24,7 +24,7 @@ SmoothingWindowSize = 251
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # Cell list
-#CellList = ["1a","1b","1c","1d"]
+CellList = ["6a", "6b", "6c","6d", "6e", "6f", "7"]
 
 # loop through each cell
 for index, Row in Cells.iterrows():
@@ -51,10 +51,6 @@ for index, Row in Cells.iterrows():
     OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")
     QuiteOldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp")
     
-    # force resampling of historical shorelines
-    CellCoast.GotHistoricShorelines = False
-    CellCoast.PredictedFutureShorelines = False
-
     if not BathyPath.is_file():
         print("No Bathy")
         continue
@@ -95,13 +91,16 @@ for index, Row in Cells.iterrows():
         with open(str(Filename2SaveCoast), 'wb') as PFile:
             pickle.dump(CellCoast, PFile)
     
+    # force resampling of historical shorelines
+    CellCoast.GotHistoricShorelines = False
+    CellCoast.PredictedFutureShorelines = False
 
     if not CellCoast.GotHistoricShorelines:
         
         if not OldPath.is_file():
             print("No 1890s MHWS file")
         else:
-            CellCoast.ExtractHistoricalShorelinePositions(str(OldPath),reset=True)
+            CellCoast.ExtractHistoricalShorelinePositions(str(OldPath),Reset=True)
         
         if not QuiteOldPath.is_file():
             print("No 1970s MHWS file")

@@ -109,12 +109,16 @@ for CellSub in CellList:
         with open(str(Filename2SaveCoast), 'wb') as PFile:
             pickle.dump(CellCoast, PFile)
     
+    # force resampling of historical shorelines
+    CellCoast.GotHistoricShorelines = False
+    CellCoast.PredictedFutureShorelines = False
+    
     if not CellCoast.GotHistoricShorelines:
         
         if not OldPath.is_file():
             print("No 1890s MHWS file")
         else:
-            CellCoast.ExtractHistoricalShorelinePositions(str(OldPath))
+            CellCoast.ExtractHistoricalShorelinePositions(str(OldPath), Reset=True)
         
         if not QuiteOldPath.is_file():
             print("No 1970s MHWS file")
@@ -131,7 +135,7 @@ for CellSub in CellList:
         else:
             CellCoast.ExtractHistoricalShorelinePositions(str(LiDARPath))
         
-        CellCoast.CheckTransectTopology()
+        #CellCoast.CheckTransectTopology()
         
         CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Sampled.shp")))
     
@@ -156,6 +160,7 @@ for CellSub in CellList:
         # Extend transects landward by a fixed distance and sample DEMs
         HinterlandDistance = 200
         CellCoast.ExtendTransects2Hinterland(HinterlandDistance)
+        CellCoast.CheckTransectTopology()
         CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_ExtendedTransects.shp")))
         CellCoast.FindDEM(str(NationalDEMPath / "OSTerrain5_fullcoastindex.shp"))
         CellCoast.ExtractTransectTopography()
