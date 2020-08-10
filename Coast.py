@@ -1527,7 +1527,7 @@ class Coast:
             # generate transects along each line
             Line.GenerateNodes(NodeSpacing)
 
-    def ExtractHistoricalShorelinePositions(self,HistoricalShorelinesShp):
+    def ExtractHistoricalShorelinePositions(self,HistoricalShorelinesShp,Reset=False):
 
         """
         Function to find nearest historic shoreline position on each transect
@@ -1539,7 +1539,8 @@ class Coast:
         ----------
         HistoricalShorelineShp : string
             Filename for polyline shapfile containing historical shoreline positions
-        
+        Reset : bool
+            Resets all historical shoreline positions
         """
         print("Coast.ExtractHistoricalShorelinePositions: Finding historical shoreline positions from ", end="")
         print(Path(HistoricalShorelinesShp).name)

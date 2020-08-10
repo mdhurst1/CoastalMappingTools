@@ -356,15 +356,19 @@ class Transect:
         # boolean flag if making prediction
         self.Future = True
 
-        # check if there is more than one post 2000 position and only retain the most recent
-        RecentFlags = (np.array(self.HistoricShorelinesYears) > 2000).astype(int)
-        NRecentFlags = np.sum(RecentFlags)
-        if NRecentFlags > 1:
-            for i in range(1,NRecentFlags):
-                del(self.HistoricShorelinesYears[-2])
-                del(self.HistoricShorelinesDistances[-2])
-                del(self.HistoricShorelinesPositions[-2])
+        # check if the two most recent positions are closer than 5 years together
+        if (self.HistoricShorelinesYears[-1] - self.HistoricShorelinesYears[-2] <= 5):
+            del(self.HistoricShorelinesYears[-2])
+            del(self.HistoricShorelinesDistances[-2])
+            del(self.HistoricShorelinesPositions[-2])
 
+        # RecentFlags = (np.array(self.HistoricShorelinesYears) > 2000).astype(int)
+        # NRecentFlags = np.sum(RecentFlags)
+        #if NRecentFlags > 1:
+        #    for i in range(1,NRecentFlags):
+        #        del(self.HistoricShorelinesYears[-2])
+        #        del(self.HistoricShorelinesDistances[-2])
+        #        del(self.HistoricShorelinesPositions[-2])
 
         # reset change rates in case already calculated
         self.ChangeRates = []
@@ -417,8 +421,6 @@ class Transect:
         # Calibration term, remembering to convert relative sea level change rates to m/yr
         self.VolumetricCalibrationRates = self.ShorefaceDepth*np.array(self.ChangeRates) + self.ShorefaceDistance*(self.InterpolatedRSLR)
         
-        # need some logic somewhere in here to fix issue where most recent two years are close together.
-
         # get sea level at latest time
         if self.HistoricShorelinesYears[-1] < self.FutureSeaLevelYears[0]:
             self.LatestRSL = self.FutureSeaLevels[0]

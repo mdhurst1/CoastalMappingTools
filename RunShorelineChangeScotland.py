@@ -51,6 +51,10 @@ for index, Row in Cells.iterrows():
     OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")
     QuiteOldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp")
     
+    # force resampling of historical shorelines
+    CellCoast.GotHistoricShorelines = False
+    CellCoast.PredictedFutureShorelines = False
+
     if not BathyPath.is_file():
         print("No Bathy")
         continue
@@ -91,12 +95,13 @@ for index, Row in Cells.iterrows():
         with open(str(Filename2SaveCoast), 'wb') as PFile:
             pickle.dump(CellCoast, PFile)
     
+
     if not CellCoast.GotHistoricShorelines:
         
         if not OldPath.is_file():
             print("No 1890s MHWS file")
         else:
-            CellCoast.ExtractHistoricalShorelinePositions(str(OldPath))
+            CellCoast.ExtractHistoricalShorelinePositions(str(OldPath),reset=True)
         
         if not QuiteOldPath.is_file():
             print("No 1970s MHWS file")
