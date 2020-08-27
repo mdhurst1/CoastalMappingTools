@@ -321,6 +321,13 @@ class Transect:
 
         """
         
+        
+        """
+        if ((self.LineID == "18") and (self.ID == "8")):
+            import pdb
+            pdb.set_trace()
+        """
+        
         self.FutureShorelinesPositions = []
         self.FutureShorelinesRates = []
         self.InterpolatedRSLR = []
@@ -390,12 +397,7 @@ class Transect:
             self.ChangeRates.append(-dEta/dT)
         
         # interpolate to get average RSLR in each time stamp between 1870s and 2020
-        try:
-            FutureSeaLevelRate = (self.FutureSeaLevels[1] - self.FutureSeaLevels[0])/(self.FutureSeaLevelYears[1] - self.FutureSeaLevelYears[0])
-        except:
-            import pdb
-            pdb.set_trace()
-            
+        FutureSeaLevelRate = (self.FutureSeaLevels[1] - self.FutureSeaLevels[0])/(self.FutureSeaLevelYears[1] - self.FutureSeaLevelYears[0])
         RSLRDiff= FutureSeaLevelRate-self.HistoricalRSLR/1000.
         
         InterpolationYears = []
@@ -408,20 +410,21 @@ class Transect:
         InterpFractions = (np.array(InterpolationYears)-self.HistoricShorelinesYears[0])/(self.FutureSeaLevelYears[0]-self.HistoricShorelinesYears[0])
         self.InterpolatedRSLR = self.HistoricalRSLR/1000.+RSLRDiff*InterpFractions
         
-        # get mean slopes of shoreface
-        self.ShorefaceDistance = self.StartNode.get_Distance(self.HistoricShorelinesPosition[-1])
-        self.ShorefaceDepth = self.ClosureDepth + self.MHWS
-        self.ShorefaceSlope = self.ShorefaceDepth/self.ShorefaceDistance
+        # get mean slopes of shoreface if we dont already have it
+        if not self.ShorefaceSlope:
+            self.ShorefaceDistance = self.StartNode.get_Distance(self.HistoricShorelinesPosition[-1])
+            self.ShorefaceDepth = self.ClosureDepth + self.MHWS
+            self.ShorefaceSlope = self.ShorefaceDepth/self.ShorefaceDistance
         
         # get hinterland slope 
         self.CalculateHinterlandSlope()
 
         # set slope for Bruun Rule    
         if self.HinterlandSlope < self.ShorefaceSlope:
-            #print("Transect" + str(self.ID) + "Hinterland Slope" + str(self.HinterlandSlope))
             self.BruunSlope = self.HinterlandSlope
         else:
             self.BruunSlope = self.ShorefaceSlope
+        
         
         # Calibration term, remembering to convert relative sea level change rates to m/yr
         self.VolumetricCalibrationRates = self.ShorefaceDepth*np.array(self.ChangeRates) + self.ShorefaceDistance*(self.InterpolatedRSLR)

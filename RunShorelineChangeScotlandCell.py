@@ -26,7 +26,7 @@ SmoothingWindowSize = 251
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # Cell list
-CellList = ["1a","1b"] #,"1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g","4"]
+CellList = ["1a","1b","1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g","4"]
 #CellList = ["5i","5j","5k","6a","6b","6c","6d","6e","6f","7"]
 
 # loop through each cell

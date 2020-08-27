@@ -8,7 +8,7 @@ June 2019
 """
 
 # import modules
-import os, sys, time, pickle
+import os, sys, time, pickle, bisect
 from pathlib import Path
 import numpy as np
 from scipy.interpolate import splprep, splev
@@ -34,7 +34,7 @@ class Coast:
 
     """
 
-    def __init__(self, CoastShp=""):
+    def __init__(self, CoastShp="", MinLength=0.):
         
         """
         MDH, June 2019
@@ -86,7 +86,7 @@ class Coast:
         self.PredictedFutureShorelines = False
 
         if CoastShp:
-            self.ReadCoastShp(CoastShp)
+            self.ReadCoastShp(CoastShp, MinLength)
             
         else:
             print("Coast: Generating empty coast object")
@@ -105,7 +105,7 @@ class Coast:
             pickle.dump(self, PFile)
 
     # read coast from a shapefile
-    def ReadCoastShp(self,CoastShp, MinLength=200.):
+    def ReadCoastShp(self,CoastShp, MinLength=0.):
         
         """
         """
@@ -128,10 +128,10 @@ class Coast:
 
             # get X and Y coordinates of segment
             X, Y = np.array(Shapes[i].points).T
-            
+                
             # Set up a line object for each
             ThisLine = Line(str(i), X, Y)
-
+            
             # append to list of coast lines
             if ThisLine.TotalLength > MinLength:
                 self.CoastLines.append(ThisLine)
@@ -300,6 +300,9 @@ class Coast:
 
         for Line in self.FutureShoreLines:
             
+            if Smooth:
+                Line.SmoothLine(WindowSize=11)
+                    
             # get line node positions
             X, Y = Line.get_XY()
 
@@ -323,6 +326,7 @@ class Coast:
                 YSmooth = np.insert(YSmooth,0,Y[0])
                 X = np.append(XSmooth,X[-1])
                 Y = np.append(YSmooth,Y[-1])
+                
             
             # convert to list for writing to shapefile
             WriteLine = [np.column_stack([X,Y]).tolist()]
@@ -1196,7 +1200,7 @@ class Coast:
         # update no of coastlines
         self.NoCoastLines = len(self.CoastLines)
 
-    def SmoothCoastLines(self, WindowSize=1001, NoSmooths=2, Resample=True, NodeSpacing=10., PolyOrder=4):
+    def SmoothCoastLines(self, WindowSize=1001, NoSmooths=2, Resample=True, NodeSpacing=5., PolyOrder=4):
         
         """
         Smooths the CoastLines contained in Coast object
@@ -1233,15 +1237,19 @@ class Coast:
         """
 
         print("Coast: Smoothing CoastLines")
-
+        
+        
+        
         for i in range(0, NoSmooths):
             for Line in self.CoastLines:
-            
+                
+                if Resample:
+                    Line.ResampleNodes(NodeSpacing)
+                    
                 # smooth the line
                 Line.SmoothLine(WindowSize, PolyOrder)
 
-                if Resample:
-                    Line.ResampleNodes(NodeSpacing)
+                
 
     def SplineCoastLines(self):
         
@@ -1396,11 +1404,13 @@ class Coast:
 
         """
 
+        print("Coast.CheckOrientation: Checking CoastLine Orientation Geometry")
+        
         # generate transects along each line
         for Line in self.CoastLines:
-
+            
             # generate transects along each line
-            Line.CheckOrientation(ShorelineShp, BathyShp)
+            Line.CheckLineOrientation(ShorelineShp, BathyShp)
 
     # function to do something    
     def GenerateTransects(self, TransectSpacing, TransectLength2Sea=5000, TransectLength2Land=5000, CheckTopology=True):
@@ -1439,6 +1449,22 @@ class Coast:
             # generate transects along each line
             Line.GenerateTransects(TransectSpacing, TransectLength2Sea, TransectLength2Land, CheckTopology)
 
+    def GetShorefaceSlopes(self,BathyShp):
+        
+        """
+        
+        Wrapper to the function in the Line object
+        
+        MDH, August 2020
+    
+        """
+        print("Coast.GetShorefaceSlope: Finding distance between shoreline and -10m bathy contour to calculate slope")
+        
+        for Line in self.CoastLines:
+            Line.GetShorefaceSlope(BathyShp)
+            
+            
+            
     def GenerateTransectsBetweenContoursShp(self, ContourShp1, ContourShp2, Distance2Sea=8000., Distance2Land=8000., TransectSpacing=20., CheckTopology=True):
         """
         Wrapper to the function in the Line object
@@ -1545,6 +1571,7 @@ class Coast:
 
         """
 
+        print("\nCoast.CheckTransectTopology: Checking for overlapping transects")
         for Line in self.CoastLines:
             Line.CheckTransectTopology()
 
@@ -1609,6 +1636,7 @@ class Coast:
             print("No Lines")
             import pdb
             pdb.set_trace()
+            return
         
         # catch situation where only one line
         MultiLines = []
@@ -1631,7 +1659,10 @@ class Coast:
             MultiLines = MultiLineString(MultiLines)    
             #MultiLines = MultiLineString([Line for Line in Lines if Line.geom_type == "LineString"])
             
-
+        if not MultiLines:
+            print("No Lines")
+            return
+        
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 
@@ -1707,11 +1738,12 @@ class Coast:
                         Positions.append(Position)
                         Distances.append(Transect.StartNode.get_Distance(Position))
 
-                    
                     # add to transect
-                    Transect.HistoricShorelinesPositions.append(Positions)
-                    Transect.HistoricShorelinesDistances.append(Distances)
-                    Transect.HistoricShorelinesYears.append(Year)
+                    index = bisect.bisect(Transect.HistoricShorelinesYears, Year)
+                    Transect.HistoricShorelinesYears.insert(index, Year)
+                    Transect.HistoricShorelinesPositions.insert(index, Positions)
+                    Transect.HistoricShorelinesDistances.insert(index, Distances)
+                    
 
                 else:
                     
@@ -2061,16 +2093,6 @@ class Coast:
                 Transect.PredictFutureVegEdge()
 
                 
-    def WriteFutureShorelines(self):
-
-        """
-
-        Wrapper to write future shoreline positions to individual shapefiles
-
-        MDH, September 2019
-
-        """
-
     def ExtendTransects2Hinterland(self, Distance):
 
         """
@@ -2135,14 +2157,12 @@ class Coast:
 
             # get multilinestring of transects
             Lines = [LineString([(Transect.EndNode.X,Transect.EndNode.Y),(Transect.StartNode.X,Transect.StartNode.Y)]) for Transect in Line.Transects]
+            
+            if not Lines:
+                continue
+            
             LineGDF = gp.GeoDataFrame(geometry=Lines,crs=PolyGDF.crs)
             
-            # interesect with DEM references
-            #print(Line.TotalLength)
-            #print(len(Line.Transects))
-            #print(Lines)
-            #print(PolyGDF)
-
             JoinGDF = gp.sjoin(LineGDF, PolyGDF, op='intersects')
             
             # set DEMs to list
@@ -2172,7 +2192,7 @@ class Coast:
         # loop through DEMs
         for DEM in self.UniqueDEMList:
             
-            print("\t" + DEM.split("/")[-1])
+            #print("\t" + DEM.split("/")[-1])
 
             DTM_Dataset = rasterio.open(DEM)
             DTMArray = DTM_Dataset.read(1)
@@ -2778,7 +2798,11 @@ class Coast:
                 for Transect in CoastLine.Transects[StartList[i]:EndList[i]]:
                     Transect.PredictFutureShorelineUncertainty(Year)
                     FutureMinNode = Transect.FutureShorelinesMinNode
-                    FutureMaxNode = Transect.FutureShorelinesMaxNode
+                    try:
+                        FutureMaxNode = Transect.FutureShorelinesMaxNode
+                    except:
+                        import pdb
+                        pdb.set_trace()
                     FutureMinList.append(FutureMinNode)
                     FutureMaxList.append(FutureMaxNode)
                     

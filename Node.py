@@ -27,7 +27,7 @@ class Node:
         if not isinstance(self.X, float):
             print("PROBLEM")
             print(type(self.X))
-            sys.exit()
+            
 
     def __eq__(self,other):
         if (self.X == other.X) and (self.Y == other.Y):
@@ -64,6 +64,10 @@ class Node:
         #calculate the spatial change
         dx = OtherNode.X - self.X
         dy = OtherNode.Y - self.Y
+        
+        # catch rare zero dy values
+        if np.abs(dy) < 0.001:
+            dy = 0.001
 
         #Calculate the orientation of the line
         #N.B. this will depend on where the start segment is
@@ -77,6 +81,9 @@ class Node:
             Orientation = 180.0 + np.degrees( np.arctan( dx / dy ) )
         elif dx < 0 and dy > 0:
             Orientation = 360 + np.degrees( np.arctan( dx / dy ) )
+        else:
+            import pdb
+            pdb.set_trace()
             
         return Orientation
         

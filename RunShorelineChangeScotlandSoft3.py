@@ -15,16 +15,21 @@ from Coast import *
 # define file names for analysis
 WorkingPath = pathlib.Path.cwd().parent
 NationalDEMPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2Final/99_NationalData/OSTerrain5")
-OutputPath = WorkingPath/"FinalNationalRun"
+OutputPath = WorkingPath/"ShorelineRun"
+
+# set the minimum length
+MinLength = 100.
+
 # set the transect spacing (in m)
 TransectSpacing = 10.
-SmoothingWindowSize = 251
+SmoothingWindowSize = 21
+NoSmooths = 30
 
 # get all coastal cells to loop through
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # Cell list
-CellList = ["6a", "6b", "6c","6d", "6e", "6f", "7"]
+CellList = ["8a","8b","8c","8d","8e","8f","9a","9b","9c","9d","9e","9f"]
 
 # loop through each cell
 #for index, Row in Cells.iterrows():
@@ -47,12 +52,16 @@ for CellSub in CellList:
     # get soft coast position as most recent
     ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Final.shp")
     SoftPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp")
+    LiDARPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR.shp")
     BathyPath = WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")
     OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")
     QuiteOldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp")
     
     if not BathyPath.is_file():
         print("No Bathy")
+        continue
+    elif not ModernPath.is_file():
+        print("No soft baseline")
         continue
     elif not SoftPath.is_file():
         print("No Soft")
@@ -66,24 +75,24 @@ for CellSub in CellList:
         print("Creating New Coast Object")
 
         # SET UP THE COAST FROM -10m Contour
-        CellCoast = Coast(str(BathyPath))
+        CellCoast = Coast(str(ModernPath), MinLength=MinLength)
     
     if not CellCoast.BuiltTransects:
         
+        # rewrite coasts read in
+        # CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Raw_Baseline.shp")))
+        
         # may need to think carefully about how much to smooth
-        CellCoast.SmoothCoastLines(WindowSize=SmoothingWindowSize)
+        CellCoast.SmoothCoastLines(WindowSize=SmoothingWindowSize,NoSmooths=NoSmooths)
+        
+        CellCoast.CheckOrientation(str(SoftPath),str(BathyPath))
         
         # write smoothed coast/bathy to file
         CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
 
-        CellCoast.GenerateTransects(TransectSpacing=TransectSpacing, CheckTopology=False)
+        CellCoast.GenerateTransects(TransectSpacing, 200, 200, CheckTopology=False)
         
-        CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Raw.shp")))
-        
-        CellCoast.GenerateTransectsBetweenContoursShp(str(ModernPath), str(BathyPath), 
-                                            TransectSpacing=TransectSpacing)
-        
-        CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Contours.shp")))
+        # CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Raw.shp")))
         
         CellCoast.BuiltTransects = True
         
@@ -112,7 +121,12 @@ for CellSub in CellList:
         else:
             CellCoast.ExtractHistoricalShorelinePositions(str(SoftPath))
             
-        CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Sampled.shp")))
+        if not LiDARPath.is_file():
+            print("No LiDAR MHWS file")
+        else:
+            CellCoast.ExtractHistoricalShorelinePositions(str(LiDARPath))
+            
+        # CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Sampled.shp")))
     
         #### get MHWS for each transect
         CellCoast.SampleMHWSElevation(str(WorkingPath / "MHWS_Lines" / "scotland_mhws_elev.tif"))
@@ -135,7 +149,7 @@ for CellSub in CellList:
         # Extend transects landward by a fixed distance and sample DEMs
         HinterlandDistance = 200
         CellCoast.ExtendTransects2Hinterland(HinterlandDistance)
-        CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_ExtendedTransects.shp")))
+        CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects.shp")))
         CellCoast.FindDEM(str(NationalDEMPath / "OSTerrain5_fullcoastindex.shp"))
         CellCoast.ExtractTransectTopography()
         
@@ -150,8 +164,8 @@ for CellSub in CellList:
     
         ## predict future shorelines
         #CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
+        CellCoast.GetShorefaceSlopes(str(BathyPath))
         CellCoast.PredictFutureShorelines()
-        
         CellCoast.PredictedFutureShorelines = True
     
         # write future shorelines

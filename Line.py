@@ -20,6 +20,8 @@ import geopandas as gp
 from shapely.geometry import Point, LineString, MultiLineString, Polygon, MultiPolygon
 from shapely.ops import nearest_points
 
+import pdb
+
 class Line:
     
     """
@@ -496,7 +498,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             drawing transects. This should be the offshore line.
         """
 
-        print("\tChecking Geometry, Line", self.ID)
+        #print("\tChecking Geometry, Line", self.ID)
 
         # load the contour shapefile
         GDF = gp.read_file(ShorelineShp)
@@ -554,38 +556,27 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         # check orientation relative to the sea for a 
         # intersect first transect with each set of lines and get orientation from bathy to shore
         # find intersection between transect line and shapefile lines
-        for i in range(0,self.NoTransects):
+        for i, ThisTransect in enumerate(self.Transects):
             
-            OffshoreIntersection = self.Transects[i].LineString.intersection(BathyLines)
-            OnshoreIntersection = self.Transects[i].LineString.intersection(ShoreLines)
+            #OffshoreIntersection = self.Transects[i].LineString.intersection(BathyLines)
+            #OnshoreIntersection = self.Transects[i].LineString.intersection(ShoreLines)
             
-            # catch no intersections
-            if ((OffshoreIntersection.geom_type == "GeometryCollection") 
-                or (OnshoreIntersection.geom_type == "GeometryCollection")):
-                continue
+            # change tonearest points to avoid non interscting problem
+            BasePoint = Point(ThisTransect.CoastNode.X, ThisTransect.CoastNode.Y)
+            OffshorePoint = nearest_points(BathyLines, BasePoint)[0]
+            OnshorePoint = nearest_points(ShoreLines, BasePoint)[0]
             
-            if OffshoreIntersection.geom_type is "MultiPoint":
-                StartPoint = Point(self.Transects[i].CoastNode.X, self.Transects[i].CoastNode.Y)
-                Distances = [abs(IntersectPoint.distance(StartPoint)) for IntersectPoint in OffshoreIntersection]
-                Index = Distances.index(min(Distances))
-                OffshoreIntersection = OffshoreIntersection[Index]
-        
-            if OnshoreIntersection.geom_type is "MultiPoint":
-                StartPoint = Point(self.Transects[i].CoastNode.X, self.Transects[i].CoastNode.Y)
-                Distances = [abs(IntersectPoint.distance(StartPoint)) for IntersectPoint in OnshoreIntersection]
-                Index = Distances.index(min(Distances))
-                OnshoreIntersection = OnshoreIntersection[Index]  
-            
-            OffshoreNode = Node(OffshoreIntersection.x,OffshoreIntersection.y)
-            OnshoreNode = Node(OnshoreIntersection.x,OnshoreIntersection.y)
+            OffshoreNode = Node(OffshorePoint.x,OffshorePoint.y)
+            OnshoreNode = Node(OnshorePoint.x,OnshorePoint.y)
             TestOrientation = OffshoreNode.get_Orientation(OnshoreNode)
+            
             # check for reverses    
-            if (abs(TestOrientation-self.Transects[i].Orientation) > 0.1): self.ReverseFlags[i] = 1
+            if (abs(TestOrientation-ThisTransect.Orientation) > 90.): self.ReverseFlags[i] = 1
 
         # get x and y to reverse lines
         NReverse = np.count_nonzero(self.ReverseFlags == 1)
         NXReverse = np.count_nonzero(self.ReverseFlags == 0)
-
+        
         if NReverse > NXReverse:
             X, Y = self.get_XY()
             self.__init__(self.ID, X[::-1], Y[::-1], self.Contour, self.Year, self.Cell, self.SubCell, self.CMU)
@@ -969,7 +960,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
         """
 
-        print("\tChecking Transect Topology...")
+        #print("\tChecking Transect Topology...")
 
         Intersections = True
 
@@ -1143,7 +1134,56 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         # record number of transects
         self.NoPoints = PointCount
 
-    
+    def GetShorefaceSlope(self, BathyShp):
+        
+        """
+        
+        Finds shortest distance from coast to -10m bathy contour and calculates slope
+        
+        MDH, August 2020
+        
+        """
+        
+        # load the shp
+        # load the contour shapefile
+        GDF = gp.read_file(BathyShp)
+        Lines = GDF['geometry']
+        
+        # make a multlinestring if there are multiple lines
+        LineList = []
+        for LineObj in Lines:
+            if not LineObj:
+                continue
+            elif (LineObj.geom_type == "MultiLineString"):
+                for ThisLine in LineObj:
+                    LineList.append(ThisLine)
+            elif (LineObj.geom_type == "LineString"):
+                LineList.append(LineObj)
+            else:
+                sys.exit("problem reading lines")
+
+        # catch situation where only one line
+        if len(LineList) == 1:
+            Lines = LineList[0]
+        else:
+            Lines = MultiLineString(LineList)
+        
+        
+        for ThisTransect in self.Transects:
+            
+            # get shortest distance to bathy and associated point
+            try:
+                TempNode = ThisTransect.HistoricShorelinesPositions[-1][0]
+            except:
+                pdb.set_trace()
+            
+            BasePoint = Point(TempNode.X, TempNode.Y)
+            NearestPoint = nearest_points(Lines, BasePoint)[0]
+            NearestPoint = Node(NearestPoint.x, NearestPoint.y)
+            Distance = NearestPoint.get_Distance(ThisTransect.HistoricShorelinesPositions[-1][0])
+            ThisTransect.ShorefaceDistance = Distance
+            ThisTransect.ShorefaceDepth = ThisTransect.MHWS+10.
+            ThisTransect.ShorefaceSlope = (ThisTransect.MHWS+10.)/Distance
 
     def ReverseLine(self):
         """
