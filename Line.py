@@ -562,17 +562,34 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             #OnshoreIntersection = self.Transects[i].LineString.intersection(ShoreLines)
             
             # change tonearest points to avoid non interscting problem
-            BasePoint = Point(ThisTransect.CoastNode.X, ThisTransect.CoastNode.Y)
-            OffshorePoint = nearest_points(BathyLines, BasePoint)[0]
-            OnshorePoint = nearest_points(ShoreLines, BasePoint)[0]
+            #BasePoint = Point(ThisTransect.CoastNode.X, ThisTransect.CoastNode.Y)
+            #OffshorePoint = nearest_points(BathyLines, BasePoint)[0]
+            #OnshorePoint = nearest_points(ShoreLines, BasePoint)[0]
             
-            OffshoreNode = Node(OffshorePoint.x,OffshorePoint.y)
-            OnshoreNode = Node(OnshorePoint.x,OnshorePoint.y)
-            TestOrientation = OffshoreNode.get_Orientation(OnshoreNode)
+            #OffshoreNode = Node(OffshorePoint.x,OffshorePoint.y)
+            #OnshoreNode = Node(OnshorePoint.x,OnshorePoint.y)
+            #TestOrientation = OffshoreNode.get_Orientation(OnshoreNode)
             
             # check for reverses    
-            if (abs(TestOrientation-ThisTransect.Orientation) > 90.): self.ReverseFlags[i] = 1
+            #if (abs(TestOrientation-ThisTransect.Orientation) > 90.): self.ReverseFlags[i] = 1
 
+            # get offshore points to measure distances
+            OffshorePoint = nearest_points(BathyLines, Point(ThisTransect.CoastNode.X, ThisTransect.CoastNode.Y))[0]
+            OffshoreNode = Node(OffshorePoint.x,OffshorePoint.y)
+            Distance1 = OffshoreNode.get_Distance(ThisTransect.StartNode)
+            Distance2 = OffshoreNode.get_Distance(ThisTransect.EndNode)
+            
+            if (Distance1 > Distance2):
+                self.ReverseFlags[i] = 1
+            
+#            if (self.ID == "39"):
+#                X,Y = BathyLines.xy
+#                plt.plot(X,Y,'k-')
+#                plt.plot(OffshorePoint.x,OffshorePoint.y,'ro')
+#                plt.plot([ThisTransect.StartNode.X, ThisTransect.EndNode.X], [ThisTransect.StartNode.Y, ThisTransect.EndNode.Y], 'k--')
+#                plt.show()
+#                sys.exit()
+                
         # get x and y to reverse lines
         NReverse = np.count_nonzero(self.ReverseFlags == 1)
         NXReverse = np.count_nonzero(self.ReverseFlags == 0)
