@@ -1775,6 +1775,82 @@ class Transect:
         else:
             return
     
+    def get_FutureDistance(self, Year):
+
+        """
+
+        Get the future position of the coast for a particular year
+        from Bruun Rule predictions
+
+        MDH, October 2019
+
+        """
+
+        # check there are predictions for this transect
+        if self.Future:
+
+            # find year index
+            Index = [i for i, x in enumerate(self.FutureSeaLevelYears[1:]) if x == Year]
+            
+            if len(Index) == 0:
+                return
+
+            # use to access future position
+            Distance = self.FutureShorelinesDistances[Index[0]]
+            return Distance
+
+        else:
+            return
+
+    def get_FutureRate(self, Year):
+
+        """
+
+        Get the future erosion rate of the coast for a particular year
+        from Bruun Rule predictions
+
+        MDH, January 2020
+
+        """
+
+        # check there are predictions for this transect
+        if self.Future:
+
+            # find year index
+            Index = [i for i, x in enumerate(self.FutureSeaLevelYears[1:]) if x == Year]
+            
+            if len(Index) == 0:
+                return
+
+            # use to access future position
+            Rate = self.FutureShorelinesRates[Index[0]]
+            return Rate
+
+        else:
+            return
+
+    def get_FutureMaxRate(self, Year):
+
+        """
+
+        Get the future erosion rate of the coast for a particular year
+        from Bruun Rule predictions
+
+        MDH, January 2020
+
+        """
+
+        # check there are predictions for this transect
+        if self.Future:
+
+            # use to access future position
+            self.PredictFutureShorelineUncertainty(Year)
+            MaxRate = (self.HistoricShorelinesPositions[-1]-self.FutureShorelinesMinDistance)/(Year-self.HistoricShorelinesYears[-1])
+            return MaxRate
+
+        else:
+            return
+
     def get_FutureVegEdge(self, Year):
 
         """
@@ -1838,33 +1914,6 @@ class Transect:
         Position = self.HistoricShorelinesPositions[Index][0]
         return Position 
     
-    def get_FutureShorelineRate(self, Year):
-
-        """
-
-        Get the future erosion rate of the coast for a particular year
-        from Bruun Rule predictions
-
-        MDH, January 2020
-
-        """
-
-        # check there are predictions for this transect
-        if self.Future:
-
-            # find year index
-            Index = [i for i, x in enumerate(self.FutureSeaLevelYears[1:]) if x == Year]
-            
-            if len(Index) == 0:
-                return
-
-            # use to access future position
-            Rate = self.FutureShorelinesRates[Index[0]]
-            return Rate
-
-        else:
-            return
-
     def Write(self, Folder=os.getcwd(), delimiter=","):
         
         """

@@ -795,6 +795,74 @@ class Coast:
         f.write(self.Projection)
         f.close()
     
+    def WriteFutureTransectsShp(self, TransectsShp):
+
+        """
+        Writes the transects of a Coast object to polyline shape file
+
+        builds a large attribute table with all future shoreline info
+
+        MDH, Sept 2020
+
+        """
+
+        # print action to screen
+        print("Coast.WriteFutureTransectsShp: Writing coastal transects and attributes to a shapefile")
+
+        # open new shapefile        
+        WL = shapefile.Writer(TransectsShp,shapeType=shapefile.POLYLINE)
+        
+        # Check length of extreme water levels
+        if len(self.ExtremeWaterLevels) != 3:
+            self.ExtremeWaterLevels = [[],[],[]]
+
+        # Create Fields
+        Fields = [('DeletionFlag','C',1,0), 
+        ['Cell', 'N', 3, 0], ['SubCell', 'C', 3, 0], ['CMU','C', 20, 0],
+        ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], 
+        ['BaselineYr','N', 4, 0], ['BaselineSrc','C', 50, 0], ['CalibYr','N', 4, 0],
+        ['Dist_2100', 'N', 6, 2], ['Rate_2100', 'N', 4, 2], ['MaxRate_2100', 'N', 4, 2],
+        ['Dist_2050', 'N', 6, 2], ['Rate_2050', 'N', 4, 2], ['MaxRate_2050', 'N', 4, 2],
+        ['Dist_50100', 'N', 6, 2], , ['Rate_50100', 'N', 4, 2], ['MaxRate_50100', 'N', 4, 2],
+        ['RCP85_2100_SLR', 'N', 4, 3]]
+        
+        WL.fields = Fields[1:]
+
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+
+                # get transect node positions
+                X, Y = Transect.get_XY()
+                
+                WriteTransect = [np.column_stack([X,Y]).tolist()]
+
+                # Create the record this could become a function in transect object...
+                Record = [str(self.Cell), str(self.SubCell), str(self.CMU), str(Line.ID), str(Transect.ID),
+                            Transect.HistoricShorelinesYears[-1], Transect.HistoricShorelinesSources[-1], Transect.CalibrationYear,
+                            Transect.get_FutureDistance(2100), Transect.get_FutureRate(2100), Transect.get_FutureMaxRate(2100),
+                            Transect.get_FutureDistance(2050), Transect.get_FutureRate(2050), Transect.get_FutureMaxRate(2050),
+                            Transect.get_FutureDistance(2050,2100), Transect.get_FutureRate(2050,2100), Transect.get_FutureMaxRate(2050,2100),
+                            Transect.FutureSeaLevels[-1]]
+
+                # write transect and record
+                WL.line(WriteTransect)
+                try:
+                    WL.record(*Record) 
+                except:
+                    print(Transect.ID)
+                    print(Record)
+                    sys.exit()
+                
+        
+        # close the shapefiles and clean up
+        WL.close()
+            
+        # create the projection file    
+        f = open(TransectsShp.rstrip("shp")+"prj","w")
+        f.write(self.Projection)
+        f.close()
+
     def WriteCrestLinesShp(self, CrestLineShp):
 
         """
