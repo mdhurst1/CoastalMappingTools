@@ -80,6 +80,7 @@ class Transect:
         # future sea level rise
         self.Future = False
         self.LongTermOnly = False
+        self.CalibrationYear = None
         self.FutureSeaLevelYears = []
         self.FutureSeaLevels = []
         self.FutureShorelinesPositions = []
@@ -439,8 +440,10 @@ class Transect:
         # set index for calibration
         if self.LongTermOnly:
             Index = 0
+            self.CalibrationYear = self.HistoricShorelinesYears[Index]
         else:
             Index = -1
+            self.CalibrationYear = self.HistoricShorelinesYears[-2]
 
         # Future shoreline positions
         for i in range(1, len(self.FutureSeaLevelYears)):
@@ -1775,11 +1778,11 @@ class Transect:
         else:
             return
     
-    def get_FutureDistance(self, Year):
+    def get_FutureDistance(self, Year1, Year2):
 
         """
 
-        Get the future position of the coast for a particular year
+        Get the future change in  position of the coast over a particular number of years
         from Bruun Rule predictions
 
         MDH, October 2019
@@ -1790,23 +1793,30 @@ class Transect:
         if self.Future:
 
             # find year index
-            Index = [i for i, x in enumerate(self.FutureSeaLevelYears[1:]) if x == Year]
-            
-            if len(Index) == 0:
+            Index1 = [i for i, x in enumerate(self.FutureSeaLevelYears[1:]) if x == Year1]
+            Index2 = [i for i, x in enumerate(self.FutureSeaLevelYears[1:]) if x == Year2]
+
+            if len(Index1) == 0:
+                print("problem1")
+                return
+
+            if len(Index2) == 0:
+                print("problem2")
                 return
 
             # use to access future position
-            Distance = self.FutureShorelinesDistances[Index[0]]
-            return Distance
+            Distance1 = self.FutureShorelinesDistances[Index1[0]]
+            Distance2 = self.FutureShorelinesDistances[Index2[0]]
+            return Distance2-Distance1
 
         else:
             return
 
-    def get_FutureRate(self, Year):
+    def get_FutureRate(self, Year1, Year2):
 
         """
 
-        Get the future erosion rate of the coast for a particular year
+        Get the future erosion rate of the coast for a particular period of years
         from Bruun Rule predictions
 
         MDH, January 2020
@@ -1815,21 +1825,18 @@ class Transect:
 
         # check there are predictions for this transect
         if self.Future:
-
-            # find year index
-            Index = [i for i, x in enumerate(self.FutureSeaLevelYears[1:]) if x == Year]
             
-            if len(Index) == 0:
-                return
+            # get the position change
+            Distance = self.get_FutureDistance(Year1, Year2)
 
-            # use to access future position
-            Rate = self.FutureShorelinesRates[Index[0]]
+            # calculate average rate
+            Rate = Distance/(Year2-Year1)
             return Rate
 
         else:
             return
 
-    def get_FutureMaxRate(self, Year):
+    def get_FutureMaxRate(self, Year1, Year2):
 
         """
 
@@ -1844,8 +1851,11 @@ class Transect:
         if self.Future:
 
             # use to access future position
-            self.PredictFutureShorelineUncertainty(Year)
-            MaxRate = (self.HistoricShorelinesPositions[-1]-self.FutureShorelinesMinDistance)/(Year-self.HistoricShorelinesYears[-1])
+            self.PredictFutureShorelineUncertainty(Year1)
+            Distance1 = self.FutureShorelinesMinDistance
+            self.PredictFutureShorelineUncertainty(Year2)
+            Distance2 = self.FutureShorelinesMinDistance
+            MaxRate = (Distance2-Distance1)/(Year2-Year1)
             return MaxRate
 
         else:

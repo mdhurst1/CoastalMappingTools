@@ -840,9 +840,9 @@ class Coast:
                 # Create the record this could become a function in transect object...
                 Record = [str(self.Cell), str(self.SubCell), str(self.CMU), str(Line.ID), str(Transect.ID),
                             Transect.HistoricShorelinesYears[-1], Transect.HistoricShorelinesSources[-1], Transect.CalibrationYear,
-                            Transect.get_FutureDistance(2100), Transect.get_FutureRate(2100), Transect.get_FutureMaxRate(2100),
-                            Transect.get_FutureDistance(2050), Transect.get_FutureRate(2050), Transect.get_FutureMaxRate(2050),
-                            Transect.get_FutureDistance(2050,2100), Transect.get_FutureRate(2050,2100), Transect.get_FutureMaxRate(2050,2100),
+                            Transect.get_FutureDistance(2020, 2100), Transect.get_FutureRate(2020, 2100), Transect.get_FutureMaxRate(2020, 2100),
+                            Transect.get_FutureDistance(2020, 2050), Transect.get_FutureRate(2020, 2050), Transect.get_FutureMaxRate(2020, 2050),
+                            Transect.get_FutureDistance(2050, 2100), Transect.get_FutureRate(2050, 2100), Transect.get_FutureMaxRate(2050, 2100),
                             Transect.FutureSeaLevels[-1]]
 
                 # write transect and record
