@@ -52,6 +52,7 @@ class Transect:
         self.Length = self.CalculateLength(self.StartNode, self.EndNode)
         
         # historic shoreline positions, distances and change rates
+        self.HistoricShorelinesSources = []
         self.HistoricShorelinesYears = []
         self.HistoricShorelinesPositions = []
         self.HistoricShorelinesDistances = []

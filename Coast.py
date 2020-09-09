@@ -1808,6 +1808,7 @@ class Coast:
 
                     # add to transect
                     index = bisect.bisect(Transect.HistoricShorelinesYears, Year)
+                    Transect.HistoricShorelinesSources.insert(index, Path(HistoricalShorelinesShp).name)
                     Transect.HistoricShorelinesYears.insert(index, Year)
                     Transect.HistoricShorelinesPositions.insert(index, Positions)
                     Transect.HistoricShorelinesDistances.insert(index, Distances)
