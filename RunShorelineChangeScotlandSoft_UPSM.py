@@ -29,13 +29,13 @@ NoSmooths = 50
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # Cell list
-CellList = ["8a","8b","8c","8d","8e","8f","9a","9b","9c","9d","9e","9f"]
+CellList = ["2a",] #"1b","1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g","4"]
 
 # loop through each cell
-#for index, Row in Cells.iterrows():
-for CellSub in CellList:
+for index, Row in Cells.iterrows():
+#for CellSub in CellList:
     # print cell to screen
-    # CellSub = Row.Cell_sub
+    CellSub = Row.Cell_sub
     print("\nRUNNING CELL", CellSub)
     RowName = "Cell_"+CellSub
     
@@ -101,9 +101,9 @@ for CellSub in CellList:
             pickle.dump(CellCoast, PFile)
     
     # force resampling of historical shorelines
-    CellCoast.GotHistoricShorelines = False
-    CellCoast.PredictedFutureShorelines = False
-
+    # CellCoast.GotHistoricShorelines = False
+    # CellCoast.PredictedFutureShorelines = False
+    
     if not CellCoast.GotHistoricShorelines:
         
         if not OldPath.is_file():
@@ -149,6 +149,7 @@ for CellSub in CellList:
         # Extend transects landward by a fixed distance and sample DEMs
         HinterlandDistance = 200
         CellCoast.ExtendTransects2Hinterland(HinterlandDistance)
+        #CellCoast.CheckTransectTopology()
         CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects.shp")))
         CellCoast.FindDEM(str(NationalDEMPath / "OSTerrain5_fullcoastindex.shp"))
         CellCoast.ExtractTransectTopography()
@@ -159,7 +160,7 @@ for CellSub in CellList:
         print("\tSaving Coast Object as ", Filename2SaveCoast)
         with open(str(Filename2SaveCoast), 'wb') as PFile:
             pickle.dump(CellCoast, PFile)
-    
+            
     if not CellCoast.PredictedFutureShorelines:    
     
         ## predict future shorelines
@@ -179,8 +180,7 @@ for CellSub in CellList:
         with open(str(Filename2SaveCoast), 'wb') as PFile:
             pickle.dump(CellCoast, PFile)
         
-    
-
+    CellCoast.WriteFutureTransectsShp(str(OutputPath / (RowName + "_Transects.shp")))
     #CellCoast.WriteFutureShorelineSegmentsShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSegments.shp")))
     
 

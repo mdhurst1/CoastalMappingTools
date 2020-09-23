@@ -23,13 +23,13 @@ MinLength = 100.
 # set the transect spacing (in m)
 TransectSpacing = 10.
 SmoothingWindowSize = 21
-NoSmooths = 30
+NoSmooths = 50
 
 # get all coastal cells to loop through
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # Cell list
-CellList = ["5i","5j","5k","6a","6b","6c","6d","6e","6f","7"]
+CellList = ["5a","5b","5c","5d","5e","5f","5g","5h","5i","5j","5k","6a","6b","6c","6d","6e","6f","7"]
 
 # loop through each cell
 #for index, Row in Cells.iterrows():
@@ -178,9 +178,7 @@ for CellSub in CellList:
         print("\tSaving Coast Object as ", Filename2SaveCoast)
         with open(str(Filename2SaveCoast), 'wb') as PFile:
             pickle.dump(CellCoast, PFile)
-        
     
-
     #CellCoast.WriteFutureShorelineSegmentsShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSegments.shp")))
     
 

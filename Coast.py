@@ -105,7 +105,7 @@ class Coast:
             pickle.dump(self, PFile)
 
     # read coast from a shapefile
-    def ReadCoastShp(self,CoastShp, MinLength=0.):
+    def ReadCoastShp(self, CoastShp, MinLength=0.):
         
         """
         """
@@ -818,12 +818,12 @@ class Coast:
 
         # Create Fields
         Fields = [('DeletionFlag','C',1,0), 
-        ['Cell', 'N', 3, 0], ['SubCell', 'C', 3, 0], ['CMU','C', 20, 0],
+        ['Cell', 'C', 3, 0], ['SubCell', 'C', 3, 0], ['CMU','C', 20, 0],
         ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], 
         ['BaselineYr','N', 4, 0], ['BaselineSrc','C', 50, 0], ['CalibYr','N', 4, 0],
-        ['Dist_2100', 'N', 6, 2], ['Rate_2100', 'N', 4, 2], ['MaxRate_2100', 'N', 4, 2],
-        ['Dist_2050', 'N', 6, 2], ['Rate_2050', 'N', 4, 2], ['MaxRate_2050', 'N', 4, 2],
-        ['Dist_50100', 'N', 6, 2], , ['Rate_50100', 'N', 4, 2], ['MaxRate_50100', 'N', 4, 2],
+        ['Dist_2100', 'N', 6, 2], ['Rate_2100', 'N', 4, 4], ['MaxRate_2100', 'N', 4, 4],
+        ['Dist_2050', 'N', 6, 2], ['Rate_2050', 'N', 4, 4], ['MaxRate_2050', 'N', 4, 4],
+        ['Dist_2050_2100', 'N', 6, 2], ['Rate_2050_2100', 'N', 4, 4], ['MaxRate_2050_2100', 'N', 4, 4],
         ['RCP85_2100_SLR', 'N', 4, 3]]
         
         WL.fields = Fields[1:]
@@ -850,11 +850,10 @@ class Coast:
                 try:
                     WL.record(*Record) 
                 except:
-                    print(Transect.ID)
                     print(Record)
                     sys.exit()
+
                 
-        
         # close the shapefiles and clean up
         WL.close()
             
@@ -1641,7 +1640,8 @@ class Coast:
 
         print("\nCoast.CheckTransectTopology: Checking for overlapping transects")
         for Line in self.CoastLines:
-            Line.CheckTransectTopology()
+            Line.DeleteOverlappingTransects()
+            #CheckTransectTopology()
 
     def RemoveNoHistoricalTransects(self):
         """

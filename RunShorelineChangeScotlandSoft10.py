@@ -23,7 +23,7 @@ MinLength = 100.
 # set the transect spacing (in m)
 TransectSpacing = 10.
 SmoothingWindowSize = 21
-NoSmooths = 30
+NoSmooths = 50
 
 # get all coastal cells to loop through
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")

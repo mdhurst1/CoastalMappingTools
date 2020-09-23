@@ -495,7 +495,7 @@ class Transect:
 
         # reset min and max in case uncertainty has been previously assessed
         self.FutureShorelineMinDistance = 9999999.
-        self.FutureShorelineMaxDistance = 0
+        self.FutureShorelineMaxDistance = -9999999.
 
         # get sea level at latest time
         if self.HistoricShorelinesYears[-1] < self.FutureSeaLevelYears[0]:
@@ -1853,9 +1853,9 @@ class Transect:
 
             # use to access future position
             self.PredictFutureShorelineUncertainty(Year1)
-            Distance1 = self.FutureShorelinesMinDistance
+            Distance1 = self.FutureShorelineMinDistance
             self.PredictFutureShorelineUncertainty(Year2)
-            Distance2 = self.FutureShorelinesMinDistance
+            Distance2 = self.FutureShorelineMinDistance
             MaxRate = (Distance2-Distance1)/(Year2-Year1)
             return MaxRate
 
