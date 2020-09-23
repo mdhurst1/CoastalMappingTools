@@ -2041,15 +2041,17 @@ class Coast:
 
                     # flag position as attribute of transect
                     Transect.RockHeadPosition = Node(X[JInd],Y[JInd])
-                    Transect.RockHeadDistance = Transect.StartNode.get_Distance(Transect.RockHeadPosition) + ErosionDistance
+                    Transect.RockHeadDistance = Transect.StartNode.get_Distance(Transect.RockHeadPosition)
 
                     # check rockhead position relative to starting shoreline position and adjust to allow 
                     # some erosion to take place or not to take place
-                    if Transect.HistoricShorelinesDistances and (Transect.HistoricShorelinesDistances[-1] > Transect.RockHeadDistance):
-                        Transect.RockHeadDistance = Transect.HistoricShorelineDistances[-1] + MaxRockHeadErosionDistance
+                    if Transect.HistoricShorelinesDistances and (Transect.HistoricShorelinesDistances[-1][0] > Transect.RockHeadDistance):
+                        Transect.RockHeadDistance = Transect.HistoricShorelinesDistances[-1][0] + MaxRockHeadErosionDistance
+                        Transect.RockHeadPosition = Transect.get_Position(Transect.RockHeadDistance)
                     else:
                         Transect.RockHeadDistance += MaxRockHeadErosionDistance
-
+                        Transect.RockHeadPosition = Transect.get_Position(Transect.RockHeadDistance)
+                        
     def PredictFutureShorelines(self):
 
         """

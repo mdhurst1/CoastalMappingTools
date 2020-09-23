@@ -446,6 +446,10 @@ class Transect:
             Index = -1
             self.CalibrationYear = self.HistoricShorelinesYears[-2]
 
+        if (self.LineID == "13") and (self.ID == "67"):
+            import pdb
+            pdb.set_trace()
+                
         # Future shoreline positions
         for i in range(1, len(self.FutureSeaLevelYears)):
             dT = self.FutureSeaLevelYears[i]-self.HistoricShorelinesYears[-1]
@@ -461,7 +465,8 @@ class Transect:
             
             if self.RockHeadDistance and (FutureShorelineDistance > self.RockHeadDistance):
 
-                # if landward of 
+                # if landward of
+                
                 self.FutureShorelinesPositions.append(self.RockHeadPosition)
                 
                 ShorelinePositionChange = self.RockHeadDistance-HistoricShorelineDistance
@@ -1890,6 +1895,22 @@ class Transect:
 
         else:
             return
+
+    def get_Position(self, Distance):
+
+        """
+
+        Returns a node of the position at a set distance along the transect
+
+        MDH, September 2020
+
+        """
+
+        # extend transect landward and seaward?
+        X = self.StartNode.X + Distance * np.sin( np.radians( self.Orientation ) )
+        Y = self.StartNode.Y + Distance * np.cos( np.radians( self.Orientation ) )
+        
+        return Node(X,Y)
 
     def get_RecentPosition(self):
 
