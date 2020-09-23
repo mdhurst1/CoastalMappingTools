@@ -308,7 +308,7 @@ class Transect:
             self.HinterlandSlope = Slope[0]
         
 
-    def PredictFutureShorelines(self):
+    def PredictFutureShorelines(self, MaxRockHeadErosionDistance=25.):
 
         """
         Function to predict the future position of the shoreline based on
@@ -460,6 +460,8 @@ class Transect:
             FutureShorelineDistance = HistoricShorelineDistance - ShorelinePositionChange
             
             if self.RockHeadDistance and (FutureShorelineDistance > self.RockHeadDistance):
+
+                # if landward of 
                 self.FutureShorelinesPositions.append(self.RockHeadPosition)
                 
                 ShorelinePositionChange = self.RockHeadDistance-HistoricShorelineDistance
