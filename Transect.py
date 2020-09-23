@@ -462,7 +462,7 @@ class Transect:
             if self.RockHeadDistance and (FutureShorelineDistance > self.RockHeadDistance):
                 self.FutureShorelinesPositions.append(self.RockHeadPosition)
                 
-                ShorelinePositionChange = self.RockHeadDistance-HistoricShorelineDistances
+                ShorelinePositionChange = self.RockHeadDistance-HistoricShorelineDistance
                 self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
                 self.FutureShorelinesDistances.append(FutureShorelineDistance)
             

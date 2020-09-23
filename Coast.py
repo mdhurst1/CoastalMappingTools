@@ -1983,6 +1983,8 @@ class Coast:
 
         """
 
+        print("Coast.SampleRockHeadPosition: Sampling rock head dataset to set maximum extent of erosion")
+
         # open the raster dataset to work on
         with rasterio.open(UPSMRaster) as RockHeadDataset:
         

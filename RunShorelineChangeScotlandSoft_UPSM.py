@@ -15,7 +15,7 @@ from Coast import *
 # define file names for analysis
 WorkingPath = pathlib.Path.cwd().parent
 NationalDEMPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2Final/99_NationalData/OSTerrain5")
-OutputPath = WorkingPath/"ShorelineRun"
+OutputPath = WorkingPath/"UPSM_Testing"
 
 # set the minimum length
 MinLength = 100.
@@ -32,10 +32,10 @@ Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.sh
 CellList = ["2a",] #"1b","1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g","4"]
 
 # loop through each cell
-for index, Row in Cells.iterrows():
-#for CellSub in CellList:
+#for index, Row in Cells.iterrows():
+for CellSub in CellList:
     # print cell to screen
-    CellSub = Row.Cell_sub
+    #CellSub = Row.Cell_sub
     print("\nRUNNING CELL", CellSub)
     RowName = "Cell_"+CellSub
     
@@ -136,6 +136,9 @@ for index, Row in Cells.iterrows():
     
         ### get future relative sea level time series
         CellCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL"))
+        
+        # Sample rock head position
+        CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
         
         CellCoast.GotHistoricShorelines = True
         
