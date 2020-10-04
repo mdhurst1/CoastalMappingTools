@@ -67,6 +67,8 @@ class Coast:
         self.FutureVegEdgeLines = []
         self.FutureMinUncertainty = []
         self.FutureMaxUncertainty = []
+        self.FutureMinError = []
+        self.FutureMaxError = []
         self.WriteFutureLines = []
         self.WriteRecentLines = []
         self.Projection = ""
@@ -373,6 +375,34 @@ class Coast:
         self.WriteLinesShp("FutureMinUncertainty", FutureMinShp)
         self.WriteLinesShp("FutureMaxUncertainty", FutureMaxShp)
         self.WritePatchesShp("FutureMinUncertainty", "FutureMaxUncertainty", UncertaintyShp)
+
+    def WriteFutureErrorShp(self, ErrorShp, Year=2100):
+
+        """
+        Writes future shoreline error estimates to a polygon
+        for a particular year
+
+        MDH, October 2020
+
+        """
+
+        # predict and extract future shoreline positions from transects
+        self.PredictFutureShorelinesError(Year)
+        self.GetFutureShorelineError()
+
+        # print action to screen
+        print("Coast.WriteFutureErrorShp: Writing uncertainty area to polygon file %d", Year)
+
+        # set up files to write
+        FutureMinShp = ErrorShp.split(".")[0]+"_Min.shp"
+        FutureMaxShp = ErroryShp.split(".")[0]+"_Max.shp"
+
+        # spleen for smooth line?
+        
+        # write lines then patches
+        self.WriteLinesShp("FutureMinError, FutureMinShp)
+        self.WriteLinesShp("FutureMaxError", FutureMaxShp)
+        self.WritePatchesShp("FutureMinError", "FutureMaxError", UncertaintyShp)
 
     def WriteFutureVegEdgeShp(self, FutureVegEdgeShp, Smooth=False):
 
@@ -2100,7 +2130,7 @@ class Coast:
         Wrapper to call Transects function to predict future shoreline positional error
 
         MDH, September 2020
-        
+
         """
         print("Coast.PredictFutureShorelines: predicting future shoreline positions error %d", Year)
         # loop through transects and sample
@@ -2943,6 +2973,105 @@ class Coast:
                 # update counter
                 FutureCount += 1
 
+    def GetFutureShorelineError(self, Year=2100):
+
+        """
+        
+        Extracts contiguous lines of error on Bruun Rule predictions for a given year
+        Error is propoagagtion of historical shoreline positional errors only
+        
+        MDH, October 2020
+
+        """
+
+        # keep track of no of coastal segments for IDs
+        FutureCount = 0
+
+        # loop through transects and get contiguous locations where there are predictions
+        for CoastLine in self.CoastLines:
+                
+            # find transects with future predictions
+            FutureBool = [Transect.Future for Transect in CoastLine.Transects]
+            FutureBool.insert(0, False)
+            FutureBool = np.array(FutureBool).astype(int)
+
+            # check for lines with no predictions
+            if not any(FutureBool):
+                continue
+                
+            # get a list of the start and end points of contiguous cliff lines
+            StartEndFlags = np.diff(FutureBool)
+
+            # if last line finishes on a cliff flag the last element as the end of the cliff
+            if StartEndFlags[StartEndFlags.nonzero()[0][-1]] == 1:
+                StartEndFlags[-1] = -1
+
+            StartList = np.argwhere(StartEndFlags == 1).flatten()
+            EndList = np.argwhere(StartEndFlags == -1).flatten()
+            if not len(StartList) == len(EndList):
+                print("Start and End lists not the same length")
+                print(len(StartList),len(EndList))
+                    
+            for i in range(0,len(StartList)):
+                
+                # catch single node cliff lines and ignore
+                if (EndList[i]-StartList[i]<2):
+                    continue
+
+                # create empty lists for storing future nodes for min and max predictions
+                FutureMinList = []
+                FutureMaxList = []
+                
+                # add latest MHWS from previous node to start
+                # might need some logic here for first transect
+                if StartList[i] == 0:
+                    FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
+                else:
+                    try:
+                        FirstNode = CoastLine.Transects[StartList[i]-1].get_RecentPosition()
+                    except:
+                        FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
+                
+                FutureMinList.append(FirstNode)
+                FutureMaxList.append(FirstNode)
+
+                # loop through transects and get min and max future positions
+                for Transect in CoastLine.Transects[StartList[i]:EndList[i]]:
+                    Transect.PredictFutureShorelineError(Year)
+                    FutureMinNode = Transect.FutureShorelinesMinNode
+                    FutureMaxNode = Transect.FutureShorelinesMaxNode
+                    FutureMinList.append(FutureMinNode)
+                    FutureMaxList.append(FutureMaxNode)
+                    
+                # add latest MHWS from next node to end
+                # might need some logic here to finish
+                if EndList[i] == CoastLine.NoTransects-1:
+                    LastNode = CoastLine.Transects[EndList[i]-1].get_RecentPosition()
+                else:
+                    try:
+                        LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition()
+                    except:
+                        LastNode = CoastLine.Transects[EndList[i]-1].get_RecentPosition()
+                
+                FutureMinList.append(LastNode)
+                FutureMaxList.append(LastNode)
+                
+                # create new line object for min and max
+                X = [FutureMinNode.X for FutureMinNode in FutureMinList]
+                Y = [FutureMinNode.Y for FutureMinNode in FutureMinList]
+                
+                TempLine = Line("FutureMin_"+str(FutureCount), X, Y)
+                self.FutureMinError.append(TempLine)
+
+                # create new line object for min and max
+                X = [FutureMaxNode.X for FutureMaxNode in FutureMaxList]
+                Y = [FutureMaxNode.Y for FutureMaxNode in FutureMaxList]
+                
+                TempLine = Line("FutureMax_"+str(FutureCount), X, Y)
+                self.FutureMaxError.append(TempLine)
+                
+                # update counter
+                FutureCount += 1
 
     def GetFutureVegEdgeLines(self):
 
