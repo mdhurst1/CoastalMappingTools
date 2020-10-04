@@ -52,6 +52,7 @@ class Transect:
         self.Length = self.CalculateLength(self.StartNode, self.EndNode)
         
         # historic shoreline positions, distances and change rates
+        self.HistoricFlag = False
         self.HistoricShorelinesSources = []
         self.HistoricShorelinesYears = []
         self.HistoricShorelinesPositions = []
@@ -307,6 +308,48 @@ class Transect:
         else:
             self.HinterlandSlope = Slope[0]
         
+    def CalculateHistoricalRates(self):
+
+        """
+        Function to calculate historical rates of shoreline change based on
+        historical shoreline positions
+
+        This function requires several funcions with the Coast object to have been run
+        first but the Coast wrapper should/could check for this.
+
+        MDH, October 2020
+
+        """
+
+        # cant make calculations without some historical shorelines
+        if not self.HistoricShorelinesYears:
+            #print("No historical shorelines", self.ID)
+            self.Future = False
+            return
+
+        # reset change rates in case already calculated
+        self.ChangeRates = []
+        self.ChangeRateErrors = []
+        
+        # historic shoreline positions and change rates
+        for i in range(0,len(self.HistoricShorelinesYears)):
+            
+            # first do the whole length of the record
+            if i == 0:
+                dEta = self.HistoricShorelinesDistance[-1] - self.HistoricShorelinesDistance[0]
+                ErrorSum = self.HistoricShorelinesErrors[-1] + self.HistoricShorelinesErrors[0]
+                dT = self.HistoricShorelinesYears[-1]-self.HistoricShorelinesYears[0]
+            
+            # otherwise do the shorter period
+            else:
+                dEta = self.HistoricShorelinesDistance[i] - self.HistoricShorelinesDistance[i-1]
+                ErrorSum = self.HistoricShorelinesErrors[i] + self.HistoricShorelinesErrors[i-1]
+                dT = self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[i-1]
+                
+            self.ChangeRates.append(-dEta/dT)
+            self.ChangeRateErrors.append(ErrorSum/dt)
+        
+        self.HistoricFlag = True
 
     def PredictFutureShorelines(self, MaxRockHeadErosionDistance=25.):
 
@@ -330,8 +373,10 @@ class Transect:
             pdb.set_trace()
         """
         
+        # reset outputs incase already has been run
         self.FutureShorelinesPositions = []
         self.FutureShorelinesRates = []
+        self.FutureShorelinesDistances = []
         self.InterpolatedRSLR = []
 
         # cant make predictions without some historical shorelines
@@ -379,28 +424,8 @@ class Transect:
         #        del(self.HistoricShorelinesDistances[-2])
         #        del(self.HistoricShorelinesPositions[-2])
 
-        # reset change rates in case already calculated
-        self.ChangeRates = []
-        self.ChangeRateErrors = []
-        self.FutureShorelinesDistances = []
-
-        # historic shoreline positions and change rates
-        for i in range(0,len(self.HistoricShorelinesYears)):
-            
-            # first do the whole length of the record
-            if i == 0:
-                dEta = self.HistoricShorelinesDistance[-1] - self.HistoricShorelinesDistance[0]
-                ErrorSum = self.HistoricShorelinesErrors[-1] + self.HistoricShorelinesErrors[0]
-                dT = self.HistoricShorelinesYears[-1]-self.HistoricShorelinesYears[0]
-            
-            # otherwise do the shorter period
-            else:
-                dEta = self.HistoricShorelinesDistance[i] - self.HistoricShorelinesDistance[i-1]
-                ErrorSum = self.HistoricShorelinesErrors[i] + self.HistoricShorelinesErrors[i-1]
-                dT = self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[i-1]
-                
-            self.ChangeRates.append(-dEta/dT)
-            self.ChangeRateErrors.append(ErrorSum/dt)
+        if not HistoricFlag:
+            CalculateHistoricalRates()
         
         # interpolate to get average RSLR in each time stamp between 1870s and 2020
         FutureSeaLevelRate = (self.FutureSeaLevels[1] - self.FutureSeaLevels[0])/(self.FutureSeaLevelYears[1] - self.FutureSeaLevelYears[0])
