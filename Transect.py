@@ -1905,6 +1905,27 @@ class Transect:
         else:
             return
 
+    def get_ExtrapDistance(self, Year):
+
+        """
+
+        Get the extrapolated future position of the coast by extrapolating
+        historical rate of shoreline change
+
+        MDH, October 2020
+
+        """
+
+        # check there are predictions for this transect
+        if self.Future:
+
+            # extrapolate future position on transect
+            Distance = self.CalculateHistoricalRates[-1]*(Year-self.HistoricShorelinesYears)
+            return Distance
+
+        else:
+            return
+    
     def get_FutureRate(self, Year1, Year2):
 
         """
