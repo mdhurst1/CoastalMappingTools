@@ -62,6 +62,7 @@ class Transect:
 
         # change rates will be 1 less than no of positions
         self.ChangeRates = []
+        self.ChangeRate = None      # value used in calibration
         self.DeleteFlag = False
 
         # rock head info
@@ -469,10 +470,12 @@ class Transect:
         
         # set index for calibration
         if self.LongTermOnly:
-            Index = 0
-            self.CalibrationYear = self.HistoricShorelinesYears[Index]
+            CalibrationRate = self.VolumetricCalibrationRates[0]
+            self.ChangeRate = ChangeRates[0]
+            self.CalibrationYear = self.HistoricShorelinesYears[0]
         else:
-            Index = -1
+            CalibrationRate = self.VolumetricCalibrationRates[-1]
+            self.ChangeRate = ChangeRates[-1]
             self.CalibrationYear = self.HistoricShorelinesYears[-2]
 
         # Future shoreline positions
@@ -481,7 +484,7 @@ class Transect:
             
             # self.InterpolatedRSLR
             BruunRuleComponent = (-1./self.BruunSlope)*(self.FutureSeaLevels[i]-self.LatestRSL)
-            CalibrationComponent = (1./self.ShorefaceDepth)*self.VolumetricCalibrationRates[Index]*dT
+            CalibrationComponent = (1./self.ShorefaceDepth)*CalibrationRate*dT
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
             
             # check rock head position not exceeded

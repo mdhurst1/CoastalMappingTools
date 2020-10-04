@@ -849,8 +849,8 @@ class Coast:
         # Create Fields
         Fields = [('DeletionFlag','C',1,0), 
         ['Cell', 'C', 3, 0], ['SubCell', 'C', 3, 0], ['CMU','C', 20, 0],
-        ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], 
-        ['BaselineYr','N', 4, 0], ['BaselineSrc','C', 50, 0], ['CalibYr','N', 4, 0],
+        ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], ['Hist_Rate','N', 4, 4]
+        ['CalibYr','N', 4, 0], ['BaselineYr','N', 4, 0], ['BaselineSrc','C', 50, 0], 
         ['Dist_2100', 'N', 6, 2], ['Rate_2100', 'N', 4, 4], ['MaxRate_2100', 'N', 4, 4],
         ['Dist_2050', 'N', 6, 2], ['Rate_2050', 'N', 4, 4], ['MaxRate_2050', 'N', 4, 4],
         ['Dist_2050_2100', 'N', 6, 2], ['Rate_2050_2100', 'N', 4, 4], ['MaxRate_2050_2100', 'N', 4, 4],
@@ -869,7 +869,8 @@ class Coast:
 
                 # Create the record this could become a function in transect object...
                 Record = [str(self.Cell), str(self.SubCell), str(self.CMU), str(Line.ID), str(Transect.ID),
-                            Transect.HistoricShorelinesYears[-1], Transect.HistoricShorelinesSources[-1], Transect.CalibrationYear,
+                            Transect.ChangeRate, 
+                            Transect.CalibrationYear, Transect.HistoricShorelinesYears[-1], Transect.HistoricShorelinesSources[-1], 
                             Transect.get_FutureDistance(2020, 2100), Transect.get_FutureRate(2020, 2100), Transect.get_FutureMaxRate(2020, 2100),
                             Transect.get_FutureDistance(2020, 2050), Transect.get_FutureRate(2020, 2050), Transect.get_FutureMaxRate(2020, 2050),
                             Transect.get_FutureDistance(2050, 2100), Transect.get_FutureRate(2050, 2100), Transect.get_FutureMaxRate(2050, 2100),
