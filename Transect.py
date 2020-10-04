@@ -381,6 +381,7 @@ class Transect:
 
         # reset change rates in case already calculated
         self.ChangeRates = []
+        self.ChangeRateErrors = []
         self.FutureShorelinesDistances = []
 
         # historic shoreline positions and change rates
@@ -430,7 +431,8 @@ class Transect:
         
         # Calibration term, remembering to convert relative sea level change rates to m/yr
         self.VolumetricCalibrationRates = self.ShorefaceDepth*np.array(self.ChangeRates) + self.ShorefaceDistance*(self.InterpolatedRSLR)
-        
+        self.CalibrationErrors = 
+
         # get sea level at latest time
         if self.HistoricShorelinesYears[-1] < self.FutureSeaLevelYears[0]:
             self.LatestRSL = self.FutureSeaLevels[0]
@@ -446,10 +448,6 @@ class Transect:
             Index = -1
             self.CalibrationYear = self.HistoricShorelinesYears[-2]
 
-        if (self.LineID == "13") and (self.ID == "67"):
-            import pdb
-            pdb.set_trace()
-                
         # Future shoreline positions
         for i in range(1, len(self.FutureSeaLevelYears)):
             dT = self.FutureSeaLevelYears[i]-self.HistoricShorelinesYears[-1]

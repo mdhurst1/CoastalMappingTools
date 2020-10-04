@@ -1794,6 +1794,14 @@ class Coast:
                     Year = int(NearestLine.versiondat[0:4])
                 else:
                     sys.exit("Couldnt find survey year for MHWS historic shoreline position")
+                
+                # retrieve positional error
+                if Year < 1970:
+                    Error = 5.
+                elif Year < 2000:
+                    Error = 2.
+                else:
+                    Error = 1.
 
                 if Year not in Transect.HistoricShorelinesYears:
                     
@@ -1812,6 +1820,7 @@ class Coast:
                     Transect.HistoricShorelinesYears.insert(index, Year)
                     Transect.HistoricShorelinesPositions.insert(index, Positions)
                     Transect.HistoricShorelinesDistances.insert(index, Distances)
+                    Transect.HistoricShorelinesErrors.insert(index, Error)
                     
 
                 else:
@@ -1831,6 +1840,7 @@ class Coast:
                     # add to transect
                     Transect.HistoricShorelinesPositions[Index] = Positions
                     Transect.HistoricShorelinesDistances[Index] = Distances
+                    Transect.HistoricShorelinesErrors[Index] = Error
 
     def ExtractContours(self,ContourShp):
 
