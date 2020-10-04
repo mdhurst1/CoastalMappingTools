@@ -532,6 +532,63 @@ class Transect:
             if FutureShorelineDistance > self.FutureShorelineMaxDistance:
                 self.FutureShorelineMaxDistance = FutureShorelineDistance
                 self.FutureShorelinesMaxNode = Node(X1, Y1)
+    
+    def PredictFutureShorelineError(self, Year=2100):
+
+        """
+        Function to map error for shoreline position in a certain year based on
+        propagation of error in historical shoreline positions
+
+        MDH October 2020
+
+        """
+
+        # get future sea level and time difference
+        FutureSeaLevel = self.FutureSeaLevels[self.FutureSeaLevelYears == Year]
+        dT = Year-self.HistoricShorelinesYears[-1]
+
+        # reset min and max in case uncertainty has been previously assessed
+        self.FutureShorelineMinDistance = 9999999.
+        self.FutureShorelineMaxDistance = -9999999.
+
+        # get sea level at latest time
+        if self.HistoricShorelinesYears[-1] < self.FutureSeaLevelYears[0]:
+            self.LatestRSL = self.FutureSeaLevels[0]
+        else:
+            Interp = (self.FutureSeaLevelYears[1]-self.HistoricShorelinesYears[-1])/(self.FutureSeaLevelYears[1]-self.FutureSeaLevelYears[0])
+            self.LatestRSL = self.FutureSeaLevels[1]-Interp*(self.FutureSeaLevels[1]-self.FutureSeaLevels[0])
+
+        # set index for calibration
+        if self.LongTermOnly:
+            Index = 0
+        else:
+            Index = -1
+
+        CalibrationRatesErrors = [  self.VolumetricCalibrationRates[Index] - self.VolumetricCalibrationErrors[Index],
+                                    self.VolumetricCalibrationRates[Index],
+                                    self.VolumetricCalibrationRates[Index] + self.VolumetricCalibrationErrors[Index] ]
+
+        for VolumetricCalibrationRate in CalibrationRatesErrors:
+            
+            BruunRuleComponent = (-1./self.BruunSlope)*(FutureSeaLevel-self.LatestRSL)
+
+            CalibrationComponent = (1./self.ShorefaceDepth)*VolumetricCalibrationRate*dT
+            ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
+            
+            # check rock head position not exceeded
+            HistoricShorelineDistance = self.StartNode.get_Distance(self.HistoricShorelinesPosition[-1])
+            FutureShorelineDistance = HistoricShorelineDistance - ShorelinePositionChange
+            
+            X1 = self.HistoricShorelinesPosition[-1].X - ShorelinePositionChange * np.sin( np.radians( self.Orientation ) )
+            Y1 = self.HistoricShorelinesPosition[-1].Y - ShorelinePositionChange * np.cos( np.radians( self.Orientation ) )
+
+            if FutureShorelineDistance < self.FutureShorelineMinDistance:
+                self.FutureShorelineMinDistance = FutureShorelineDistance
+                self.FutureShorelinesMinNode = Node(X1,Y1)
+
+            if FutureShorelineDistance > self.FutureShorelineMaxDistance:
+                self.FutureShorelineMaxDistance = FutureShorelineDistance
+                self.FutureShorelinesMaxNode = Node(X1, Y1)
 
     def PredictFutureVegEdge(self):
 
