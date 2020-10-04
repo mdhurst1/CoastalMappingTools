@@ -390,14 +390,17 @@ class Transect:
             # first do the whole length of the record
             if i == 0:
                 dEta = self.HistoricShorelinesDistance[-1] - self.HistoricShorelinesDistance[0]
+                ErrorSum = self.HistoricShorelinesErrors[-1] + self.HistoricShorelinesErrors[0]
                 dT = self.HistoricShorelinesYears[-1]-self.HistoricShorelinesYears[0]
             
             # otherwise do the shorter period
             else:
                 dEta = self.HistoricShorelinesDistance[i] - self.HistoricShorelinesDistance[i-1]
+                ErrorSum = self.HistoricShorelinesErrors[i] + self.HistoricShorelinesErrors[i-1]
                 dT = self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[i-1]
                 
             self.ChangeRates.append(-dEta/dT)
+            self.ChangeRateErrors.append(ErrorSum/dt)
         
         # interpolate to get average RSLR in each time stamp between 1870s and 2020
         FutureSeaLevelRate = (self.FutureSeaLevels[1] - self.FutureSeaLevels[0])/(self.FutureSeaLevelYears[1] - self.FutureSeaLevelYears[0])
@@ -428,10 +431,9 @@ class Transect:
         else:
             self.BruunSlope = self.ShorefaceSlope
         
-        
         # Calibration term, remembering to convert relative sea level change rates to m/yr
         self.VolumetricCalibrationRates = self.ShorefaceDepth*np.array(self.ChangeRates) + self.ShorefaceDistance*(self.InterpolatedRSLR)
-        self.CalibrationErrors = 
+        self.VolumetricCalibrationErrors = self.ShorefaceDepth*np.array(self.ChangeRateErrors) + self.ShorefaceDistance*(self.InterpolatedRSLR)
 
         # get sea level at latest time
         if self.HistoricShorelinesYears[-1] < self.FutureSeaLevelYears[0]:
