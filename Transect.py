@@ -246,7 +246,48 @@ class Transect:
         self.EndNode = Node(X1,Y1)
 
         self.Length = self.CalculateLength(self.StartNode, self.EndNode)
+        
+    def Truncate():
+        
+        """
+        Function to truncate transects to limits of historical and future 
+        shoreline positions and uncertainty
+        
+        MDH, November 2020
+        
+        """
+        
+        # get all distances
+        DistancesList = []
+        
+        for i in range(0,len(self.HistoricalShorelinesYears)):
+            
+            # add nodes to lists
+            DistancesList.append(self.HistoricalShorelinesDistances[i])
+            DistancesList.append(self.HistoricalShorelinesDistances[i]+self.HistoricalShorelinesErrors[i])
+            DistancesList.append(self.HistoricalShorelinesDistances[i]-self.HistoricalShorelinesErrors[i])
+                        
+        for i in range(0, len(self.FutureShorelinesYears)):
+            
+            # add nodes to lists
+            DistancesList.append(self.FutureShorelinesDistances[i])
+            DistancesList.append(self.FutureShorelinesUncertaintyDistances[i])
+        
+        # find index of min distance
+        MinDistance = DistancesList.min()
+        MaxDistance = DistancesList.max()
+        
+        # find new end position
+        X1 = self.StartNode.X + MaxDistance * np.sin( np.radians( self.Orientation ) )
+        Y1 = self.StartNode.Y + MaxDistance * np.cos( np.radians( self.Orientation ) )
+        self.EndNode = Node(X1,Y1)
+    
+        # find new start position
+        X1 = self.StartNode.X + MinDistance * np.sin( np.radians( self.Orientation ) )
+        Y1 = self.StartNode.Y + MinDistance * np.cos( np.radians( self.Orientation ) )
+        self.StartNode = Node(X1,Y1)       
 
+        
     def GenerateSampleNodes(self,Spacing=None):
 
         """ 
@@ -388,12 +429,12 @@ class Transect:
             return
 
         # dont let 1970s data be the baseline (most recent)
-        if Transect.HistoricShorelinesSources[-1].endswith("1970.shp"):
-            Transect.HistoricShorelinesSources.pop(-1)
-            Transect.HistoricShorelinesDistances.pop(-1)
-            Transect.HistoricShorelinesPositions.pop(-1)
-            Transect.HistoricShorelinesErrors.pop(-1)
-            Transect.HistoricShorelinesYears.pop(-1)
+        if self.HistoricShorelinesSources[-1].endswith("1970.shp"):
+            self.HistoricShorelinesSources.pop(-1)
+            self.HistoricShorelinesDistances.pop(-1)
+            self.HistoricShorelinesPositions.pop(-1)
+            self.HistoricShorelinesErrors.pop(-1)
+            self.HistoricShorelinesYears.pop(-1)
             
         if len(self.HistoricShorelinesYears) < 2:
             #print("Not enough historical shorelines", self.ID)
@@ -1896,10 +1937,6 @@ class Transect:
                 return
 
             # use to access future position
-            print(Index)
-            print(Index[0])
-            print(len(self.FutureSeaLevelYears))
-            print(len(self.FutureShorelinesDistances))
             return self.FutureShorelinesDistances[Index[0]]
            
         else:

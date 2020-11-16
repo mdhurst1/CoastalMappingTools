@@ -8,7 +8,7 @@ June 2019
 """
 
 # import modules
-import os, sys, time, pickle, bisect
+import os, sys, time, pickle, bisect, pdb
 from pathlib import Path
 import numpy as np
 from scipy.interpolate import splprep, splev
@@ -1800,12 +1800,6 @@ class Coast:
                     Distance = Transect.LineString.distance(Intersections)
                     Intersection = Intersections
                     IntersectionsList = [Intersection,]
-                
-                if (Transect.LineID == "11"):
-                    if (Transect.ID == "2"):
-                        print("I am here")
-                        import pdb
-                        pdb.set_trace()
                     
                 if Distance > 0.001:
                     
@@ -2270,6 +2264,20 @@ class Coast:
         
         for Line in self.CoastLines:
             Line.ExtendTransectsToLineShp(LineShp)
+            
+    def TruncateTransects(self):
+        
+        """
+        function to cut the length of transects the the extrermes of historical
+        or future shoreline positions, including uncertainties
+        
+        MDH, November 2020
+        
+        """
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                Transect.Truncate()
+        
                 
     def FindDEM(self, DEMIndexFileShp):
 
