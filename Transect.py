@@ -387,7 +387,15 @@ class Transect:
             self.Future = False
             return
 
-        elif len(self.HistoricShorelinesYears) < 3:
+        # dont let 1970s data be the baseline (most recent)
+        if Transect.HistoricShorelinesSources[-1].endswith("1970.shp"):
+            Transect.HistoricShorelinesSources.pop(-1)
+            Transect.HistoricShorelinesDistances.pop(-1)
+            Transect.HistoricShorelinesPositions.pop(-1)
+            Transect.HistoricShorelinesErrors.pop(-1)
+            Transect.HistoricShorelinesYears.pop(-1)
+            
+        if len(self.HistoricShorelinesYears) < 2:
             #print("Not enough historical shorelines", self.ID)
             self.Future = False
             return
@@ -418,14 +426,7 @@ class Transect:
             del(self.HistoricShorelinesDistances[-2])
             del(self.HistoricShorelinesPositions[-2])
 
-        # RecentFlags = (np.array(self.HistoricShorelinesYears) > 2000).astype(int)
-        # NRecentFlags = np.sum(RecentFlags)
-        #if NRecentFlags > 1:
-        #    for i in range(1,NRecentFlags):
-        #        del(self.HistoricShorelinesYears[-2])
-        #        del(self.HistoricShorelinesDistances[-2])
-        #        del(self.HistoricShorelinesPositions[-2])
-
+        # calculate historical rates
         if not self.HistoricFlag:
             self.CalculateHistoricalRates()
         

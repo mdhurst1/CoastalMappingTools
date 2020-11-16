@@ -1800,6 +1800,12 @@ class Coast:
                     Distance = Transect.LineString.distance(Intersections)
                     Intersection = Intersections
                     IntersectionsList = [Intersection,]
+                
+                if (Transect.LineID == "11"):
+                    if (Transect.ID == "2"):
+                        print("I am here")
+                        import pdb
+                        pdb.set_trace()
                     
                 if Distance > 0.001:
                     
