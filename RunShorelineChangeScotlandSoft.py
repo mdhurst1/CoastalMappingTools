@@ -29,13 +29,13 @@ NoSmooths = 50
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # Cell list
-CellList = ["1a","1b","1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g","4"]
+CellList = ["1a", "1b","1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g","4"]
 
 # loop through each cell
-for index, Row in Cells.iterrows():
-#for CellSub in CellList:
+#for index, Row in Cells.iterrows():
+for CellSub in CellList:
     # print cell to screen
-    CellSub = Row.Cell_sub
+    #CellSub = Row.Cell_sub
     print("\nRUNNING CELL", CellSub)
     RowName = "Cell_"+CellSub
     
@@ -137,6 +137,9 @@ for index, Row in Cells.iterrows():
         ### get future relative sea level time series
         CellCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL"))
         
+        # Sample rock head position
+        CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
+        
         CellCoast.GotHistoricShorelines = True
         
         # SAVE ENTIRE COAST OBJECT
@@ -169,20 +172,20 @@ for index, Row in Cells.iterrows():
         CellCoast.PredictFutureShorelines()
         CellCoast.PredictedFutureShorelines = True
     
-        # write future shorelines
-        CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future.shp")),Smooth=True)
-        CellCoast.WriteFutureUncertaintyShp(str(OutputPath / (RowName + "_Uncertainty_2100.shp")))
-        CellCoast.WriteFutureUncertaintyShp(str(OutputPath / (RowName + "_Uncertainty_2050.shp")),Year=2050)
-        CellCoast.WriteErodedAreaShp(str(OutputPath / (RowName + "_FutureErosion.shp")))
-    
         # SAVE ENTIRE COAST OBJECT
         print("\tSaving Coast Object as ", Filename2SaveCoast)
         with open(str(Filename2SaveCoast), 'wb') as PFile:
             pickle.dump(CellCoast, PFile)
-        
+    
+    # write future shorelines
+    CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future.shp")),Smooth=True)
     CellCoast.WriteFutureTransectsShp(str(OutputPath / (RowName + "_Transects.shp")))
+    CellCoast.WriteErodedAreaShp(str(OutputPath / (RowName + "_ErodedArea_2050.shp")), 2050)
+    CellCoast.WriteErodedAreaShp(str(OutputPath / (RowName + "_ErodedArea_2100.shp")))
+    CellCoast.WriteFutureUncertaintyShp(str(OutputPath / (RowName + "_UncertaintyArea_2050.shp")), 2050)
+    CellCoast.WriteFutureUncertaintyShp(str(OutputPath / (RowName + "_UncertaintyArea_2100.shp")))
+    CellCoast.WriteFutureErrorShp(str(OutputPath / (RowName + "_ErrorArea_2050.shp")), 2050)
+    CellCoast.WriteFutureErrorShp(str(OutputPath / (RowName + "_ErrorArea_2100.shp")))
+    
     #CellCoast.WriteFutureShorelineSegmentsShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSegments.shp")))
-    
-
-    
 

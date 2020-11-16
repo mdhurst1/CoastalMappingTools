@@ -15,7 +15,7 @@ from Coast import *
 # define file names for analysis
 WorkingPath = pathlib.Path.cwd().parent
 NationalDEMPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2Final/99_NationalData/OSTerrain5")
-OutputPath = WorkingPath/"UPSM_Testing"
+OutputPath = WorkingPath/"ShorelineRun"
 
 # set the minimum length
 MinLength = 100.
@@ -29,7 +29,7 @@ NoSmooths = 50
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # Cell list
-CellList = ["1a", "1b","1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g","4"]
+CellList = ["1a", "1b"] #,"1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g","4"]
 
 # loop through each cell
 #for index, Row in Cells.iterrows():
@@ -90,7 +90,7 @@ for CellSub in CellList:
         # write smoothed coast/bathy to file
         CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
 
-        CellCoast.GenerateTransects(TransectSpacing, 200, 200, CheckTopology=False)
+        CellCoast.GenerateTransects(TransectSpacing, 100, 200, CheckTopology=False)
         
         # CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Raw.shp")))
         

@@ -59,6 +59,7 @@ class Transect:
         self.HistoricShorelinesDistances = []
         self.HistoricShorelinesPosition = []
         self.HistoricShorelinesDistance = []
+        self.HistoricShorelinesErrors = []
 
         # change rates will be 1 less than no of positions
         self.ChangeRates = []
@@ -348,7 +349,7 @@ class Transect:
                 dT = self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[i-1]
                 
             self.ChangeRates.append(-dEta/dT)
-            self.ChangeRateErrors.append(ErrorSum/dt)
+            self.ChangeRateErrors.append(ErrorSum/dT)
         
         self.HistoricFlag = True
 
@@ -391,9 +392,9 @@ class Transect:
             self.Future = False
             return
 
-        if self.HistoricShorelinesYears[-1] < 2000:
+        #if self.HistoricShorelinesYears[-1] < 2000:
             #print("No recent historical shorelines", self.ID)
-            self.LongTermOnly = True
+            #self.LongTermOnly = True
             
         # some logic here to check if its sensible to make predictions
         # do not make predicitions if there are multiple lines in a single year
@@ -425,8 +426,8 @@ class Transect:
         #        del(self.HistoricShorelinesDistances[-2])
         #        del(self.HistoricShorelinesPositions[-2])
 
-        if not HistoricFlag:
-            CalculateHistoricalRates()
+        if not self.HistoricFlag:
+            self.CalculateHistoricalRates()
         
         # interpolate to get average RSLR in each time stamp between 1870s and 2020
         FutureSeaLevelRate = (self.FutureSeaLevels[1] - self.FutureSeaLevels[0])/(self.FutureSeaLevelYears[1] - self.FutureSeaLevelYears[0])
@@ -471,15 +472,15 @@ class Transect:
         # set index for calibration
         if self.LongTermOnly:
             CalibrationRate = self.VolumetricCalibrationRates[0]
-            self.ChangeRate = ChangeRates[0]
+            self.ChangeRate = self.ChangeRates[0]
             self.CalibrationYear = self.HistoricShorelinesYears[0]
         else:
             CalibrationRate = self.VolumetricCalibrationRates[-1]
-            self.ChangeRate = ChangeRates[-1]
+            self.ChangeRate = self.ChangeRates[-1]
             self.CalibrationYear = self.HistoricShorelinesYears[-2]
 
         # Future shoreline positions
-        for i in range(1, len(self.FutureSeaLevelYears)):
+        for i in range(0, len(self.FutureSeaLevelYears)):
             dT = self.FutureSeaLevelYears[i]-self.HistoricShorelinesYears[-1]
             
             # self.InterpolatedRSLR
@@ -499,7 +500,7 @@ class Transect:
                 
                 ShorelinePositionChange = self.RockHeadDistance-HistoricShorelineDistance
                 self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
-                self.FutureShorelinesDistances.append(FutureShorelineDistance)
+                self.FutureShorelinesDistances.append(self.RockHeadDistance)
             
             # otherwise write new shoreline position as appropriate
             else:
@@ -1871,7 +1872,39 @@ class Transect:
         else:
             return
     
-    def get_FutureDistance(self, Year1, Year2):
+    def get_FutureDistance(self, Year):
+
+        """
+
+        Get the future cposition of the coast in distance along transect
+        from Bruun Rule predictions
+
+        MDH, November 2020
+
+        """
+
+        # check there are predictions for this transect
+        if self.Future:
+
+            # find year index
+            Index = [i for i, x in enumerate(self.FutureSeaLevelYears) if x == Year]
+            
+            if len(Index) == 0:
+                print("problem1")
+                sys.exit()
+                return
+
+            # use to access future position
+            print(Index)
+            print(Index[0])
+            print(len(self.FutureSeaLevelYears))
+            print(len(self.FutureShorelinesDistances))
+            return self.FutureShorelinesDistances[Index[0]]
+           
+        else:
+            return
+
+    def get_FuturePositionChange(self, Year1, Year2):
 
         """
 
@@ -1886,15 +1919,17 @@ class Transect:
         if self.Future:
 
             # find year index
-            Index1 = [i for i, x in enumerate(self.FutureSeaLevelYears[1:]) if x == Year1]
+            Index1 = [i for i, x in enumerate(self.FutureSeaLevelYears[0:]) if x == Year1]
             Index2 = [i for i, x in enumerate(self.FutureSeaLevelYears[1:]) if x == Year2]
 
             if len(Index1) == 0:
                 print("problem1")
+                sys.exit()
                 return
 
             if len(Index2) == 0:
                 print("problem2")
+                sys.exit()
                 return
 
             # use to access future position
@@ -1904,7 +1939,7 @@ class Transect:
 
         else:
             return
-
+        
     def get_ExtrapDistance(self, Year):
 
         """
@@ -1920,7 +1955,7 @@ class Transect:
         if self.Future:
 
             # extrapolate future position on transect
-            Distance = self.CalculateHistoricalRates[-1]*(Year-self.HistoricShorelinesYears)
+            Distance = self.ChangeRates[-1]*(Year-self.HistoricShorelinesYears[-1])
             return Distance
 
         else:
@@ -1941,7 +1976,7 @@ class Transect:
         if self.Future:
             
             # get the position change
-            Distance = self.get_FutureDistance(Year1, Year2)
+            Distance = self.get_FuturePositionChange(Year1, Year2)
 
             # calculate average rate
             Rate = Distance/(Year2-Year1)
@@ -1949,6 +1984,22 @@ class Transect:
 
         else:
             return
+
+    def get_FirstFutureErosionYear(self):
+
+        """
+        Martin Hurst, October 2020
+        
+        """
+        for i in range(0, len(self.FutureSeaLevelYears)):
+
+            Change = self.get_FuturePositionChange(self.FutureSeaLevelYears[i], self.FutureSeaLevelYears[i+1])
+            if not Change:
+                return
+            elif Change < 0:
+                return self.FutureSeaLevelYears[i]
+        
+        return
 
     def get_FutureMaxRate(self, Year1, Year2):
 
@@ -2037,8 +2088,27 @@ class Transect:
         Position = self.HistoricShorelinesPositions[Index][0]
         
             
-        return Position 
+        return Position
+    
+    def get_RecentDistance(self):
 
+        """
+
+        Get the most recent position of the coast 
+
+        MDH, November 2020
+
+        """
+
+        # catch if no shoreline
+        if len(self.HistoricShorelinesYears) == 0:
+            raise Exception("Transect.get_RecentPosition: No recent position")
+
+        # find index of most recent historical shoreline
+        Index = np.argmax(self.HistoricShorelinesYears)
+        
+        return self.HistoricShorelinesDistances[Index][0]
+        
     def get_OldestPosition(self):
 
         """
