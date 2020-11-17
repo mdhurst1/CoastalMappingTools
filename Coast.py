@@ -1867,7 +1867,7 @@ class Coast:
                         # find and replace
                         Index = Transect.HistoricShorelinesYears.index(Year)
                         Position = Node(Intersection.x,Intersection.y)
-                        Distance = Transect.StartNode.get_Distance(Position))
+                        Distance = Transect.StartNode.get_Distance(Position)
                         
                         # add to transect
                         Transect.HistoricShorelinesPositions[Index].append(Position)
