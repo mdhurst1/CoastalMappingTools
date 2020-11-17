@@ -29,7 +29,7 @@ NoSmooths = 50
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # Cell list
-CellList = ["8a","8b","8c","8d","8e","8f","9a","9b","9c","9d","9e","9f"]
+CellList = ["6a","6b","6c","6d","6e","6f","7"]
 
 # loop through each cell
 #for index, Row in Cells.iterrows():

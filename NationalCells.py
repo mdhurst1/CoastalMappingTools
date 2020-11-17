@@ -28,7 +28,7 @@ MHWS_1890 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1890_FINAL.
 MHWS_1970 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1970_Final.shp")
 MHWS_Soft = gp.read_file(WorkingPath / "MHWS_Lines" / "MHWS_OS_smarter2020_soft.shp")
 MHWS_Modern = gp.read_file(WorkingPath / "MHWS_Lines" / "MHWS_OS_smarter_dissolve.shp")
-MHWS_LiDAR = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Modern_LiDAR.shp")
+MHWS_LiDAR = gp.read_file(WorkingPath / "MHWS_Lines" / "DC2_Scotland_MHWS_Modern.shp")
 
 def ClipLines2Poly(LinesGDF,PolyGDF):
 
