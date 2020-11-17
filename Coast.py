@@ -303,7 +303,7 @@ class Coast:
         for Line in self.FutureShoreLines:
             
             if Smooth:
-                Line.SmoothLine(WindowSize=11)
+                Line.SmoothLine(WindowSize=5)
                     
             # get line node positions
             X, Y = Line.get_XY()
@@ -863,30 +863,26 @@ class Coast:
         for Line in self.CoastLines:
             for Transect in Line.Transects:
 
-                # get transect node positions
-                X, Y = Transect.get_XY()
-                
-                WriteTransect = [np.column_stack([X,Y]).tolist()]
-
-                # Create the record this could become a function in transect object...
-                Record = [str(self.Cell), str(self.SubCell), str(self.CMU), str(Line.ID), str(Transect.ID),
-                            Transect.ChangeRate, 
-                            Transect.CalibrationYear, Transect.HistoricShorelinesYears[-1], Transect.HistoricShorelinesSources[-1], 
-                            Transect.get_ExtrapDistance(2050), Transect.get_ExtrapDistance(2100), Transect.get_FirstFutureErosionYear(),
-                            Transect.get_FuturePositionChange(2020, 2100), Transect.get_FutureRate(2020, 2100), Transect.get_FutureMaxRate(2020, 2100),
-                            Transect.get_FuturePositionChange(2020, 2050), Transect.get_FutureRate(2020, 2050), Transect.get_FutureMaxRate(2020, 2050),
-                            Transect.get_FuturePositionChange(2050, 2100), Transect.get_FutureRate(2050, 2100), Transect.get_FutureMaxRate(2050, 2100),
-                            Transect.FutureSeaLevels[-1]]
-
-                # write transect and record
-                WL.line(WriteTransect)
-                try:
+                if Transect.Future:
+                    # get transect node positions
+                    X, Y = Transect.get_XY()
+                    
+                    WriteTransect = [np.column_stack([X,Y]).tolist()]
+    
+                    # Create the record this could become a function in transect object...
+                    Record = [str(self.Cell), str(self.SubCell), str(self.CMU), str(Line.ID), str(Transect.ID),
+                                Transect.ChangeRate, 
+                                Transect.CalibrationYear, Transect.HistoricShorelinesYears[-1], Transect.HistoricShorelinesSources[-1], 
+                                Transect.get_ExtrapDistance(2050), Transect.get_ExtrapDistance(2100), Transect.get_FirstFutureErosionYear(),
+                                Transect.get_FuturePositionChange(2020, 2100), Transect.get_FutureRate(2020, 2100), Transect.get_FutureMaxRate(2020, 2100),
+                                Transect.get_FuturePositionChange(2020, 2050), Transect.get_FutureRate(2020, 2050), Transect.get_FutureMaxRate(2020, 2050),
+                                Transect.get_FuturePositionChange(2050, 2100), Transect.get_FutureRate(2050, 2100), Transect.get_FutureMaxRate(2050, 2100),
+                                Transect.FutureSeaLevels[-1]]
+    
+                    # write transect and record
+                    WL.line(WriteTransect)
                     WL.record(*Record) 
-                except:
-                    print(Record)
-                    sys.exit()
-
-                
+                                    
         # close the shapefiles and clean up
         WL.close()
             
@@ -1815,6 +1811,8 @@ class Coast:
                 # check it hasnt already been read
                 if "FULLSHP_YR" in NearestLine:
                     Year = int(NearestLine.FULLSHP_YR)
+                elif "Surv_EndYr" in NearestLine:
+                    Year = int(NearestLine.Surv_EndYr)
                 elif "Surv_End_A" in NearestLine:
                     Year = int(NearestLine.Surv_End_A)
                 elif "Surv_End_B" in NearestLine:
@@ -2079,8 +2077,12 @@ class Coast:
                     # ignore errors caused by NaNs
                     with np.errstate(invalid='ignore'):
                         RockBool = RockHeadVector < 0.4
-                    JInd = np.argmax(RockBool)
 
+                    if not RockBool.any():
+                        continue
+                    
+                    JInd = np.argmax(RockBool)
+                    
                     # flag position as attribute of transect
                     Transect.RockHeadPosition = Node(X[JInd],Y[JInd])
                     Transect.RockHeadDistance = Transect.StartNode.get_Distance(Transect.RockHeadPosition)

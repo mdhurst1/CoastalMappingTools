@@ -366,9 +366,13 @@ class Transect:
 
         # cant make calculations without some historical shorelines
         if not self.HistoricShorelinesYears:
-            #print("No historical shorelines", self.ID)
             self.Future = False
             return
+    
+        # need at least two for a rate
+        elif len(self.HistoricShorelinesYears) < 2:
+            self.Future = False
+            return        
 
         # reset change rates in case already calculated
         self.ChangeRates = []
