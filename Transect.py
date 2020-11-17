@@ -2037,6 +2037,8 @@ class Transect:
 
             Change = self.get_FuturePositionChange(self.FutureSeaLevelYears[i], self.FutureSeaLevelYears[i+1])
             if not Change:
+                import pdb
+                pdb.set_trace()
                 return
             elif Change < 0:
                 return self.FutureSeaLevelYears[i]

@@ -851,10 +851,15 @@ class Coast:
         ['Cell', 'C', 3, 0], ['SubCell', 'C', 3, 0], ['CMU','C', 20, 0],
         ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], ['Hist_Rate','N', 4, 4],
         ['CalibYr','N', 4, 0], ['BaselineYr','N', 4, 0], ['BaselineSrc','C', 50, 0], 
-        ['Extrap2050','N', 6, 2], ['Extrap2100','N', 6, 2], ['FirstEYear','N',4, 4],
-        ['Dist_2100', 'N', 6, 2], ['Rate_2100', 'N', 4, 4], ['MaxRate_2100', 'N', 4, 4],
-        ['Dist_2050', 'N', 6, 2], ['Rate_2050', 'N', 4, 4], ['MaxRate_2050', 'N', 4, 4],
-        ['Dist_2050_2100', 'N', 6, 2], ['Rate_2050_2100', 'N', 4, 4], ['MaxRate_2050_2100', 'N', 4, 4],
+        ['Extrap2050','N', 6, 2], ['Extrap2100','N', 6, 2], ['FirstEYr','N',4, 4],
+        ['Dist_2030', 'N', 6, 2], ['Rate_2030', 'N', 4, 4], 
+        ['Dist_2040', 'N', 6, 2], ['Rate_2040', 'N', 4, 4], 
+        ['Dist_2050', 'N', 6, 2], ['Rate_2050', 'N', 4, 4], 
+        ['Dist_2060', 'N', 6, 2], ['Rate_2060', 'N', 4, 4], 
+        ['Dist_2070', 'N', 6, 2], ['Rate_2070', 'N', 4, 4], 
+        ['Dist_2080', 'N', 6, 2], ['Rate_2080', 'N', 4, 4], 
+        ['Dist_2090', 'N', 6, 2], ['Rate_2090', 'N', 4, 4], 
+        ['Dist_2100', 'N', 6, 2], ['Rate_2100', 'N', 4, 4], 
         ['RCP85_2100_SLR', 'N', 4, 3]]
         
         WL.fields = Fields[1:]
@@ -874,9 +879,14 @@ class Coast:
                                 Transect.ChangeRate, 
                                 Transect.CalibrationYear, Transect.HistoricShorelinesYears[-1], Transect.HistoricShorelinesSources[-1], 
                                 Transect.get_ExtrapDistance(2050), Transect.get_ExtrapDistance(2100), Transect.get_FirstFutureErosionYear(),
-                                Transect.get_FuturePositionChange(2020, 2100), Transect.get_FutureRate(2020, 2100), Transect.get_FutureMaxRate(2020, 2100),
-                                Transect.get_FuturePositionChange(2020, 2050), Transect.get_FutureRate(2020, 2050), Transect.get_FutureMaxRate(2020, 2050),
-                                Transect.get_FuturePositionChange(2050, 2100), Transect.get_FutureRate(2050, 2100), Transect.get_FutureMaxRate(2050, 2100),
+                                Transect.get_FuturePositionChange(2020, 2030), Transect.get_FutureRate(2020, 2030),
+                                Transect.get_FuturePositionChange(2030, 2040), Transect.get_FutureRate(2030, 2040),
+                                Transect.get_FuturePositionChange(2040, 2050), Transect.get_FutureRate(2040, 2050),
+                                Transect.get_FuturePositionChange(2050, 2060), Transect.get_FutureRate(2050, 2060),
+                                Transect.get_FuturePositionChange(2060, 2070), Transect.get_FutureRate(2060, 2070),
+                                Transect.get_FuturePositionChange(2070, 2080), Transect.get_FutureRate(2070, 2080),
+                                Transect.get_FuturePositionChange(2080, 2090), Transect.get_FutureRate(2080, 2090),
+                                Transect.get_FuturePositionChange(2090, 2100), Transect.get_FutureRate(2090, 2100),
                                 Transect.FutureSeaLevels[-1]]
     
                     # write transect and record
