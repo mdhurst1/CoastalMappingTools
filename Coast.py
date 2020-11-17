@@ -1806,81 +1806,73 @@ class Coast:
                     Distance = Transect.LineString.distance(Intersections)
                     Intersection = Intersections
                     IntersectionsList = [Intersection,]
-                    
-                if Distance > 0.001:
-                    
-                    # set this as the new end node
-                    NewEndNode = Node(Intersection.x,Intersection.y)
-                    Transect.Redraw(Transect.StartNode, NewEndNode)
-
-                # use minimum of line.distance to find line
-                # need date attribute if rates are to be calculated
-                Distances = Lines.distance(Intersection)
-                NearestLine = GDF.iloc[Distances.idxmin()]
                 
-                # check it hasnt already been read
-                if "FULLSHP_YR" in NearestLine:
-                    Year = int(NearestLine.FULLSHP_YR)
-                elif "Surv_EndYr" in NearestLine:
-                    Year = int(NearestLine.Surv_EndYr)
-                elif "Surv_End_A" in NearestLine:
-                    Year = int(NearestLine.Surv_End_A)
-                elif "Surv_End_B" in NearestLine:
-                    Year = int(NearestLine.Surv_End_B)
-                elif "Surv_End_C" in NearestLine:
-                    Year = int(NearestLine.Surv_End_C)
-                elif "Surv_End_D" in NearestLine:
-                    Year = int(NearestLine.Surv_End_D)
-                elif "versiondat" in NearestLine:
-                    Year = int(NearestLine.versiondat[0:4])
-                else:
-                    sys.exit("Couldnt find survey year for MHWS historic shoreline position")
+                # loop through intersections and add to struct
+                for Intersection in IntersectionsList:
+                    
+                    # use minimum of line.distance to find line
+                    # need date attribute if rates are to be calculated
+                    Distances = Lines.distance(Intersection)
+                    NearestLine = GDF.iloc[Distances.idxmin()]
                 
-                # retrieve positional error
-                if Year < 1970:
-                    Error = 5.
-                elif Year < 2000:
-                    Error = 2.
-                else:
-                    Error = 1.
+                    # check it hasnt already been read
+                    if "FULLSHP_YR" in NearestLine:
+                        Year = int(NearestLine.FULLSHP_YR)
+                    elif "Surv_EndYr" in NearestLine:
+                        Year = int(NearestLine.Surv_EndYr)
+                    elif "Surv_End_A" in NearestLine:
+                        Year = int(NearestLine.Surv_End_A)
+                    elif "Surv_End_B" in NearestLine:
+                        Year = int(NearestLine.Surv_End_B)
+                    elif "Surv_End_C" in NearestLine:
+                        Year = int(NearestLine.Surv_End_C)
+                    elif "Surv_End_D" in NearestLine:
+                        Year = int(NearestLine.Surv_End_D)
+                    elif "versiondat" in NearestLine:
+                        Year = int(NearestLine.versiondat[0:4])
+                    else:
+                        sys.exit("Couldnt find survey year for MHWS historic shoreline position")
+                
+                    # retrieve positional error
+                    if Year < 1970:
+                        Error = 5.
+                    elif Year < 2000:
+                        Error = 2.
+                    else:
+                        Error = 1.
 
-                if Year not in Transect.HistoricShorelinesYears:
-                    
-                    # generate lists of positions and distances
-                    Positions = []
-                    Distances = []
-                    
-                    for Intersection in IntersectionsList:
-                        Position = Node(Intersection.x,Intersection.y)
-                        Positions.append(Position)
-                        Distances.append(Transect.StartNode.get_Distance(Position))
-
-                    # add to transect
-                    index = bisect.bisect(Transect.HistoricShorelinesYears, Year)
-                    Transect.HistoricShorelinesSources.insert(index, Path(HistoricalShorelinesShp).name)
-                    Transect.HistoricShorelinesYears.insert(index, Year)
-                    Transect.HistoricShorelinesPositions.insert(index, Positions)
-                    Transect.HistoricShorelinesDistances.insert(index, Distances)
-                    Transect.HistoricShorelinesErrors.insert(index, Error)
+                    if Year not in Transect.HistoricShorelinesYears:
+                       
+                        # add year to transect
+                        Index = bisect.bisect(Transect.HistoricShorelinesYears, Year)
+                        Transect.HistoricShorelinesYears.insert(Index, Year)
                         
-                else:
-                    
-                    # find and replace
-                    Index = Transect.HistoricShorelinesYears.index(Year)
-
-                    # add points to transect
-                    Positions = []
-                    Distances = []
-                    
-                    for Intersection in IntersectionsList:
+                        # add shoreline position
                         Position = Node(Intersection.x,Intersection.y)
-                        Positions.append(Position)
-                        Distances.append(Transect.StartNode.get_Distance(Position))
-                    
-                    # add to transect
-                    Transect.HistoricShorelinesPositions[Index] = Positions
-                    Transect.HistoricShorelinesDistances[Index] = Distances
-                    Transect.HistoricShorelinesErrors[Index] = Error
+                        Positions = [Position,]
+                        Transect.HistoricShorelinesPositions.insert(Index, Positions)
+                        
+                        # add distance
+                        Distances = [Transect.StartNode.get_Distance(Position),]
+                        Transect.HistoricShorelinesDistances.insert(Index, Distances)
+                        
+                        # add source info
+                        Transect.HistoricShorelinesSources.insert(Index, Path(HistoricalShorelinesShp).name)
+                        
+                        # add error
+                        Transect.HistoricShorelinesErrors.insert(Index, Error)
+                        
+                    else:
+                        
+                        # find and replace
+                        Index = Transect.HistoricShorelinesYears.index(Year)
+                        Position = Node(Intersection.x,Intersection.y)
+                        Distance = Transect.StartNode.get_Distance(Position))
+                        
+                        # add to transect
+                        Transect.HistoricShorelinesPositions[Index].append(Position)
+                        Transect.HistoricShorelinesDistances[Index].append(Distance)
+
 
     def ExtractContours(self,ContourShp):
 
