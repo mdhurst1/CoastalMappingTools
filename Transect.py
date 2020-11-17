@@ -63,6 +63,7 @@ class Transect:
 
         # change rates will be 1 less than no of positions
         self.ChangeRates = []
+        self.ChangeRateErrors = []
         self.ChangeRate = None      # value used in calibration
         self.DeleteFlag = False
 
@@ -471,6 +472,11 @@ class Transect:
             del(self.HistoricShorelinesDistances[-2])
             del(self.HistoricShorelinesPositions[-2])
 
+        if len(self.HistoricShorelinesYears) < 2:
+            #print("Not enough historical shorelines", self.ID)
+            self.Future = False
+            return
+        
         # calculate historical rates
         if not self.HistoricFlag:
             self.CalculateHistoricalRates()
@@ -2033,15 +2039,12 @@ class Transect:
         Martin Hurst, October 2020
         
         """
-        for i in range(0, len(self.FutureSeaLevelYears)):
+        for i in range(1, len(self.FutureSeaLevelYears)):
 
-            Change = self.get_FuturePositionChange(self.FutureSeaLevelYears[i], self.FutureSeaLevelYears[i+1])
-            if not Change:
-                import pdb
-                pdb.set_trace()
-                return
-            elif Change < 0:
-                return self.FutureSeaLevelYears[i]
+            Change = self.get_FuturePositionChange(self.FutureSeaLevelYears[i-1], self.FutureSeaLevelYears[i])
+            
+            if Change < 0:
+                return self.FutureSeaLevelYears[i-1]
         
         return
 

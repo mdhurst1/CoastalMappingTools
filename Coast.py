@@ -629,7 +629,7 @@ class Coast:
         """
 
         # print action to screen
-        print("Coast.WriteLinesShp: Writing a list of lines to a polyline shapefile")
+        #print("Coast.WriteLinesShp: Writing a list of lines to a polyline shapefile")
 
         # open new shapefile        
         WL = shapefile.Writer(CoastShp,shapeType=shapefile.POLYLINE)
@@ -672,7 +672,7 @@ class Coast:
         """
 
         # print action to screen
-        print("Coast.WritePathchesShp: Writing patch between two lines to a polygon shapefile")
+        #print("Coast.WritePatchesShp: Writing patch between two lines to a polygon shapefile")
 
         if len(self.__dict__[DictionaryKey1]) == 0:
             print("Coast.WritePatchesShp (Error): Trying to write from empty list of lines", DictionaryKey1, DictionaryKey2)
@@ -2844,15 +2844,29 @@ class Coast:
                 if FutureBool[0]:
                     StartEndFlags[0] = 1
                 
-                # if last line finishes on a flag the last element as the end
+                # if last line finishes on a start flag then remove
+                if StartEndFlags[-1] == 1:
+                    StartEndFlags[-1] = 0
+                
+                # if no start flags
+                if len(StartEndFlags.nonzero()[0]) == 0:
+                    continue
+                
+                # if last line finishes on last node then flag as end flag
                 if StartEndFlags[StartEndFlags.nonzero()[0][-1]] == 1:
                     StartEndFlags[-1] = -1
 
                 StartList = np.argwhere(StartEndFlags == 1).flatten()
                 EndList = np.argwhere(StartEndFlags == -1).flatten()
+                
+                if len(StartList) < 1:
+                    continue
+                
                 if not len(StartList) == len(EndList):
                     print("Start and End lists not the same length")
                     print(len(StartList),len(EndList))
+                    import pdb
+                    pdb.set_trace()
                     
                 for i in range(0,len(StartList)):
                     
@@ -2938,17 +2952,31 @@ class Coast:
                 
             # get a list of the start and end points of contiguous cliff lines
             StartEndFlags = np.diff(FutureBool)
-
-            # if last line finishes on a cliff flag the last element as the end of the cliff
+            
+            # if first element is true this is a start point
+            if FutureBool[0]:
+                StartEndFlags[0] = 1
+            
+            # if last line finishes on a start flag then remove
+            if StartEndFlags[-1] == 1:
+                StartEndFlags[-1] = 0
+            
+            # if no start flags
+            if len(StartEndFlags.nonzero()[0]) == 0:
+                continue
+            
+            # if last line finishes on last node then flag as end flag
             if StartEndFlags[StartEndFlags.nonzero()[0][-1]] == 1:
                 StartEndFlags[-1] = -1
-
+            
             StartList = np.argwhere(StartEndFlags == 1).flatten()
             EndList = np.argwhere(StartEndFlags == -1).flatten()
             if not len(StartList) == len(EndList):
                 print("Start and End lists not the same length")
                 print(len(StartList),len(EndList))
-                    
+                import pdb
+                pdb.set_trace()
+                
             for i in range(0,len(StartList)):
                 
                 # catch single node cliff lines and ignore
@@ -3046,7 +3074,19 @@ class Coast:
             # get a list of the start and end points of contiguous cliff lines
             StartEndFlags = np.diff(FutureBool)
 
-            # if last line finishes on a cliff flag the last element as the end of the cliff
+            # if first element is true this is a start point
+            if FutureBool[0]:
+                StartEndFlags[0] = 1
+            
+            # if last line finishes on a start flag then remove
+            if StartEndFlags[-1] == 1:
+                StartEndFlags[-1] = 0
+            
+            # if no start flags
+            if len(StartEndFlags.nonzero()[0]) == 0:
+                continue
+            
+            # if last line finishes on last node then flag as end flag
             if StartEndFlags[StartEndFlags.nonzero()[0][-1]] == 1:
                 StartEndFlags[-1] = -1
 
@@ -3055,6 +3095,8 @@ class Coast:
             if not len(StartList) == len(EndList):
                 print("Start and End lists not the same length")
                 print(len(StartList),len(EndList))
+                import pdb
+                pdb.set_trace()
                     
             for i in range(0,len(StartList)):
                 
@@ -3147,8 +3189,20 @@ class Coast:
                 
                 # get a list of the start and end points of contiguous cliff lines
                 StartEndFlags = np.diff(VegEdgeBool)
-
-                # if last line finishes on a cliff flag the last element as the end of the cliff
+                
+                # if first element is true this is a start point
+                if VegEdgeBool[0]:
+                    StartEndFlags[0] = 1
+                
+                # if last line finishes on a start flag then remove
+                if StartEndFlags[-1] == 1:
+                    StartEndFlags[-1] = 0
+                
+                # if no start flags
+                if len(StartEndFlags.nonzero()[0]) == 0:
+                    continue
+                
+                # if last line finishes on last node then flag as end flag
                 if StartEndFlags[StartEndFlags.nonzero()[0][-1]] == 1:
                     StartEndFlags[-1] = -1
 
@@ -3157,6 +3211,8 @@ class Coast:
                 if not len(StartList) == len(EndList):
                     print("Start and End lists not the same length")
                     print(len(StartList),len(EndList))
+                    import pdb
+                    pdb.set_trace()
                     
                 for i in range(0,len(StartList)):
                     
@@ -3206,12 +3262,32 @@ class Coast:
             
             # get a list of the start and end points of contiguous barrier lines
             StartEndFlags = np.diff(BarrierBool)
+            
+            # if first element is true this is a start point
+            if BarrierBool[0]:
+                StartEndFlags[0] = 1
+            
+            # if last line finishes on a start flag then remove
+            if StartEndFlags[-1] == 1:
+                StartEndFlags[-1] = 0
+            
+            # if no start flags
+            if len(StartEndFlags.nonzero()[0]) == 0:
+                continue
+            
+            # if last line finishes on last node then flag as end flag
+            if StartEndFlags[StartEndFlags.nonzero()[0][-1]] == 1:
+                StartEndFlags[-1] = -1
+                
             StartList = np.argwhere(StartEndFlags == 1).flatten()
             EndList = np.argwhere(StartEndFlags == -1).flatten()
+            
             if not len(StartList) == len(EndList):
                 print("Start and End lists not the same length")
                 print(len(StartList),len(EndList))
-
+                import pdb
+                pdb.set_trace()
+                
             for i in range(0,len(StartList)):
                 
                 # catch single node cliff lines and ignore
@@ -3275,6 +3351,18 @@ class Coast:
             # get a list of the start and end points of contiguous cliff lines
             StartEndFlags = np.diff(CliffBool)
 
+            # if first element is true this is a start point
+            if CliffBool[0]:
+                StartEndFlags[0] = 1
+            
+            # if last line finishes on a start flag then remove
+            if StartEndFlags[-1] == 1:
+                StartEndFlags[-1] = 0
+            
+            # if no start flags
+            if len(StartEndFlags.nonzero()[0]) == 0:
+                continue
+            
             # if last line finishes on a cliff flag the last element as the end of the cliff
             if StartEndFlags[StartEndFlags.nonzero()[0][-1]] == 1:
                 StartEndFlags[-1] = -1
@@ -3344,22 +3432,29 @@ class Coast:
             # get a list of the start and end points of contiguous cliff lines
             StartEndFlags = np.diff(BarrierBool)
             
-            # get last non zero element
-            Last = [Ind for Ind, Flag in enumerate(StartEndFlags) if Flag != 0][-1]
+            # if first element is true this is a start point
+            if BarrierBool[0]:
+                StartEndFlags[0] = 1
             
-            # if last line finishes on a start barrier flag then ignore
-            if Last != len(StartEndFlags)-1:
-                if StartEndFlags[Last] == 1:
-                    StartEndFlags[-1] = -1
-            elif StartEndFlags[-1] == 1:
+            # if last line finishes on a start flag then remove
+            if StartEndFlags[-1] == 1:
                 StartEndFlags[-1] = 0
-                
+            
+            # if no start flags
+            if len(StartEndFlags.nonzero()[0]) == 0:
+                continue
+            
+            # if last line finishes on last node then flag as end flag
+            if StartEndFlags[StartEndFlags.nonzero()[0][-1]] == 1:
+                StartEndFlags[-1] = -1
                 
             StartList = np.argwhere(StartEndFlags == 1).flatten()
             EndList = np.argwhere(StartEndFlags == -1).flatten()
 
             if not len(StartList) == len(EndList):
                 print("Start and End lists not the same length")
+                import pdb
+                pdb.set_trace()
                 
             for i in range(0,len(StartList)):
                 
@@ -3454,21 +3549,29 @@ class Coast:
                 # get a list of the start and end points of contiguous cliff lines
                 StartEndFlags = np.diff(ExtremeBool)
                 
-                # get last non zero element
-                Last = [Ind for Ind, Flag in enumerate(StartEndFlags) if Flag != 0][-1]
+                # if first element is true this is a start point
+                if ExtremeBool[0]:
+                    StartEndFlags[0] = 1
                 
-                # if last line finishes on a start barrier flag then ignore
-                if Last != len(StartEndFlags)-1:
-                    if StartEndFlags[Last] == 1:
-                        StartEndFlags[-1] = -1
-                elif StartEndFlags[-1] == 1:
+                # if last line finishes on a start flag then remove
+                if StartEndFlags[-1] == 1:
                     StartEndFlags[-1] = 0
+                
+                # if no start flags
+                if len(StartEndFlags.nonzero()[0]) == 0:
+                    continue
+                
+                # if last line finishes on last node then flag as end flag
+                if StartEndFlags[StartEndFlags.nonzero()[0][-1]] == 1:
+                    StartEndFlags[-1] = -1
                     
                 StartList = np.argwhere(StartEndFlags == 1).flatten()
                 EndList = np.argwhere(StartEndFlags == -1).flatten()
 
                 if not len(StartList) == len(EndList):
                     print("Start and End lists not the same length")
+                    import pdb
+                    pdb.set_trace()
 
 
                 for j in range(0,len(StartList)):
@@ -3541,15 +3644,21 @@ class Coast:
             # get a list of the start and end points of contiguous sections with protection
             StartEndFlags = np.diff(ExtremeBool)
             
-            # get last non zero element
-            Last = [Ind for Ind, Flag in enumerate(StartEndFlags) if Flag != 0][-1]
+            # if first element is true this is a start point
+            if ExtremeBool[0]:
+                StartEndFlags[0] = 1
             
-            # if last line finishes on a start flag then ignore
-            if Last != len(StartEndFlags)-1:
-                if StartEndFlags[Last] == 1:
-                    StartEndFlags[-1] = -1
-            elif StartEndFlags[-1] == 1:
+            # if last line finishes on a start flag then remove
+            if StartEndFlags[-1] == 1:
                 StartEndFlags[-1] = 0
+            
+            # if no start flags
+            if len(StartEndFlags.nonzero()[0]) == 0:
+                continue
+            
+            # if last line finishes on last node then flag as end flag
+            if StartEndFlags[StartEndFlags.nonzero()[0][-1]] == 1:
+                StartEndFlags[-1] = -1
             
             # start flag is gradient = 1, end flag where gradient = -1
             StartList = np.argwhere(StartEndFlags == 1).flatten()
@@ -3557,6 +3666,8 @@ class Coast:
 
             if not len(StartList) == len(EndList):
                 print("Start and End lists not the same length")
+                import pdb
+                pdb.set_trace()
 
 
             for j in range(0,len(StartList)):
