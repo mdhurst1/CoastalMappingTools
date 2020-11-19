@@ -440,6 +440,15 @@ class Transect:
             self.HistoricShorelinesPositions.pop(-1)
             self.HistoricShorelinesErrors.pop(-1)
             self.HistoricShorelinesYears.pop(-1)
+
+        # dont let 1970s be calibration year if younger than modern soft
+        if len(self.HistoricShorelinesYears) > 2:
+            if self.HistoricShorelinesSources[-2].endswith("1970.shp") and self.HistoricShorelinesSources[-3].endswith("Soft.shp"):
+                self.HistoricShorelinesSources.pop(-2)
+                self.HistoricShorelinesDistances.pop(-2)
+                self.HistoricShorelinesPositions.pop(-2)
+                self.HistoricShorelinesErrors.pop(-2)
+                self.HistoricShorelinesYears.pop(-2)
             
         if len(self.HistoricShorelinesYears) < 2:
             #print("Not enough historical shorelines", self.ID)
