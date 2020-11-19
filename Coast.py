@@ -303,7 +303,7 @@ class Coast:
         for Line in self.FutureShoreLines:
             
             if Smooth:
-                Line.SmoothLine(WindowSize=5)
+                Line.SmoothLine(WindowSize=11)
                     
             # get line node positions
             X, Y = Line.get_XY()
@@ -1864,14 +1864,22 @@ class Coast:
                         
                     else:
                         
-                        # find and replace
+                        # find and either add or replace depending on proximity
                         Index = Transect.HistoricShorelinesYears.index(Year)
                         Position = Node(Intersection.x,Intersection.y)
-                        Distance = Transect.StartNode.get_Distance(Position)
                         
-                        # add to transect
-                        Transect.HistoricShorelinesPositions[Index].append(Position)
-                        Transect.HistoricShorelinesDistances[Index].append(Distance)
+                        MinDistance = 1000.
+                        
+                        for OldPosition in Transect.HistoricShorelinesPositions[Index]:
+                            Distance = OldPosition.get_Distance(Position)
+                            if Distance < MinDistance:
+                                MinDistance = Distance
+                        
+                        if MinDistance > 1.:
+                        
+                            # add to transect
+                            Transect.HistoricShorelinesPositions[Index].append(Position)
+                            Transect.HistoricShorelinesDistances[Index].append(Distance)
 
 
     def ExtractContours(self,ContourShp):
