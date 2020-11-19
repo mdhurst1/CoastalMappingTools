@@ -382,6 +382,9 @@ class Transect:
         # historic shoreline positions and change rates
         for i in range(0,len(self.HistoricShorelinesYears)):
             
+            import pdb
+            pdb.set_trace()
+            
             # first do the whole length of the record
             if i == 0:
                 dEta = self.HistoricShorelinesDistance[-1] - self.HistoricShorelinesDistance[0]
@@ -426,7 +429,10 @@ class Transect:
         self.FutureShorelinesRates = []
         self.FutureShorelinesDistances = []
         self.InterpolatedRSLR = []
-
+        
+        # boolean flag if making prediction
+        self.Future = True
+        
         # cant make predictions without some historical shorelines
         if not self.HistoricShorelinesYears:
             #print("No historical shorelines", self.ID)
@@ -455,10 +461,17 @@ class Transect:
             self.Future = False
             return
 
-        #if self.HistoricShorelinesYears[-1] < 2000:
-            #print("No recent historical shorelines", self.ID)
-            #self.LongTermOnly = True
-            
+        # check if the two most recent positions are closer than 5 years together
+        if (self.HistoricShorelinesYears[-1] - self.HistoricShorelinesYears[-2] <= 5):
+            del(self.HistoricShorelinesYears[-2])
+            del(self.HistoricShorelinesDistances[-2])
+            del(self.HistoricShorelinesPositions[-2])
+
+        if len(self.HistoricShorelinesYears) < 2:
+            #print("Not enough historical shorelines", self.ID)
+            self.Future = False
+            return
+        
         # some logic here to check if its sensible to make predictions
         # do not make predicitions if there are multiple lines in a single year
         for i in range(0,len(self.HistoricShorelinesYears)):
@@ -472,20 +485,6 @@ class Transect:
             self.Future = False
             return
 
-        # boolean flag if making prediction
-        self.Future = True
-
-        # check if the two most recent positions are closer than 5 years together
-        if (self.HistoricShorelinesYears[-1] - self.HistoricShorelinesYears[-2] <= 5):
-            del(self.HistoricShorelinesYears[-2])
-            del(self.HistoricShorelinesDistances[-2])
-            del(self.HistoricShorelinesPositions[-2])
-
-        if len(self.HistoricShorelinesYears) < 2:
-            #print("Not enough historical shorelines", self.ID)
-            self.Future = False
-            return
-        
         # calculate historical rates
         if not self.HistoricFlag:
             self.CalculateHistoricalRates()
