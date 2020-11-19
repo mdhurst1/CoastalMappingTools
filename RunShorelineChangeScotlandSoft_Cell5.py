@@ -90,7 +90,7 @@ for CellSub in CellList:
         # write smoothed coast/bathy to file
         CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
 
-        CellCoast.GenerateTransects(TransectSpacing, 100, 200, CheckTopology=False)
+        CellCoast.GenerateTransects(TransectSpacing, 200, 200, CheckTopology=False)
         
         # CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Raw.shp")))
         

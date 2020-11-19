@@ -90,9 +90,9 @@ for CellSub in CellList:
         # write smoothed coast/bathy to file
         CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
 
-        CellCoast.GenerateTransects(TransectSpacing, 100, 200, CheckTopology=False)
+        CellCoast.GenerateTransects(TransectSpacing, 200, 200, CheckTopology=False)
         
-        CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Raw.shp")))
+        #CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Raw.shp")))
         
         CellCoast.BuiltTransects = True
         
@@ -121,14 +121,14 @@ for CellSub in CellList:
         else:
             CellCoast.ExtractHistoricalShorelinePositions(str(SoftPath))
         
-        CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Sampled1.shp")))
+        #CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Sampled1.shp")))
         
         if not LiDARPath.is_file():
             print("No LiDAR MHWS file")
         else:
             CellCoast.ExtractHistoricalShorelinePositions(str(LiDARPath))
             
-        CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Sampled2.shp")))
+        #CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Sampled2.shp")))
     
         #### get MHWS for each transect
         CellCoast.SampleMHWSElevation(str(WorkingPath / "MHWS_Lines" / "scotland_mhws_elev.tif"))
