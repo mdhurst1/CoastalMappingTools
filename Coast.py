@@ -1807,6 +1807,8 @@ class Coast:
                     Intersection = Intersections
                     IntersectionsList = [Intersection,]
                 
+                FirstTime = True
+
                 # loop through intersections and add to struct
                 for Intersection in IntersectionsList:
                     
@@ -1840,6 +1842,10 @@ class Coast:
                         Error = 2.
                     else:
                         Error = 1.
+
+                    # dont allow two separate datesets for same year
+                    if (FirstTime) and (Year in Transect.HistoricShorelinesYears):
+                        break                      
 
                     if Year not in Transect.HistoricShorelinesYears:
                        
