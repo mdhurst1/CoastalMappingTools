@@ -1773,7 +1773,7 @@ class Coast:
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 
-                if Line.ID == "38" and Transect.ID == "0":
+                if Line.ID == "8" and Transect.ID == "94":
                     import pdb
                     pdb.set_trace()
                 
@@ -1813,6 +1813,12 @@ class Coast:
                 
                 FirstTime = True
 
+                # sort by distance
+                Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in IntersectionsList]
+                Indices = np.argsort(np.array(Distances))
+                Distances = Distances[Indices]
+                IntersectionsList = IntersectionsList[Indices]
+                
                 # loop through intersections and add to struct
                 for Intersection in IntersectionsList:
                     
