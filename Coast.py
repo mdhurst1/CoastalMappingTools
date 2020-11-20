@@ -1773,6 +1773,10 @@ class Coast:
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 
+                if Line.ID == "38" and Transect.ID == "0":
+                    import pdb
+                    pdb.set_trace()
+                
                 # extend transect line inland to look for intersection
                 #Calculate start and end nodes and generate Transect
                 X1 = Transect.EndNode.X + LookDistance * np.sin( np.radians( Transect.Orientation ) )
@@ -1845,7 +1849,9 @@ class Coast:
 
                     # dont allow two separate datesets for same year
                     if (FirstTime) and (Year in Transect.HistoricShorelinesYears):
-                        break                      
+                        break
+                    else:
+                        FirstTime = False
 
                     if Year not in Transect.HistoricShorelinesYears:
                        

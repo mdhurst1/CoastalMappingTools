@@ -382,9 +382,6 @@ class Transect:
         # historic shoreline positions and change rates
         for i in range(0,len(self.HistoricShorelinesYears)):
             
-            import pdb
-            pdb.set_trace()
-            
             # first do the whole length of the record
             if i == 0:
                 dEta = self.HistoricShorelinesDistance[-1] - self.HistoricShorelinesDistance[0]
