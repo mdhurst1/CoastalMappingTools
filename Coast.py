@@ -873,7 +873,7 @@ class Coast:
                     X, Y = Transect.get_XY()
                     
                     WriteTransect = [np.column_stack([X,Y]).tolist()]
-    
+                    
                     # Create the record this could become a function in transect object...
                     Record = [str(self.Cell), str(self.SubCell), str(self.CMU), str(Line.ID), str(Transect.ID),
                                 Transect.ChangeRate, 
@@ -2832,19 +2832,18 @@ class Coast:
         Extracts contiguous lines of future predicted MHWS
 
         """
-        
-        import pdb
-        
         self.FutureShoreLines = []
 
         # Loop through prediction years
-        for Year in self.FutureShoreLinesYears[1:]:
+        for Year in self.FutureShoreLinesYears:
 
             # keep track of no of coastal segments for IDs
             FutureCount = 0
             
             # loop through transects and get contiguous cliff lines
             for CoastLine in self.CoastLines:
+                
+                print(CoastLine.ID)
                 
                 # find transects with future predictions
                 FutureBool = [Transect.Future for Transect in CoastLine.Transects]
@@ -2894,7 +2893,6 @@ class Coast:
 
                     # create empty lists for storing future nodes
                     FutureList = []
-                    LongTermList = []
                     
                     # add latest MHWS from previous node to start
                     # might need some logic here for first transect
@@ -2915,7 +2913,8 @@ class Coast:
                     for Transect in CoastLine.Transects[StartList[i]+ii:EndList[i]]:
                         
                         if Transect.get_FutureDistance(Year) > Transect.get_RecentDistance():
-                            FutureList.append(Transect.get_FuturePosition(Year))
+                            TempNode = Transect.get_FuturePosition(Year)
+                            FutureList.append(TempNode)
                         
                         else:
                             FutureList.append(Transect.get_RecentPosition())
@@ -2934,9 +2933,13 @@ class Coast:
                     FutureList.append(LastNode)
                     
                     # create new line object for top
-                    X = [FutureNode.X for FutureNode in FutureList]
-                    Y = [FutureNode.Y for FutureNode in FutureList]
-                    
+                    try:
+                        X = [FutureNode.X for FutureNode in FutureList]
+                        Y = [FutureNode.Y for FutureNode in FutureList]
+                    except:
+                        import pdb
+                        pdb.set_trace()
+                        
                     TempLine = Line("FutureCoast_"+str(FutureCount), X, Y, Year=Year)
                     self.FutureShoreLines.append(TempLine)
                     

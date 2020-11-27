@@ -12,13 +12,13 @@ from Coast import *
 
 # define file names for analysis
 WorkingPath = pathlib.Path.cwd().parent
-Cell = "2a"
+Cell = "1a"
 Filename2LoadCoast = WorkingPath / "ShorelineRun" / ("Cell_"+Cell+"_Change.pydata")
 Cst = pickle.load( open( Filename2LoadCoast, "rb" ) )
 
 # set a line and a transect if needed
-LineID = "7"
-TransectID = "50"
+LineID = "25"
+TransectID = "31"
 
 # get line
 Lns = Cst.CoastLines
@@ -31,7 +31,7 @@ Tr = [Tr for Tr in Trs if Tr.ID == TransectID][0]
 #Cst.GetFutureShoreLines()
 print(Tr.ID)
 print(Tr.Future)
-print(Tr.HistoricShorelinesYears)
-print(Tr.HistoricShorelinesDistances)
+print(Tr.FutureSeaLevelYears)
+print(Tr.FutureShorelinesDistances)
 print(Tr.ChangeRates)
 

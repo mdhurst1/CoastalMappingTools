@@ -536,6 +536,10 @@ class Transect:
             self.ChangeRate = self.ChangeRates[-1]
             self.CalibrationYear = self.HistoricShorelinesYears[-2]
 
+        #if self.LineID == "0" and self.ID == "127":
+        #    import pdb
+        #    pdb.set_trace()
+            
         # Future shoreline positions
         for i in range(0, len(self.FutureSeaLevelYears)):
             dT = self.FutureSeaLevelYears[i]-self.HistoricShorelinesYears[-1]
@@ -1917,7 +1921,7 @@ class Transect:
         if self.Future:
 
             # find year index
-            Index = [i for i, x in enumerate(self.FutureSeaLevelYears[1:]) if x == Year]
+            Index = [i for i, x in enumerate(self.FutureSeaLevelYears) if x == Year]
             
             if len(Index) == 0:
                 return
@@ -1972,8 +1976,8 @@ class Transect:
         if self.Future:
 
             # find year index
-            Index1 = [i for i, x in enumerate(self.FutureSeaLevelYears[0:]) if x == Year1]
-            Index2 = [i for i, x in enumerate(self.FutureSeaLevelYears[1:]) if x == Year2]
+            Index1 = [i for i, x in enumerate(self.FutureSeaLevelYears) if x == Year1]
+            Index2 = [i for i, x in enumerate(self.FutureSeaLevelYears) if x == Year2]
 
             if len(Index1) == 0:
                 print("problem1")
@@ -2048,7 +2052,7 @@ class Transect:
 
             Change = self.get_FuturePositionChange(self.FutureSeaLevelYears[i-1], self.FutureSeaLevelYears[i])
             
-            if Change < 0:
+            if Change > 0:
                 return self.FutureSeaLevelYears[i-1]
         
         return
