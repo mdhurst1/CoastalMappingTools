@@ -60,6 +60,7 @@ class Transect:
         self.HistoricShorelinesPosition = []
         self.HistoricShorelinesDistance = []
         self.HistoricShorelinesErrors = []
+        self.DC1 = []
 
         # change rates will be 1 less than no of positions
         self.ChangeRates = []

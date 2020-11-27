@@ -851,16 +851,19 @@ class Coast:
         ['Cell', 'C', 3, 0], ['SubCell', 'C', 3, 0], ['CMU','C', 20, 0],
         ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], ['Hist_Rate','N', 4, 4],
         ['CalibYr','N', 4, 0], ['BaselineYr','N', 4, 0], ['BaselineSrc','C', 50, 0], 
-        ['Extrap2050','N', 6, 2], ['Extrap2100','N', 6, 2], ['FirstEYr','N',4, 4],
-        ['Dist_2030', 'N', 6, 2], ['Rate_2030', 'N', 4, 4], 
-        ['Dist_2040', 'N', 6, 2], ['Rate_2040', 'N', 4, 4], 
-        ['Dist_2050', 'N', 6, 2], ['Rate_2050', 'N', 4, 4], 
-        ['Dist_2060', 'N', 6, 2], ['Rate_2060', 'N', 4, 4], 
-        ['Dist_2070', 'N', 6, 2], ['Rate_2070', 'N', 4, 4], 
-        ['Dist_2080', 'N', 6, 2], ['Rate_2080', 'N', 4, 4], 
-        ['Dist_2090', 'N', 6, 2], ['Rate_2090', 'N', 4, 4], 
-        ['Dist_2100', 'N', 6, 2], ['Rate_2100', 'N', 4, 4], 
-        ['RCP85_2100_SLR', 'N', 4, 3]]
+        ['Extrap2050','N', 6, 3], ['Extrap2100','N', 6, 3], ['FirstEYr','N',4, 4],
+        ['Dist_2030', 'N', 6, 3], ['Rate_2030', 'N', 4, 4], 
+        ['Dist_2040', 'N', 6, 3], ['Rate_2040', 'N', 4, 4], 
+        ['Dist_2050', 'N', 6, 3], ['Rate_2050', 'N', 4, 4], 
+        ['Dist_2060', 'N', 6, 3], ['Rate_2060', 'N', 4, 4], 
+        ['Dist_2070', 'N', 6, 3], ['Rate_2070', 'N', 4, 4], 
+        ['Dist_2080', 'N', 6, 3], ['Rate_2080', 'N', 4, 4], 
+        ['Dist_2090', 'N', 6, 3], ['Rate_2090', 'N', 4, 4], 
+        ['Dist_2100', 'N', 6, 3], ['Rate_2100', 'N', 4, 4], 
+        ['RCP85_2100_SLR', 'N', 4, 3],
+        ['DC1_SvEnd_B','N', 4, 0], ['DC1_SvEnd_C','N', 4, 0], 
+        ['DC1_DistV','N', 4, 0], ['DC1_Rate_B_C', 6, 3]
+        ]
         
         WL.fields = Fields[1:]
 
@@ -887,7 +890,10 @@ class Coast:
                                 Transect.get_FuturePositionChange(2070, 2080), Transect.get_FutureRate(2070, 2080),
                                 Transect.get_FuturePositionChange(2080, 2090), Transect.get_FutureRate(2080, 2090),
                                 Transect.get_FuturePositionChange(2090, 2100), Transect.get_FutureRate(2090, 2100),
-                                Transect.FutureSeaLevels[-1]]
+                                Transect.FutureSeaLevels[-1],
+                                
+                                Transect.DC1[0], Transect.DC1[1], Transect.DC1[2], Transect.DC1[3]]
+                    
     
                     # write transect and record
                     WL.line(WriteTransect)
@@ -1714,6 +1720,94 @@ class Coast:
             # generate transects along each line
             Line.GenerateNodes(NodeSpacing)
 
+    def ExtractDC1Data(self,DC1Shp):
+        
+        """
+        Function to extract info from DC1 analysis
+        
+        MDH, November 2020
+        
+        """
+        
+        # read shapefile using geopandas
+        GDF = gp.read_file(DC1Shp)
+        Lines = GDF['geometry']
+        
+        if len(Lines) == 0:
+            print("No Lines")
+            return
+        
+        # catch situation where only one line
+        MultiLines = []
+
+        if len(Lines) == 1:
+            MultiLines = Lines[0]
+
+        # deal with invalid geometries on the fly? This is messy!
+        else:
+            for Line in Lines:
+                if not Line:
+                    continue
+                elif Line.geom_type == "LineString":
+                    MultiLines.append(Line)
+                elif Line.geom_type == "MultiLineString":
+                    for SubLine in Line:
+                        if SubLine.geom_type == "LineString":
+                            MultiLines.append(SubLine)
+
+            MultiLines = MultiLineString(MultiLines)    
+            
+        if not MultiLines:
+            print("No Lines")
+            return
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                
+                # extend transect line inland to look for intersection
+                #Calculate start and end nodes and generate Transect
+                X1 = Transect.EndNode.X + LookDistance * np.sin( np.radians( Transect.Orientation ) )
+                Y1 = Transect.EndNode.Y + LookDistance * np.cos( np.radians( Transect.Orientation ) )
+                TransectLine = LineString(((Transect.StartNode.X,Transect.StartNode.Y),(X1,Y1)))
+            
+                # intersect with historical shoreline
+                try:
+                    Intersections = TransectLine.intersection(MultiLines)
+                except:
+                    import pdb
+                    pdb.set_trace()
+                    
+                # catch no intersections and flag for deletion?
+                if Intersections.geom_type == "GeometryCollection":
+                    Transect.DeleteFlag = True
+                    continue
+
+                # check there arent multiple intersections
+                # get first intersection if so
+                if Intersections.geom_type is "MultiPoint":
+                    StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
+                    Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections]
+                    Index = Distances.index(min(Distances))
+                    Distance = Distances[Index]
+                    Intersection = Intersections[Index]
+                    
+                else:
+                    # check if this is a new endnode by intersecting with line from startnode to endnode
+                    Distance = Transect.LineString.distance(Intersections)
+                    Intersection = Intersections
+                                    
+                # use minimum of line.distance to find line
+                # need date attribute if rates are to be calculated
+                Distances = Lines.distance(Intersection)
+                NearestLine = GDF.iloc[Distances.idxmin()]
+                
+                Transect.DC1 = []
+                Transect.DC1.append(int(NearestLine.Surv_End_B))
+                Transect.DC1.append(int(NearestLine.Surv_End_C))
+                Transect.DC1.append(int(NearestLine.DIST_V))
+                Transect.DC1.append(int(NearestLine.Rate_B_C))
+                
+        
     def ExtractHistoricalShorelinePositions(self,HistoricalShorelinesShp,Reset=False):
 
         """
