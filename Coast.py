@@ -862,7 +862,8 @@ class Coast:
         ['Dist_2100', 'N', 6, 3], ['Rate_2100', 'N', 4, 4], 
         ['RCP85_2100_SLR', 'N', 4, 3],
         ['DC1_SvEnd_B','N', 4, 0], ['DC1_SvEnd_C','N', 4, 0], 
-        ['DC1_DistV','N', 4, 0], ['DC1_Rate_B_C', 6, 3]
+        ['DC1_DistV','N', 4, 0], ['DC1_Rate_B_C', 6, 3],
+        ['OS_2020_Yr','N',4,0]
         ]
         
         WL.fields = Fields[1:]
@@ -892,8 +893,10 @@ class Coast:
                                 Transect.get_FuturePositionChange(2090, 2100), Transect.get_FutureRate(2090, 2100),
                                 Transect.FutureSeaLevels[-1],
                                 
-                                Transect.DC1[0], Transect.DC1[1], Transect.DC1[2], Transect.DC1[3]]
+                                Transect.DC1[0], Transect.DC1[1], Transect.DC1[2], Transect.DC1[3],
+                                Transect.get_OS_Year()]
                     
+                                
     
                     # write transect and record
                     WL.line(WriteTransect)
@@ -1720,7 +1723,7 @@ class Coast:
             # generate transects along each line
             Line.GenerateNodes(NodeSpacing)
 
-    def ExtractDC1Data(self,DC1Shp):
+    def SampleDC1Data(self,DC1Shp):
         
         """
         Function to extract info from DC1 analysis
@@ -1788,12 +1791,10 @@ class Coast:
                     StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
                     Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections]
                     Index = Distances.index(min(Distances))
-                    Distance = Distances[Index]
                     Intersection = Intersections[Index]
                     
                 else:
                     # check if this is a new endnode by intersecting with line from startnode to endnode
-                    Distance = Transect.LineString.distance(Intersections)
                     Intersection = Intersections
                                     
                 # use minimum of line.distance to find line

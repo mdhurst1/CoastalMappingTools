@@ -133,6 +133,9 @@ for CellSub in CellList:
             
         CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Sampled3.shp")))
     
+        ### get DC1 results
+        CellCoast.SampleDC1Data(str(WorkingPath / "DC1_Results" / "Scotland_Change_1970_Modern_FINAL.shp"))
+        
         #### get MHWS for each transect
         CellCoast.SampleMHWSElevation(str(WorkingPath / "MHWS_Lines" / "scotland_mhws_elev.tif"))
     
@@ -184,6 +187,7 @@ for CellSub in CellList:
     
     # write future shorelines
     CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future.shp")),Smooth=True)
+    CellCoast.TruncateTransects()
     CellCoast.WriteFutureTransectsShp(str(OutputPath / (RowName + "_Transects.shp")))
     CellCoast.WriteErodedAreaShp(str(OutputPath / (RowName + "_ErodedArea_2050.shp")), 2050)
     CellCoast.WriteErodedAreaShp(str(OutputPath / (RowName + "_ErodedArea_2100.shp")))

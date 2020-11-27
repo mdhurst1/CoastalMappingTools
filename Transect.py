@@ -2083,6 +2083,19 @@ class Transect:
         else:
             return
 
+    def get_OS_Year(self):
+        
+        """
+        
+        Get the year of the Historic shoreline position from OS 2020 smart
+        
+        MDH, November 2020
+        
+        """
+        
+        Index = i for i, x in enumerate(self.HistoricShorelinesSources) if x.endswith("Modern_Soft.shp")]
+        return self.HistoricShorelinesYears[Index]
+    
     def get_FutureVegEdge(self, Year):
 
         """
