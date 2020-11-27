@@ -459,7 +459,7 @@ class Transect:
             return
 
         # check if the two most recent positions are closer than 5 years together
-        if (self.HistoricShorelinesYears[-1] - self.HistoricShorelinesYears[-2] <= 5):
+        if (self.HistoricShorelinesYears[-1] - self.HistoricShorelinesYears[-2] < 5):
             del(self.HistoricShorelinesYears[-2])
             del(self.HistoricShorelinesDistances[-2])
             del(self.HistoricShorelinesPositions[-2])

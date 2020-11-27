@@ -582,14 +582,6 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             if (Distance1 > Distance2):
                 self.ReverseFlags[i] = 1
             
-#            if (self.ID == "39"):
-#                X,Y = BathyLines.xy
-#                plt.plot(X,Y,'k-')
-#                plt.plot(OffshorePoint.x,OffshorePoint.y,'ro')
-#                plt.plot([ThisTransect.StartNode.X, ThisTransect.EndNode.X], [ThisTransect.StartNode.Y, ThisTransect.EndNode.Y], 'k--')
-#                plt.show()
-#                sys.exit()
-                
         # get x and y to reverse lines
         NReverse = np.count_nonzero(self.ReverseFlags == 1)
         NXReverse = np.count_nonzero(self.ReverseFlags == 0)

@@ -29,7 +29,8 @@ NoSmooths = 50
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # Cell list
-CellList = ["1b"] # "1b","1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g","4"]
+CellList = ["1a","1b","1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g","4"]
+#CellList = ["2b",] #"2c","2d","3a","3b","3c","3d","3e","3f","3g","4"]
 
 # loop through each cell
 #for index, Row in Cells.iterrows():
@@ -92,7 +93,7 @@ for CellSub in CellList:
 
         CellCoast.GenerateTransects(TransectSpacing, 200, 200, CheckTopology=False)
         
-        #CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Raw.shp")))
+        CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Raw.shp")))
         
         CellCoast.BuiltTransects = True
         
@@ -116,19 +117,21 @@ for CellSub in CellList:
         else:
             CellCoast.ExtractHistoricalShorelinePositions(str(QuiteOldPath))
         
+        CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Sampled1.shp")))
+        
         if not SoftPath.is_file():
             print("No soft MHWS file")
         else:
             CellCoast.ExtractHistoricalShorelinePositions(str(SoftPath))
         
-        CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Sampled1.shp")))
+        CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Sampled2.shp")))
         
         if not LiDARPath.is_file():
             print("No LiDAR MHWS file")
         else:
             CellCoast.ExtractHistoricalShorelinePositions(str(LiDARPath))
             
-        CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Sampled2.shp")))
+        CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Sampled3.shp")))
     
         #### get MHWS for each transect
         CellCoast.SampleMHWSElevation(str(WorkingPath / "MHWS_Lines" / "scotland_mhws_elev.tif"))
@@ -165,7 +168,7 @@ for CellSub in CellList:
         print("\tSaving Coast Object as ", Filename2SaveCoast)
         with open(str(Filename2SaveCoast), 'wb') as PFile:
             pickle.dump(CellCoast, PFile)
-            
+
     if not CellCoast.PredictedFutureShorelines:    
     
         ## predict future shorelines

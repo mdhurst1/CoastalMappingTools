@@ -1773,10 +1773,6 @@ class Coast:
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 
-                if Line.ID == "8" and Transect.ID == "94":
-                    import pdb
-                    pdb.set_trace()
-                
                 # extend transect line inland to look for intersection
                 #Calculate start and end nodes and generate Transect
                 X1 = Transect.EndNode.X + LookDistance * np.sin( np.radians( Transect.Orientation ) )
@@ -1801,23 +1797,17 @@ class Coast:
                     StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
                     Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections]
                     Index = Distances.index(min(Distances))
-                    IntersectionsList = Intersections
-                    Intersection = Intersections[Index]
-                    Distance = Distances[Index]
-                
+                    Indices = np.argsort(np.array(Distances))
+                    Distances = np.array(Distances)[Indices]
+                    IntersectionsList = [Intersections[i] for i in Indices]
+                    
                 else:
                     # check if this is a new endnode by intersecting with line from startnode to endnode
                     Distance = Transect.LineString.distance(Intersections)
                     Intersection = Intersections
                     IntersectionsList = [Intersection,]
                 
-                FirstTime = True
-
-                # sort by distance
-                Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in IntersectionsList]
-                Indices = np.argsort(np.array(Distances))
-                Distances = Distances[Indices]
-                IntersectionsList = IntersectionsList[Indices]
+                IntersectionYears = []
                 
                 # loop through intersections and add to struct
                 for Intersection in IntersectionsList:
@@ -1829,22 +1819,38 @@ class Coast:
                 
                     # check it hasnt already been read
                     if "FULLSHP_YR" in NearestLine:
-                        Year = int(NearestLine.FULLSHP_YR)
+                        IntersectionYears.append(int(NearestLine.FULLSHP_YR))
                     elif "Surv_EndYr" in NearestLine:
-                        Year = int(NearestLine.Surv_EndYr)
+                        IntersectionYears.append(int(NearestLine.Surv_EndYr))
                     elif "Surv_End_A" in NearestLine:
-                        Year = int(NearestLine.Surv_End_A)
+                        IntersectionYears.append(int(NearestLine.Surv_End_A))
                     elif "Surv_End_B" in NearestLine:
-                        Year = int(NearestLine.Surv_End_B)
+                        IntersectionYears.append(int(NearestLine.Surv_End_B))
                     elif "Surv_End_C" in NearestLine:
-                        Year = int(NearestLine.Surv_End_C)
+                        IntersectionYears.append(int(NearestLine.Surv_End_C))
                     elif "Surv_End_D" in NearestLine:
-                        Year = int(NearestLine.Surv_End_D)
+                        IntersectionYears.append(int(NearestLine.Surv_End_D))
                     elif "versiondat" in NearestLine:
-                        Year = int(NearestLine.versiondat[0:4])
+                        IntersectionYears.append(int(NearestLine.versiondat[0:4]))
                     else:
                         sys.exit("Couldnt find survey year for MHWS historic shoreline position")
                 
+                # delete intersections for years that already exist?
+                if len(IntersectionYears) == 1:
+                    if IntersectionYears[0] in Transect.HistoricShorelinesYears:
+                        continue
+                        
+                elif len(IntersectionYears) > 1:
+                    Indices = [i for i, Year in enumerate(IntersectionYears) if Year not in Transect.HistoricShorelinesYears]
+                    IntersectionsList = [IntersectionsList[i] for i in Indices]
+                    IntersectionYears = [IntersectionYears[i] for i in Indices]
+                
+                # loop through intersections
+                for i, Intersection in enumerate(IntersectionsList):
+                    
+                    # retrieve year
+                    Year = IntersectionYears[i]
+                    
                     # retrieve positional error
                     if Year < 1970:
                         Error = 5.
@@ -1852,13 +1858,7 @@ class Coast:
                         Error = 2.
                     else:
                         Error = 1.
-
-                    # dont allow two separate datesets for same year
-                    if (FirstTime) and (Year in Transect.HistoricShorelinesYears):
-                        break
-                    else:
-                        FirstTime = False
-
+                    
                     if Year not in Transect.HistoricShorelinesYears:
                        
                         # add year to transect
@@ -2000,7 +2000,7 @@ class Coast:
                         Transect.MHWS = val[0]
 
 
-    def SampleFutureRSL(self, FutureRSLFolder, Percentile=95, Years=[2010,2020,2030,2040,2050,2060,2070,2080,2090,2100]):
+    def SampleFutureRSL(self, FutureRSLFolder, Percentile=95, Years=[2020,2030,2040,2050,2060,2070,2080,2090,2100]):
 
         """ 
         
