@@ -862,7 +862,7 @@ class Coast:
         ['Dist_2100', 'N', 6, 3], ['Rate_2100', 'N', 4, 4], 
         ['RCP85_2100_SLR', 'N', 4, 3],
         ['DC1_SvEnd_B','N', 4, 0], ['DC1_SvEnd_C','N', 4, 0], 
-        ['DC1_DistV','N', 4, 0], ['DC1_Rate_B_C', 6, 3],
+        ['DC1_DistV','N', 4, 0], ['DC1_Rate_B_C','N', 6, 3],
         ['OS_2020_Yr','N',4,0]
         ]
         
@@ -877,6 +877,9 @@ class Coast:
                     X, Y = Transect.get_XY()
                     
                     WriteTransect = [np.column_stack([X,Y]).tolist()]
+                    
+                    if not Transect.DC1:
+                        Transect.DC1 = ["","","",""]
                     
                     # Create the record this could become a function in transect object...
                     Record = [str(self.Cell), str(self.SubCell), str(self.CMU), str(Line.ID), str(Transect.ID),
@@ -1769,9 +1772,7 @@ class Coast:
                 
                 # extend transect line inland to look for intersection
                 #Calculate start and end nodes and generate Transect
-                X1 = Transect.EndNode.X + LookDistance * np.sin( np.radians( Transect.Orientation ) )
-                Y1 = Transect.EndNode.Y + LookDistance * np.cos( np.radians( Transect.Orientation ) )
-                TransectLine = LineString(((Transect.StartNode.X,Transect.StartNode.Y),(X1,Y1)))
+                TransectLine = LineString(((Transect.StartNode.X,Transect.StartNode.Y),(Transect.EndNode.X,Transect.EndNode.Y)))
             
                 # intersect with historical shoreline
                 try:
@@ -1805,8 +1806,11 @@ class Coast:
                 Transect.DC1 = []
                 Transect.DC1.append(int(NearestLine.Surv_End_B))
                 Transect.DC1.append(int(NearestLine.Surv_End_C))
-                Transect.DC1.append(int(NearestLine.DIST_V))
-                Transect.DC1.append(int(NearestLine.Rate_B_C))
+                Transect.DC1.append(float(NearestLine.DIST_V))
+                Transect.DC1.append(float(NearestLine.Rate_B_C))
+                
+        
+        # sort out delete flags???
                 
         
     def ExtractHistoricalShorelinePositions(self,HistoricalShorelinesShp,Reset=False):
@@ -2937,8 +2941,6 @@ class Coast:
             
             # loop through transects and get contiguous cliff lines
             for CoastLine in self.CoastLines:
-                
-                print(CoastLine.ID)
                 
                 # find transects with future predictions
                 FutureBool = [Transect.Future for Transect in CoastLine.Transects]

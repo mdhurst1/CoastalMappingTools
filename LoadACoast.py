@@ -18,7 +18,7 @@ Cst = pickle.load( open( Filename2LoadCoast, "rb" ) )
 
 # set a line and a transect if needed
 LineID = "25"
-TransectID = "31"
+TransectID = "32"
 
 # get line
 Lns = Cst.CoastLines

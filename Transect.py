@@ -249,7 +249,7 @@ class Transect:
 
         self.Length = self.CalculateLength(self.StartNode, self.EndNode)
         
-    def Truncate():
+    def Truncate(self, MinLength=50., Year=2100):
         
         """
         Function to truncate transects to limits of historical and future 
@@ -259,25 +259,31 @@ class Transect:
         
         """
         
+        if self.Future:
+            self.PredictFutureShorelineUncertainty(Year)
+        else:
+            return
+            
         # get all distances
         DistancesList = []
         
-        for i in range(0,len(self.HistoricalShorelinesYears)):
+        for i in range(0,len(self.HistoricShorelinesYears)):
             
             # add nodes to lists
-            DistancesList.append(self.HistoricalShorelinesDistances[i])
-            DistancesList.append(self.HistoricalShorelinesDistances[i]+self.HistoricalShorelinesErrors[i])
-            DistancesList.append(self.HistoricalShorelinesDistances[i]-self.HistoricalShorelinesErrors[i])
+            DistancesList.append(self.HistoricShorelinesDistances[i][0])
+            DistancesList.append(self.HistoricShorelinesDistances[i][0]+self.HistoricShorelinesErrors[i])
+            DistancesList.append(self.HistoricShorelinesDistances[i][0]-self.HistoricShorelinesErrors[i])
                         
-        for i in range(0, len(self.FutureShorelinesYears)):
+        for i in range(0, len(self.FutureSeaLevelYears)):
             
             # add nodes to lists
             DistancesList.append(self.FutureShorelinesDistances[i])
-            DistancesList.append(self.FutureShorelinesUncertaintyDistances[i])
+            DistancesList.append(self.FutureShorelineMinDistance)
+            DistancesList.append(self.FutureShorelineMaxDistance)
         
         # find index of min distance
-        MinDistance = DistancesList.min()
-        MaxDistance = DistancesList.max()
+        MinDistance = np.min(np.array(DistancesList))
+        MaxDistance = np.max(np.array(DistancesList))
         
         # find new end position
         X1 = self.StartNode.X + MaxDistance * np.sin( np.radians( self.Orientation ) )
@@ -287,7 +293,24 @@ class Transect:
         # find new start position
         X1 = self.StartNode.X + MinDistance * np.sin( np.radians( self.Orientation ) )
         Y1 = self.StartNode.Y + MinDistance * np.cos( np.radians( self.Orientation ) )
-        self.StartNode = Node(X1,Y1)       
+        self.StartNode = Node(X1,Y1)
+        
+        # check length and extend in either direction if needs be
+        Length = self.StartNode.get_Distance(self.EndNode)
+        
+        if Length < MinLength:
+            
+            Difference = MinLength - Length
+            
+            # find new end position
+            X1 = self.EndNode.X + 0.5*Difference * np.sin( np.radians( self.Orientation ) )
+            Y1 = self.EndNode.Y + 0.5*Difference * np.cos( np.radians( self.Orientation ) )
+            self.EndNode = Node(X1,Y1)
+        
+            # find new start position
+            X1 = self.StartNode.X - 0.5*Difference * np.sin( np.radians( self.Orientation ) )
+            Y1 = self.StartNode.Y - 0.5*Difference * np.cos( np.radians( self.Orientation ) )
+            self.StartNode = Node(X1,Y1)
 
         
     def GenerateSampleNodes(self,Spacing=None):
@@ -461,9 +484,12 @@ class Transect:
 
         # check if the two most recent positions are closer than 5 years together
         if (self.HistoricShorelinesYears[-1] - self.HistoricShorelinesYears[-2] < 5):
-            del(self.HistoricShorelinesYears[-2])
-            del(self.HistoricShorelinesDistances[-2])
-            del(self.HistoricShorelinesPositions[-2])
+            self.HistoricShorelinesSources.pop(-2)
+            self.HistoricShorelinesDistances.pop(-2)
+            self.HistoricShorelinesPositions.pop(-2)
+            self.HistoricShorelinesErrors.pop(-2)
+            self.HistoricShorelinesYears.pop(-2)
+            
 
         if len(self.HistoricShorelinesYears) < 2:
             #print("Not enough historical shorelines", self.ID)
@@ -586,9 +612,10 @@ class Transect:
         MDH March 2020
 
         """
-
+        
         # get future sea level and time difference
-        FutureSeaLevel = self.FutureSeaLevels[self.FutureSeaLevelYears == Year]
+        Index = [i for i, x in enumerate(self.FutureSeaLevelYears) if x == Year]
+        FutureSeaLevel = self.FutureSeaLevels[Index[0]]
         dT = Year-self.HistoricShorelinesYears[-1]
 
         # reset min and max in case uncertainty has been previously assessed
@@ -605,17 +632,16 @@ class Transect:
         for VolumetricCalibrationRate in self.VolumetricCalibrationRates:
             
             BruunRuleComponent = (-1./self.BruunSlope)*(FutureSeaLevel-self.LatestRSL)
-
             CalibrationComponent = (1./self.ShorefaceDepth)*VolumetricCalibrationRate*dT
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
-            
+
             # check rock head position not exceeded
             HistoricShorelineDistance = self.StartNode.get_Distance(self.HistoricShorelinesPosition[-1])
             FutureShorelineDistance = HistoricShorelineDistance - ShorelinePositionChange
             
             X1 = self.HistoricShorelinesPosition[-1].X - ShorelinePositionChange * np.sin( np.radians( self.Orientation ) )
             Y1 = self.HistoricShorelinesPosition[-1].Y - ShorelinePositionChange * np.cos( np.radians( self.Orientation ) )
-
+            
             if FutureShorelineDistance < self.FutureShorelineMinDistance:
                 self.FutureShorelineMinDistance = FutureShorelineDistance
                 self.FutureShorelinesMinNode = Node(X1,Y1)
@@ -2093,8 +2119,9 @@ class Transect:
         
         """
         
-        Index = i for i, x in enumerate(self.HistoricShorelinesSources) if x.endswith("Modern_Soft.shp")]
-        return self.HistoricShorelinesYears[Index]
+        Index = [i for i, x in enumerate(self.HistoricShorelinesSources) if x.endswith("Modern_Soft.shp")]
+        
+        return self.HistoricShorelinesYears[Index[0]]
     
     def get_FutureVegEdge(self, Year):
 
