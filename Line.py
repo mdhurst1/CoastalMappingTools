@@ -1184,7 +1184,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             try:
                 TempNode = ThisTransect.HistoricShorelinesPositions[-1][0]
             except:
-                pdb.set_trace()
+                continue
             
             BasePoint = Point(TempNode.X, TempNode.Y)
             NearestPoint = nearest_points(Lines, BasePoint)[0]

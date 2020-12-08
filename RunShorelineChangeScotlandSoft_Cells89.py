@@ -151,6 +151,9 @@ for CellSub in CellList:
         
         CellCoast.GotHistoricShorelines = True
         
+        # Get OS year smarter 2020
+        CellCoast.Check_OS_Years()
+        
         # SAVE ENTIRE COAST OBJECT
         print("\tSaving Coast Object as ", Filename2SaveCoast)
         with open(str(Filename2SaveCoast), 'wb') as PFile:

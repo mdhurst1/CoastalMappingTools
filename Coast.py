@@ -357,14 +357,17 @@ class Coast:
         MDH, March 2020
 
         """
-
+        
+        self.FutureMinUncertainty = []
+        self.FutureMaxUncertainty = []
+        
         # predict and extract future shoreline positions from transects
         self.PredictFutureShorelinesUncertainty(Year)
-        self.GetFutureShorelineUncertainty()
+        self.GetFutureShorelineUncertainty(Year)
 
         # print action to screen
         print("Coast.WriteFutureUncertaintyShp: Writing uncertainty area to polygon file")
-
+        
         # set up files to write
         FutureMinShp = UncertaintyShp.split(".")[0]+"_Min.shp"
         FutureMaxShp = UncertaintyShp.split(".")[0]+"_Max.shp"
@@ -388,7 +391,7 @@ class Coast:
 
         # predict and extract future shoreline positions from transects
         self.PredictFutureShorelinesError(Year)
-        self.GetFutureShorelineError()
+        self.GetFutureShorelineError(Year)
 
         # print action to screen
         print("Coast.WriteFutureErrorShp: Writing uncertainty area to polygon file %d", Year)
@@ -897,7 +900,7 @@ class Coast:
                                 Transect.FutureSeaLevels[-1],
                                 
                                 Transect.DC1[0], Transect.DC1[1], Transect.DC1[2], Transect.DC1[3],
-                                Transect.get_OS_Year()]
+                                Transect.OSYear]
                     
                                 
     
@@ -1812,6 +1815,16 @@ class Coast:
         
         # sort out delete flags???
                 
+    def Check_OS_Years(self):
+        
+        """
+        Function to get and populate OS years from smarter 2020 dataset
+        """
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                Transect.Check_OS_Year()
+        
         
     def ExtractHistoricalShorelinePositions(self,HistoricalShorelinesShp,Reset=False):
 
@@ -3053,8 +3066,11 @@ class Coast:
 
         """
 
+        
         # keep track of no of coastal segments for IDs
         FutureCount = 0
+        self.FutureMinUncertainty = []
+        self.FutureMaxUncertainty = []
 
         # loop through transects and get contiguous locations where there are predictions
         for CoastLine in self.CoastLines:

@@ -23,6 +23,9 @@ Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.sh
 # open shapefiles of -10m contour
 BathyLines = gp.read_file(WorkingPath / "Bathymetry" / "Scotland_10m_Bathy_Contour_Simple.shp")
 
+# open shpaefiles of MLWS
+MLWS_Modern = gp.read_file(WorkingPath / "MLWS_Lines" / "OSMM_MLWS_2020.shp")
+
 # and historic MHWS datasets
 MHWS_1890 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1890_FINAL.shp")
 MHWS_1970 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1970_Final.shp")
@@ -42,6 +45,7 @@ for index, Row in Cells.iterrows():
 
     # Intersection to isolate bathy for each cell
     BathyClipped = ClipLines2Poly(BathyLines, Row.geometry)
+    MLWSClipped = ClipLines2Poly(MLWS_Modern, Row.geometry)
     Old = ClipLines2Poly(MHWS_1890,Row.geometry)
     Inter = ClipLines2Poly(MHWS_1970,Row.geometry)
     Soft = ClipLines2Poly(MHWS_Soft,Row.geometry)
@@ -50,12 +54,18 @@ for index, Row in Cells.iterrows():
     
     # Save these to new files
     RowName = "Cell_" + Row.Cell_sub
+    print(RowName)
     
     try:
         BathyClipped.to_file(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp"))
     except:
         print("Unable to write bathy for " + Row.Cell_sub)
     
+    try:
+        MLWSClipped.to_file(WorkingPath / "MLWS_Lines" / (RowName + "_MLWS.shp"))
+    except:
+        print("Unable to write MLWS for " + Row.Cell_sub)
+        
     try:
         Old.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp"))
     except:

@@ -29,7 +29,7 @@ NoSmooths = 50
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # Cell list
-CellList = ["1a","1b","1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g","4"]
+CellList = ["1a", "1b", "1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g","4"]
 
 # loop through each cell
 #for index, Row in Cells.iterrows():
@@ -53,6 +53,7 @@ for CellSub in CellList:
     ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Final.shp")
     SoftPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp")
     LiDARPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR.shp")
+    MLWSPath = WorkingPath / "MLWS_Lines" / (RowName + "_MLWS_Modern.shp")
     BathyPath = WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")
     OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")
     QuiteOldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp")
@@ -150,6 +151,9 @@ for CellSub in CellList:
         CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
         
         CellCoast.GotHistoricShorelines = True
+        
+        # Get OS year smarter 2020
+        CellCoast.Check_OS_Years()
         
         # SAVE ENTIRE COAST OBJECT
         print("\tSaving Coast Object as ", Filename2SaveCoast)

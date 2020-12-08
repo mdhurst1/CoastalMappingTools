@@ -57,6 +57,8 @@ for CellSub in CellList:
     OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")
     QuiteOldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp")
     
+    DC1Path = WorkingPath / "DC1_Results" / (RowName +"_DC1_Results.shp")
+    
     if not BathyPath.is_file():
         print("No Bathy")
         continue
@@ -92,7 +94,7 @@ for CellSub in CellList:
 
         CellCoast.GenerateTransects(TransectSpacing, 200, 200, CheckTopology=False)
         
-        # CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Raw.shp")))
+        CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Raw.shp")))
         
         CellCoast.BuiltTransects = True
         
@@ -116,18 +118,25 @@ for CellSub in CellList:
         else:
             CellCoast.ExtractHistoricalShorelinePositions(str(QuiteOldPath))
         
+        #CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Sampled1.shp")))
+        
         if not SoftPath.is_file():
             print("No soft MHWS file")
         else:
             CellCoast.ExtractHistoricalShorelinePositions(str(SoftPath))
-            
+        
+        #CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Sampled2.shp")))
+        
         if not LiDARPath.is_file():
             print("No LiDAR MHWS file")
         else:
             CellCoast.ExtractHistoricalShorelinePositions(str(LiDARPath))
             
-        # CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Sampled.shp")))
+        #CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Sampled3.shp")))
     
+        ### get DC1 results
+        CellCoast.SampleDC1Data(str(DC1Path))
+        
         #### get MHWS for each transect
         CellCoast.SampleMHWSElevation(str(WorkingPath / "MHWS_Lines" / "scotland_mhws_elev.tif"))
     
@@ -142,6 +151,9 @@ for CellSub in CellList:
         
         CellCoast.GotHistoricShorelines = True
         
+        # Get OS year smarter 2020
+        CellCoast.Check_OS_Years()
+        
         # SAVE ENTIRE COAST OBJECT
         print("\tSaving Coast Object as ", Filename2SaveCoast)
         with open(str(Filename2SaveCoast), 'wb') as PFile:
@@ -153,7 +165,7 @@ for CellSub in CellList:
         HinterlandDistance = 200
         CellCoast.ExtendTransects2Hinterland(HinterlandDistance)
         #CellCoast.CheckTransectTopology()
-        CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects.shp")))
+        #CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects.shp")))
         CellCoast.FindDEM(str(NationalDEMPath / "OSTerrain5_fullcoastindex.shp"))
         CellCoast.ExtractTransectTopography()
         
@@ -163,7 +175,7 @@ for CellSub in CellList:
         print("\tSaving Coast Object as ", Filename2SaveCoast)
         with open(str(Filename2SaveCoast), 'wb') as PFile:
             pickle.dump(CellCoast, PFile)
-            
+
     if not CellCoast.PredictedFutureShorelines:    
     
         ## predict future shorelines
@@ -179,13 +191,16 @@ for CellSub in CellList:
     
     # write future shorelines
     CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future.shp")),Smooth=True)
-    CellCoast.WriteFutureTransectsShp(str(OutputPath / (RowName + "_Transects.shp")))
+    
     CellCoast.WriteErodedAreaShp(str(OutputPath / (RowName + "_ErodedArea_2050.shp")), 2050)
     CellCoast.WriteErodedAreaShp(str(OutputPath / (RowName + "_ErodedArea_2100.shp")))
     CellCoast.WriteFutureUncertaintyShp(str(OutputPath / (RowName + "_UncertaintyArea_2050.shp")), 2050)
     CellCoast.WriteFutureUncertaintyShp(str(OutputPath / (RowName + "_UncertaintyArea_2100.shp")))
     CellCoast.WriteFutureErrorShp(str(OutputPath / (RowName + "_ErrorArea_2050.shp")), 2050)
     CellCoast.WriteFutureErrorShp(str(OutputPath / (RowName + "_ErrorArea_2100.shp")))
+    
+    CellCoast.TruncateTransects()
+    CellCoast.WriteFutureTransectsShp(str(OutputPath / (RowName + "_Transects.shp")))
     
     #CellCoast.WriteFutureShorelineSegmentsShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSegments.shp")))
 

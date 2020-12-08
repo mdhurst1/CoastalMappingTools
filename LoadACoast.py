@@ -12,13 +12,13 @@ from Coast import *
 
 # define file names for analysis
 WorkingPath = pathlib.Path.cwd().parent
-Cell = "1a"
+Cell = "1b"
 Filename2LoadCoast = WorkingPath / "ShorelineRun" / ("Cell_"+Cell+"_Change.pydata")
 Cst = pickle.load( open( Filename2LoadCoast, "rb" ) )
 
 # set a line and a transect if needed
-LineID = "25"
-TransectID = "32"
+LineID = "24"
+TransectID = "28"
 
 # get line
 Lns = Cst.CoastLines

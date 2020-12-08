@@ -55,6 +55,7 @@ class Transect:
         self.HistoricFlag = False
         self.HistoricShorelinesSources = []
         self.HistoricShorelinesYears = []
+        self.OSYear = False
         self.HistoricShorelinesPositions = []
         self.HistoricShorelinesDistances = []
         self.HistoricShorelinesPosition = []
@@ -92,8 +93,8 @@ class Transect:
         self.FutureShorelinesPositions = []
         self.FutureShorelinesRates = []
         self.FutureShorelinesDistances = []
-        self.FutureShorelinesUncertainty = []
-        self.FutureShorelinesUncertaintyDistances = []
+        self.FutureShorelineMinDistance = None
+        self.FutureShorelineMaxDistance = None
         self.VegEdge = False
 
         # transect data
@@ -249,7 +250,7 @@ class Transect:
 
         self.Length = self.CalculateLength(self.StartNode, self.EndNode)
         
-    def Truncate(self, MinLength=50., Year=2100):
+    def Truncate(self, MinLength=25., Year=2100):
         
         """
         Function to truncate transects to limits of historical and future 
@@ -267,6 +268,10 @@ class Transect:
         # get all distances
         DistancesList = []
         
+        #if self.LineID == "24" and self.ID == "28":
+            #import pdb
+            #pdb.set_trace()
+        
         for i in range(0,len(self.HistoricShorelinesYears)):
             
             # add nodes to lists
@@ -278,9 +283,7 @@ class Transect:
             
             # add nodes to lists
             DistancesList.append(self.FutureShorelinesDistances[i])
-            DistancesList.append(self.FutureShorelineMinDistance)
-            DistancesList.append(self.FutureShorelineMaxDistance)
-        
+                    
         # find index of min distance
         MinDistance = np.min(np.array(DistancesList))
         MaxDistance = np.max(np.array(DistancesList))
@@ -290,7 +293,6 @@ class Transect:
         Y1 = self.StartNode.Y + MaxDistance * np.cos( np.radians( self.Orientation ) )
         self.EndNode = Node(X1,Y1)
     
-        # find new start position
         X1 = self.StartNode.X + MinDistance * np.sin( np.radians( self.Orientation ) )
         Y1 = self.StartNode.Y + MinDistance * np.cos( np.radians( self.Orientation ) )
         self.StartNode = Node(X1,Y1)
@@ -649,6 +651,8 @@ class Transect:
             if FutureShorelineDistance > self.FutureShorelineMaxDistance:
                 self.FutureShorelineMaxDistance = FutureShorelineDistance
                 self.FutureShorelinesMaxNode = Node(X1, Y1)
+                
+            # need some logic here to extend transects?
     
     def PredictFutureShorelineError(self, Year=2100):
 
@@ -2019,7 +2023,7 @@ class Transect:
             # use to access future position
             Distance1 = self.FutureShorelinesDistances[Index1[0]]
             Distance2 = self.FutureShorelinesDistances[Index2[0]]
-            return Distance2-Distance1
+            return Distance1-Distance2
 
         else:
             return
@@ -2050,7 +2054,8 @@ class Transect:
         """
 
         Get the future erosion rate of the coast for a particular period of years
-        from Bruun Rule predictions
+        from Bruun Rule predictions. Rates are negative for erosion, positive
+        for accretion
 
         MDH, January 2020
 
@@ -2079,7 +2084,7 @@ class Transect:
 
             Change = self.get_FuturePositionChange(self.FutureSeaLevelYears[i-1], self.FutureSeaLevelYears[i])
             
-            if Change > 0:
+            if Change < 0:
                 return self.FutureSeaLevelYears[i-1]
         
         return
@@ -2109,7 +2114,7 @@ class Transect:
         else:
             return
 
-    def get_OS_Year(self):
+    def Check_OS_Year(self):
         
         """
         
@@ -2120,8 +2125,10 @@ class Transect:
         """
         
         Index = [i for i, x in enumerate(self.HistoricShorelinesSources) if x.endswith("Modern_Soft.shp")]
-        
-        return self.HistoricShorelinesYears[Index[0]]
+        try:
+            self.OSYear = self.HistoricShorelinesYears[Index[0]]
+        except:
+            self.OSYear = -9999
     
     def get_FutureVegEdge(self, Year):
 

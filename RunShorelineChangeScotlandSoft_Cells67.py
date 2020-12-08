@@ -113,11 +113,6 @@ for CellSub in CellList:
         else:
             CellCoast.ExtractHistoricalShorelinePositions(str(OldPath),Reset=True)
         
-        if not QuiteOldPath.is_file():
-            print("No 1970s MHWS file")
-        else:
-            CellCoast.ExtractHistoricalShorelinePositions(str(QuiteOldPath))
-        
         #CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Sampled1.shp")))
         
         if not SoftPath.is_file():
@@ -125,7 +120,10 @@ for CellSub in CellList:
         else:
             CellCoast.ExtractHistoricalShorelinePositions(str(SoftPath))
         
-        #CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Sampled2.shp")))
+        if not QuiteOldPath.is_file():
+            print("No 1970s MHWS file")
+        else:
+            CellCoast.ExtractHistoricalShorelinePositions(str(QuiteOldPath))
         
         if not LiDARPath.is_file():
             print("No LiDAR MHWS file")
@@ -150,6 +148,9 @@ for CellSub in CellList:
         CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
         
         CellCoast.GotHistoricShorelines = True
+        
+        # Get OS year smarter 2020
+        CellCoast.Check_OS_Years()
         
         # SAVE ENTIRE COAST OBJECT
         print("\tSaving Coast Object as ", Filename2SaveCoast)
