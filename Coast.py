@@ -1584,8 +1584,22 @@ class Coast:
         
         for Line in self.CoastLines:
             Line.GetShorefaceSlope(BathyShp)
-            
-            
+
+    def GetShorefaceSlopesMLWS(self):
+
+        """
+
+        Wrapper to function in the Transect object
+
+        MDH, Dec 20202
+
+        """
+        
+        print("Coast.GetShorefaceSlopeMLWS: Finding distance between shoreline and -10m bathy contour to calculate slope")
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                Transect.GetIntertidalSlope()            
             
     def GenerateTransectsBetweenContoursShp(self, ContourShp1, ContourShp2, Distance2Sea=8000., Distance2Land=8000., TransectSpacing=20., CheckTopology=True):
         """

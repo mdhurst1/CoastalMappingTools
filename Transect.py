@@ -529,11 +529,11 @@ class Transect:
         InterpFractions = (np.array(InterpolationYears)-self.HistoricShorelinesYears[0])/(self.FutureSeaLevelYears[0]-self.HistoricShorelinesYears[0])
         self.InterpolatedRSLR = self.HistoricalRSLR/1000.+RSLRDiff*InterpFractions
         
-        # get mean slopes of shoreface if we dont already have it
+        # get slope from intertidal zoneif we dont already have it
         if not self.ShorefaceSlope:
-            self.ShorefaceDistance = self.StartNode.get_Distance(self.HistoricShorelinesPosition[-1])
+            self.ShorefaceDistance = self.MLWS.get_Distance(self.HistoricShorelinesPosition[-1])
             self.ShorefaceDepth = self.ClosureDepth + self.MHWS
-            self.ShorefaceSlope = self.ShorefaceDepth/self.ShorefaceDistance
+            self.ShorefaceSlope = self.ShorefaceDistance/self.ShorefaceDepth
         
         # get hinterland slope 
         self.CalculateHinterlandSlope()
