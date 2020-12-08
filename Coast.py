@@ -1599,7 +1599,7 @@ class Coast:
         
         for Line in self.CoastLines:
             for Transect in Line.Transects:
-                Transect.GetIntertidalSlope()            
+                Transect.CalculateIntertidalSlope()            
             
     def GenerateTransectsBetweenContoursShp(self, ContourShp1, ContourShp2, Distance2Sea=8000., Distance2Land=8000., TransectSpacing=20., CheckTopology=True):
         """
