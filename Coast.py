@@ -1515,11 +1515,11 @@ class Coast:
         elif dx < 0 and dy > 0:
             self.OverallOrientation = 360 + np.degrees( np.arctan( dx / dy ) )
 
-    def CheckOrientation(self, ShorelineShp, BathyShp):
+    def CheckOrientation(self, ShorelineShp, OffshoreShp):
 
         """
         Wrapper to function in the line object to check and correct coast orientation
-        relative to a shoreline and bathymetric contour
+        relative to a shoreline and a deeper contour e.g. a bathy line or MLWS
 
         MDH, May 2020
 
@@ -1531,7 +1531,7 @@ class Coast:
         for Line in self.CoastLines:
             
             # generate transects along each line
-            Line.CheckLineOrientation(ShorelineShp, BathyShp)
+            Line.CheckLineOrientation(ShorelineShp, OffshoreShp)
 
     # function to do something    
     def GenerateTransects(self, TransectSpacing, TransectLength2Sea=5000, TransectLength2Land=5000, CheckTopology=True):

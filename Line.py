@@ -395,21 +395,6 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
                 else:
                     TransectOrientation = TempOrientation - 90.
 
-                """ if self.ID == "3":
-                    print(TempOrientation)
-                    print(TransectOrientation)
-
-                    X1 = PointX + TransectLength2Sea * np.sin( np.radians( TransectOrientation ) )
-                    Y1 = PointY + TransectLength2Sea * np.cos( np.radians( TransectOrientation ) )
-                    X2 = PointX - TransectLength2Land * np.sin( np.radians( TransectOrientation ) )
-                    Y2 = PointY - TransectLength2Land * np.cos( np.radians( TransectOrientation ) )
-                    
-                    plt.plot(X1,Y1,'bo')
-                    plt.plot(X2,Y2,'ro')
-                    plt.plot([X1,X2],[Y1,Y2],'k--')
-                    plt.show()
-                    sys.exit() """
-
                 #Calculate start and end nodes and generate Transect
                 X1 = PointX + TransectLength2Sea * np.sin( np.radians( TransectOrientation ) )
                 Y1 = PointY + TransectLength2Sea * np.cos( np.radians( TransectOrientation ) )
@@ -558,21 +543,6 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         # find intersection between transect line and shapefile lines
         for i, ThisTransect in enumerate(self.Transects):
             
-            #OffshoreIntersection = self.Transects[i].LineString.intersection(BathyLines)
-            #OnshoreIntersection = self.Transects[i].LineString.intersection(ShoreLines)
-            
-            # change tonearest points to avoid non interscting problem
-            #BasePoint = Point(ThisTransect.CoastNode.X, ThisTransect.CoastNode.Y)
-            #OffshorePoint = nearest_points(BathyLines, BasePoint)[0]
-            #OnshorePoint = nearest_points(ShoreLines, BasePoint)[0]
-            
-            #OffshoreNode = Node(OffshorePoint.x,OffshorePoint.y)
-            #OnshoreNode = Node(OnshorePoint.x,OnshorePoint.y)
-            #TestOrientation = OffshoreNode.get_Orientation(OnshoreNode)
-            
-            # check for reverses    
-            #if (abs(TestOrientation-ThisTransect.Orientation) > 90.): self.ReverseFlags[i] = 1
-
             # get offshore points to measure distances
             OffshorePoint = nearest_points(BathyLines, Point(ThisTransect.CoastNode.X, ThisTransect.CoastNode.Y))[0]
             OffshoreNode = Node(OffshorePoint.x,OffshorePoint.y)
