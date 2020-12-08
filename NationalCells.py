@@ -31,6 +31,7 @@ MHWS_1890 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1890_FINAL.
 MHWS_1970 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1970_Final.shp")
 MHWS_Soft = gp.read_file(WorkingPath / "MHWS_Lines" / "MHWS_OS_smarter2020_soft.shp")
 MHWS_Modern = gp.read_file(WorkingPath / "MHWS_Lines" / "MHWS_OS_smarter_dissolve.shp")
+MHWS_Inner = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Inner_Baseline.shp")
 MHWS_LiDAR = gp.read_file(WorkingPath / "MHWS_Lines" / "DC2_Scotland_MHWS_Modern.shp")
 
 def ClipLines2Poly(LinesGDF,PolyGDF):
@@ -51,6 +52,7 @@ for index, Row in Cells.iterrows():
     Soft = ClipLines2Poly(MHWS_Soft,Row.geometry)
     Modern = ClipLines2Poly(MHWS_Modern,Row.geometry)
     LiDAR = ClipLines2Poly(MHWS_LiDAR, Row.geometry)
+    Inner = ClipLines2Poly(MHWS_Inner, Row.geometry)
     
     # Save these to new files
     RowName = "Cell_" + Row.Cell_sub
@@ -82,7 +84,7 @@ for index, Row in Cells.iterrows():
         print("Unable to write soft for " + Row.Cell_sub)
     
     try:
-        Modern.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Final.shp"))
+        Modern.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_Open_Baseline.shp"))
     except:
         print("Unable to write modern for " + Row.Cell_sub)
         
@@ -91,4 +93,7 @@ for index, Row in Cells.iterrows():
     except:
         print("Unable to write LiDAR for " + Row.Cell_sub)
         
-    
+    try:
+        Inner.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_Inner_Baseline.shp"))
+    except:
+        print("Unable to write Inner Baseline for " + Row.Cell_sub)
