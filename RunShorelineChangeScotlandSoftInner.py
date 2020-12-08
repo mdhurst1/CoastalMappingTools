@@ -55,7 +55,7 @@ for CellSub in CellList:
     # define other files required
     SoftPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp")
     LiDARPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR.shp")
-    MLWSPath = WorkingPath / "MLWS_Lines" / (RowName + "_MLWS_Modern.shp")
+    MLWSPath = WorkingPath / "MLWS_Lines" / (RowName + "_MLWS.shp")
     BathyPath = WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")
     OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")
     QuiteOldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp")
