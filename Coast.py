@@ -49,6 +49,7 @@ class Coast:
         self.NoCoastLines = 0
         self.CoastLines = []
         self.Contours = []
+        self.MLWSLines = []
         self.CliffTopLines = []
         self.CliffToeLines = []
         self.BarrierFrontTopLines = []
@@ -2011,6 +2012,42 @@ class Coast:
                             Transect.HistoricShorelinesPositions[Index].append(Position)
                             Transect.HistoricShorelinesDistances[Index].append(Distance)
 
+
+    def ExtractMLWS(self,MLWSShp):
+
+        """
+        Function to find nearest location of MLWS
+        from shapefile for each transect
+
+        MDH, December 2020
+
+        Parameters
+        ----------
+        MLWSShp : string
+            Filename for polyline shapfile containing MLWS
+        
+        """
+        print("Coast.ExtractMLWS: Finding nearest MLWS position")
+        
+        # read shapefile using geopandas
+        GDF = gp.read_file(MLWSShp)
+        
+        # get lines geometry
+        Lines = GDF['geometry']
+        MultiLines = MultiLineString([Line for Line in Lines])
+
+        for i, ThisLine in enumerate(MultiLines):
+            x, y = ThisLine.xy
+            TempLine = Line(str(i),x,y,Contour)
+            self.MLWSLines.append(TempLine)
+        
+        for ThisLine in self.CoastLines:
+            for Transect in ThisLine.Transects:
+                
+                # shapely goes here
+                BasePoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                NearestPoint = nearest_points(MultiLines, BasePoint)[0]
+                Transect.MLWS = Node(NearestPoint.x,NearestPoint.y)
 
     def ExtractContours(self,ContourShp):
 
