@@ -425,6 +425,18 @@ class Transect:
         
         self.HistoricFlag = True
 
+    def CalculateIntertidalSlope(self):
+
+        if (not self.MLWS) or (not self.HistoricShorelinesPositions):
+            print("No MLWS data")
+            import pdb
+            pdb.set_trace()            
+
+        else:
+            self.ShorefaceDistance = self.MLWS.get_Distance(self.HistoricShorelinesPosition[-1])
+            self.ShorefaceDepth = self.ClosureDepth + self.MHWS
+            self.ShorefaceSlope = self.ShorefaceDistance/self.ShorefaceDepth
+
     def PredictFutureShorelines(self, MaxRockHeadErosionDistance=25.):
 
         """
