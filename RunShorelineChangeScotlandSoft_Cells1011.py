@@ -50,9 +50,10 @@ for CellSub in CellList:
     Filename2SaveCoast = OutputPath / (RowName+"_Change.pydata")
     
     # get soft coast position as most recent
-    ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Final.shp")
+    ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Open_Baseline.shp")
     SoftPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp")
     LiDARPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR.shp")
+    MLWSPath = WorkingPath / "MLWS_Lines" / (RowName + "_MLWS.shp")
     BathyPath = WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")
     OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")
     QuiteOldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp")
@@ -81,20 +82,17 @@ for CellSub in CellList:
     
     if not CellCoast.BuiltTransects:
         
-        # rewrite coasts read in
-        # CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Raw_Baseline.shp")))
-        
         # may need to think carefully about how much to smooth
         CellCoast.SmoothCoastLines(WindowSize=SmoothingWindowSize,NoSmooths=NoSmooths)
         
-        CellCoast.CheckOrientation(str(SoftPath),str(BathyPath))
+        # make sure each line is correctly orientated with sea on left as you look down the line
+        CellCoast.CheckOrientation(str(SoftPath),str(MLWSPath))
         
         # write smoothed coast/bathy to file
         CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
 
+        # create some initial dummy transects
         CellCoast.GenerateTransects(TransectSpacing, 200, 200, CheckTopology=False)
-        
-        CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Raw.shp")))
         
         CellCoast.BuiltTransects = True
         
@@ -108,6 +106,7 @@ for CellSub in CellList:
     
     if not CellCoast.GotHistoricShorelines:
         
+        # Sample MHWS positions
         if not OldPath.is_file():
             print("No 1890s MHWS file")
         else:
@@ -132,12 +131,15 @@ for CellSub in CellList:
         else:
             CellCoast.ExtractHistoricalShorelinePositions(str(LiDARPath))
             
-        #CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects_Sampled3.shp")))
-    
+        if not MLWSPath.is_file():
+            print("No MLWS file")
+        else:
+            CellCoast.ExtractMLWS(str(MLWSPath))
+        
         ### get DC1 results
         CellCoast.SampleDC1Data(str(DC1Path))
         
-        #### get MHWS for each transect
+        #### get MHWS elevation for each transect
         CellCoast.SampleMHWSElevation(str(WorkingPath / "MHWS_Lines" / "scotland_mhws_elev.tif"))
     
         #### get historical rate of relative sea level change

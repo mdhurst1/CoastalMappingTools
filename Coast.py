@@ -1753,6 +1753,7 @@ class Coast:
         
         """
         
+        print("Coast.SampleDC1Data: Sampling data from DC1 to add to transects")
         # read shapefile using geopandas
         GDF = gp.read_file(DC1Shp)
         Lines = GDF['geometry']
@@ -1919,6 +1920,23 @@ class Coast:
                     continue
 
                 # check there arent multiple intersections
+                """
+                # store multiple intersections if so
+                if Intersections.geom_type is "MultiPoint":
+                    StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
+                    Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections]
+                    Index = Distances.index(min(Distances))
+                    Indices = np.argsort(np.array(Distances))
+                    Distances = np.array(Distances)[Indices]
+                    IntersectionsList = [Intersections[i] for i in Indices]
+                    
+                else:
+                    # check if this is a new endnode by intersecting with line from startnode to endnode
+                    Distance = Transect.LineString.distance(Intersections)
+                    Intersection = Intersections
+                    IntersectionsList = [Intersection,]
+                """
+
                 # store multiple intersections if so
                 if Intersections.geom_type is "MultiPoint":
                     StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
@@ -1972,12 +1990,10 @@ class Coast:
                     IntersectionsList = [IntersectionsList[i] for i in Indices]
                     IntersectionYears = [IntersectionYears[i] for i in Indices]
                 
-                # loop through intersections
-                for i, Intersection in enumerate(IntersectionsList):
-                    
-                    # retrieve year
-                    Year = IntersectionYears[i]
-                    
+                # loop through unique years
+                UniqueYears = list(set(IntersectionYears))
+                for Year in UniqueYears:
+
                     # retrieve positional error
                     if Year < 1970:
                         Error = 5.
@@ -1985,6 +2001,64 @@ class Coast:
                         Error = 2.
                     else:
                         Error = 1.
+
+                    
+                    # isolate intersections for this year
+                    Indices = [i for i, ThisYear in enumerate(IntersectionYears) if ThisYear == Year]
+                    TempIntersectionsList = [IntersectionsList[i] for i in Indices]
+                    CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                    TempDistances = [IntersectionPoint.distance(CoastPoint) for IntersectionPoint in TempIntersectionsList]
+                    IntersectionIndex = TempDistances.index(min(TempDistances))
+                    Intersection = TempInteresctionsList[IntersectionIndex]
+
+                    if Year not in Transect.HistoricShorelinesYears:
+                        
+                        # add year to transect
+                        Index = bisect.bisect(Transect.HistoricShorelinesYears, Year)
+                        Transect.HistoricShorelinesYears.insert(Index, Year)
+                        
+                        # add shoreline position
+                        Position = Node(Intersection.x,Intersection.y)
+                        Positions = [Position,]
+                        Transect.HistoricShorelinesPositions.insert(Index, Positions)
+                        
+                        # add distance
+                        Distances = [Transect.StartNode.get_Distance(Position),]
+                        Transect.HistoricShorelinesDistances.insert(Index, Distances)
+                        
+                        # add source info
+                        Transect.HistoricShorelinesSources.insert(Index, Path(HistoricalShorelinesShp).name)
+                        
+                        # add error
+                        Transect.HistoricShorelinesErrors.insert(Index, Error)
+                        
+                    else:
+                        
+                        # find and either add or replace depending on proximity
+                        Index = Transect.HistoricShorelinesYears.index(Year)
+                        Position = Node(Intersection.x,Intersection.y)
+                        
+                        MinDistance = 1000.
+                        
+                        for OldPosition in Transect.HistoricShorelinesPositions[Index]:
+                            Distance = OldPosition.get_Distance(Position)
+                            if Distance < MinDistance:
+                                MinDistance = Distance
+                        
+                        if MinDistance > 1.:
+                        
+                            # add to transect
+                            Transect.HistoricShorelinesPositions[Index].append(Position)
+                            Transect.HistoricShorelinesDistances[Index].append(Distance)
+
+
+
+
+                """
+                for i, Intersection in enumerate(IntersectionsList):
+                    
+                    # retrieve year
+                    Year = IntersectionYears[i]
                     
                     if Year not in Transect.HistoricShorelinesYears:
                        
@@ -2025,6 +2099,7 @@ class Coast:
                             # add to transect
                             Transect.HistoricShorelinesPositions[Index].append(Position)
                             Transect.HistoricShorelinesDistances[Index].append(Distance)
+                """
 
 
     def ExtractMLWS(self,MLWSShp):
@@ -2048,13 +2123,27 @@ class Coast:
         
         # get lines geometry
         Lines = GDF['geometry']
-        MultiLines = MultiLineString([Line for Line in Lines])
-
-        for i, ThisLine in enumerate(MultiLines):
-            x, y = ThisLine.xy
-            TempLine = Line(str(i),x,y,Contour)
-            self.MLWSLines.append(TempLine)
         
+        # catch situation where only one line
+        MultiLines = []
+
+        if len(Lines) == 1:
+            MultiLines = Lines[0]
+
+        # deal with invalid geometries on the fly? This is messy!
+        else:
+            for ThisLine in Lines:
+                if not ThisLine:
+                    continue
+                elif ThisLine.geom_type == "LineString":
+                    MultiLines.append(ThisLine)
+                elif ThisLine.geom_type == "MultiLineString":
+                    for SubLine in ThisLine:
+                        if SubLine.geom_type == "LineString":
+                            MultiLines.append(SubLine)
+        
+        MultiLines = MultiLineString(MultiLines)
+                    
         for ThisLine in self.CoastLines:
             for Transect in ThisLine.Transects:
                 
@@ -3061,13 +3150,16 @@ class Coast:
                         FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
                         ii = 1
                     else:
-                        try:
-                            FirstNode = CoastLine.Transects[StartList[i]-1].get_RecentPosition()
-                            ii = 0
-                        except:
+                        FirstNode = CoastLine.Transects[StartList[i]-1].get_RecentPosition()
+                        ii = 0
+                        if not FirstNode:
                             FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
                             ii= 1
                     
+                    if not FirstNode:
+                        import pdb
+                        pdb.set_trace()
+                        
                     FutureList.append(FirstNode)
                     
                     # loop through transects and get future positions
@@ -3083,13 +3175,10 @@ class Coast:
                                                 
                     # add latest MHWS from next node to end
                     # might need some logic here to finish
-                    if EndList[i] == CoastLine.NoTransects-1:
-                        LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition()
+                    if not CoastLine.Transects[EndList[i]].get_RecentPosition():
+                        LastNode = CoastLine.Transects[EndList[i]-1].get_RecentPosition()
                     else:
-                        try:
-                            LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition()
-                        except:
-                            LastNode = CoastLine.Transects[EndList[i]-1].get_RecentPosition()
+                        LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition()
                     
                     FutureList.append(LastNode)
                     
@@ -3178,13 +3267,12 @@ class Coast:
                     FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
                     ii = 1
                 else:
-                    try:
-                        FirstNode = CoastLine.Transects[StartList[i]-1].get_RecentPosition()
-                        ii = 0
-                    except:
+                    FirstNode = CoastLine.Transects[StartList[i]-1].get_RecentPosition()
+                    ii = 0
+                    if not FirstNode:
                         FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
                         ii= 1
-                
+                            
                 FutureMinList.append(FirstNode)
                 FutureMaxList.append(FirstNode)
 
@@ -3202,21 +3290,25 @@ class Coast:
                     
                 # add latest MHWS from next node to end
                 # might need some logic here to finish
-                if EndList[i] == CoastLine.NoTransects-1:
+                # add latest MHWS from next node to end
+                # might need some logic here to finish
+                if not CoastLine.Transects[EndList[i]].get_RecentPosition():
                     LastNode = CoastLine.Transects[EndList[i]-1].get_RecentPosition()
                 else:
-                    try:
-                        LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition()
-                    except:
-                        LastNode = CoastLine.Transects[EndList[i]-1].get_RecentPosition()
-                
+                    LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition()
+                    
                 FutureMinList.append(LastNode)
                 FutureMaxList.append(LastNode)
                 
-                # create new line object for min and max
-                X = [FutureMinNode.X for FutureMinNode in FutureMinList]
-                Y = [FutureMinNode.Y for FutureMinNode in FutureMinList]
+                try:
+                    # create new line object for min and max
+                    X = [FutureMinNode.X for FutureMinNode in FutureMinList]
+                    Y = [FutureMinNode.Y for FutureMinNode in FutureMinList]
                 
+                except:
+                    import pdb
+                    pdb.set_trace()
+                    
                 TempLine = Line("FutureMin_"+str(FutureCount), X, Y)
                 self.FutureMinUncertainty.append(TempLine)
 
@@ -3295,13 +3387,16 @@ class Coast:
                 
                 # add latest MHWS from previous node to start
                 # might need some logic here for first transect
+                # might need some logic here for first transect
                 if StartList[i] == 0:
                     FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
+                    ii = 1
                 else:
-                    try:
-                        FirstNode = CoastLine.Transects[StartList[i]-1].get_RecentPosition()
-                    except:
+                    FirstNode = CoastLine.Transects[StartList[i]-1].get_RecentPosition()
+                    ii = 0
+                    if not FirstNode:
                         FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
+                        ii= 1
                 
                 FutureMinList.append(FirstNode)
                 FutureMaxList.append(FirstNode)

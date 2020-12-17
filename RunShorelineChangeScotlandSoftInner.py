@@ -15,8 +15,11 @@ from Coast import *
 # define file names for analysis
 WorkingPath = pathlib.Path.cwd().parent
 NationalDEMPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2Final/99_NationalData/OSTerrain5")
-OutputPath = WorkingPath/"ShorelineRun"
+OutputPath = WorkingPath/"ShorelineRunInner"
 
+if not OutputPath:
+    OutputPath.mkdir(parents=True, exist_ok=True)
+    
 # set the minimum length
 MinLength = 100.
 
@@ -29,7 +32,7 @@ NoSmooths = 50
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # Cell list
-CellList = ["3e",] # "1b", "1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g","4"]
+CellList = ["1a",] # "1b", "1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g","4"]
 
 # loop through each cell
 #for index, Row in Cells.iterrows():
@@ -47,7 +50,7 @@ for CellSub in CellList:
         continue
 
     # # this checks to see whether coast object already exists
-    Filename2SaveCoast = OutputPath / (RowName+"_Change.pydata")
+    Filename2SaveCoast = OutputPath / (RowName+"_InnerChange.pydata")
     
     # define soft coast position from baseline
     BaselinePath = WorkingPath / "MHWS_Lines" / (RowName + "_Inner_Baseline.shp")
@@ -57,8 +60,8 @@ for CellSub in CellList:
     LiDARPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR.shp")
     MLWSPath = WorkingPath / "MLWS_Lines" / (RowName + "_MLWS.shp")
     BathyPath = WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")
-    OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")
-    QuiteOldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp")
+    OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890_Inner.shp")
+    QuiteOldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970_Inner.shp")
     DC1Path = WorkingPath / "DC1_Results" / (RowName +"_DC1_Results.shp")
     
     if not BathyPath.is_file():
@@ -138,7 +141,7 @@ for CellSub in CellList:
         if not MLWSPath.is_file():
             print("No MLWS file")
         else:
-            CellCoast.ExtractMLWSPosition(str(MLWSPath))
+            CellCoast.ExtractMLWS(str(MLWSPath))
         
         ### get DC1 results
         CellCoast.SampleDC1Data(str(DC1Path))
@@ -159,6 +162,9 @@ for CellSub in CellList:
         
         # Get OS year smarter 2020
         CellCoast.Check_OS_Years()
+        
+        # Wrtie transects
+        CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "Transects_Sampled.shp")))
         
         # SAVE ENTIRE COAST OBJECT
         print("\tSaving Coast Object as ", Filename2SaveCoast)
@@ -196,17 +202,17 @@ for CellSub in CellList:
             pickle.dump(CellCoast, PFile)
     
     # write future shorelines
-    CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future.shp")),Smooth=True)
+    CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Inner_Future.shp")),Smooth=True)
     
-    CellCoast.WriteErodedAreaShp(str(OutputPath / (RowName + "_ErodedArea_2050.shp")), 2050)
-    CellCoast.WriteErodedAreaShp(str(OutputPath / (RowName + "_ErodedArea_2100.shp")))
-    CellCoast.WriteFutureUncertaintyShp(str(OutputPath / (RowName + "_UncertaintyArea_2050.shp")), 2050)
+    CellCoast.WriteErodedAreaShp(str(OutputPath / (RowName + "_Inner_ErodedArea_2050.shp")), 2050)
+    CellCoast.WriteErodedAreaShp(str(OutputPath / (RowName + "_Inner_ErodedArea_2100.shp")))
+    CellCoast.WriteFutureUncertaintyShp(str(OutputPath / (RowName + "_Inner_UncertaintyArea_2050.shp")), 2050)
     CellCoast.WriteFutureUncertaintyShp(str(OutputPath / (RowName + "_UncertaintyArea_2100.shp")))
-    CellCoast.WriteFutureErrorShp(str(OutputPath / (RowName + "_ErrorArea_2050.shp")), 2050)
-    CellCoast.WriteFutureErrorShp(str(OutputPath / (RowName + "_ErrorArea_2100.shp")))
+    CellCoast.WriteFutureErrorShp(str(OutputPath / (RowName + "_Inner_ErrorArea_2050.shp")), 2050)
+    CellCoast.WriteFutureErrorShp(str(OutputPath / (RowName + "_Inner_ErrorArea_2100.shp")))
     
     CellCoast.TruncateTransects()
-    CellCoast.WriteFutureTransectsShp(str(OutputPath / (RowName + "_Transects.shp")))
+    CellCoast.WriteFutureTransectsShp(str(OutputPath / (RowName + "_Inner_Transects.shp")))
     
     #CellCoast.WriteFutureShorelineSegmentsShp(str(WorkingPath / "CoastalCells" / (RowName + "_FutureSegments.shp")))
 

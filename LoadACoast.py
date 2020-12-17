@@ -12,8 +12,8 @@ from Coast import *
 
 # define file names for analysis
 WorkingPath = pathlib.Path.cwd().parent
-Cell = "1b"
-Filename2LoadCoast = WorkingPath / "ShorelineRun" / ("Cell_"+Cell+"_Change.pydata")
+Cell = "3e"
+Filename2LoadCoast = WorkingPath / "ShorelineRunInner" / ("Cell_"+Cell+"_Inner_Change.pydata")
 Cst = pickle.load( open( Filename2LoadCoast, "rb" ) )
 
 # set a line and a transect if needed

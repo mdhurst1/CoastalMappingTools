@@ -427,14 +427,17 @@ class Transect:
 
     def CalculateIntertidalSlope(self):
 
-        if (not self.MLWS) or (not self.HistoricShorelinesPositions):
+        if not self.MLWS:
             print("No MLWS data")
             import pdb
-            pdb.set_trace()            
+            pdb.set_trace()
+            
+        elif not self.HistoricShorelinesPositions:
+            return
 
         else:
-            self.ShorefaceDistance = self.MLWS.get_Distance(self.HistoricShorelinesPosition[-1])
-            self.ShorefaceDepth = self.ClosureDepth + self.MHWS
+            self.ShorefaceDistance = self.MLWS.get_Distance(self.HistoricShorelinesPositions[-1][0])
+            self.ShorefaceDepth = 2.*self.MHWS
             self.ShorefaceSlope = self.ShorefaceDistance/self.ShorefaceDepth
 
     def PredictFutureShorelines(self, MaxRockHeadErosionDistance=25.):
@@ -546,6 +549,8 @@ class Transect:
             self.ShorefaceDistance = self.MLWS.get_Distance(self.HistoricShorelinesPosition[-1])
             self.ShorefaceDepth = self.ClosureDepth + self.MHWS
             self.ShorefaceSlope = self.ShorefaceDistance/self.ShorefaceDepth
+        
+        self.ShorefaceDepth = self.ClosureDepth + self.MHWS
         
         # get hinterland slope 
         self.CalculateHinterlandSlope()
@@ -2197,7 +2202,8 @@ class Transect:
 
         # catch if no shoreline
         if len(self.HistoricShorelinesYears) == 0:
-            raise Exception("Transect.get_RecentPosition: No recent position")
+            return
+            #raise Exception("Transect.get_RecentPosition: No recent position")
 
         # find index of most recent historical shoreline
         Index = np.argmax(self.HistoricShorelinesYears)

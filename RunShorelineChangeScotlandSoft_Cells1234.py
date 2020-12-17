@@ -50,10 +50,10 @@ for CellSub in CellList:
     Filename2SaveCoast = OutputPath / (RowName+"_Change.pydata")
     
     # get soft coast position as most recent
-    ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Final.shp")
+    ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Open_Baseline.shp")
     SoftPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp")
     LiDARPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR.shp")
-    MLWSPath = WorkingPath / "MLWS_Lines" / (RowName + "_MLWS_Modern.shp")
+    MLWSPath = WorkingPath / "MLWS_Lines" / (RowName + "_MLWS.shp")
     BathyPath = WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")
     OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")
     QuiteOldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp")
@@ -134,7 +134,7 @@ for CellSub in CellList:
         if not MLWSPath.is_file():
             print("No MLWS file")
         else:
-            CellCoast.ExtractMLWSPosition(str(MLWSPath))
+            CellCoast.ExtractMLWS(str(MLWSPath))
         
         ### get DC1 results
         CellCoast.SampleDC1Data(str(DC1Path))
