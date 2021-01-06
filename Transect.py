@@ -426,7 +426,7 @@ class Transect:
         self.HistoricFlag = True
 
     def CalculateIntertidalSlope(self):
-
+        
         if not self.MLWS:
             print("No MLWS data")
             import pdb
@@ -438,8 +438,8 @@ class Transect:
         else:
             self.ShorefaceDistance = self.MLWS.get_Distance(self.HistoricShorelinesPositions[-1][0])
             self.ShorefaceDepth = 2.*self.MHWS
-            self.ShorefaceSlope = self.ShorefaceDistance/self.ShorefaceDepth
-
+            self.ShorefaceSlope = self.ShorefaceDepth/self.ShorefaceDistance
+            
     def PredictFutureShorelines(self, MaxRockHeadErosionDistance=25.):
 
         """
@@ -453,13 +453,6 @@ class Transect:
 
         MDH, September 2019
 
-        """
-        
-        
-        """
-        if ((self.LineID == "18") and (self.ID == "8")):
-            import pdb
-            pdb.set_trace()
         """
         
         # reset outputs incase already has been run
@@ -548,7 +541,7 @@ class Transect:
         if not self.ShorefaceSlope:
             self.ShorefaceDistance = self.MLWS.get_Distance(self.HistoricShorelinesPosition[-1])
             self.ShorefaceDepth = self.ClosureDepth + self.MHWS
-            self.ShorefaceSlope = self.ShorefaceDistance/self.ShorefaceDepth
+            self.ShorefaceSlope = self.ShorefaceDepth/self.ShorefaceDistance
         
         self.ShorefaceDepth = self.ClosureDepth + self.MHWS
         

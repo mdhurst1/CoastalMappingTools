@@ -77,8 +77,13 @@ for CellSub in CellList:
     except:
         print("Creating New Coast Object")
 
-        # SET UP THE COAST FROM -10m Contour
-        CellCoast = Coast(str(ModernPath), MinLength=MinLength)
+        try:
+            # SET UP THE COAST FROM -10m Contour
+            CellCoast = Coast(str(ModernPath), MinLength=MinLength)
+        
+        except:
+            print("Failed to load baseline")
+            continue
     
     if not CellCoast.BuiltTransects:
         

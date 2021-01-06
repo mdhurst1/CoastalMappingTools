@@ -2009,7 +2009,7 @@ class Coast:
                     CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
                     TempDistances = [IntersectionPoint.distance(CoastPoint) for IntersectionPoint in TempIntersectionsList]
                     IntersectionIndex = TempDistances.index(min(TempDistances))
-                    Intersection = TempInteresctionsList[IntersectionIndex]
+                    Intersection = TempIntersectionsList[IntersectionIndex]
 
                     if Year not in Transect.HistoricShorelinesYears:
                         
@@ -3414,9 +3414,8 @@ class Coast:
                 if EndList[i] == CoastLine.NoTransects-1:
                     LastNode = CoastLine.Transects[EndList[i]-1].get_RecentPosition()
                 else:
-                    try:
-                        LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition()
-                    except:
+                    LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition()
+                    if not LastNode:
                         LastNode = CoastLine.Transects[EndList[i]-1].get_RecentPosition()
                 
                 FutureMinList.append(LastNode)
