@@ -439,6 +439,10 @@ class Transect:
             self.ShorefaceDistance = self.MLWS.get_Distance(self.HistoricShorelinesPositions[-1][0])
             self.ShorefaceDepth = 2.*self.MHWS
             self.ShorefaceSlope = self.ShorefaceDepth/self.ShorefaceDistance
+        
+        # set minimum shoreface slope to 0.001
+        if self.ShorefaceSlope < 0.001:
+            self.ShorefaceSlope = 0.001
             
     def PredictFutureShorelines(self, MaxRockHeadErosionDistance=25.):
 
@@ -554,6 +558,10 @@ class Transect:
         else:
             self.BruunSlope = self.ShorefaceSlope
         
+        # set minimum shoreface slope to 0.001
+        if self.BruunSlope < 0.001:
+            self.BruunSlope = 0.001
+
         # Calibration term, remembering to convert relative sea level change rates to m/yr
         self.VolumetricCalibrationRates = self.ShorefaceDepth*np.array(self.ChangeRates) + self.ShorefaceDistance*(self.InterpolatedRSLR)
         self.VolumetricCalibrationErrors = self.ShorefaceDepth*np.array(self.ChangeRateErrors) + self.ShorefaceDistance*(self.InterpolatedRSLR)
