@@ -87,6 +87,7 @@ class Coast:
         self.GotHistoricShorelines = False
         self.SampledDEMs = False
         self.PredictedFutureShorelines = False
+        self.MorphologyAnalysed = False
 
         if CoastShp:
             self.ReadCoastShp(CoastShp, MinLength)
@@ -2627,7 +2628,7 @@ class Coast:
         # loop through DEMs
         for DEM in self.UniqueDEMList:
             
-            #print("\t" + DEM.split("/")[-1])
+            print("\t" + DEM.split("/")[-1])
 
             DTM_Dataset = rasterio.open(DEM)
             DTMArray = DTM_Dataset.read(1)
