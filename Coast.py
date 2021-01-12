@@ -299,7 +299,7 @@ class Coast:
         WL = shapefile.Writer(FutureShoreLinesShp,shapeType=shapefile.POLYLINE)
        
         # Create Fields
-        self.Fields = [('DeletionFlag','C',1,0),['Line_ID', 'C', 20, 0],['Year','N', 4, 0],['Flag','C', 10, 0]]
+        self.Fields = [('DeletionFlag','C',1,0),['Cell','C', 2, 0], ['SubCell','C', 2, 0], ['Line_ID', 'C', 20, 0],['Year','N', 4, 0],['Flag','C', 10, 0]]
         WL.fields = self.Fields[1:] 
 
         for Line in self.FutureShoreLines:
@@ -336,7 +336,7 @@ class Coast:
             WriteLine = [np.column_stack([X,Y]).tolist()]
             
             # generate record
-            Record = [str(Line.ID),str(Line.Year),str(Line.Flag)]
+            Record = [str(Line.Cell), str(Line.SubCell),str(Line.ID),str(Line.Year),str(Line.Flag)]
 
             # write line and record
             WL.line(WriteLine)
@@ -855,7 +855,7 @@ class Coast:
         Fields = [('DeletionFlag','C',1,0), 
         ['Cell', 'C', 3, 0], ['SubCell', 'C', 3, 0], ['CMU','C', 20, 0],
         ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], ['Hist_Rate','N', 4, 4],
-        ['CalibYr','N', 4, 0], ['BaselineYr','N', 4, 0], ['BaselineSrc','C', 50, 0], 
+        ['CalibYr','N', 4, 0], ['BaseLYr','N', 4, 0], ['BaseLSrc','C', 50, 0], 
         ['Extrap2050','N', 6, 3], ['Extrap2100','N', 6, 3], ['FirstEYr','N',4, 4],
         ['Dist_2030', 'N', 6, 3], ['Rate_2030', 'N', 4, 4], 
         ['Dist_2040', 'N', 6, 3], ['Rate_2040', 'N', 4, 4], 
@@ -865,9 +865,9 @@ class Coast:
         ['Dist_2080', 'N', 6, 3], ['Rate_2080', 'N', 4, 4], 
         ['Dist_2090', 'N', 6, 3], ['Rate_2090', 'N', 4, 4], 
         ['Dist_2100', 'N', 6, 3], ['Rate_2100', 'N', 4, 4], 
-        ['RCP85_2100_SLR', 'N', 4, 3],
-        ['DC1_SvEnd_B','N', 4, 0], ['DC1_SvEnd_C','N', 4, 0], 
-        ['DC1_DistV','N', 4, 0], ['DC1_Rate_B_C','N', 6, 3],
+        ['RCP85_2100', 'N', 4, 3],
+        ['DC1_SvEn_B','N', 4, 0], ['DC1_SvEn_C','N', 4, 0], 
+        ['DC1_DistV','N', 4, 0], ['DC1_RateBC','N', 6, 3],
         ['OS_2020_Yr','N',4,0]
         ]
         
