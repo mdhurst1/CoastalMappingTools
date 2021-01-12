@@ -386,6 +386,8 @@ class Transect:
 
         This function requires several funcions with the Coast object to have been run
         first but the Coast wrapper should/could check for this.
+        
+        By convention, negative values indicate erosion and positive indicate accretion
 
         MDH, October 2020
 
@@ -405,12 +407,16 @@ class Transect:
         self.ChangeRates = []
         self.ChangeRateErrors = []
         
+        if self.LineID == "10" and self.ID == "7":
+            import pdb
+            pdb.set_trace()
+        
         # historic shoreline positions and change rates
         for i in range(0,len(self.HistoricShorelinesYears)):
             
             # first do the whole length of the record
             if i == 0:
-                dEta = self.HistoricShorelinesDistance[-1] - self.HistoricShorelinesDistance[0]
+                dEta = (self.HistoricShorelinesDistance[-1] - self.HistoricShorelinesDistance[0])
                 ErrorSum = self.HistoricShorelinesErrors[-1] + self.HistoricShorelinesErrors[0]
                 dT = self.HistoricShorelinesYears[-1]-self.HistoricShorelinesYears[0]
             
@@ -420,7 +426,7 @@ class Transect:
                 ErrorSum = self.HistoricShorelinesErrors[i] + self.HistoricShorelinesErrors[i-1]
                 dT = self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[i-1]
                 
-            self.ChangeRates.append(-dEta/dT)
+            self.ChangeRates.append(dEta/dT)
             self.ChangeRateErrors.append(ErrorSum/dT)
         
         self.HistoricFlag = True
@@ -583,16 +589,16 @@ class Transect:
             self.ChangeRate = self.ChangeRates[-1]
             self.CalibrationYear = self.HistoricShorelinesYears[-2]
 
-        #if self.LineID == "0" and self.ID == "127":
-        #    import pdb
-        #    pdb.set_trace()
+        if self.LineID == "10" and self.ID == "7":
+            import pdb
+            pdb.set_trace()
             
         # Future shoreline positions
         for i in range(0, len(self.FutureSeaLevelYears)):
             dT = self.FutureSeaLevelYears[i]-self.HistoricShorelinesYears[-1]
             
             # self.InterpolatedRSLR
-            BruunRuleComponent = (-1./self.BruunSlope)*(self.FutureSeaLevels[i]-self.LatestRSL)
+            BruunRuleComponent = -(1./self.BruunSlope)*(self.FutureSeaLevels[i]-self.LatestRSL)
             CalibrationComponent = (1./self.ShorefaceDepth)*CalibrationRate*dT
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
             

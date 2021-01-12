@@ -544,17 +544,38 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         for i, ThisTransect in enumerate(self.Transects):
             
             # get offshore points to measure distances
-            OffshorePoint = nearest_points(BathyLines, Point(ThisTransect.CoastNode.X, ThisTransect.CoastNode.Y))[0]
-            OffshoreNode = Node(OffshorePoint.x,OffshorePoint.y)
+            #OffshorePoint = nearest_points(BathyLines, Point(ThisTransect.CoastNode.X, ThisTransect.CoastNode.Y))[0]
+            TransectLine = LineString(((ThisTransect.StartNode.X,ThisTransect.StartNode.Y),(ThisTransect.EndNode.X,ThisTransect.EndNode.Y)))
+            Intersections = TransectLine.intersection(BathyLines)
+            
+            # catch no intersections
+            if Intersections.geom_type == "GeometryCollection":
+                continue
+
+            # check there arent multiple intersections
+            # get first intersection if so
+            if Intersections.geom_type is "MultiPoint":
+                CoastPoint = Point(ThisTransect.CoastNode.X, ThisTransect.CoastNode.Y)
+                Distances = [IntersectPoint.distance(CoastPoint) for IntersectPoint in Intersections]
+                Index = Distances.index(min(Distances))
+                Intersection = Intersections[Index]
+                
+            else:
+                # check if this is a new endnode by intersecting with line from startnode to endnode
+                Intersection = Intersections
+                
+            OffshoreNode = Node(Intersection.x,Intersection.y)
             Distance1 = OffshoreNode.get_Distance(ThisTransect.StartNode)
             Distance2 = OffshoreNode.get_Distance(ThisTransect.EndNode)
             
             if (Distance1 > Distance2):
                 self.ReverseFlags[i] = 1
-            
+            else:
+                self.ReverseFlags[i] = -1
+        
         # get x and y to reverse lines
         NReverse = np.count_nonzero(self.ReverseFlags == 1)
-        NXReverse = np.count_nonzero(self.ReverseFlags == 0)
+        NXReverse = np.count_nonzero(self.ReverseFlags == -1)
         
         if NReverse > NXReverse:
             X, Y = self.get_XY()
@@ -587,7 +608,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             in map units, spatial units depend on units of the CoastLine read in,
             Should be [m]
         Distance2Land : float
-            Distance in [m] to extent transects landward when looking for intersection
+            Distance in [m] to extent transects landward when looking for (Bathy
             with ContourShp1
         Distance2Sea : float
             Distance in [m] to extent transects offshore when looking for intersection
