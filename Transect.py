@@ -278,7 +278,9 @@ class Transect:
             DistancesList.append(self.HistoricShorelinesDistances[i][0])
             DistancesList.append(self.HistoricShorelinesDistances[i][0]+self.HistoricShorelinesErrors[i])
             DistancesList.append(self.HistoricShorelinesDistances[i][0]-self.HistoricShorelinesErrors[i])
-                        
+        
+        # need a condition here to ignore distances from future where accretion is occuring
+        
         for i in range(0, len(self.FutureSeaLevelYears)):
             
             # add nodes to lists
@@ -407,10 +409,6 @@ class Transect:
         self.ChangeRates = []
         self.ChangeRateErrors = []
         
-        if self.LineID == "10" and self.ID == "7":
-            import pdb
-            pdb.set_trace()
-        
         # historic shoreline positions and change rates
         for i in range(0,len(self.HistoricShorelinesYears)):
             
@@ -426,7 +424,7 @@ class Transect:
                 ErrorSum = self.HistoricShorelinesErrors[i] + self.HistoricShorelinesErrors[i-1]
                 dT = self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[i-1]
                 
-            self.ChangeRates.append(dEta/dT)
+            self.ChangeRates.append(-dEta/dT)
             self.ChangeRateErrors.append(ErrorSum/dT)
         
         self.HistoricFlag = True
@@ -589,10 +587,6 @@ class Transect:
             self.ChangeRate = self.ChangeRates[-1]
             self.CalibrationYear = self.HistoricShorelinesYears[-2]
 
-        if self.LineID == "10" and self.ID == "7":
-            import pdb
-            pdb.set_trace()
-            
         # Future shoreline positions
         for i in range(0, len(self.FutureSeaLevelYears)):
             dT = self.FutureSeaLevelYears[i]-self.HistoricShorelinesYears[-1]

@@ -13,7 +13,10 @@ import geopandas as gp
 
 # Set working directory
 WorkingPath = pathlib.Path.cwd().parent
-FilePath = WorkingPath/"ShorelineRun"
+
+FilePaths = [WorkingPath/"ShorelineRun", WorkingPath/"ShorelineRunInner"]
+PrefixNames = ["Open", "Inner"]
+FilenameExts = ["_Future.shp", "_ErodedArea_2050.shp", "_ErodedArea_2100.shp", "_Transects.shp"]
 
 # get all coastal cells to loop through
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
@@ -23,54 +26,34 @@ Area2050List = []
 Area2100List = []
 TransectsList = []
 
-# loop through each cell
-for index, Row in Cells.iterrows():
+#Do inner then outer
+for FilePath, PrefixName in zip(FilePaths,PrefixNames):
     
-    # print cell to screen
-    CellSub = Row.Cell_sub
-    RowName = "Cell_"+CellSub
+    print(PrefixName)
     
-    # load future file and append
-    try:
-        TempGDF = gp.read_file(FilePath / (RowName + "_Future.shp"))
-        FutureList.append(TempGDF)
+    for FilenameExt in FilenameExts:
+        
+        # empty list to accumulate shapes
+        TempList = []
     
-    except:
-        continue
+        # loop through each cell
+        for index, Row in Cells.iterrows():
     
-    # load area 2050 file and append
-    try:
-        TempGDF = gp.read_file(FilePath / (RowName + "_ErodedArea_2050.shp"))
-        Area2050List.append(TempGDF)
-    
-    except:
-        continue
-    
-    # load area 2100 file and append
-    try:
-        TempGDF = gp.read_file(FilePath / (RowName + "_ErodedArea_2100.shp"))
-        Area2100List.append(TempGDF)
-    
-    except:
-        continue
-    
-    # load future file and append
-    try:
-        TempGDF = gp.read_file(FilePath / (RowName + "_Transects.shp"))
-        TransectsList.append(TempGDF)
-    
-    except:
-        continue
-    
-    FutureGDF = pd.concat(FutureList)
-    FutureGDF.to_file(FilePath / "Scotland_Open_Future.shp")
-    
-    Area2050GDF = pd.concat(Area2050List)
-    Area2050GDF.to_file(FilePath / "Scotland_Open_Erosion_Area_2050.shp")
-    
-    Area2100GDF = pd.concat(Area2100List)
-    Area2100GDF.to_file(FilePath / "Scotland_Open_Erosion_Area_2100.shp")
-    
-    TransectsGDF = pd.concat(TransectsList)
-    TransectsGDF.to_file(FilePath / "Scotland_Open_Transects.shp")
-    
+            # get cell
+            CellSub = Row.Cell_sub
+            RowName = "Cell_"+CellSub
+
+            # load future file and append
+            FutureFile = FilePath / (RowName + FilenameExt)
+            if FutureFile.exists():
+                TempGDF = gp.read_file(FutureFile)
+                TempList.append(TempGDF)
+        
+        # write new file
+        try:
+            WriteGDF = pd.concat(TempList, sort=True)
+            WriteGDF.to_file(FilePath / ("Scotland_" + PrefixName + FilenameExt))
+            print("Written", ("Scotland_" + PrefixName + FilenameExt))
+        except:
+            import pdb
+            pdb.set_trace()
