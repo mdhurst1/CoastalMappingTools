@@ -32,9 +32,9 @@ MHWS_Inner_1890 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1890_
 MHWS_1970 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1970_Final.shp")
 MHWS_Inner_1970 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1970_Final_Inner.shp")
 MHWS_Soft = gp.read_file(WorkingPath / "MHWS_Lines" / "MHWS_OS_smarter2020_soft.shp")
-#MHWS_Soft_Inner = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Inner_Baseline_NoSaltmarsh.shp")
+MHWS_Soft_Inner = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Inner_Baseline_NoSaltmarsh.shp")
 MHWS_OpenBaseline = gp.read_file(WorkingPath / "MHWS_Lines" / "MHWS_OS_smarter_dissolve.shp")
-#MHWS_InnerBaseline = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Inner_Baseline_NoSaltmarsh_Dissolved.shp")
+MHWS_InnerBaseline = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Inner_Baseline_NoSaltmarsh_Dissolved.shp")
 MHWS_LiDAR = gp.read_file(WorkingPath / "MHWS_Lines" / "DC2_Scotland_MHWS_Modern.shp")
 
 def ClipLines2Poly(LinesGDF,PolyGDF):
@@ -55,10 +55,10 @@ for index, Row in Cells.iterrows():
     Inter = ClipLines2Poly(MHWS_1970,Row.geometry)
     Old_Inter = ClipLines2Poly(MHWS_Inner_1970,Row.geometry)
     Soft = ClipLines2Poly(MHWS_Soft,Row.geometry)
-    #Soft_Inner = ClipLines2Poly(MHWS_Soft_Inner, Row.geometry)
+    Soft_Inner = ClipLines2Poly(MHWS_Soft_Inner, Row.geometry)
     Modern = ClipLines2Poly(MHWS_OpenBaseline,Row.geometry)
     LiDAR = ClipLines2Poly(MHWS_LiDAR, Row.geometry)
-    #Inner = ClipLines2Poly(MHWS_InnerBaseline, Row.geometry)
+    Inner = ClipLines2Poly(MHWS_InnerBaseline, Row.geometry)
     
     # Save these to new files
     RowName = "Cell_" + Row.Cell_sub

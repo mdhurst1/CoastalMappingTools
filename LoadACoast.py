@@ -18,8 +18,8 @@ Filename2LoadCoast = WorkingPath / "ShorelineRun" / ("Cell_"+Cell+"_Change.pydat
 Cst = pickle.load( open( Filename2LoadCoast, "rb" ) )
 
 # set a line and a transect if needed
-LineID = "21"
-TransectID = "33"
+LineID = "5"
+TransectID = "135"
 
 # get line
 Lns = Cst.CoastLines
