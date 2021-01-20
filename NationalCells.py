@@ -47,6 +47,7 @@ def ClipLines2Poly(LinesGDF,PolyGDF):
 
 for index, Row in Cells.iterrows():
 
+    
     # Intersection to isolate bathy for each cell
     BathyClipped = ClipLines2Poly(BathyLines, Row.geometry)
     MLWSClipped = ClipLines2Poly(MLWS_Modern, Row.geometry)
@@ -62,7 +63,14 @@ for index, Row in Cells.iterrows():
     
     # Save these to new files
     RowName = "Cell_" + Row.Cell_sub
-    print(RowName)
+    
+    if not RowName == "3d":
+        continue
+    
+    else:
+        print(RowName)
+    
+    print("Here we go!")
     
     try:
         BathyClipped.to_file(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp"))

@@ -563,8 +563,8 @@ class Transect:
             self.BruunSlope = self.ShorefaceSlope
         
         # set minimum shoreface slope to 0.001
-        if self.BruunSlope < 0.001:
-            self.BruunSlope = 0.001
+        if self.BruunSlope < 0.01:
+            self.BruunSlope = 0.01
 
         # Calibration term, remembering to convert relative sea level change rates to m/yr
         self.VolumetricCalibrationRates = self.ShorefaceDepth*np.array(self.ChangeRates) + self.ShorefaceDistance*(self.InterpolatedRSLR)

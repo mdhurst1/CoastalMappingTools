@@ -92,7 +92,7 @@ for CellSub in CellList:
         CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
 
         # create some initial dummy transects
-        CellCoast.GenerateTransects(TransectSpacing, 200, 200, CheckTopology=False)
+        CellCoast.GenerateTransects(TransectSpacing, 250, 250, CheckTopology=False)
         
         CellCoast.BuiltTransects = True
         
