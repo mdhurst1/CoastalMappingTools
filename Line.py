@@ -18,7 +18,7 @@ from Transect import *
 
 import geopandas as gp
 from shapely.geometry import Point, LineString, MultiLineString, Polygon, MultiPolygon
-from shapely.ops import nearest_points
+from shapely.ops import nearest_points, linemerge
 
 import pdb
 
@@ -204,6 +204,31 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         self.GenerateNodes(XSmooth,YSmooth)
         self.CalculateGeometry()
     
+    def MakeSimple(self):
+
+        """
+
+        Function to find and remove complexities (loops) in a line"
+
+        MDH, Jan, 20201
+
+        """
+
+        LS = LineString(zip(self.X,self.Y))
+
+        Simple = False
+
+        while not LS.is_simple:
+            
+            #"Union" method will split self-intersection linestring.
+            Result = TempLine.union(Point(self.X[0],self.Y[0]))
+            
+            # isolate non-looping line segments
+            Lines2Merge = [L for L in Result if not Point(L.coords[0]).distance(Point(L.coords[-1]))]
+
+            # merge lines that do not loop
+            LS = ops.linemerge(Lines2Merge)
+                
     def SplineLine(self):
 
         """

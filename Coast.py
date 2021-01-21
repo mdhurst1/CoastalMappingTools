@@ -306,21 +306,35 @@ class Coast:
             
             if Smooth:
                 Line.SmoothLine(WindowSize=11)
-                    
+
+            ComplexBool = False
+
+            while ComplexBool:
+
+                # Find Loops
+                Line.MakeSimple()
+                
+
+                # Points
+                # Spline
+                # Find Loops
+                # Delete Loops
+                # Keep Points
+
             # get line node positions
-            X, Y = Line.get_XY()
+            x, y = Line.get_XY()
 
             if Smooth and len(X) > 5:
 
-                XSmooth = X[1:-1]
-                YSmooth = Y[1:-1]
+                XSmooth = x[1:-1]
+                YSmooth = y[1:-1]
                 # calculate distance
                 Dist = np.zeros(XSmooth.shape)
                 Dist[1:] = np.sqrt((XSmooth[1:] - XSmooth[:-1])**2 + (YSmooth[1:] - YSmooth[:-1])**2)
                 Dist = np.cumsum(Dist)
                 
                 # build a spline representation of the line
-                Spline, u = splprep([XSmooth, YSmooth], u=Dist, s=0)
+                Spline, u = splprep([XSmooth, YSmooth], u=Dist, s=1)
 
                 # resample it at smaller distance intervals
                 Interp_Dist = np.arange(0, Dist[-1], 1.)
@@ -331,7 +345,39 @@ class Coast:
                 X = np.append(XSmooth,X[-1])
                 Y = np.append(YSmooth,Y[-1])
                 
+            # check for loops here and remove?
+            TempLine = LineString(zip(X,Y))
             
+            if not TempLine.is_simple:
+                
+                X, Y = TempLine.coords.xy
+                X = np.array(X)
+                Y = np.array(Y)
+
+                #"Union" method will split self-intersection linestring.
+                Result = TempLine.union(Point(X[0],Y[0]))
+                KeepBool = np.zeros(len(X),dtype=bool)
+                Index = 0
+                NewIndex = 0
+
+                for L in Result:
+
+                    x,y = L.coords.xy
+                    Index = NewIndex
+                    NewIndex = Index+len(x)
+
+                    if not Point(L.coords[0]).distance(Point(L.coords[-1])) == 0:
+                        KeepBool[Index:NewIndex-1] = 1
+                        
+                # get line node positions
+                KeepBool[-1] = True
+                X = X[KeepBool]
+                Y = Y[KeepBool]
+                TempLine = LineString(zip(X,Y))
+
+                # find points that are close to the simple linestring
+                KeepPoints = [Point(x,y).distance(TempLine) < 1 for x,y in Line.get_XY()]
+
             # convert to list for writing to shapefile
             WriteLine = [np.column_stack([X,Y]).tolist()]
             
@@ -1710,7 +1756,7 @@ class Coast:
 
         print("\nCoast.CheckTransectTopology: Checking for overlapping transects")
         for Line in self.CoastLines:
-            Line.DeleteOverlappingTransects()
+            Line.FindOverlappingTransects()
             #CheckTransectTopology()
 
     def RemoveNoHistoricalTransects(self):
@@ -2560,8 +2606,7 @@ class Coast:
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 Transect.Truncate()
-        
-                
+                            
     def FindDEM(self, DEMIndexFileShp):
 
         """

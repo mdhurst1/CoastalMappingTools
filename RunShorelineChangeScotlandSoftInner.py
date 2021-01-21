@@ -99,7 +99,7 @@ for index, Row in Cells.iterrows():
         CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
 
         # create some initial dummy transects
-        CellCoast.GenerateTransects(TransectSpacing, 200, 200, CheckTopology=False)
+        CellCoast.GenerateTransects(TransectSpacing, 100, 100, CheckTopology=False)
         
         CellCoast.BuiltTransects = True
         

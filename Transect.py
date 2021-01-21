@@ -50,6 +50,7 @@ class Transect:
         self.LineString = LineString(((self.StartNode.X,self.StartNode.Y),(self.EndNode.X,self.EndNode.Y)))
         self.Orientation = self.CalculateOrientation(self.StartNode, self.EndNode)
         self.Length = self.CalculateLength(self.StartNode, self.EndNode)
+        self.Overlaps = False
         
         # historic shoreline positions, distances and change rates
         self.HistoricFlag = False
