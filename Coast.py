@@ -307,14 +307,9 @@ class Coast:
             if Smooth:
                 Line.SmoothLine(WindowSize=11)
 
-            ComplexBool = False
-
-            while ComplexBool:
-
-                # Find Loops
-                Line.MakeSimple()
+            # Find Loops
+            Line.MakeSimple()
                 
-
                 # Points
                 # Spline
                 # Find Loops
@@ -350,6 +345,8 @@ class Coast:
             
             if not TempLine.is_simple:
                 
+                print("Spline line is not simple")
+                
                 X, Y = TempLine.coords.xy
                 X = np.array(X)
                 Y = np.array(Y)
@@ -375,8 +372,6 @@ class Coast:
                 Y = Y[KeepBool]
                 TempLine = LineString(zip(X,Y))
 
-                # find points that are close to the simple linestring
-                KeepPoints = [Point(x,y).distance(TempLine) < 1 for x,y in Line.get_XY()]
 
             # convert to list for writing to shapefile
             WriteLine = [np.column_stack([X,Y]).tolist()]
