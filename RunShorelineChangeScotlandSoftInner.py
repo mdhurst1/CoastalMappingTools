@@ -32,13 +32,13 @@ NoSmooths = 50
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # Cell list
-#CellList = ["1a", "1b", "1c","1d","2a","2b","2c","2d"] #,"3a","3b","3c","3d","3e","3f","3g","4"]
+CellList = ["1a", "1b", "1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g", "3h"] #,"4"]
 
 # loop through each cell
-for index, Row in Cells.iterrows():
-#for CellSub in CellList:
+#for index, Row in Cells.iterrows():
+for CellSub in CellList:
     # print cell to screen
-    CellSub = Row.Cell_sub
+    #CellSub = Row.Cell_sub
     print("\nRUNNING CELL", CellSub)
     RowName = "Cell_"+CellSub
     
@@ -157,6 +157,9 @@ for index, Row in Cells.iterrows():
         
         # Sample rock head position
         CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
+        
+        # Sample coastal defences
+        CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp")))
         
         CellCoast.GotHistoricShorelines = True
         

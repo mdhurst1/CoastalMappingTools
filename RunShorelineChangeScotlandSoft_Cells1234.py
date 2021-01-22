@@ -29,7 +29,7 @@ NoSmooths = 100
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # Cell list
-CellList = ["1a", "1b", "1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g"] #,"4"]
+CellList = ["1b",] # "1b", "1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g", "3h"] #,"4"]
 
 # loop through each cell
 #for index, Row in Cells.iterrows():
@@ -151,6 +151,9 @@ for CellSub in CellList:
         # Sample rock head position
         CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
         
+        # Sample coastal defences
+        CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp")))
+        
         CellCoast.GotHistoricShorelines = True
         
         # Get OS year smarter 2020
@@ -181,15 +184,14 @@ for CellSub in CellList:
     if not CellCoast.PredictedFutureShorelines:    
     
         ## predict future shorelines
-        #CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
         CellCoast.GetShorefaceSlopes(str(BathyPath))
         CellCoast.PredictFutureShorelines()
         CellCoast.PredictedFutureShorelines = True
     
         # SAVE ENTIRE COAST OBJECT
-        print("\tSaving Coast Object as ", Filename2SaveCoast)
-        with open(str(Filename2SaveCoast), 'wb') as PFile:
-            pickle.dump(CellCoast, PFile)
+        #print("\tSaving Coast Object as ", Filename2SaveCoast)
+        #with open(str(Filename2SaveCoast), 'wb') as PFile:
+        #    pickle.dump(CellCoast, PFile)
     
     # write future shorelines
     # write smoothed coast/bathy to file

@@ -290,7 +290,8 @@ class Transect:
         for i in range(0, len(self.FutureSeaLevelYears)):
             
             # add nodes to lists
-            DistancesList.append(self.FutureShorelinesDistances[i])
+            if self.FutureShorelinesDistances[i] > self.HistoricShorelinesDistances[-1][0]:
+                DistancesList.append(self.FutureShorelinesDistances[i])
                     
         # find index of min distance
         MinDistance = np.min(np.array(DistancesList))
@@ -485,12 +486,12 @@ class Transect:
             return
 
         # dont let 1970s data be the baseline (most recent)
-        #if self.HistoricShorelinesSources[-1].endswith("1970.shp"):
-        #    self.HistoricShorelinesSources.pop(-1)
-        #    self.HistoricShorelinesDistances.pop(-1)
-        #    self.HistoricShorelinesPositions.pop(-1)
-        #    self.HistoricShorelinesErrors.pop(-1)
-        #    self.HistoricShorelinesYears.pop(-1)
+        if self.HistoricShorelinesSources[-1].endswith("1970.shp"):
+            self.HistoricShorelinesSources.pop(-1)
+            self.HistoricShorelinesDistances.pop(-1)
+            self.HistoricShorelinesPositions.pop(-1)
+            self.HistoricShorelinesErrors.pop(-1)
+            self.HistoricShorelinesYears.pop(-1)
 
         # dont let 1970s be calibration year if younger than modern soft
         if len(self.HistoricShorelinesYears) > 2:
@@ -569,12 +570,12 @@ class Transect:
             self.BruunSlope = self.ShorefaceSlope
         
         # set minimum shoreface slope to 0.001
-        if self.BruunSlope < 0.01:
-            self.BruunSlope = 0.01
+        if self.BruunSlope < 0.001:
+            self.BruunSlope = 0.001
 
         # Calibration term, remembering to convert relative sea level change rates to m/yr
-        self.VolumetricCalibrationRates = self.ShorefaceDepth*np.array(self.ChangeRates) + self.ShorefaceDistance*(self.InterpolatedRSLR)
-        self.VolumetricCalibrationErrors = self.ShorefaceDepth*np.array(self.ChangeRateErrors) + self.ShorefaceDistance*(self.InterpolatedRSLR)
+        self.VolumetricCalibrationRates = self.ShorefaceDepth*np.array(self.ChangeRates) + (self.ShorefaceDepth/self.BruunSlope)*(self.InterpolatedRSLR)
+        self.VolumetricCalibrationErrors = self.ShorefaceDepth*np.array(self.ChangeRateErrors) + (self.ShorefaceDepth/self.BruunSlope)*(self.InterpolatedRSLR)
 
         # get sea level at latest time
         if self.HistoricShorelinesYears[-1] < self.FutureSeaLevelYears[0]:
@@ -593,6 +594,10 @@ class Transect:
             self.ChangeRate = self.ChangeRates[-1]
             self.CalibrationYear = self.HistoricShorelinesYears[-2]
 
+        if self.LineID == "6" and self.ID == "116":
+            import pdb
+            pdb.set_trace()
+            
         # Future shoreline positions
         for i in range(0, len(self.FutureSeaLevelYears)):
             dT = self.FutureSeaLevelYears[i]-self.HistoricShorelinesYears[-1]

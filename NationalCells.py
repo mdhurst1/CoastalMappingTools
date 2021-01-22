@@ -26,6 +26,9 @@ BathyLines = gp.read_file(WorkingPath / "Bathymetry" / "Scotland_10m_Bathy_Conto
 # open shpaefiles of MLWS
 MLWS_Modern = gp.read_file(WorkingPath / "MLWS_Lines" / "OSMM_MLWS_2020.shp")
 
+# open shapefile of defences
+Defences = gp.read_file(WorkingPath / "Defences" / "DC2_Defences_partial.shp")
+
 # and historic MHWS datasets
 MHWS_1890 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1890_FINAL.shp")
 MHWS_Inner_1890 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1890_FINAL_Inner.shp")
@@ -45,12 +48,23 @@ def ClipLines2Poly(LinesGDF,PolyGDF):
     return Clipped[~Clipped.geometry.is_empty]
 
 
+# Cell list
+CellList = ["1b",] # "1b", "1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g", "3h"] #,"4"]
+
 for index, Row in Cells.iterrows():
 
+    # Save these to new files
+    RowName = "Cell_" + Row.Cell_sub
+    
+    if not Row.Cell_sub in CellList:
+        continue
+    
+    print(RowName)
     
     # Intersection to isolate bathy for each cell
     BathyClipped = ClipLines2Poly(BathyLines, Row.geometry)
     MLWSClipped = ClipLines2Poly(MLWS_Modern, Row.geometry)
+    DefencesClipped = ClipLines2Poly(Defences, Row.geometry)
     Old = ClipLines2Poly(MHWS_1890,Row.geometry)
     Old_Inner = ClipLines2Poly(MHWS_Inner_1890,Row.geometry)
     Inter = ClipLines2Poly(MHWS_1970,Row.geometry)
@@ -61,11 +75,6 @@ for index, Row in Cells.iterrows():
     LiDAR = ClipLines2Poly(MHWS_LiDAR, Row.geometry)
     Inner = ClipLines2Poly(MHWS_InnerBaseline, Row.geometry)
     
-    # Save these to new files
-    RowName = "Cell_" + Row.Cell_sub
-    
-    print(RowName)
-    
     try:
         BathyClipped.to_file(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp"))
     except:
@@ -75,12 +84,17 @@ for index, Row in Cells.iterrows():
         MLWSClipped.to_file(WorkingPath / "MLWS_Lines" / (RowName + "_MLWS.shp"))
     except:
         print("Unable to write MLWS for " + Row.Cell_sub)
+
+    try:
+        DefencesClipped.to_file(WorkingPath / "Defences" / (RowName + "_Defences.shp"))
+    except: 
+        print("Unable to write defences for " + Row.Cell_sub)
         
     try:
         Old.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp"))
     except:
         print("Unable to write 1890s for " + Row.Cell_sub)
-    
+        
     try:
         Inter.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp"))
     except:
@@ -90,7 +104,7 @@ for index, Row in Cells.iterrows():
         Old_Inner.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890_Inner.shp"))
     except:
         print("Unable to write inner 1890s for " + Row.Cell_sub)
-    
+        
     try:
         Old_Inter.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970_Inner.shp"))
     except:

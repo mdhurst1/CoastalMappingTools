@@ -2501,9 +2501,7 @@ class Coast:
                 Transect.DefencesDistance = Distance+MaxDefencesErosionDistance
                 Transect.DefencesPosition = Transect.get_Position(Transect.DefencesDistance)
                 
-                
-        
-        def PredictFutureShorelines(self):
+    def PredictFutureShorelines(self):
 
         """
 
