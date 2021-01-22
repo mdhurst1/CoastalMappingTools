@@ -64,13 +64,7 @@ for index, Row in Cells.iterrows():
     # Save these to new files
     RowName = "Cell_" + Row.Cell_sub
     
-    if not RowName == "3d":
-        continue
-    
-    else:
-        print(RowName)
-    
-    print("Here we go!")
+    print(RowName)
     
     try:
         BathyClipped.to_file(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp"))

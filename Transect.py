@@ -74,6 +74,11 @@ class Transect:
         self.RockHeadDistance = None
         self.RockHeadPosition = None
 
+        # defences info
+        self.Defences = False
+        self.DefencesDistance = None
+        self.DefencesPosition = None
+
         # location of -10m depth contour
         self.Contours = []
         self.ClosureDepth = 10.
@@ -480,12 +485,12 @@ class Transect:
             return
 
         # dont let 1970s data be the baseline (most recent)
-        if self.HistoricShorelinesSources[-1].endswith("1970.shp"):
-            self.HistoricShorelinesSources.pop(-1)
-            self.HistoricShorelinesDistances.pop(-1)
-            self.HistoricShorelinesPositions.pop(-1)
-            self.HistoricShorelinesErrors.pop(-1)
-            self.HistoricShorelinesYears.pop(-1)
+        #if self.HistoricShorelinesSources[-1].endswith("1970.shp"):
+        #    self.HistoricShorelinesSources.pop(-1)
+        #    self.HistoricShorelinesDistances.pop(-1)
+        #    self.HistoricShorelinesPositions.pop(-1)
+        #    self.HistoricShorelinesErrors.pop(-1)
+        #    self.HistoricShorelinesYears.pop(-1)
 
         # dont let 1970s be calibration year if younger than modern soft
         if len(self.HistoricShorelinesYears) > 2:
@@ -604,13 +609,21 @@ class Transect:
             if self.RockHeadDistance and (FutureShorelineDistance > self.RockHeadDistance):
 
                 # if landward of
-                
                 self.FutureShorelinesPositions.append(self.RockHeadPosition)
                 
                 ShorelinePositionChange = self.RockHeadDistance-HistoricShorelineDistance
                 self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
                 self.FutureShorelinesDistances.append(self.RockHeadDistance)
             
+            elif self.DefencesDistance and (FutureShorelineDistance > self.DefencesDistance):
+
+                # if landward of
+                self.FutureShorelinesPositions.append(self.DefencesPosition)
+                
+                ShorelinePositionChange = self.DefencesDistance-HistoricShorelineDistance
+                self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
+                self.FutureShorelinesDistances.append(self.DefencesDistance)
+
             # otherwise write new shoreline position as appropriate
             else:
                 X1 = self.HistoricShorelinesPosition[-1].X - ShorelinePositionChange * np.sin( np.radians( self.Orientation ) )

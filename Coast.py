@@ -310,26 +310,20 @@ class Coast:
             # Find Loops
             Line.MakeSimple()
                 
-                # Points
-                # Spline
-                # Find Loops
-                # Delete Loops
-                # Keep Points
-
             # get line node positions
-            x, y = Line.get_XY()
+            X, Y = Line.get_XY()
 
             if Smooth and len(X) > 5:
 
-                XSmooth = x[1:-1]
-                YSmooth = y[1:-1]
+                XSmooth = X[1:-1]
+                YSmooth = Y[1:-1]
                 # calculate distance
                 Dist = np.zeros(XSmooth.shape)
                 Dist[1:] = np.sqrt((XSmooth[1:] - XSmooth[:-1])**2 + (YSmooth[1:] - YSmooth[:-1])**2)
                 Dist = np.cumsum(Dist)
                 
                 # build a spline representation of the line
-                Spline, u = splprep([XSmooth, YSmooth], u=Dist, s=1)
+                Spline, u = splprep([XSmooth, YSmooth], u=Dist, s=0)
 
                 # resample it at smaller distance intervals
                 Interp_Dist = np.arange(0, Dist[-1], 1.)
@@ -340,37 +334,37 @@ class Coast:
                 X = np.append(XSmooth,X[-1])
                 Y = np.append(YSmooth,Y[-1])
                 
-            # check for loops here and remove?
-            TempLine = LineString(zip(X,Y))
-            
-            if not TempLine.is_simple:
-                
-                print("Spline line is not simple")
-                
-                X, Y = TempLine.coords.xy
-                X = np.array(X)
-                Y = np.array(Y)
-
-                #"Union" method will split self-intersection linestring.
-                Result = TempLine.union(Point(X[0],Y[0]))
-                KeepBool = np.zeros(len(X),dtype=bool)
-                Index = 0
-                NewIndex = 0
-
-                for L in Result:
-
-                    x,y = L.coords.xy
-                    Index = NewIndex
-                    NewIndex = Index+len(x)
-
-                    if not Point(L.coords[0]).distance(Point(L.coords[-1])) == 0:
-                        KeepBool[Index:NewIndex-1] = 1
-                        
-                # get line node positions
-                KeepBool[-1] = True
-                X = X[KeepBool]
-                Y = Y[KeepBool]
-                TempLine = LineString(zip(X,Y))
+#            # check for loops here and remove?
+#            TempLine = LineString(zip(X,Y))
+#            
+#            if not TempLine.is_simple:
+#                
+#                print("Spline line is not simple")
+#                
+#                X, Y = TempLine.coords.xy
+#                X = np.array(X)
+#                Y = np.array(Y)
+#
+#                #"Union" method will split self-intersection linestring.
+#                Result = TempLine.union(Point(X[0],Y[0]))
+#                KeepBool = np.zeros(len(X),dtype=bool)
+#                Index = 0
+#                NewIndex = 0
+#
+#                for L in Result:
+#
+#                    x,y = L.coords.xy
+#                    Index = NewIndex
+#                    NewIndex = Index+len(x)
+#
+#                    if not Point(L.coords[0]).distance(Point(L.coords[-1])) == 0:
+#                        KeepBool[Index:NewIndex-1] = 1
+#                        
+#                # get line node positions
+#                KeepBool[-1] = True
+#                X = X[KeepBool]
+#                Y = Y[KeepBool]
+#                TempLine = LineString(zip(X,Y))
 
 
             # convert to list for writing to shapefile
@@ -2418,7 +2412,98 @@ class Coast:
                         Transect.RockHeadDistance += MaxRockHeadErosionDistance
                         Transect.RockHeadPosition = Transect.get_Position(Transect.RockHeadDistance)
                         
-    def PredictFutureShorelines(self):
+    def SampleDefencesPosition(self, DefencesShp, MaxDefencesErosionDistance=25.):
+
+        """
+        Function to find defences and identify if a limit on shoreline erosion position 
+        
+        MDH, January 2021
+
+        """
+
+        print("Coast.SampleDefencesPosition: Sampling position of coastal defences")
+
+
+        # set a distance to look inland to check for intersections
+        LookDistance = 0.
+
+        # read shapefile using geopandas
+        GDF = gp.read_file(DefencesShp)
+        Lines = GDF['geometry']
+        
+        if len(Lines) == 0:
+            print("No Lines")
+            import pdb
+            pdb.set_trace()
+            return
+        
+        # catch situation where only one line
+        MultiLines = []
+
+        if len(Lines) == 1:
+            MultiLines = Lines[0]
+
+        # deal with invalid geometries on the fly? This is messy!
+        else:
+            for Line in Lines:
+                if not Line:
+                    continue
+                elif Line.geom_type == "LineString":
+                    MultiLines.append(Line)
+                elif Line.geom_type == "MultiLineString":
+                    for SubLine in Line:
+                        if SubLine.geom_type == "LineString":
+                            MultiLines.append(SubLine)
+
+            MultiLines = MultiLineString(MultiLines)    
+            #MultiLines = MultiLineString([Line for Line in Lines if Line.geom_type == "LineString"])
+            
+        if not MultiLines:
+            print("No Lines")
+            return
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                
+                # extend transect line inland to look for intersection
+                #Calculate start and end nodes and generate Transect
+                X1 = Transect.EndNode.X + LookDistance * np.sin( np.radians( Transect.Orientation ) )
+                Y1 = Transect.EndNode.Y + LookDistance * np.cos( np.radians( Transect.Orientation ) )
+                TransectLine = LineString(((Transect.StartNode.X,Transect.StartNode.Y),(X1,Y1)))
+            
+                # intersect with historical shoreline
+                try:
+                    Intersections = TransectLine.intersection(MultiLines)
+                except:
+                    import pdb
+                    pdb.set_trace()
+                    
+                # catch no intersections and flag for deletion?
+                if Intersections.geom_type == "GeometryCollection":
+                    continue
+
+                # check there arent multiple intersections
+                # store multiple intersections if so
+                if Intersections.geom_type is "MultiPoint":
+                    StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
+                    Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections]
+                    Index = Distances.index(min(Distances))
+                    Distance = Distances[Index]
+                    Intersection = Intersections[Index]
+                    
+                else:
+                    # check if this is a new endnode by intersecting with line from startnode to endnode
+                    Distance = Transect.LineString.distance(Intersections)
+                    Intersection = Intersections
+                
+                # assign to transect
+                Transect.Defences = True
+                Transect.DefencesDistance = Distance+MaxDefencesErosionDistance
+                Transect.DefencesPosition = Transect.get_Position(Transect.DefencesDistance)
+                
+                
+        
+        def PredictFutureShorelines(self):
 
         """
 

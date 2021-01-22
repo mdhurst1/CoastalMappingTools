@@ -214,20 +214,37 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
         """
 
-        LS = LineString(zip(self.X,self.Y))
-
-        Simple = False
+        # Get X and Y vectors from Nodes and write LineString object
+        X, Y = self.get_XY()
+        LS = LineString(zip(X,Y))
 
         while not LS.is_simple:
             
             #"Union" method will split self-intersection linestring.
-            Result = TempLine.union(Point(self.X[0],self.Y[0]))
+            Result = LS.union(Point(X[0],Y[0]))
+            
+            # use result to get list of self intersections somehow
             
             # isolate non-looping line segments
-            Lines2Merge = [L for L in Result if not Point(L.coords[0]).distance(Point(L.coords[-1]))]
-
+            Lines2Merge = [L for L in Result if not Point(L.coords[0]).distance(Point(L.coords[-1])) < 1]
+            LS = linemerge(Lines2Merge)
+            
             # merge lines that do not loop
-            LS = ops.linemerge(Lines2Merge)
+            while LS.type == "MultilineString":
+                Lines2Merge = [L for L in LS if L.is_simple]
+                LS = linemerge(Lines2Merge)
+                
+            
+        # Write new X and Y vectors to Nodes
+        #X, Y = LS.coords.xy
+
+        try:
+            X, Y = LS.coords.xy
+        except:
+            sys.exit()
+            
+        self.GenerateNodes(X,Y)
+        self.CalculateGeometry()
                 
     def SplineLine(self):
 
