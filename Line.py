@@ -240,11 +240,10 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
         try:
             X, Y = LS.coords.xy
+            self.GenerateNodes(X,Y)
+            self.CalculateGeometry()
         except:
-            sys.exit()
-            
-        self.GenerateNodes(X,Y)
-        self.CalculateGeometry()
+            return
                 
     def SplineLine(self):
 

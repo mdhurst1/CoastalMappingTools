@@ -49,15 +49,12 @@ def ClipLines2Poly(LinesGDF,PolyGDF):
 
 
 # Cell list
-CellList = ["1b",] # "1b", "1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g", "3h"] #,"4"]
+#CellList = ["1b",] # "1b", "1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g", "3h"] #,"4"]
 
 for index, Row in Cells.iterrows():
 
     # Save these to new files
     RowName = "Cell_" + Row.Cell_sub
-    
-    if not Row.Cell_sub in CellList:
-        continue
     
     print(RowName)
     

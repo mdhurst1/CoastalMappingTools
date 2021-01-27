@@ -2483,9 +2483,9 @@ class Coast:
                     continue
 
                 # check there arent multiple intersections
+                StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
                 # store multiple intersections if so
                 if Intersections.geom_type is "MultiPoint":
-                    StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
                     Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections]
                     Index = Distances.index(min(Distances))
                     Distance = Distances[Index]
@@ -2493,8 +2493,8 @@ class Coast:
                     
                 else:
                     # check if this is a new endnode by intersecting with line from startnode to endnode
-                    Distance = Transect.LineString.distance(Intersections)
                     Intersection = Intersections
+                    Distance = StartPoint.distance(Intersection)
                 
                 # assign to transect
                 Transect.Defences = True

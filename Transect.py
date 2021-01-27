@@ -594,10 +594,6 @@ class Transect:
             self.ChangeRate = self.ChangeRates[-1]
             self.CalibrationYear = self.HistoricShorelinesYears[-2]
 
-        if self.LineID == "6" and self.ID == "116":
-            import pdb
-            pdb.set_trace()
-            
         # Future shoreline positions
         for i in range(0, len(self.FutureSeaLevelYears)):
             dT = self.FutureSeaLevelYears[i]-self.HistoricShorelinesYears[-1]

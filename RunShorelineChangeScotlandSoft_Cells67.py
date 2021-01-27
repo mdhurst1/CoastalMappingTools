@@ -92,7 +92,7 @@ for CellSub in CellList:
         CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
 
         # create some initial dummy transects
-        CellCoast.GenerateTransects(TransectSpacing, 200, 200, CheckTopology=False)
+        CellCoast.GenerateTransects(TransectSpacing, 250, 250, CheckTopology=False)
         
         CellCoast.BuiltTransects = True
         
@@ -151,6 +151,9 @@ for CellSub in CellList:
         # Sample rock head position
         CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
         
+        # Sample coastal defences
+        CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp")))
+        
         CellCoast.GotHistoricShorelines = True
         
         # Get OS year smarter 2020
@@ -181,7 +184,6 @@ for CellSub in CellList:
     if not CellCoast.PredictedFutureShorelines:    
     
         ## predict future shorelines
-        #CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
         CellCoast.GetShorefaceSlopes(str(BathyPath))
         CellCoast.PredictFutureShorelines()
         CellCoast.PredictedFutureShorelines = True
@@ -192,10 +194,13 @@ for CellSub in CellList:
             pickle.dump(CellCoast, PFile)
     
     # write future shorelines
+    # write smoothed coast/bathy to file
+    CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
     CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future.shp")),Smooth=True)
     
     CellCoast.WriteErodedAreaShp(str(OutputPath / (RowName + "_ErodedArea_2050.shp")), 2050)
     CellCoast.WriteErodedAreaShp(str(OutputPath / (RowName + "_ErodedArea_2100.shp")))
+    
     #CellCoast.WriteFutureUncertaintyShp(str(OutputPath / (RowName + "_UncertaintyArea_2050.shp")), 2050)
     #CellCoast.WriteFutureUncertaintyShp(str(OutputPath / (RowName + "_UncertaintyArea_2100.shp")))
     #CellCoast.WriteFutureErrorShp(str(OutputPath / (RowName + "_ErrorArea_2050.shp")), 2050)
