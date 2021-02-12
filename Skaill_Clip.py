@@ -18,7 +18,7 @@ WorkingPath = pathlib.Path.cwd().parent
 
 ### FUNCTIONALITY HERE TO SAMPLE FROM NATIONAL DATASETS BASED ON COASTAL CELLS ###
 # open shapefile of coastal cells
-Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
+Cells = gp.read_file(WorkingPath / "Skaill_2018_only" / "Skaill_Clip.shp")
 
 # open shapefiles of -10m contour
 BathyLines = gp.read_file(WorkingPath / "Bathymetry" / "Scotland_10m_Bathy_Contour_Simple.shp")
@@ -39,6 +39,7 @@ MHWS_Soft_Inner = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Inner
 MHWS_OpenBaseline = gp.read_file(WorkingPath / "MHWS_Lines" / "MHWS_OS_smarter_dissolve.shp")
 MHWS_InnerBaseline = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Inner_Baseline_NoSaltmarsh_Dissolved.shp")
 MHWS_LiDAR = gp.read_file(WorkingPath / "MHWS_Lines" / "DC2_Scotland_MHWS_Modern.shp")
+DC1 = gp.read_file(WorkingPath / "DC1_Results" / "Scotland_Change_1970_Modern_FINAL.shp")
 
 def ClipLines2Poly(LinesGDF,PolyGDF):
 
@@ -49,15 +50,14 @@ def ClipLines2Poly(LinesGDF,PolyGDF):
 
 
 # Cell list
-CellList = ["10d","7"] # "1b", "1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g", "3h"] #,"4"]
+#CellList = ["1b",] # "1b", "1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g", "3h"] #,"4"]
 
 for index, Row in Cells.iterrows():
 
     # Save these to new files
-    RowName = "Cell_" + Row.Cell_sub
+    RowName = "Skaill"
     
-    if not Row.Cell_sub in CellList:
-        continue
+    print(RowName)
     
     # Intersection to isolate bathy for each cell
     BathyClipped = ClipLines2Poly(BathyLines, Row.geometry)
@@ -72,63 +72,71 @@ for index, Row in Cells.iterrows():
     Modern = ClipLines2Poly(MHWS_OpenBaseline,Row.geometry)
     LiDAR = ClipLines2Poly(MHWS_LiDAR, Row.geometry)
     Inner = ClipLines2Poly(MHWS_InnerBaseline, Row.geometry)
+    DC1_Clipped = ClipLines2Poly(DC1, Row.geometry)
+    
+    # Write files
     
     try:
         BathyClipped.to_file(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp"))
     except:
-        print("Unable to write bathy for " + Row.Cell_sub)
-    
+        print("Unable to write bathy for " + RowName)
+
     try:
         MLWSClipped.to_file(WorkingPath / "MLWS_Lines" / (RowName + "_MLWS.shp"))
     except:
-        print("Unable to write MLWS for " + Row.Cell_sub)
+        print("Unable to write MLWS for " + RowName)
 
     try:
         DefencesClipped.to_file(WorkingPath / "Defences" / (RowName + "_Defences.shp"))
     except: 
-        print("Unable to write defences for " + Row.Cell_sub)
+        print("Unable to write defences for " + RowName)
         
     try:
         Old.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp"))
     except:
-        print("Unable to write 1890s for " + Row.Cell_sub)
+        print("Unable to write 1890s for " + RowName)
         
     try:
         Inter.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp"))
     except:
-        print("Unable to write 1970s for " + Row.Cell_sub)
+        print("Unable to write 1970s for " + RowName)
         
     try:
         Old_Inner.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890_Inner.shp"))
     except:
-        print("Unable to write inner 1890s for " + Row.Cell_sub)
+        print("Unable to write inner 1890s for " + RowName)
         
     try:
         Old_Inter.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970_Inner.shp"))
     except:
-        print("Unable to write inner 1970s for " + Row.Cell_sub)
+        print("Unable to write inner 1970s for " + RowName)
     
     try:    
         Soft.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp"))
     except:
-        print("Unable to write soft for " + Row.Cell_sub)
+        print("Unable to write soft for " + RowName)
         
     try:    
         Soft_Inner.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft_Inner.shp"))
     except:
-        print("Unable to write soft inner for " + Row.Cell_sub)
+        print("Unable to write soft inner for " + RowName)
     
     try:
         Modern.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_Open_Baseline.shp"))
     except:
-        print("Unable to write modern for " + Row.Cell_sub)
+        print("Unable to write modern for " + RowName)
         
     try:
         LiDAR.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR.shp"))
     except:
-        print("Unable to write LiDAR for " + Row.Cell_sub)
+        print("Unable to write LiDAR for " + RowName)
         
     try:
         Inner.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_Inner_Baseline.shp"))
     except:
-        print("Unable to write Inner Baseline for " + Row.Cell_sub)
+        print("Unable to write Inner Baseline for " + RowName)
+        
+    try:
+        DC1_Clipped.to_file(WorkingPath / "DC1_Results" / (RowName + "_DC1_Results.shp"))
+    except:
+        print("Unable to write DC1 for " + RowName)

@@ -15,15 +15,7 @@ from Coast import *
 # define file names for analysis
 WorkingPath = pathlib.Path.cwd().parent
 NationalDEMPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2Final/99_NationalData/OSTerrain5")
-
-# set sea level scenario
-SeaLevelScenario = 2
-SeaLevelScenarioPercentile = 50
-
-# set up output folder
-OutputPath = WorkingPath/("RCP_"+str(SeaLevelScenario)+"_"+str(SeaLevelScenarioPercentile)+"th_OpenCoast")
-if not OutputPath:
-    OutputPath.mkdir(parents=True, exist_ok=True)
+OutputPath = WorkingPath/"ShorelineRun"
 
 # set the minimum length
 MinLength = 100.
@@ -37,7 +29,7 @@ NoSmooths = 100
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # Cell list
-CellList = ["10a","10b","10c","10d","10e","10f","10g","11a","11b","11c","11d","11e","11f","11g"]
+CellList = ["4",]
 
 # loop through each cell
 #for index, Row in Cells.iterrows():
@@ -154,7 +146,7 @@ for CellSub in CellList:
         CellCoast.SampleHistoricalRSLR(str(WorkingPath / "RSL_Bradley_Model" / "Scotland_NEngland_RSLR_Modern_BNG.tif"))
     
         ### get future relative sea level time series
-        CellCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL" / ("RCP"+SeaLevelScenario), RCP=SeaLevelScenario, Percentile=SeaLevelScenarioPercentile))
+        CellCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL"))
         
         # Sample rock head position
         CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))

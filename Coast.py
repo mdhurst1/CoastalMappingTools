@@ -2288,7 +2288,7 @@ class Coast:
                         Transect.MHWS = val[0]
 
 
-    def SampleFutureRSL(self, FutureRSLFolder, Percentile=95, Years=[2020,2030,2040,2050,2060,2070,2080,2090,2100]):
+    def SampleFutureRSL(self, FutureRSLFolder, RCP=8, Percentile=95, Years=[2020,2030,2040,2050,2060,2070,2080,2090,2100]):
 
         """ 
         
@@ -2299,6 +2299,8 @@ class Coast:
         ----------
         FutureRSLFolder : string
             Folder containing future sea level elevation rasters for Scotland
+        RCP : int
+            RCP scenario to use
         Percentile : int
             Percentile scenario to use
         Years : list
@@ -2317,7 +2319,7 @@ class Coast:
         self.FutureShoreLinesYears = Years
 
         for Year in Years:
-            FutureRSLRaster = FutureRSLFolder + "/RCP8_" + str(Percentile) + "th_" + str(Year) + "_OSGB_filled.tif"
+            FutureRSLRaster = FutureRSLFolder + "/RCP" + str(RCP) + "_" + str(Percentile) + "th_" + str(Year) + "_OSGB_filled.tif"
 
             # open the raster dataset to work on
             with rasterio.open(FutureRSLRaster) as RSLDataset:
