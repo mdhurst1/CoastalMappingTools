@@ -17,7 +17,7 @@ WorkingPath = pathlib.Path.cwd().parent
 NationalDEMPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2Final/99_NationalData/OSTerrain5")
 
 # set sea level scenario
-SeaLevelScenario = 2
+SeaLevelScenario = 4
 SeaLevelScenarioPercentile = 50
 
 # set up output folder
@@ -155,7 +155,7 @@ for index, Row in Cells.iterrows():
         CellCoast.SampleHistoricalRSLR(str(WorkingPath / "RSL_Bradley_Model" / "Scotland_NEngland_RSLR_Modern_BNG.tif"))
     
         ### get future relative sea level time series
-        CellCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL" / ("RCP"+SeaLevelScenario), RCP=SeaLevelScenario, Percentile=SeaLevelScenarioPercentile))
+        CellCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL" / ("RCP"+str(SeaLevelScenario))), RCP=SeaLevelScenario, Percentile=SeaLevelScenarioPercentile)
         
         # Sample rock head position
         CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
