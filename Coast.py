@@ -248,7 +248,7 @@ class Coast:
             # launch polygon patches shapefile writer
             self.WritePatchesShp("ExtFrontLines_"+Level, "ExtBackLines_"+Level, ExtPatchesShp)
     
-    def WriteErodedAreaShp(self, ErosionShp, Year=2100):
+    def WriteErodedAreaShp(self, ErosionShp, StartYear=2020, Year=2100):
         
         """
         Writes future shorelines to polygon patches
@@ -258,22 +258,54 @@ class Coast:
         """
         
         # print action to screen
-        print("Coast.WriteErodedAreaShp: Writing predicted erosion area to polygon file")
+        #print("Coast.WriteErodedAreaShp: Writing predicted erosion area to polygon file")
+        
+        # retrieve future shorelines
+        self.GetFutureShoreLines()
 
         # get lists of lines for year of prediction and most recent shoreline position
         Indices = [i for i, Line in enumerate(self.FutureShoreLines) if Line.Year == Year]
         self.WriteFutureLines = [self.FutureShoreLines[i] for i in Indices]
-        Indices = [i for i, Line in enumerate(self.FutureShoreLines) if Line.Year == 2020]
+        Indices = [i for i, Line in enumerate(self.FutureShoreLines) if Line.Year == StartYear]
         self.WriteRecentLines = [self.FutureShoreLines[i] for i in Indices]
         
         # set up files to write
-        ErosionFrontShp = ErosionShp.split(".")[0]+"_2020.shp"
-        ErosionBackShp = ErosionShp.split(".")[0]+"_"+str(Year)+".shp"
+        ErosionFrontShp = ErosionShp.split(".")[0]+"_temp.shp"
+        ErosionBackShp = ErosionShp.split(".")[0]+"_temp2.shp"
 
         # write lines then patches
         self.WriteLinesShp("WriteFutureLines", ErosionBackShp)
         self.WriteLinesShp("WriteRecentLines", ErosionFrontShp)
         self.WritePatchesShp("WriteFutureLines", "WriteRecentLines", ErosionShp)
+
+    def WriteErosionProximityShp(self, ProximityShp, Distance=10., Year=2100):
+
+        """
+        Writes Erosion Proximity polygon patches for a given decade
+
+        MDH, Feb, 2021
+        
+        """
+
+        # retrieve future shorelines
+        self.GetFutureShoreLines()
+        Lines = GetFutureShoreLinesProximity(Distance)
+
+        # get lists of lines for year of prediction and most recent shoreline position
+        Indices = [i for i, Line in enumerate(self.FutureShoreLines) if Line.Year == Year]
+        self.WriteFutureLines = [self.FutureShoreLines[i] for i in Indices]
+        Indices = [i for i, Line in enumerate(Lines) if Line.Year == Year]
+        self.WriteBufferLines = [Lines[i] for i in Indices]
+        
+        # set up files to write
+        ErosionFutureShp = ProximityShp.split(".")[0]+"_temp.shp"
+        ErosionBufferShp = ProximityShp.split(".")[0]+"_temp2.shp"
+
+        # write lines then patches
+        self.WriteLinesShp("WriteFutureLines", ErosionFutureShp)
+        self.WriteLinesShp("WriteBufferLines", ErosionBufferShp)
+        self.WritePatchesShp("WriteFutureLines", "WriteBufferLines", ProximityShp)
+    
 
     def WriteFutureShorelinesShp(self, FutureShoreLinesShp, Smooth=True):
 
@@ -289,7 +321,7 @@ class Coast:
 
         """
 
-        # extract future shoreline positions from transect
+        # extract future shoreline positions from transects
         self.GetFutureShoreLines()
 
         # print action to screen
@@ -716,7 +748,7 @@ class Coast:
 
         if len(self.__dict__[DictionaryKey1]) == 0:
             print("Coast.WritePatchesShp (Error): Trying to write from empty list of lines", DictionaryKey1, DictionaryKey2)
-
+            
         # open new shapefile        
         WS = shapefile.Writer(PatchShp,shapeType=shapefile.POLYGON)
        
@@ -2319,7 +2351,7 @@ class Coast:
         self.FutureShoreLinesYears = Years
 
         for Year in Years:
-            FutureRSLRaster = FutureRSLFolder + "/RCP" + str(RCP) + "_" + str(Percentile) + "th_" + str(Year) + "_OSGB_filled.tif"
+            FutureRSLRaster = FutureRSLFolder + "/RCP" + str(RCP) + "_" + str(Percentile) + "th_" + str(Year) + "_filled.tif"
 
             # open the raster dataset to work on
             with rasterio.open(FutureRSLRaster) as RSLDataset:
@@ -3202,7 +3234,124 @@ class Coast:
             for i, Transect in enumerate(CoastLine.Transects):
                 Transect.Rocky = GroupList[Counter]
                 Counter += 1
+
+    def GetFutureShoreLinesProximity(self, BufferDistance):
+
+        Lines = []
+
+        # Loop through prediction years
+        for Year in self.FutureShoreLinesYears:
+
+            # keep track of no of coastal segments for IDs
+            FutureCount = 0
+            
+            # loop through transects and get contiguous cliff lines
+            for CoastLine in self.CoastLines:
                 
+                # find transects with future predictions
+                FutureBool = [Transect.Future for Transect in CoastLine.Transects]
+                FutureBool.insert(0, False)
+                FutureBool = np.array(FutureBool).astype(int)
+
+                # check for lines with no predictions
+                if not any(FutureBool):
+                    continue
+                
+                # get a list of the start and end points of contiguous lines
+                StartEndFlags = np.diff(FutureBool)
+                
+                # if first element is true this is a start point
+                if FutureBool[0]:
+                    StartEndFlags[0] = 1
+                
+                # if last line finishes on a start flag then remove
+                if StartEndFlags[-1] == 1:
+                    StartEndFlags[-1] = 0
+                
+                # if no start flags
+                if len(StartEndFlags.nonzero()[0]) == 0:
+                    continue
+                
+                # if last line finishes on last node then flag as end flag
+                if StartEndFlags[StartEndFlags.nonzero()[0][-1]] == 1:
+                    StartEndFlags[-1] = -1
+
+                StartList = np.argwhere(StartEndFlags == 1).flatten()
+                EndList = np.argwhere(StartEndFlags == -1).flatten()
+                
+                if len(StartList) < 1:
+                    continue
+                
+                if not len(StartList) == len(EndList):
+                    print("Start and End lists not the same length")
+                    print(len(StartList),len(EndList))
+                    import pdb
+                    pdb.set_trace()
+                    
+                for i in range(0,len(StartList)):
+                    
+                    # catch single node cliff lines and ignore
+                    if (EndList[i]-StartList[i]<2):
+                        continue
+
+                    # create empty lists for storing future nodes
+                    ProximityList = []
+                    
+                    # add latest MHWS from previous node to start
+                    # might need some logic here for first transect
+                    if StartList[i] == 0:
+                        FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
+                        ii = 1
+                    else:
+                        FirstNode = CoastLine.Transects[StartList[i]-1].get_RecentPosition()
+                        ii = 0
+                        if not FirstNode:
+                            FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
+                            ii= 1
+                    
+                    if not FirstNode:
+                        import pdb
+                        pdb.set_trace()
+                        
+                    ProximityList.append(FirstNode)
+                    
+                    # loop through transects and get future positions
+                    for Transect in CoastLine.Transects[StartList[i]+ii:EndList[i]]:
+                        
+                        if Transect.get_FutureDistance(Year) > Transect.get_RecentDistance():
+                            Distance = Transect.get_FutureDistance(Year) + BufferDistance
+                            TempNode = Transect.get_Position(Distance)
+                            ProximityList.append(TempNode)
+                        
+                        else:
+                            ProximityList.append(Transect.get_RecentPosition())
+                        
+                                                
+                    # add latest MHWS from next node to end
+                    # might need some logic here to finish
+                    if not CoastLine.Transects[EndList[i]].get_RecentPosition():
+                        LastNode = CoastLine.Transects[EndList[i]-1].get_RecentPosition()
+                    else:
+                        LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition()
+                    
+                    FutureList.append(LastNode)
+                    
+                    # create new line object for top
+                    try:
+                        X = [ProximityNode.X for ProximityNode in ProximityList]
+                        Y = [ProximityNode.Y for ProximityNode in ProximityList]
+                    except:
+                        import pdb
+                        pdb.set_trace()
+                        
+                    TempLine = Line("Proximity_"+str(FutureCount), X, Y, Year=Year)
+                    Lines.append(TempLine)
+                    
+                    # update counter
+                    FutureCount += 1
+
+        return Lines
+
     def GetFutureShoreLines(self):
 
         """
