@@ -274,8 +274,8 @@ class Coast:
         ErosionBackShp = ErosionShp.split(".")[0]+"_temp2.shp"
 
         # write lines then patches
-        self.WriteLinesShp("WriteFutureLines", ErosionBackShp)
-        self.WriteLinesShp("WriteRecentLines", ErosionFrontShp)
+        self.WriteLinesShp("WriteFutureLines", ErosionBackShp, Smooth=True)
+        self.WriteLinesShp("WriteRecentLines", ErosionFrontShp, Smooth=True)
         self.WritePatchesShp("WriteFutureLines", "WriteRecentLines", ErosionShp)
 
     def WriteErosionProximityShp(self, ProximityShp, Distance=10., Year=2100):
@@ -289,7 +289,7 @@ class Coast:
 
         # retrieve future shorelines
         self.GetFutureShoreLines()
-        Lines = GetFutureShoreLinesProximity(Distance)
+        Lines = self.GetFutureShoreLinesProximity(Distance)
 
         # get lists of lines for year of prediction and most recent shoreline position
         Indices = [i for i, Line in enumerate(self.FutureShoreLines) if Line.Year == Year]
@@ -302,11 +302,11 @@ class Coast:
         ErosionBufferShp = ProximityShp.split(".")[0]+"_temp2.shp"
 
         # write lines then patches
-        self.WriteLinesShp("WriteFutureLines", ErosionFutureShp)
-        self.WriteLinesShp("WriteBufferLines", ErosionBufferShp)
+        self.WriteLinesShp("WriteFutureLines", ErosionFutureShp, Smooth=True)
+        self.WriteLinesShp("WriteBufferLines", ErosionBufferShp, Smooth=True)
         self.WritePatchesShp("WriteFutureLines", "WriteBufferLines", ProximityShp)
     
-
+    
     def WriteFutureShorelinesShp(self, FutureShoreLinesShp, Smooth=True):
 
         """
@@ -687,7 +687,7 @@ class Coast:
         f.close()
 
     
-    def WriteLinesShp(self, DictionaryKey, CoastShp):
+    def WriteLinesShp(self, DictionaryKey, CoastShp, Smooth=False):
         
         """
         Writes the contents of a list of line objects to polyline shape file
@@ -712,8 +712,37 @@ class Coast:
 
         for Line in self.__dict__[DictionaryKey]:
             
+            if Smooth:
+                Line.SmoothLine(WindowSize=11)
+
+            # Find Loops
+            Line.MakeSimple()
+                
             # get line node positions
             X, Y = Line.get_XY()
+
+            if Smooth and len(X) > 5:
+
+                XSmooth = X[1:-1]
+                YSmooth = Y[1:-1]
+                # calculate distance
+                Dist = np.zeros(XSmooth.shape)
+                Dist[1:] = np.sqrt((XSmooth[1:] - XSmooth[:-1])**2 + (YSmooth[1:] - YSmooth[:-1])**2)
+                Dist = np.cumsum(Dist)
+                
+                # build a spline representation of the line
+                Spline, u = splprep([XSmooth, YSmooth], u=Dist, s=0)
+
+                # resample it at smaller distance intervals
+                Interp_Dist = np.arange(0, Dist[-1], 1.)
+                XSmooth, YSmooth = splev(Interp_Dist, Spline)
+
+                XSmooth = np.insert(XSmooth,0,X[0])
+                YSmooth = np.insert(YSmooth,0,Y[0])
+                X = np.append(XSmooth,X[-1])
+                Y = np.append(YSmooth,Y[-1])
+
+            # get line node positions
             WriteLine = [np.column_stack([X,Y]).tolist()]
             
             # generate record
@@ -3334,7 +3363,7 @@ class Coast:
                     else:
                         LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition()
                     
-                    FutureList.append(LastNode)
+                    ProximityList.append(LastNode)
                     
                     # create new line object for top
                     try:
