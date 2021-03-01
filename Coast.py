@@ -248,7 +248,7 @@ class Coast:
             # launch polygon patches shapefile writer
             self.WritePatchesShp("ExtFrontLines_"+Level, "ExtBackLines_"+Level, ExtPatchesShp)
     
-    def WriteErodedAreaShp(self, ErosionShp, StartYear=2020, Year=2100):
+    def WriteErodedAreaShp(self, ErosionShp, StartYear=2020, Year=2100,Smooth=True):
         
         """
         Writes future shorelines to polygon patches
@@ -276,9 +276,9 @@ class Coast:
         # write lines then patches
         self.WriteLinesShp("WriteFutureLines", ErosionBackShp, Smooth=True)
         self.WriteLinesShp("WriteRecentLines", ErosionFrontShp, Smooth=True)
-        self.WritePatchesShp("WriteFutureLines", "WriteRecentLines", ErosionShp)
+        self.WritePatchesShp("WriteFutureLines", "WriteRecentLines", ErosionShp, Smooth=True)
 
-    def WriteErosionProximityShp(self, ProximityShp, Distance=10., Year=2100):
+    def WriteErosionProximityShp(self, ProximityShp, Distance=10., Year=2100, Smooth=True):
 
         """
         Writes Erosion Proximity polygon patches for a given decade
@@ -304,7 +304,7 @@ class Coast:
         # write lines then patches
         self.WriteLinesShp("WriteFutureLines", ErosionFutureShp, Smooth=True)
         self.WriteLinesShp("WriteBufferLines", ErosionBufferShp, Smooth=True)
-        self.WritePatchesShp("WriteFutureLines", "WriteBufferLines", ProximityShp)
+        self.WritePatchesShp("WriteFutureLines", "WriteBufferLines", ProximityShp, Smooth=True)
     
     
     def WriteFutureShorelinesShp(self, FutureShoreLinesShp, Smooth=True):
@@ -760,7 +760,7 @@ class Coast:
         f.write(self.Projection)
         f.close()
     
-    def WritePatchesShp(self, DictionaryKey1, DictionaryKey2, PatchShp):
+    def WritePatchesShp(self, DictionaryKey1, DictionaryKey2, PatchShp, Smooth=False):
 
         """
 
@@ -787,9 +787,54 @@ class Coast:
 
         for Line1, Line2 in zip(self.__dict__[DictionaryKey1],self.__dict__[DictionaryKey2]):
             
-            # get line node positions for cliff top and toe lines
+            # get line node positions
             X1, Y1 = Line1.get_XY()
+
+            if Smooth and len(X1) > 5:
+
+                XSmooth = X1[1:-1]
+                YSmooth = Y1[1:-1]
+                
+                # calculate distance
+                Dist = np.zeros(XSmooth.shape)
+                Dist[1:] = np.sqrt((XSmooth[1:] - XSmooth[:-1])**2 + (YSmooth[1:] - YSmooth[:-1])**2)
+                Dist = np.cumsum(Dist)
+                
+                # build a spline representation of the line
+                Spline, u = splprep([XSmooth, YSmooth], u=Dist, s=0)
+
+                # resample it at smaller distance intervals
+                Interp_Dist = np.arange(0, Dist[-1], 1.)
+                XSmooth, YSmooth = splev(Interp_Dist, Spline)
+
+                XSmooth = np.insert(XSmooth,0,X1[0])
+                YSmooth = np.insert(YSmooth,0,Y1[0])
+                X1 = np.append(XSmooth,X1[-1])
+                Y1 = np.append(YSmooth,Y1[-1])
+
+            # get line node positions
             X2, Y2 = Line2.get_XY()
+
+            if Smooth and len(X2) > 5:
+
+                XSmooth = X2[1:-1]
+                YSmooth = Y2[1:-1]
+                # calculate distance
+                Dist = np.zeros(XSmooth.shape)
+                Dist[1:] = np.sqrt((XSmooth[1:] - XSmooth[:-1])**2 + (YSmooth[1:] - YSmooth[:-1])**2)
+                Dist = np.cumsum(Dist)
+                
+                # build a spline representation of the line
+                Spline, u = splprep([XSmooth, YSmooth], u=Dist, s=0)
+
+                # resample it at smaller distance intervals
+                Interp_Dist = np.arange(0, Dist[-1], 1.)
+                XSmooth, YSmooth = splev(Interp_Dist, Spline)
+
+                XSmooth = np.insert(XSmooth,0,X2[0])
+                YSmooth = np.insert(YSmooth,0,Y2[0])
+                X2 = np.append(XSmooth,X2[-1])
+                Y2 = np.append(YSmooth,Y2[-1])
 
             # combine, reversing the order of the second line to make a patch
             X = np.concatenate((X1,X2[::-1]))
@@ -963,7 +1008,7 @@ class Coast:
         ['Dist_2100', 'N', 6, 3], ['Rate_2100', 'N', 4, 4], 
         ['RCP85_2100', 'N', 4, 3],
         ['DC1_SvEn_B','N', 4, 0], ['DC1_SvEn_C','N', 4, 0], 
-        ['DC1_DistV','N', 4, 0], ['DC1_RateBC','N', 6, 3],
+        ['DC1_DistV','N', 4, 4], ['DC1_RateBC','N', 4, 4],
         ['OS_2020_Yr','N',4,0]
         ]
         

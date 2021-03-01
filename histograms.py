@@ -12,6 +12,7 @@ import pathlib
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import rcParams, ticker, gridspec, cm
+import geopandas as gp
 import pandas as pd
 
 # Set up fonts for plots
@@ -29,13 +30,36 @@ ax3 = fig.add_subplot(313)
 WorkingPath = pathlib.Path.cwd().parent
 
 # first for scenario 2.4
-OpenPath = WorkingPath/("RCP_2_50th_OpenCoast")
-InnerPath = WorkingPath/("RCP_2_50th_InnerCoast")
+OpenPath = WorkingPath/("RCP_2_50th_National")
+TransectsFile = OpenPath / "Scotland__Transects.shp"
+GDF = gp.read_file(TransectsFile)
+GDF.replace("",float("NaN"),inplace=True)
+GDF.dropna(subset=["DC1_RateBC"], inplace=True)
 
-# scenario 4.5
-OpenPath = WorkingPath/("RCP_4_50th_OpenCoast")
-InnerPath = WorkingPath/("RCP_4_50th_InnerCoast")
+bins = np.arange(-5., 5., 0.2)
+ax1.hist([GDF.Hist_Rate,GDF.Rate_2050,GDF.Rate_2100],bins=bins, color=[[0.7,0.7,1.],[0.6,0.6,1.],[0.5,0.5,1.]])
 
-# scenario 8.6
-OpenPath = WorkingPath/("RCP_8_95th_OpenCoast")
-InnerPath = WorkingPath/("RCP_8_95th_InnerCoast")
+# first for scenario 4.5
+#OpenPath = WorkingPath/("RCP_4_50th_National")
+#TransectsFile = OpenPath / "Scotland__Transects.shp"
+#GDF = gp.read_file(TransectsFile)
+#GDF.replace("",float("NaN"),inplace=True)
+#GDF.dropna(subset=["DC1_RateBC"], inplace=True)
+
+#bins = np.arange(-5., 5., 0.2)
+#ax2.hist([GDF.Hist_Rate,GDF.Rate_2050,GDF.Rate_2100],bins=bins)
+
+
+# first for scenario 2.4
+#OpenPath = WorkingPath/("RCP_2_50th_National")
+#TransectsFile = OpenPath / "Scotland__Transects.shp"
+#GDF = gp.read_file(TransectsFile)
+#GDF.replace("",float("NaN"),inplace=True)
+#GDF.dropna(subset=["DC1_RateBC"], inplace=True)
+
+#bins = np.arange(-5., 5., 0.2)
+#ax3.hist([GDF.Hist_Rate,GDF.Rate_2050,GDF.Rate_2100],bins=bins)
+
+#ax1.hist(GDF.Rate_2050,bins=bins)
+#ax1.hist(GDF.Rate_2100,bins=bins)
+

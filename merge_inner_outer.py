@@ -51,6 +51,8 @@ for Scenario, Percentile in zip(Scenarios, Percentiles):
         
         ErodedAreaList = []
         DecadalAreaList = []
+        InfluenceList = []
+        VicinityList = []
         
         #Do inner then outer
         for FilePath, PrefixName in zip(FilePaths,PrefixNames):
@@ -74,8 +76,26 @@ for Scenario, Percentile in zip(Scenarios, Percentiles):
                     TempGDF = gp.read_file(FutureFile)
                     DecadalAreaList.append(TempGDF)
                     
+                    # load future area file and append
+                FutureFile = FilePath / (RowName + "_Influence_" + str(Decade) + ".shp")
+                
+                if FutureFile.exists():
+                    TempGDF = gp.read_file(FutureFile)
+                    InfluenceList.append(TempGDF)
+                
+                # load future area file and append
+                FutureFile = FilePath / (RowName + "_Vicinity_" + str(Decade) + ".shp")
+                
+                if FutureFile.exists():
+                    TempGDF = gp.read_file(FutureFile)
+                    VicinityList.append(TempGDF)
+                    
         # write new file
         WriteGDF = pd.concat(ErodedAreaList, sort=True)
         WriteGDF.to_file(WritePath / ("Scotland_ErodedArea_" + str(Decade) + ".shp"))
         WriteGDF = pd.concat(DecadalAreaList, sort=True)
         WriteGDF.to_file(WritePath / ("Scotland_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp"))
+        WriteGDF = pd.concat(InfluenceList, sort=True)
+        WriteGDF.to_file(WritePath / ("Scotland_Influence_" + str(Decade) + ".shp"))
+        WriteGDF = pd.concat(VicinityList, sort=True)
+        WriteGDF.to_file(WritePath / ("Scotland_Vicinity_" + str(Decade) + ".shp"))

@@ -26,9 +26,6 @@ Decades = [2020, 2030, 2040, 2050, 2060, 2070, 2080, 2090, 2100]
 #loop through scenarios
 for Scenario, Percentile in zip(Scenarios, Percentiles):
     
-    if not Scenario == 8:
-        continue
-    
     print("RCP", Scenario, Percentile)
     
     # set up output folder
@@ -41,8 +38,6 @@ for Scenario, Percentile in zip(Scenarios, Percentiles):
         RowName = "Cell_"+CellSub
         print("\t", RowName)
         
-        if not CellSub == "1a":
-            continue
         
         OpenCoastFlag = False
         InnerCoastFlag = False
@@ -94,60 +89,81 @@ for Scenario, Percentile in zip(Scenarios, Percentiles):
 
 # merge results
 #loop through scenarios
-#for Scenario, Percentile in zip(Scenarios, Percentiles):
-#    
-#    print(Scenario)
-#    
-#    # set up output folder
-#    OpenPath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_OpenCoast")
-#    InnerPath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_InnerCoast")
-#    FilePaths = [OpenPath, InnerPath]
-#    PrefixNames = ["Open", "Inner"]
-#    
-#    #Do inner then outer
-#    for FilePath, PrefixName in zip(FilePaths,PrefixNames):
-#        
-#        print(PrefixName)
-#        
-#        #loop over decades
-#        for i, Decade in enumerate(Decades):
-#            
-#            print(Decade)
-#            
-#            # skip 2020
-#            if i == 0:
-#                continue
-#            
-#            ErodedAreaList = []
-#            DecadalAreaList = []
-#            
-#            # loop through cells
-#            for index, Row in Cells.iterrows():
-#                CellSub = Row.Cell_sub
-#                RowName = "Cell_"+CellSub
-#                
-#                # load future area file and append
-#                FutureFile = FilePath / (RowName + "_ErodedArea_" + str(Decade) + ".shp")
-#                
-#                if FutureFile.exists():
-#                    TempGDF = gp.read_file(FutureFile)
-#                    ErodedAreaList.append(TempGDF)
-#                    
-#                # load future area file and append
-#                FutureFile = FilePath / (RowName + "_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")
-#                
-#                if FutureFile.exists():
-#                    TempGDF = gp.read_file(FutureFile)
-#                    DecadalAreaList.append(TempGDF)
-#                    
-#            # write new file
-#            try:
-#                WriteGDF = pd.concat(ErodedAreaList, sort=True)
-#                WriteGDF.to_file(FilePath / ("Scotland_" + PrefixName + "_ErodedArea_" + str(Decade) + ".shp"))
-#            except:
-#                import pdb
-#                pdb.set_trace()
-#                
-#            
-#            WriteGDF = pd.concat(DecadalAreaList, sort=True)
-#            WriteGDF.to_file(FilePath / ("Scotland_" + PrefixName + "_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp"))
+for Scenario, Percentile in zip(Scenarios, Percentiles):
+    
+    print(Scenario)
+    
+    # set up output folder
+    OpenPath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_OpenCoast")
+    InnerPath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_InnerCoast")
+    FilePaths = [OpenPath, InnerPath]
+    PrefixNames = ["Open", "Inner"]
+    
+    #Do inner then outer
+    for FilePath, PrefixName in zip(FilePaths,PrefixNames):
+        
+        print(PrefixName)
+        
+        #loop over decades
+        for i, Decade in enumerate(Decades):
+            
+            print(Decade)
+            
+            # skip 2020
+            if i == 0:
+                continue
+            
+            ErodedAreaList = []
+            DecadalAreaList = []
+            InfluenceList = []
+            VicinityList = []
+            
+            # loop through cells
+            for index, Row in Cells.iterrows():
+                CellSub = Row.Cell_sub
+                RowName = "Cell_"+CellSub
+                
+                # load future area file and append
+                FutureFile = FilePath / (RowName + "_ErodedArea_" + str(Decade) + ".shp")
+                
+                if FutureFile.exists():
+                    TempGDF = gp.read_file(FutureFile)
+                    ErodedAreaList.append(TempGDF)
+                    
+                # load future area file and append
+                FutureFile = FilePath / (RowName + "_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")
+                
+                if FutureFile.exists():
+                    TempGDF = gp.read_file(FutureFile)
+                    DecadalAreaList.append(TempGDF)
+                
+                # load future area file and append
+                InfluenceFile = FilePath / (RowName + "_Influence_" + str(Decade) + ".shp")
+                
+                if InfluenceFile.exists():
+                    TempGDF = gp.read_file(InfluenceFile)
+                    InfluenceList.append(TempGDF)
+                
+                # load future area file and append
+                VicinityFile = FilePath / (RowName + "_Influence_" + str(Decade) + ".shp")
+                
+                if VicinityFile.exists():
+                    TempGDF = gp.read_file(VicinityFile)
+                    VicinityList.append(TempGDF)
+            # write new file
+            try:
+                WriteGDF = pd.concat(ErodedAreaList, sort=True)
+                WriteGDF.to_file(FilePath / ("Scotland_" + PrefixName + "_ErodedArea_" + str(Decade) + ".shp"))
+            except:
+                import pdb
+                pdb.set_trace()
+                
+            
+            WriteGDF = pd.concat(DecadalAreaList, sort=True)
+            WriteGDF.to_file(FilePath / ("Scotland_" + PrefixName + "_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp"))
+            
+            WriteGDF = pd.concat(InfluenceList, sort=True)
+            WriteGDF.to_file(FilePath / ("Scotland_" + PrefixName + "_Influence_" + str(Decade) + ".shp"))
+            
+            WriteGDF = pd.concat(VicinityList, sort=True)
+            WriteGDF.to_file(FilePath / ("Scotland_" + PrefixName + "_Vicinity_" + str(Decade) + ".shp"))
