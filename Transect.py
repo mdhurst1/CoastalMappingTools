@@ -612,7 +612,7 @@ class Transect:
                 # if landward of
                 self.FutureShorelinesPositions.append(self.RockHeadPosition)
                 
-                ShorelinePositionChange = self.RockHeadDistance-HistoricShorelineDistance
+                ShorelinePositionChange = HistoricShorelineDistance - self.RockHeadDistance
                 self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
                 self.FutureShorelinesDistances.append(self.RockHeadDistance)
             
@@ -621,7 +621,7 @@ class Transect:
                 # if landward of
                 self.FutureShorelinesPositions.append(self.DefencesPosition)
                 
-                ShorelinePositionChange = self.DefencesDistance-HistoricShorelineDistance
+                ShorelinePositionChange = HistoricShorelineDistance - self.DefencesDistance
                 self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
                 self.FutureShorelinesDistances.append(self.DefencesDistance)
 
@@ -637,6 +637,132 @@ class Transect:
         # add analysis of 2100 uncertainty based on historical position change
         self.VolumetricCalibrationRates = np.append(self.VolumetricCalibrationRates, 0.)
         
+    def PredictFutureShorelineBathtub(self):
+
+        """
+        Function to predict the future shoreline position by drowning topography on the transect
+
+        MDH, March 2021
+
+        """
+
+        # reset outputs incase already has been run
+        self.FutureShorelinesPositions = []
+        self.FutureShorelinesRates = []
+        self.FutureShorelinesDistances = []
+        self.InterpolatedRSLR = []
+
+
+        # loop across sea level predictions
+        for Year, SeaLevel in zip(self.FutureSeaLevelYears,self.FutureSeaLevels):
+        
+            # time
+            dT = Year-self.HistoricShorelinesYears[-1]
+
+            # vector at fixed elevation running the length of the transect
+            Start, End = ma.notmasked_edges(self.Distance)
+            X1, Y1 = self.Distance[Start], Elev
+            X2, Y2 = self.Distance[End], Elev
+        
+            dX12 = X2-X1
+            dY12 = Y2-Y1
+        
+            # count and record locations of intersection
+            IntersectionCounter = 0
+            self.IntersectionIndices = []
+            InterpolateFractions = []
+        
+            # temporary fix for no assignment, need a function for reading in transect topo
+            # rather than having it set externally?
+            self.NoValues = len(self.Distance)
+            self.DistanceSpacing = self.Distance[End]-self.Distance[End-1]
+        
+            # loop across barrier topography
+            for i in range(Start, self.NoValues-1):
+
+                # cut and paste interesction analysis
+                # do we want this to be a separate function somewhere?
+                # Loop through transects and count no of intersections with the barrier
+                # get transect line ends        
+                X3,Y3 = self.Distance[i], self.Elevation[i]
+                X4,Y4 = self.Distance[i+1], self.Elevation[i+1]
+                
+                dX34 = X4-X3
+                dY34 = Y4-Y3
+                
+                #Find the cross product of the two vectors
+                XProd = dX12*dY34 - dX34*dY12
+                    
+                if (XProd != 0):
+                    if (XProd > 0):
+                        XProdPos = 1
+                    else:
+                        XProdPos = 0
+                        
+                    #assign third test segment
+                    dX31 = X1-X3
+                    dY31 = Y1-Y3
+                        
+                    #get cross products
+                    S = dX12*dY31 - dY12*dX31
+                    T = dX34*dY31 - dY34*dX31
+                    
+                    #logic for collision occurence
+                    if ((S < 0) == XProdPos):
+                        continue
+                    elif ((T < 0) == XProdPos):
+                        continue
+                    elif ((S > XProd) == XProdPos):
+                        continue
+                    elif ((T > XProd) == XProdPos):
+                        continue
+                    else:
+                        IntersectionCounter += 1
+                        self.IntersectionIndices.append(i)
+                        Fraction = np.abs((Elev-Y3)/dY34)
+                        InterpolateFractions.append(Fraction)
+        
+            # flag if no intersection 
+            if IntersectionCounter == 0:
+                import pdb
+                pdb.set_trace()
+                continue
+
+            # else use first intersection as shoreline position
+            # get future shoreline positions
+            FutureShorelineDistance = Distance[self.IntersectionIndices[0]]+InterpolateFranctions[0]*(Distance[self.IntersectionIndices[0]+1]-Distance[self.IntersectionIndices[0]])
+                
+            if self.RockHeadDistance and (FutureShorelineDistance > self.RockHeadDistance):
+                
+                # if landward of
+                self.FutureShorelinesPositions.append(self.RockHeadPosition)
+                
+                ShorelinePositionChange = HistoricShorelineDistance-self.RockHeadDistance
+                self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
+                self.FutureShorelinesDistances.append(self.RockHeadDistance)
+
+            elif self.DefencesDistance and (FutureShorelineDistance > self.DefencesDistance):
+                
+                # if landward of
+                self.FutureShorelinesPositions.append(self.DefencesPosition)
+                
+                ShorelinePositionChange = HistoricShorelineDistance - self.DefencesDistanced
+                self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
+                self.FutureShorelinesDistances.append(self.DefencesDistance)
+            
+            # otherwise write new shoreline position as appropriate
+            else:
+                
+                # may be a sign issue in here will need to check
+                ShorelinePositionChange = HistoricShorelineDistance-FutureShorelineDistance
+                X1 = self.HistoricShorelinesPosition[-1].X + ShorelinePositionChange * np.sin( np.radians( self.Orientation ) )
+                Y1 = self.HistoricShorelinesPosition[-1].Y + ShorelinePositionChange * np.cos( np.radians( self.Orientation ) )
+
+                self.FutureShorelinesPositions.append(Node(X1,Y1))
+                self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
+                self.FutureShorelinesDistances.append(FutureShorelineDistance)
+
+                
 
     def PredictFutureShorelineUncertainty(self, Year=2100):
 
