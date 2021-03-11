@@ -4546,7 +4546,7 @@ class Coast:
             for Transect in Line.Transects:
 
                 ErosionDistance = Transect.get_TotalErosion(2020,Decade)
-                if ErosionDistance > 0:
+                if ErosionDistance:
                     ErosionDistances.append(ErosionDistance)
         
         NErodingTransects = len(ErosionDistances)

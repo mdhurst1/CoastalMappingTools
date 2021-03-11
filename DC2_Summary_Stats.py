@@ -27,7 +27,12 @@ Percentile = 95
 # get all coastal cells to loop through
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 CellList = ["1a",]
-            
+
+# set up dataframe
+DF = pd.DataFrame(columns=('Location', 'NoTransects','MeanErosion2030','PercentEroding2030',
+                           'MeanErosion2050','PercentEroding2100',
+                           'MeanErosion2050','PercentEroding2100'))
+
 # loop through each cell
 for index, Row in Cells.iterrows():
     CellSub = Row.Cell_sub
@@ -60,12 +65,16 @@ for index, Row in Cells.iterrows():
         raise
     
     # Get number of Transects    
-    NOpenTransects = OpenCoast.CountTransects()
-    NInnerTransects = InnerCoast.CountTransects()
+    NTransects = OpenCoast.get_NumberOfTransects() + InnerCoast.get_NumberOfTransects()
     
     # First mean total erosion each decade
-    Decades = [2030, 2040, 2050, 2060, 2070, 2080, 2090, 2100]
-    OpenMeanTotalErosion = [OpenCoast.get_MeanTotalErosion(Decade) for Decade in Decades[1:]]
-    InnerMeanTotalErosion = [OpenCoast.get_MeanTotalErosion(Decade) for Decade in Decades[1:]]
+    Decades = [2030, 2050, 2100]
+    OpenMeanTotalErosion = [OpenCoast.get_MeanTotalErosion(Decade) for Decade in Decades]
+    InnerMeanTotalErosion = [OpenCoast.get_MeanTotalErosion(Decade) for Decade in Decades]
     
-    
+    #values_to_add = {'NoTransects':NTransects,'MeanErosion2030','PercentEroding2030',
+    #                       'MeanErosion2050','PercentEroding2100',
+    #                       'MeanErosion2050','PercentEroding2100'}
+    #{'A': 1, 'B': 2}
+    #row_to_add = pd.Series(values_to_add, name=CellSub)
+    #dDF = DF.append(row_to_add)
