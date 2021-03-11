@@ -4557,4 +4557,15 @@ class Coast:
     def get_NumberOfTransects(self):
 
         """
+
+        Returns the total number of transects on all lines in the object
+
         """
+
+        NoTransects = 0
+
+        for Line in self.CoastLines:
+
+            NoTransects += len(Line.Transects)
+
+        return NoTransects
