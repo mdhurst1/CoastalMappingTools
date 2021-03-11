@@ -2257,6 +2257,27 @@ class Transect:
         else:
             return
 
+    def get_TotalErosion(self, Year1, Year2):
+
+        """
+        
+        Get the total amount of erosion that has taken place by a given decade 
+        in the future predictions
+        
+        MDH, March 2021
+        
+        """
+
+        # check there are predictions for this transect
+        if self.Future:
+            
+            # get the position change
+            Distance = self.get_FuturePositionChange(Year1, Year2)
+            return Distance
+
+        else:
+            return
+            
     def get_FirstFutureErosionYear(self):
 
         """
@@ -2412,6 +2433,8 @@ class Transect:
         Position = self.HistoricShorelinesPositions[Index][0]
         return Position 
     
+    
+
     def Write(self, Folder=os.getcwd(), delimiter=","):
         
         """
