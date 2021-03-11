@@ -4548,7 +4548,7 @@ class Coast:
                 ErosionDistance = Transect.get_TotalErosion(2020,Decade)
                 if not ErosionDistance:
                     continue
-                elif not ErosionDistance > 0:
+                elif not ErosionDistance < 0:
                     continue
                 else:
                     ErosionDistances.append(ErosionDistance)
