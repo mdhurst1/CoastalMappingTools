@@ -4528,4 +4528,33 @@ class Coast:
                 CurrentTransect += 1
 
         print("")
+
+
+    def get_MeanTotalErosion(self, Decade=2100):
+
+        """ 
         
+        Function to calculate the mean total erosion on transects for future predictions
+        
+        MDH, March 2021
+        
+        """
+
+        ErosionDistances = []
+
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+
+                ErosionDistance = Transect.get_TotalErosion(2020,Decade)
+                if ErosionDistance > 0:
+                    ErosionDistances.append(ErosionDistance)
+        
+        NErodingTransects = len(ErosionDistances)
+        MeanTotalErosion = np.mean(ErosionDistances)
+
+        return NErodingTransects, MeanTotalErosion
+
+    def get_NumberOfTransects(self):
+
+        """
+        """
