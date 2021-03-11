@@ -23,69 +23,72 @@ Scenarios = [8,4,2]
 Percentiles = [95,50,50]
 Decades = [2020, 2030, 2040, 2050, 2060, 2070, 2080, 2090, 2100]
 
-#loop through scenarios
-for Scenario, Percentile in zip(Scenarios, Percentiles):
-    
-    print("RCP", Scenario, Percentile)
-    
-    # set up output folder
-    OpenPath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_OpenCoast")
-    InnerPath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_InnerCoast")
-        
-    #Loop through Cells
-    for index, Row in Cells.iterrows():
-        CellSub = Row.Cell_sub
-        RowName = "Cell_"+CellSub
-        print("\t", RowName)
-        
-        
-        OpenCoastFlag = False
-        InnerCoastFlag = False
-        
-        # load the coast objects
-        OpenCoastFilename = OpenPath / (RowName+"_OpenChange.pydata")
-        try:
-            OpenCoast = pickle.load( open( OpenCoastFilename, "rb" ) )
-            OpenCoastFlag = True
-            
-        except:
-            print("No Open Coast Object")
-            
-        
-        InnerCoastFilename = InnerPath / (RowName+"_InnerChange.pydata")
-        try:
-            InnerCoast = pickle.load( open( InnerCoastFilename, "rb" ) )
-            InnerCoastFlag = True
-
-        except:
-            print("No Inner Coast Object")
-           
-        #OpenCoast.WriteFutureShorelinesShp(str(OpenPath / (RowName + "_Future.shp")), Smooth=True)
-        #InnerCoast.WriteFutureShorelinesShp(str(InnerPath / (RowName + "_Future.shp")), Smooth=True)
-        
-        #Loop through decades
-        for i, Decade in enumerate(Decades):
-            
-            print("\t\t", Decade)
-            
-            #skip 2020
-            if i == 0:
-                continue
-            
-            #Write outputs for each decade both inner and open
-            if OpenCoastFlag:
-                
-                OpenCoast.WriteErodedAreaShp(str(OpenPath / (RowName + "_ErodedArea_" + str(Decade) + ".shp")), Year=Decade)
-                OpenCoast.WriteErodedAreaShp(str(OpenPath / (RowName + "_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
-                OpenCoast.WriteErosionProximityShp(str(OpenPath / (RowName + "_Influence_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
-                OpenCoast.WriteErosionProximityShp(str(OpenPath / (RowName + "_Vicinity_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
-                
-            if InnerCoastFlag:
-                
-                InnerCoast.WriteErodedAreaShp(str(InnerPath / (RowName + "_ErodedArea_" + str(Decade) + ".shp")), Year=Decade)
-                InnerCoast.WriteErodedAreaShp(str(InnerPath / (RowName + "_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
-                InnerCoast.WriteErosionProximityShp(str(InnerPath / (RowName + "_Influence_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
-                InnerCoast.WriteErosionProximityShp(str(InnerPath / (RowName + "_Vicinity_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
+##loop through scenarios
+#for Scenario, Percentile in zip(Scenarios, Percentiles):
+#    
+#    print("RCP", Scenario, Percentile)
+#    
+#    # set up output folder
+#    OpenPath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_OpenCoast")
+#    InnerPath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_InnerCoast")
+#    
+#    CellList = ["5h"] #"5a","5b","5c","5d","5e","5f","5g","5h","5i","5j","5k"]
+#
+#    for CellSub in CellList:
+#    #Loop through Cells
+#    #for index, Row in Cells.iterrows():
+#        #CellSub = Row.Cell_sub
+#        RowName = "Cell_"+CellSub
+#        print("\t", RowName)
+#        
+#        
+#        OpenCoastFlag = False
+#        InnerCoastFlag = False
+#        
+#        # load the coast objects
+#        OpenCoastFilename = OpenPath / (RowName+"_OpenChange.pydata")
+#        try:
+#            OpenCoast = pickle.load( open( OpenCoastFilename, "rb" ) )
+#            OpenCoastFlag = True
+#            
+#        except:
+#            print("No Open Coast Object")
+#            
+#        
+#        InnerCoastFilename = InnerPath / (RowName+"_InnerChange.pydata")
+#        try:
+#            InnerCoast = pickle.load( open( InnerCoastFilename, "rb" ) )
+#            InnerCoastFlag = True
+#
+#        except:
+#            print("No Inner Coast Object")
+#           
+#        #OpenCoast.WriteFutureShorelinesShp(str(OpenPath / (RowName + "_Future.shp")), Smooth=True)
+#        #InnerCoast.WriteFutureShorelinesShp(str(InnerPath / (RowName + "_Future.shp")), Smooth=True)
+#        
+#        #Loop through decades
+#        for i, Decade in enumerate(Decades):
+#            
+#            print("\t\t", Decade)
+#            
+#            #skip 2020
+#            if i == 0:
+#                continue
+#            
+#            #Write outputs for each decade both inner and open
+#            if OpenCoastFlag:
+#                
+#                OpenCoast.WriteErodedAreaShp(str(OpenPath / (RowName + "_ErodedArea_" + str(Decade) + ".shp")), Year=Decade)
+#                OpenCoast.WriteErodedAreaShp(str(OpenPath / (RowName + "_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
+#                OpenCoast.WriteErosionProximityShp(str(OpenPath / (RowName + "_Influence_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
+#                OpenCoast.WriteErosionProximityShp(str(OpenPath / (RowName + "_Vicinity_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
+#                
+#            if InnerCoastFlag:
+#                
+#                InnerCoast.WriteErodedAreaShp(str(InnerPath / (RowName + "_ErodedArea_" + str(Decade) + ".shp")), Year=Decade)
+#                InnerCoast.WriteErodedAreaShp(str(InnerPath / (RowName + "_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
+#                InnerCoast.WriteErosionProximityShp(str(InnerPath / (RowName + "_Influence_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
+#                InnerCoast.WriteErosionProximityShp(str(InnerPath / (RowName + "_Vicinity_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
 
 # merge results
 #loop through scenarios

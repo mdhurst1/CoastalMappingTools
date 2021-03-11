@@ -19,8 +19,8 @@ WorkingPath = pathlib.Path.cwd().parent
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # set up scenarios
-Scenarios = [8,4,2]
-Percentiles = [95,50,50]
+Scenarios = [2]
+Percentiles = [50]
 Decades = [2020, 2030, 2040, 2050, 2060, 2070, 2080, 2090, 2100]
 
 #loop through scenarios

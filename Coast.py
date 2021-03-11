@@ -45,6 +45,7 @@ class Coast:
         self.Cell = None
         self.SubCell = None
         self.CMU = None
+        self.Method = None
         self.CoastShp = CoastShp
         self.NoCoastLines = 0
         self.CoastLines = []
@@ -131,7 +132,10 @@ class Coast:
             print(" \r\tCoastline %4d / %4d" % (i+1, self.NoCoastLines), end="")
 
             # get X and Y coordinates of segment
-            X, Y = np.array(Shapes[i].points).T
+            try:
+                X, Y = np.array(Shapes[i].points).T
+            except:
+                continue
                 
             # Set up a line object for each
             ThisLine = Line(str(i), X, Y)
@@ -278,7 +282,7 @@ class Coast:
         self.WriteLinesShp("WriteRecentLines", ErosionFrontShp, Smooth=True)
         self.WritePatchesShp("WriteFutureLines", "WriteRecentLines", ErosionShp, Smooth=True)
 
-    def WriteErosionProximityShp(self, ProximityShp, Distance=10., Year=2100, Smooth=True):
+    def WriteErosionProximityShp(self, ProximityShp, BufferDistance=10., Year=2100, Smooth=True):
 
         """
         Writes Erosion Proximity polygon patches for a given decade
@@ -289,7 +293,7 @@ class Coast:
 
         # retrieve future shorelines
         self.GetFutureShoreLines()
-        Lines = self.GetFutureShoreLinesProximity(Distance)
+        Lines = self.GetFutureShoreLinesProximity(BufferDistance)
 
         # get lists of lines for year of prediction and most recent shoreline position
         Indices = [i for i, Line in enumerate(self.FutureShoreLines) if Line.Year == Year]
@@ -331,7 +335,7 @@ class Coast:
         WL = shapefile.Writer(FutureShoreLinesShp,shapeType=shapefile.POLYLINE)
        
         # Create Fields
-        self.Fields = [('DeletionFlag','C',1,0),['Cell','C', 2, 0], ['SubCell','C', 2, 0], ['Line_ID', 'C', 20, 0],['Year','N', 4, 0],['Flag','C', 10, 0]]
+        self.Fields = [('DeletionFlag','C',1,0),['Cell','C', 2, 0], ['SubCell','C', 2, 0], ['Line_ID', 'C', 20, 0],['Year','N', 4, 0],['Method','C', 5, 0]]
         WL.fields = self.Fields[1:] 
 
         for Line in self.FutureShoreLines:
@@ -403,7 +407,11 @@ class Coast:
             WriteLine = [np.column_stack([X,Y]).tolist()]
             
             # generate record
-            Record = [str(Line.Cell), str(Line.SubCell),str(Line.ID),str(Line.Year),str(Line.Flag)]
+            if self.Method == None:
+                import pdb
+                pdb.set_trace()
+             
+            Record = [str(Line.Cell), str(Line.SubCell),str(Line.ID),str(Line.Year), str(self.Method)]
 
             # write line and record
             WL.line(WriteLine)
@@ -707,7 +715,7 @@ class Coast:
         WL = shapefile.Writer(CoastShp,shapeType=shapefile.POLYLINE)
        
         # Create Fields
-        self.Fields = [('DeletionFlag','C',1,0),['Line_ID', 'C', 3, 0]]
+        self.Fields = [('DeletionFlag','C',1,0),['Line_ID', 'C', 3, 0],['Method', 'C', 5, 0]]
         WL.fields = self.Fields[1:] 
 
         for Line in self.__dict__[DictionaryKey]:
@@ -746,7 +754,7 @@ class Coast:
             WriteLine = [np.column_stack([X,Y]).tolist()]
             
             # generate record
-            Record = [str(Line.ID)]
+            Record = [str(Line.ID),str(self.Method)]
 
             # write line and record
             WL.line(WriteLine)
@@ -782,7 +790,7 @@ class Coast:
         WS = shapefile.Writer(PatchShp,shapeType=shapefile.POLYGON)
        
         # Create Fields
-        self.Fields = [('DeletionFlag','C',1,0),['Poly_ID', 'C', 3, 0]]
+        self.Fields = [('DeletionFlag','C',1,0),['Poly_ID', 'C', 3, 0],['Method', 'C', 5, 0]]
         WS.fields = self.Fields[1:] 
 
         for Line1, Line2 in zip(self.__dict__[DictionaryKey1],self.__dict__[DictionaryKey2]):
@@ -842,7 +850,7 @@ class Coast:
             WritePoly = [np.column_stack([X,Y]).tolist()]
             
             # generate record
-            Record = [str(Line1.ID)]
+            Record = [str(Line1.ID), str(self.Method)]
 
             # write line and record
             WS.poly(WritePoly)
@@ -997,19 +1005,19 @@ class Coast:
         ['Cell', 'C', 3, 0], ['SubCell', 'C', 3, 0], ['CMU','C', 20, 0],
         ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], ['Hist_Rate','N', 4, 4],
         ['CalibYr','N', 4, 0], ['BaseLYr','N', 4, 0], ['BaseLSrc','C', 50, 0], 
-        ['Extrap2050','N', 6, 3], ['Extrap2100','N', 6, 3], ['FirstEYr','N',4, 4],
-        ['Dist_2030', 'N', 6, 3], ['Rate_2030', 'N', 4, 4], 
-        ['Dist_2040', 'N', 6, 3], ['Rate_2040', 'N', 4, 4], 
-        ['Dist_2050', 'N', 6, 3], ['Rate_2050', 'N', 4, 4], 
-        ['Dist_2060', 'N', 6, 3], ['Rate_2060', 'N', 4, 4], 
-        ['Dist_2070', 'N', 6, 3], ['Rate_2070', 'N', 4, 4], 
-        ['Dist_2080', 'N', 6, 3], ['Rate_2080', 'N', 4, 4], 
-        ['Dist_2090', 'N', 6, 3], ['Rate_2090', 'N', 4, 4], 
-        ['Dist_2100', 'N', 6, 3], ['Rate_2100', 'N', 4, 4], 
+        ['Extrap2050','N', 6, 4], ['Extrap2100','N', 6, 4], ['FirstEYr','N',4, 4],
+        ['Dist_2030', 'N', 6, 4], ['Rate_2030', 'N', 6, 4], 
+        ['Dist_2040', 'N', 6, 4], ['Rate_2040', 'N', 6, 4], 
+        ['Dist_2050', 'N', 6, 4], ['Rate_2050', 'N', 6, 4], 
+        ['Dist_2060', 'N', 6, 4], ['Rate_2060', 'N', 6, 4], 
+        ['Dist_2070', 'N', 6, 4], ['Rate_2070', 'N', 6, 4], 
+        ['Dist_2080', 'N', 6, 4], ['Rate_2080', 'N', 6, 4], 
+        ['Dist_2090', 'N', 6, 4], ['Rate_2090', 'N', 6, 4], 
+        ['Dist_2100', 'N', 6, 4], ['Rate_2100', 'N', 6, 4], 
         ['RCP85_2100', 'N', 4, 3],
         ['DC1_SvEn_B','N', 4, 0], ['DC1_SvEn_C','N', 4, 0], 
-        ['DC1_DistV','N', 4, 4], ['DC1_RateBC','N', 4, 4],
-        ['OS_2020_Yr','N',4,0]
+        ['DC1_DistV','N', 6, 4], ['DC1_RateBC','N', 6, 4],
+        ['OS_2020_Yr','N',4,0], ['Method','C', 5, 0]
         ]
         
         WL.fields = Fields[1:]
@@ -1043,7 +1051,7 @@ class Coast:
                                 Transect.FutureSeaLevels[-1],
                                 
                                 Transect.DC1[0], Transect.DC1[1], Transect.DC1[2], Transect.DC1[3],
-                                Transect.OSYear]
+                                Transect.OSYear, self.Method]
                     
                                 
     
@@ -1984,7 +1992,7 @@ class Coast:
                 Transect.Check_OS_Year()
         
         
-    def ExtractHistoricalShorelinePositions(self,HistoricalShorelinesShp,Reset=False):
+    def ExtractHistoricalShorelinePositions(self,HistoricalShorelinesShp,Reset=False, AllowMultiples=False):
 
         """
         Function to find nearest historic shoreline position on each transect
@@ -2041,8 +2049,12 @@ class Coast:
             return
         
         for Line in self.CoastLines:
+            
             for Transect in Line.Transects:
                 
+                if Reset:
+                    Transect.ResetHistoricShorelines()
+                    
                 # extend transect line inland to look for intersection
                 #Calculate start and end nodes and generate Transect
                 X1 = Transect.EndNode.X + LookDistance * np.sin( np.radians( Transect.Orientation ) )
@@ -2050,12 +2062,8 @@ class Coast:
                 TransectLine = LineString(((Transect.StartNode.X,Transect.StartNode.Y),(X1,Y1)))
             
                 # intersect with historical shoreline
-                try:
-                    Intersections = TransectLine.intersection(MultiLines)
-                except:
-                    import pdb
-                    pdb.set_trace()
-                    
+                Intersections = TransectLine.intersection(MultiLines)
+                
                 # catch no intersections and flag for deletion?
                 if Intersections.geom_type == "GeometryCollection":
                     Transect.DeleteFlag = True
@@ -2081,8 +2089,8 @@ class Coast:
 
                 # store multiple intersections if so
                 if Intersections.geom_type is "MultiPoint":
-                    StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
-                    Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections]
+                    CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                    Distances = [IntersectPoint.distance(CoastPoint) for IntersectPoint in Intersections]
                     Index = Distances.index(min(Distances))
                     Indices = np.argsort(np.array(Distances))
                     Distances = np.array(Distances)[Indices]
@@ -2132,27 +2140,17 @@ class Coast:
                     IntersectionsList = [IntersectionsList[i] for i in Indices]
                     IntersectionYears = [IntersectionYears[i] for i in Indices]
                 
-                # loop through unique years
-                UniqueYears = list(set(IntersectionYears))
-                for Year in UniqueYears:
-
-                    # retrieve positional error
-                    if Year < 1970:
-                        Error = 5.
-                    elif Year < 2000:
-                        Error = 2.
-                    else:
-                        Error = 1.
-
+                if len(IntersectionYears) == 0:
+                    continue
+                
+                if not AllowMultiples:
                     
-                    # isolate intersections for this year
-                    Indices = [i for i, ThisYear in enumerate(IntersectionYears) if ThisYear == Year]
-                    TempIntersectionsList = [IntersectionsList[i] for i in Indices]
                     CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
-                    TempDistances = [IntersectionPoint.distance(CoastPoint) for IntersectionPoint in TempIntersectionsList]
+                    TempDistances = [IntersectionPoint.distance(CoastPoint) for IntersectionPoint in IntersectionsList]
                     IntersectionIndex = TempDistances.index(min(TempDistances))
-                    Intersection = TempIntersectionsList[IntersectionIndex]
-
+                    Intersection = IntersectionsList[IntersectionIndex]
+                    Year = IntersectionYears[IntersectionIndex]
+                    
                     if Year not in Transect.HistoricShorelinesYears:
                         
                         # add year to transect
@@ -2171,6 +2169,14 @@ class Coast:
                         # add source info
                         Transect.HistoricShorelinesSources.insert(Index, Path(HistoricalShorelinesShp).name)
                         
+                        # retrieve positional error
+                        if Year < 1970:
+                            Error = 5.
+                        elif Year < 2000:
+                            Error = 2.
+                        else:
+                            Error = 1.
+                            
                         # add error
                         Transect.HistoricShorelinesErrors.insert(Index, Error)
                         
@@ -2193,8 +2199,68 @@ class Coast:
                             Transect.HistoricShorelinesPositions[Index].append(Position)
                             Transect.HistoricShorelinesDistances[Index].append(Distance)
 
-
-
+                else:
+                
+                    # loop through unique years
+                    UniqueYears = list(set(IntersectionYears))
+                    for Year in UniqueYears:
+    
+                        # retrieve positional error
+                        if Year < 1970:
+                            Error = 5.
+                        elif Year < 2000:
+                            Error = 2.
+                        else:
+                            Error = 1.
+    
+                        
+                        # isolate intersections for this year
+                        Indices = [i for i, ThisYear in enumerate(IntersectionYears) if ThisYear == Year]
+                        TempIntersectionsList = [IntersectionsList[i] for i in Indices]
+                        CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                        TempDistances = [IntersectionPoint.distance(CoastPoint) for IntersectionPoint in TempIntersectionsList]
+                        IntersectionIndex = TempDistances.index(min(TempDistances))
+                        Intersection = TempIntersectionsList[IntersectionIndex]
+    
+                        if Year not in Transect.HistoricShorelinesYears:
+                            
+                            # add year to transect
+                            Index = bisect.bisect(Transect.HistoricShorelinesYears, Year)
+                            Transect.HistoricShorelinesYears.insert(Index, Year)
+                            
+                            # add shoreline position
+                            Position = Node(Intersection.x,Intersection.y)
+                            Positions = [Position,]
+                            Transect.HistoricShorelinesPositions.insert(Index, Positions)
+                            
+                            # add distance
+                            Distances = [Transect.StartNode.get_Distance(Position),]
+                            Transect.HistoricShorelinesDistances.insert(Index, Distances)
+                            
+                            # add source info
+                            Transect.HistoricShorelinesSources.insert(Index, Path(HistoricalShorelinesShp).name)
+                            
+                            # add error
+                            Transect.HistoricShorelinesErrors.insert(Index, Error)
+                            
+                        else:
+                            
+                            # find and either add or replace depending on proximity
+                            Index = Transect.HistoricShorelinesYears.index(Year)
+                            Position = Node(Intersection.x,Intersection.y)
+                            
+                            MinDistance = 1000.
+                            
+                            for OldPosition in Transect.HistoricShorelinesPositions[Index]:
+                                Distance = OldPosition.get_Distance(Position)
+                                if Distance < MinDistance:
+                                    MinDistance = Distance
+                            
+                            if MinDistance > 1.:
+                            
+                                # add to transect
+                                Transect.HistoricShorelinesPositions[Index].append(Position)
+                                Transect.HistoricShorelinesDistances[Index].append(Distance)
 
                 """
                 for i, Intersection in enumerate(IntersectionsList):
@@ -2520,7 +2586,7 @@ class Coast:
                         Transect.RockHeadDistance += MaxRockHeadErosionDistance
                         Transect.RockHeadPosition = Transect.get_Position(Transect.RockHeadDistance)
                         
-    def SampleDefencesPosition(self, DefencesShp, MaxDefencesErosionDistance=25.):
+    def SampleDefencesPosition(self, DefencesShp, MaxDefencesErosionDistance=0.):
 
         """
         Function to find defences and identify if a limit on shoreline erosion position 

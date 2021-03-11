@@ -226,9 +226,13 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             # use result to get list of self intersections somehow
             
             # isolate non-looping line segments
-            Lines2Merge = [L for L in Result if not Point(L.coords[0]).distance(Point(L.coords[-1])) < 1]
-            LS = linemerge(Lines2Merge)
+            try:
+                Lines2Merge = [L for L in Result if not Point(L.coords[0]).distance(Point(L.coords[-1])) < 1]
+                LS = linemerge(Lines2Merge)
             
+            except:
+                LS = Result
+                
             # merge lines that do not loop
             while LS.type == "MultilineString":
                 Lines2Merge = [L for L in LS if L.is_simple]

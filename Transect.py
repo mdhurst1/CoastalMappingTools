@@ -181,6 +181,26 @@ class Transect:
         String += self.HistoricalShorelinesDistances
 
         return String
+    
+    def ResetHistoricShorelines(self):
+        
+        # historic shoreline positions, distances and change rates
+        self.HistoricFlag = False
+        self.HistoricShorelinesSources = []
+        self.HistoricShorelinesYears = []
+        self.OSYear = False
+        self.HistoricShorelinesPositions = []
+        self.HistoricShorelinesDistances = []
+        self.HistoricShorelinesPosition = []
+        self.HistoricShorelinesDistance = []
+        self.HistoricShorelinesErrors = []
+        self.DC1 = []
+
+        # change rates will be 1 less than no of positions
+        self.ChangeRates = []
+        self.ChangeRateErrors = []
+        self.ChangeRate = None      # value used in calibration
+        self.DeleteFlag = False
 
     def Redraw(self, StartNode, EndNode):
         
@@ -479,6 +499,10 @@ class Transect:
         # boolean flag if making prediction
         self.Future = True
         
+        #if self.LineID == "74" and self.ID == "134":
+        #    import pdb
+        #    pdb.set_trace()
+            
         # cant make predictions without some historical shorelines
         if not self.HistoricShorelinesYears:
             #print("No historical shorelines", self.ID)
@@ -486,12 +510,12 @@ class Transect:
             return
 
         # dont let 1970s data be the baseline (most recent)
-        if self.HistoricShorelinesSources[-1].endswith("1970.shp"):
-            self.HistoricShorelinesSources.pop(-1)
-            self.HistoricShorelinesDistances.pop(-1)
-            self.HistoricShorelinesPositions.pop(-1)
-            self.HistoricShorelinesErrors.pop(-1)
-            self.HistoricShorelinesYears.pop(-1)
+        #if self.HistoricShorelinesSources[-1].endswith("1970.shp"):
+        #    self.HistoricShorelinesSources.pop(-1)
+        #    self.HistoricShorelinesDistances.pop(-1)
+        #    self.HistoricShorelinesPositions.pop(-1)
+        #    self.HistoricShorelinesErrors.pop(-1)
+        #    self.HistoricShorelinesYears.pop(-1)
 
         # dont let 1970s be calibration year if younger than modern soft
         if len(self.HistoricShorelinesYears) > 2:
@@ -607,7 +631,16 @@ class Transect:
             HistoricShorelineDistance = self.StartNode.get_Distance(self.HistoricShorelinesPosition[-1])
             FutureShorelineDistance = HistoricShorelineDistance - ShorelinePositionChange
             
-            if self.RockHeadDistance and (FutureShorelineDistance > self.RockHeadDistance):
+            if self.DefencesDistance and (FutureShorelineDistance > self.DefencesDistance):
+
+                # if landward of
+                self.FutureShorelinesPositions.append(self.DefencesPosition)
+                
+                ShorelinePositionChange = HistoricShorelineDistance - self.DefencesDistance
+                self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
+                self.FutureShorelinesDistances.append(self.DefencesDistance)
+            
+            elif self.RockHeadDistance and (FutureShorelineDistance > self.RockHeadDistance):
 
                 # if landward of
                 self.FutureShorelinesPositions.append(self.RockHeadPosition)
@@ -616,15 +649,6 @@ class Transect:
                 self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
                 self.FutureShorelinesDistances.append(self.RockHeadDistance)
             
-            elif self.DefencesDistance and (FutureShorelineDistance > self.DefencesDistance):
-
-                # if landward of
-                self.FutureShorelinesPositions.append(self.DefencesPosition)
-                
-                ShorelinePositionChange = HistoricShorelineDistance - self.DefencesDistance
-                self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
-                self.FutureShorelinesDistances.append(self.DefencesDistance)
-
             # otherwise write new shoreline position as appropriate
             else:
                 X1 = self.HistoricShorelinesPosition[-1].X - ShorelinePositionChange * np.sin( np.radians( self.Orientation ) )

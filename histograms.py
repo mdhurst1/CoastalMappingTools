@@ -34,6 +34,7 @@ OpenPath = WorkingPath/("RCP_2_50th_National")
 TransectsFile = OpenPath / "Scotland__Transects.shp"
 GDF = gp.read_file(TransectsFile)
 GDF.replace("",float("NaN"),inplace=True)
+
 GDF.dropna(subset=["DC1_RateBC"], inplace=True)
 
 bins = np.arange(-5., 5., 0.2)

@@ -27,15 +27,15 @@ BathyLines = gp.read_file(WorkingPath / "Bathymetry" / "Scotland_10m_Bathy_Conto
 MLWS_Modern = gp.read_file(WorkingPath / "MLWS_Lines" / "OSMM_MLWS_2020.shp")
 
 # open shapefile of defences
-Defences = gp.read_file(WorkingPath / "Defences" / "DC2_Defences_partial.shp")
+Defences = gp.read_file(WorkingPath / "Defences" / "DC2_Defences_Scot.shp")
 
 # and historic MHWS datasets
-MHWS_1890 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1890_FINAL.shp")
-MHWS_Inner_1890 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1890_FINAL_Inner.shp")
-MHWS_1970 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1970_Final.shp")
-MHWS_Inner_1970 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1970_Final_Inner.shp")
-MHWS_Soft = gp.read_file(WorkingPath / "MHWS_Lines" / "MHWS_OS_smarter2020_soft.shp")
-MHWS_Soft_Inner = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Inner_Baseline_NoSaltmarsh.shp")
+MHWS_1890 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1890_FINAL_Full.shp")
+#MHWS_Inner_1890 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1890_FINAL_Inner.shp")
+MHWS_1970 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1970_FINAL_Full.shp")
+#MHWS_Inner_1970 = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_1970_Final_Inner.shp")
+MHWS_Soft = gp.read_file(WorkingPath / "MHWS_Lines" / "MHWS_OS_smarter2020_soft_MERGE.shp")
+#MHWS_Soft_Inner = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Inner_Baseline_NoSaltmarsh.shp")
 MHWS_OpenBaseline = gp.read_file(WorkingPath / "MHWS_Lines" / "MHWS_OS_smarter_dissolve.shp")
 MHWS_InnerBaseline = gp.read_file(WorkingPath / "MHWS_Lines" / "Scotland_MHWS_Inner_Baseline_NoSaltmarsh_Dissolved.shp")
 MHWS_LiDAR = gp.read_file(WorkingPath / "MHWS_Lines" / "DC2_Scotland_MHWS_Modern.shp")
@@ -49,12 +49,13 @@ def ClipLines2Poly(LinesGDF,PolyGDF):
 
 
 # Cell list
-CellList = ["10d","7"] # "1b", "1c","1d","2a","2b","2c","2d","3a","3b","3c","3d","3e","3f","3g", "3h"] #,"4"]
+CellList = ["5h",]
 
 for index, Row in Cells.iterrows():
 
     # Save these to new files
     RowName = "Cell_" + Row.Cell_sub
+    print(RowName)
     
     if not Row.Cell_sub in CellList:
         continue
@@ -64,11 +65,11 @@ for index, Row in Cells.iterrows():
     MLWSClipped = ClipLines2Poly(MLWS_Modern, Row.geometry)
     DefencesClipped = ClipLines2Poly(Defences, Row.geometry)
     Old = ClipLines2Poly(MHWS_1890,Row.geometry)
-    Old_Inner = ClipLines2Poly(MHWS_Inner_1890,Row.geometry)
+    #Old_Inner = ClipLines2Poly(MHWS_Inner_1890,Row.geometry)
     Inter = ClipLines2Poly(MHWS_1970,Row.geometry)
-    Old_Inter = ClipLines2Poly(MHWS_Inner_1970,Row.geometry)
+    #Old_Inter = ClipLines2Poly(MHWS_Inner_1970,Row.geometry)
     Soft = ClipLines2Poly(MHWS_Soft,Row.geometry)
-    Soft_Inner = ClipLines2Poly(MHWS_Soft_Inner, Row.geometry)
+    #Soft_Inner = ClipLines2Poly(MHWS_Soft_Inner, Row.geometry)
     Modern = ClipLines2Poly(MHWS_OpenBaseline,Row.geometry)
     LiDAR = ClipLines2Poly(MHWS_LiDAR, Row.geometry)
     Inner = ClipLines2Poly(MHWS_InnerBaseline, Row.geometry)
@@ -98,25 +99,25 @@ for index, Row in Cells.iterrows():
     except:
         print("Unable to write 1970s for " + Row.Cell_sub)
         
-    try:
-        Old_Inner.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890_Inner.shp"))
-    except:
-        print("Unable to write inner 1890s for " + Row.Cell_sub)
-        
-    try:
-        Old_Inter.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970_Inner.shp"))
-    except:
-        print("Unable to write inner 1970s for " + Row.Cell_sub)
+#    try:
+#        Old_Inner.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890_Inner.shp"))
+#    except:
+#        print("Unable to write inner 1890s for " + Row.Cell_sub)
+#        
+#    try:
+#        Old_Inter.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970_Inner.shp"))
+#    except:
+#        print("Unable to write inner 1970s for " + Row.Cell_sub)
     
     try:    
         Soft.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp"))
     except:
         print("Unable to write soft for " + Row.Cell_sub)
         
-    try:    
-        Soft_Inner.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft_Inner.shp"))
-    except:
-        print("Unable to write soft inner for " + Row.Cell_sub)
+#    try:    
+#        Soft_Inner.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft_Inner.shp"))
+#    except:
+#        print("Unable to write soft inner for " + Row.Cell_sub)
     
     try:
         Modern.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_Open_Baseline.shp"))

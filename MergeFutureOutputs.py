@@ -35,6 +35,8 @@ for Scenario, Percentile in zip(Scenarios, Percentiles):
     InnerPath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_InnerCoast")
     WritePath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_National")
     
+    if not WritePath.exists():
+        WritePath.mkdir(parents=True, exist_ok=True)
 
     # For each file type
     for FilenameExt in FilenameExts:
@@ -64,8 +66,8 @@ for Scenario, Percentile in zip(Scenarios, Percentiles):
         # write new file
         try:
             WriteGDF = pd.concat(TempList, sort=True)
-            WriteGDF.to_file(WritePath / ("Scotland_" + FilenameExt))
-            print("Written", ("Scotland_" + FilenameExt))
+            WriteGDF.to_file(WritePath / ("Scotland" + FilenameExt))
+            print("Written", ("Scotland" + FilenameExt))
         except:
-            import pdb
-            pdb.set_trace()
+            print("Unable to write", FilenameExt, "for RCP", Scenario)
+            continue
