@@ -4545,7 +4545,11 @@ class Coast:
         for Line in self.CoastLines:
             for Transect in Line.Transects:
 
+                if not Transect.Future:
+                    continue
+
                 ErosionDistance = Transect.get_TotalErosion(2020,Decade)
+                
                 if not ErosionDistance:
                     continue
                 elif not ErosionDistance < 0:
@@ -4558,7 +4562,7 @@ class Coast:
 
         return NErodingTransects, MeanTotalErosion
 
-    def get_NumberOfTransects(self):
+    def get_NumberOfTransects(self, Future=True):
 
         """
 
@@ -4569,7 +4573,52 @@ class Coast:
         NoTransects = 0
 
         for Line in self.CoastLines:
-
-            NoTransects += len(Line.Transects)
-
+            
+            FutureTransects = [Transect.Future for Transect in Line.Transects]
+            NoTransects += FutureTransects.count(True)
+            
         return NoTransects
+
+    def get_RecentShorelinesYearsList(self):
+
+        """
+
+        Function to generate a list of the most recent shorelines
+
+        MDH, March 2021
+
+        """
+        List = []
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                List.append(Transect.get_RecentYear())
+        
+        return List
+
+    def get_ErosionDistancesList(self, Decade=2100):
+
+        """
+        Function to generate a list of the most recent shoreline distances
+
+        MDH, March 2021
+
+        """
+
+        ErosionDistances = []
+
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+
+                if not Transect.Future:
+                    continue
+
+                ErosionDistance = Transect.get_TotalErosion(2020,Decade)
+                
+                if not ErosionDistance:
+                    continue
+                elif not ErosionDistance < 0:
+                    continue
+                else:
+                    ErosionDistances.append(ErosionDistance)
+        
+        return ErosionDistances

@@ -2395,10 +2395,31 @@ class Transect:
         # find index of most recent historical shoreline
         Index = np.argmax(self.HistoricShorelinesYears)
         Position = self.HistoricShorelinesPositions[Index][0]
-        
+        Year = self.HistoricShorelinesYears[Index]
             
-        return Position
+        return Position, Year
     
+    def get_RecentYear(self):
+
+        """
+        
+        Get the year of the most recent position of the coast
+        
+        MDH, March 2021
+        
+        """
+
+        # catch if no shoreline
+        if len(self.HistoricShorelinesYears) == 0:
+            return
+            #raise Exception("Transect.get_RecentPosition: No recent position")
+
+        # find index of most recent historical shoreline
+        Index = np.argmax(self.HistoricShorelinesYears)
+        Year = self.HistoricShorelinesYears[Index]
+            
+        return Year
+
     def get_RecentDistance(self):
 
         """
@@ -2417,7 +2438,7 @@ class Transect:
         Index = np.argmax(self.HistoricShorelinesYears)
         
         return self.HistoricShorelinesDistances[Index][0]
-        
+
     def get_OldestPosition(self):
 
         """

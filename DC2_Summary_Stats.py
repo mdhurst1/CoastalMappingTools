@@ -26,15 +26,16 @@ Percentiles = [95,50,50]
 
 # set up decades for analysis
 Decades = [2030, 2050, 2100]
-Columns = ['Location','NoTransects']
+Columns = ['Cell','Cellsub','NoTransects']
 for Decade in Decades:
     Columns.append("MeanErosion"+str(Decade))
     Columns.append("NEroding"+str(Decade))
     Columns.append("PercentEroding"+str(Decade))
     
-# get all coastal cells to loop through
+# get all coastal cells to loop through and order
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
-#CellList = ["1a",]
+Cells = Cells.sort_values(by=['Cell_sub'])
+#CellList = ["4",]
 
 print(" _______________________ ",
       "|                       |",
@@ -54,11 +55,20 @@ with pd.ExcelWriter(SavePath / "DC2_Total_Erosion_Summary.xlsx") as Writer:
         
         # loop through each cell
         for index, Row in Cells.iterrows():
+            
+            # split cell and letter
             CellSub = Row.Cell_sub
+            Sub = CellSub.lstrip('0123456789')
+            
+            try:
+                Cell = int(CellSub[:len(CellSub)-1])
+            except:
+                Cell = int(CellSub)
+
             RowName = "Cell_"+CellSub
             
             # comment this out when ready to do all
-            # if not CellSub in CellList:
+            #if not CellSub in CellList:
             #    continue
             
             print(CellSub, end=",")
@@ -77,18 +87,18 @@ with pd.ExcelWriter(SavePath / "DC2_Total_Erosion_Summary.xlsx") as Writer:
                 InnerCoast = pickle.load( open( InnerCoastFile, "rb" ) )
                 
             except:
-                print("Unable to load inner", RowName)
+                print("\n\tUnable to load inner", RowName)
                 Inner = False
                 
             try:
                 OpenCoast = pickle.load( open( OpenCoastFile, "rb" ) )
                 
             except:
-                print("Unable to load open", RowName)
+                print("\n\tUnable to load open", RowName)
                 Open = False
             
             # skip if no data ???
-            if not Inner and Open:
+            if not Inner and not Open:
                 continue
             
             # Get number of Transects
@@ -101,7 +111,11 @@ with pd.ExcelWriter(SavePath / "DC2_Total_Erosion_Summary.xlsx") as Writer:
                 NTransects = OpenCoast.get_NumberOfTransects()
             else:
                 raise("FUCKED")
-                
+            
+            # its possible to have an object with no transects if segments were all too short
+            if NTransects == 0:
+                continue
+            
             # First mean total erosion each decade
             # logic for whether we have inner and open
             if Open:
@@ -117,7 +131,7 @@ with pd.ExcelWriter(SavePath / "DC2_Total_Erosion_Summary.xlsx") as Writer:
             else:
                 raise("FUCKED AGAIN")
                 
-            values_to_add = {'Location':CellSub, 'NoTransects':NTransects}
+            values_to_add = {'Cell':Cell, 'Cellsub':Sub, 'NoTransects':NTransects}
             
             for i, Decade in enumerate(Decades):
                 
@@ -129,9 +143,36 @@ with pd.ExcelWriter(SavePath / "DC2_Total_Erosion_Summary.xlsx") as Writer:
             row_to_add = pd.Series(values_to_add, name=CellSub)
             DF = DF.append(row_to_add)
         
+        # CALCULATE TOTALS FOR EACH CELL
+        CellNumbers = list(range(1,12))
+        
+        for Cell in CellNumbers:
+            
+            # isolate values for that Cell
+            TempDF = DF.loc[DF['Cell'] == Cell]
+            
+            TotalNTransects = TempDF.NoTransects.sum()
+            values_to_add = {'Cell':Cell, 'Cellsub':"all", 'NoTransects':TotalNTransects}
+        
+            for i, Decade in enumerate(Decades):
+            
+                # calculate for all of Scotland
+                TotalMeanErosion = (TempDF["MeanErosion"+str(Decade)] * TempDF["NEroding"+str(Decade)]).sum()/len(TempDF)
+                TotalNEroding = (TempDF["NEroding"+str(Decade)]).sum()
+                TotalPercentEroding = 100*TotalNEroding/TotalNTransects
+                
+                # update dictionary to add to dataframe
+                values_to_add.update({"MeanErosion"+str(Decade):TotalMeanErosion})
+                values_to_add.update({"NEroding"+str(Decade):TotalNEroding})
+                values_to_add.update({"PercentEroding"+str(Decade):TotalPercentEroding})
+            
+            # add to dataframe
+            row_to_add = pd.Series(values_to_add, name="Cell "+str(Cell))
+            DF = DF.append(row_to_add)
+            
         # CALCULATE TOTALS FOR SCOTLAND
         TotalNTransects = DF.NoTransects.sum()
-        values_to_add = {'Location':"SCOTLAND", 'NoTransects':TotalNTransects}
+        values_to_add = {'Cell':"Scotland", 'Cellsub':"all",  'NoTransects':TotalNTransects}
         for i, Decade in enumerate(Decades):
             
             # calculate for all of Scotland
