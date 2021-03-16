@@ -38,7 +38,8 @@ NoSmooths = 50
 # get all coastal cells to loop through
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
-CellList = ["5a","5b","5c","5d","5e","5f","5g","5h","5i","5j","5k"]
+CellList = ["3a", "3f", "3g", "5a", "5b", "5c", "6a", "9f", "10b"]
+#CellList = ["5a","5b","5c","5d","5e","5f","5g","5h","5i","5j","5k"]
 
 # loop through each cell
 #for index, Row in Cells.iterrows():
