@@ -26,7 +26,8 @@ Percentiles = [95,50,50]
 
 # set up decades for analysis
 Decades = [2030, 2050, 2100]
-Columns = ['Cell','Cellsub','NoTransects']
+Columns = ['Cell','Cellsub','NoTransects','HistMeanErosion','HistNEroding','HistPercentEroding']
+
 for Decade in Decades:
     Columns.append("MeanErosion"+str(Decade))
     Columns.append("NEroding"+str(Decade))
@@ -35,7 +36,7 @@ for Decade in Decades:
 # get all coastal cells to loop through and order
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 Cells = Cells.sort_values(by=['Cell_sub'])
-#CellList = ["4",]
+CellList = ["2c",]
 
 print(" _______________________ ",
       "|                       |",
@@ -69,7 +70,7 @@ with pd.ExcelWriter(SavePath / "DC2_Total_Erosion_Summary.xlsx") as Writer:
             
             # comment this out when ready to do all
             #if not CellSub in CellList:
-            #    continue
+                 #continue
             
             print(CellSub, end=",")
             
@@ -103,23 +104,49 @@ with pd.ExcelWriter(SavePath / "DC2_Total_Erosion_Summary.xlsx") as Writer:
             
             # Get number of Transects
             # logic for whether we have inner and open
-            if Inner and Open:
-                NTransects = OpenCoast.get_NumberOfTransects() + InnerCoast.get_NumberOfTransects()
-            elif Inner:
-                NTransects = InnerCoast.get_NumberOfTransects()
-            elif Open:
-                NTransects = OpenCoast.get_NumberOfTransects()
+            if Inner:
+                NInnerTransects = InnerCoast.get_NumberOfTransects()
             else:
-                raise("FUCKED")
+                NInnerTransects = 0
+            
+            if NInnerTransects == 0:
+                Inner = False
+                
+            if Open:
+                NOpenTransects = OpenCoast.get_NumberOfTransects()
+            else:
+                NOpenTransects = 0
+                
+            if NOpenTransects == 0:
+                Open = False
+            
+            NTransects = NOpenTransects + NInnerTransects
             
             # its possible to have an object with no transects if segments were all too short
             if NTransects == 0:
                 continue
             
+            # Get historic erosion
+            if Open:
+                OpenMeanHistoricErosion = OpenCoast.get_MeanHistoricErosion()
+            
+            if Inner:
+                InnerMeanHistoricErosion = InnerCoast.get_MeanHistoricErosion()
+            
+            if Inner and Open:
+                MeanHistoricErosion = [(Open[0]+Inner[0], ((Open[0]*Open[1] + Inner[0]*Inner[1])/(Open[0]+Inner[0]))) for Open, Inner in zip(OpenMeanHistoricErosion,InnerMeanHistoricErosion)]
+            elif Inner:
+                MeanHistoricErosion = InnerMeanHistoricErosion
+            elif Open:
+                MeanHistoricErosion = OpenMeanHistoricErosion
+            else:
+                raise("Refucked")
+                
             # First mean total erosion each decade
             # logic for whether we have inner and open
             if Open:
                 OpenMeanErosion = [OpenCoast.get_MeanTotalErosion(Decade) for Decade in Decades]
+                
             if Inner:
                 InnerMeanErosion = [InnerCoast.get_MeanTotalErosion(Decade) for Decade in Decades]
             if Inner and Open:
@@ -131,7 +158,10 @@ with pd.ExcelWriter(SavePath / "DC2_Total_Erosion_Summary.xlsx") as Writer:
             else:
                 raise("FUCKED AGAIN")
                 
-            values_to_add = {'Cell':Cell, 'Cellsub':Sub, 'NoTransects':NTransects}
+            values_to_add = {'Cell':Cell, 'Cellsub':Sub, 'NoTransects':NTransects,
+                             'HistMeanErosion':MeanHistoricErosion[1], 
+                             'HistNEroding':MeanHistoricErosion[0],
+                             'HistPercentEroding':100*MeanHistoricErosion[0]/NTransects}
             
             for i, Decade in enumerate(Decades):
                 
@@ -157,8 +187,8 @@ with pd.ExcelWriter(SavePath / "DC2_Total_Erosion_Summary.xlsx") as Writer:
             for i, Decade in enumerate(Decades):
             
                 # calculate for all of Scotland
-                TotalMeanErosion = (TempDF["MeanErosion"+str(Decade)] * TempDF["NEroding"+str(Decade)]).sum()/len(TempDF)
                 TotalNEroding = (TempDF["NEroding"+str(Decade)]).sum()
+                TotalMeanErosion = (TempDF["MeanErosion"+str(Decade)] * TempDF["NEroding"+str(Decade)]).sum()/TotalNEroding
                 TotalPercentEroding = 100*TotalNEroding/TotalNTransects
                 
                 # update dictionary to add to dataframe
@@ -176,8 +206,8 @@ with pd.ExcelWriter(SavePath / "DC2_Total_Erosion_Summary.xlsx") as Writer:
         for i, Decade in enumerate(Decades):
             
             # calculate for all of Scotland
-            TotalMeanErosion = (DF["MeanErosion"+str(Decade)] * DF["NEroding"+str(Decade)]).sum()/len(DF)
             TotalNEroding = (DF["NEroding"+str(Decade)]).sum()
+            TotalMeanErosion = (DF["MeanErosion"+str(Decade)] * DF["NEroding"+str(Decade)]).sum()/TotalNEroding
             TotalPercentEroding = 100*TotalNEroding/TotalNTransects
             
             # update dictionary to add to dataframe
