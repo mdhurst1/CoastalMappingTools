@@ -15,6 +15,7 @@ import pandas as pd
 import geopandas as gp
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import cm
 from matplotlib.ticker import MultipleLocator
 from Coast import *
 
@@ -35,19 +36,19 @@ Filename = SavePath / "ErosionDistances.csv"
 # set up scenarios
 Scenarios = [8,4,2]
 Percentiles = [95,50,50]
+# set up colours for scenarios as red, yellow, blue
+ScenarioCms = [cm.Reds, cm.Wistia, cm.Blues]
 
 # set up decades for analysis
 Decades = [2030, 2050, 2100]
 
-# this may come back later
-for Scenario, Percentile in zip(Scenarios, Percentiles):
+Resample = False
+
+if Resample:
     
-    # switch here to load data if already extracted
-    Resample = True
-    if not Resample:
-        continue
+    # this may come back later
+    for Scenario, Percentile in zip(Scenarios, Percentiles):
     
-    else:
         # sample data and save to excel
         with pd.ExcelWriter(SavePath / ("DC2_Total_Erosion_Histogram_Data_RCP_"+str(Scenario)+".xlsx")) as Writer:
         
@@ -125,20 +126,75 @@ for Scenario, Percentile in zip(Scenarios, Percentiles):
                             
                     # flatten the list
                     ErosionDistancesList = [Item for Sublist in ErosionDistancesList for Item in Sublist]
-
+    
                     # add to dataframe
                     ED_DF = pd.DataFrame({'ED'+str(Decade): ErosionDistancesList})
-                    DF = DF.concat([DF,ED_DF], axis=1)
+                    DF = pd.concat([DF,ED_DF], axis=1)
                 
                 DF.to_excel(Writer,sheet_name=RowName)
 
-# make the plot!
+# make the plots!
+# loop through each subcell
+for index, Row in Cells.iterrows():
+
+    CellSub = Row.Cell_sub
+    RowName = "Cell_"+CellSub
+    
+    fig = plt.figure(1,figsize=(4,9))
+    DF_List = []
+    ax_List = []
+    Min = 0
+    
+    for i, (Scenario, Percentile) in enumerate(zip(Scenarios, Percentiles)):
+        
+        # load sheet
+        Filename = SavePath / ("DC2_Total_Erosion_Histogram_Data_RCP_"+str(Scenario)+".xlsx")
+        DF = pd.read_excel(Filename, sheet_name=RowName)
+        ThisMin = DF["ED"+str(Decades[-1])].dropna().min()
+        if ThisMin < Min:
+            Min=ThisMin
+        DF_List.append(DF)
+        
+    for i, (Scenario, Percentile) in enumerate(zip(Scenarios, Percentiles)):
+        
+        SubplotNo = int("31"+str(i+1))
+        print(SubplotNo)
+        ax = fig.add_subplot(SubplotNo)
+        
+        Min = DF["ED"+str(Decades[-1])].dropna().min()
+        for j, Decade in enumerate(Decades):
+            
+            Edges = np.arange(Min, 0., 5.)
+            Freq, Edges = np.histogram(DF_List[i]["ED"+str(Decade)].dropna(), Edges, density=True)
+            Midpoints = (Edges[:-1] + Edges[1:]) / 2
+            ax.bar(Midpoints*-1, Freq, align='center', width = Edges[1]-Edges[0],color=ScenarioCms[i](0.1+j*0.4), zorder=10-j)
+        
+        ax.set_zorder(10)
+        ax.set_xlim(0,-Min)
+        ax.set_ylim(10^-4,3*10^-1)
+        ax.xaxis.set_visible = False
+        ax.set_yscale("log")
+        ax.set_ylabel("Proportion of coast")
+        ax.title.set_text('RCP '+ str(Scenario) + " " + str(Percentile) + "th")
+
+    ax.xaxis.set_visible = True
+    ax.set_xlabel("Erosion Distance (m)")
+    
+    plt.show()
+    import sys
+    sys.exit()
+    
+
+# for each cell overall
+    
+    
+# for Scotland!
+    
 
 #plot style
 #plt.rcParams[]
 
-#fig = plt.figure(1,figsize=(4,3))
-#ax = fig.add_subplot(111)
+
 #
 ## each bin should be a single year
 #Min = DF["BaselineYear"].min()
