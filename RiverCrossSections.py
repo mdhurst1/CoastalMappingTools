@@ -1,5 +1,8 @@
 
 """
+Script to use Coast.py objects to create regular transects along a line,
+can be used for rivers as requested by Craig
+
 RiverCrossSections.py
 MDH, July 2021
 """
