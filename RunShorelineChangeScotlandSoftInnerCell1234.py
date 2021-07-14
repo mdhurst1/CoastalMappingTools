@@ -82,8 +82,6 @@ for CellSub in CellList:
     
     Filename2SaveCoast = GeometryPath / (RowName+"_InnerGeometry.pydata")
     
-    FirstTime = True
-    
     for Scenario, Percentile in zip(Scenarios, Percentiles):
         
         OutputPath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_InnerCoast")
@@ -124,11 +122,6 @@ for CellSub in CellList:
             with open(str(Filename2SaveCoast), 'wb') as PFile:
                 pickle.dump(CellCoast, PFile)
         
-        # force resampling of historical shorelines
-        if FirstTime:
-            CellCoast.GotHistoricShorelines = False
-            FirstTime = False
-        
         if not CellCoast.GotHistoricShorelines:
             
             # Sample MHWS positions
@@ -140,7 +133,7 @@ for CellSub in CellList:
             if not OldPath.is_file():
                 print("No 1890s MHWS file")
             else:
-                CellCoast.ExtractHistoricalShorelinePositions(str(OldPath),Reset=True)
+                CellCoast.ExtractHistoricalShorelinePositions(str(OldPath))
             
             if not QuiteOldPath.is_file():
                 print("No 1970s MHWS file")
@@ -159,7 +152,7 @@ for CellSub in CellList:
             
             ### get DC1 results
             ### Save this for later
-            # CellCoast.SampleDC1Data(str(DC1Path))
+            CellCoast.SampleDC1Data(str(DC1Path))
             
             #### get MHWS elevation for each transect
             CellCoast.SampleMHWSElevation(str(WorkingPath / "MHWS_Lines" / "scotland_mhws_elev.tif"))
@@ -171,7 +164,7 @@ for CellSub in CellList:
             CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
             
             # Sample coastal defences
-            CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp")))
+            CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp")), 25.)
             
             CellCoast.GotHistoricShorelines = True
             
@@ -204,6 +197,9 @@ for CellSub in CellList:
                 pickle.dump(CellCoast, PFile)
     
         if not CellCoast.PredictedFutureShorelines:    
+            
+            # Sample coastal defences
+            CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp")), 25.)
             
             CellCoast.Method = "Inner"
             

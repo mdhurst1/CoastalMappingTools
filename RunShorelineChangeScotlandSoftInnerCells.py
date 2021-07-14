@@ -8,7 +8,7 @@ Dynamic Coast 2 Project
 
 """
 
-import pickle, pathlib
+import pickle, pathlib, sys
 import geopandas as gp
 from Coast import *
 
@@ -33,13 +33,12 @@ MinLength = 50.
 # set the transect spacing (in m)
 TransectSpacing = 10.
 SmoothingWindowSize = 21
-NoSmooths = 100
+NoSmooths = 50
 
 # get all coastal cells to loop through
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
-# Cell list
-CellList = ["10a","10b","10c","10d","10e","10f","10g","11a","11b","11c","11d","11e","11f","11g"]
+CellList = ["5f","5h","7"]
 
 # loop through each cell
 #for index, Row in Cells.iterrows():
@@ -56,48 +55,54 @@ for CellSub in CellList:
         print("\tUnable to access files for " + RowName)
         continue
 
-    # get soft coast position as most recent
-    ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Open_Baseline.shp")
+    # define soft coast position from baseline
+    BaselinePath = WorkingPath / "MHWS_Lines" / (RowName + "_Inner_Baseline.shp")
+    
+    # define other files required
     SoftPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp")
     LiDARPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR.shp")
     MLWSPath = WorkingPath / "MLWS_Lines" / (RowName + "_MLWS.shp")
     BathyPath = WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp")
     OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp")
     QuiteOldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp")
-    
     DC1Path = WorkingPath / "DC1_Results" / (RowName +"_DC1_Results.shp")
     
     if not BathyPath.is_file():
         print("No Bathy")
         continue
-    elif not ModernPath.is_file():
-        print("No soft baseline")
+    elif not BaselinePath.is_file():
+        print("No Baseline")
         continue
     elif not SoftPath.is_file():
         print("No Soft")
         continue
+    elif not DC1Path.is_file():
+        print("No DC1")
+        continue
     
-    Filename2SaveCoast = GeometryPath / (RowName+"_OpenGeometry.pydata")
+    Filename2SaveCoast = GeometryPath / (RowName+"_InnerGeometry.pydata")
+    
+    FirstTime = True
     
     for Scenario, Percentile in zip(Scenarios, Percentiles):
         
-        OutputPath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_OpenCoast")
+        OutputPath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_InnerCoast")
         
         if not OutputPath.exists():
             OutputPath.mkdir(parents=True, exist_ok=True)
         
         # # this checks to see whether coast object already exists
-        Filename2SaveAll = OutputPath / (RowName+"_OpenChange.pydata")
-    
+        Filename2SaveAll = OutputPath / (RowName+"_InnerChange.pydata")
+            
         try:
             CellCoast = pickle.load( open( Filename2SaveCoast, "rb" ) )
             print("Loaded Coast Object ", Filename2SaveCoast)
-        
+    
         except:
             print("Creating New Coast Object")
-        
+    
             # SET UP THE COAST FROM -10m Contour
-            CellCoast = Coast(str(ModernPath), MinLength=MinLength)
+            CellCoast = Coast(str(BaselinePath), MinLength=MinLength)
         
         if not CellCoast.BuiltTransects:
             
@@ -109,9 +114,9 @@ for CellSub in CellList:
             
             # write smoothed coast/bathy to file
             CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
-        
+    
             # create some initial dummy transects
-            CellCoast.GenerateTransects(TransectSpacing, 250, 250, CheckTopology=False)
+            CellCoast.GenerateTransects(TransectSpacing, 100, 100, CheckTopology=False)
             
             CellCoast.BuiltTransects = True
             
@@ -119,19 +124,23 @@ for CellSub in CellList:
             with open(str(Filename2SaveCoast), 'wb') as PFile:
                 pickle.dump(CellCoast, PFile)
         
+        # force resampling of historical shorelines
+        if FirstTime:
+            CellCoast.GotHistoricShorelines = False
+            FirstTime = False
+        
         if not CellCoast.GotHistoricShorelines:
             
             # Sample MHWS positions
-            
             if not SoftPath.is_file():
                 print("No soft MHWS file")
             else:
-                CellCoast.ExtractHistoricalShorelinePositions(str(SoftPath),Reset=True)
-            
+                CellCoast.ExtractHistoricalShorelinePositions(str(SoftPath), Reset=True)
+                
             if not OldPath.is_file():
                 print("No 1890s MHWS file")
             else:
-                CellCoast.ExtractHistoricalShorelinePositions(str(OldPath))
+                CellCoast.ExtractHistoricalShorelinePositions(str(OldPath),Reset=True)
             
             if not QuiteOldPath.is_file():
                 print("No 1970s MHWS file")
@@ -141,7 +150,7 @@ for CellSub in CellList:
             if not LiDARPath.is_file():
                 print("No LiDAR MHWS file")
             else:
-                CellCoast.ExtractHistoricalShorelinePositions(str(LiDARPath),AllowMultiples=True)
+                CellCoast.ExtractHistoricalShorelinePositions(str(LiDARPath))
                 
             if not MLWSPath.is_file():
                 print("No MLWS file")
@@ -149,12 +158,12 @@ for CellSub in CellList:
                 CellCoast.ExtractMLWS(str(MLWSPath))
             
             ### get DC1 results
-            # comment this out for now
+            ### Save this for later
             CellCoast.SampleDC1Data(str(DC1Path))
             
             #### get MHWS elevation for each transect
             CellCoast.SampleMHWSElevation(str(WorkingPath / "MHWS_Lines" / "scotland_mhws_elev.tif"))
-            
+        
             #### get historical rate of relative sea level change
             CellCoast.SampleHistoricalRSLR(str(WorkingPath / "RSL_Bradley_Model" / "Scotland_NEngland_RSLR_Modern_BNG.tif"))
         
@@ -168,6 +177,9 @@ for CellSub in CellList:
             
             # Get OS year smarter 2020
             CellCoast.Check_OS_Years()
+            
+            # Wrtie transects
+            # CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "Transects_Sampled.shp")))
             
             # SAVE ENTIRE COAST OBJECT
             print("\tSaving Coast Object as ", Filename2SaveCoast)
@@ -190,19 +202,17 @@ for CellSub in CellList:
             print("\tSaving Coast Object as ", Filename2SaveCoast)
             with open(str(Filename2SaveCoast), 'wb') as PFile:
                 pickle.dump(CellCoast, PFile)
-        
+    
         if not CellCoast.PredictedFutureShorelines:    
             
-            # Sample coastal defences
-            CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp")), 25.)
-            
-            CellCoast.Method = "Open"
+            CellCoast.Method = "Inner"
             
             ### get future relative sea level time series
             CellCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL" / ("RCP"+str(Scenario))), RCP=Scenario, Percentile=Percentile)
             
             ## predict future shorelines
-            CellCoast.GetShorefaceSlopes(str(BathyPath))
+            #CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
+            CellCoast.GetShorefaceSlopesMLWS()
             CellCoast.PredictFutureShorelines()
             CellCoast.PredictedFutureShorelines = True
         
@@ -212,10 +222,8 @@ for CellSub in CellList:
                 pickle.dump(CellCoast, PFile)
         
         # write future shorelines
-        # write smoothed coast/bathy to file
-        CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
         CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future.shp")),Smooth=True)
         
         CellCoast.TruncateTransects()
         CellCoast.WriteFutureTransectsShp(str(OutputPath / (RowName + "_Transects.shp")))
-        
+            

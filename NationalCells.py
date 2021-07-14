@@ -49,7 +49,7 @@ def ClipLines2Poly(LinesGDF,PolyGDF):
 
 
 # Cell list
-CellList = ["3a", "3f", "3g", "5a", "5b", "5c", "6a", "9f", "10b"]
+CellList = ["7"]
 
 for index, Row in Cells.iterrows():
 

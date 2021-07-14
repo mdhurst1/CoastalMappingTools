@@ -618,6 +618,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             
             if (Distance1 > Distance2):
                 self.ReverseFlags[i] = 1
+
             else:
                 self.ReverseFlags[i] = -1
         

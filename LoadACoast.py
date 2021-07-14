@@ -12,16 +12,20 @@ from Coast import *
 
 # define file names for analysis
 WorkingPath = pathlib.Path.cwd().parent
-Scenario = 4
-Percentile = 50
-Cell = "10d"
+Scenario = 8
+Percentile = 95
+Cell = "7"
+InnerorOuter = "Inner"
+
 #Filename2LoadCoast = WorkingPath / "ShorelineRunInner" / ("Cell_"+Cell+"_InnerChange.pydata")
-Filename2LoadCoast = WorkingPath / ("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_OpenCoast") / ("Cell_"+Cell+"_OpenChange.pydata")
+#Filename2LoadCoast = WorkingPath / ("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_OpenCoast") / ("Cell_"+Cell+"_OpenChange.pydata")
+Filename2LoadCoast = WorkingPath / "Geometry" / ("Cell_" + Cell + "_" + InnerorOuter + "Geometry.pydata")
+
 Cst = pickle.load( open( Filename2LoadCoast, "rb" ) )
 
 # set a line and a transect if needed
-LineID = "74"
-TransectID = "56"
+LineID = "22"
+TransectID = "341"
 
 # get line
 Lns = Cst.CoastLines

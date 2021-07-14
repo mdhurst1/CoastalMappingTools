@@ -2382,7 +2382,7 @@ class Transect:
         """
 
         Get the most recent position of the coast 
-
+        
         MDH, January 2020
 
         """
@@ -2397,7 +2397,7 @@ class Transect:
         Position = self.HistoricShorelinesPositions[Index][0]
         Year = self.HistoricShorelinesYears[Index]
             
-        return Position, Year
+        return Position
     
     def get_RecentYear(self):
 

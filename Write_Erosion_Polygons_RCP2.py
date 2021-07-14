@@ -23,6 +23,8 @@ Scenarios = [2]
 Percentiles = [50]
 Decades = [2020, 2030, 2040, 2050, 2060, 2070, 2080, 2090, 2100]
 
+CellList = ["7"]
+
 #loop through scenarios
 for Scenario, Percentile in zip(Scenarios, Percentiles):
     
@@ -38,6 +40,8 @@ for Scenario, Percentile in zip(Scenarios, Percentiles):
         RowName = "Cell_"+CellSub
         print("\t", RowName)
         
+        if not CellSub in CellList:
+            continue
         
         OpenCoastFlag = False
         InnerCoastFlag = False

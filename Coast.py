@@ -667,7 +667,7 @@ class Coast:
                     WriteLine = [np.column_stack([X,Y]).tolist()]
             
                     # calculate additional attributes
-                    RecentNode = Transect.get_RecentPosition()[0]
+                    RecentNode = Transect.get_RecentPosition()
                     
                     if not FutureNode:
                         continue
@@ -1034,6 +1034,8 @@ class Coast:
                     
                     if not Transect.DC1:
                         Transect.DC1 = ["","","",""]
+                    else:
+                        Transect.DC1[3] = Transect.DC1[2]/(Transect.DC1[1]-Transect.DC1[0])
                     
                     # Create the record this could become a function in transect object...
                     Record = [str(self.Cell), str(self.SubCell), str(self.CMU), str(Line.ID), str(Transect.ID),
@@ -2106,10 +2108,11 @@ class Coast:
                 
                 # loop through intersections and add to struct
                 for Intersection in IntersectionsList:
-                    
+                    #print(Intersection.wkt, end=", ")
                     # use minimum of line.distance to find line
                     # need date attribute if rates are to be calculated
                     Distances = Lines.distance(Intersection)
+                    # print(Distances.idxmin())
                     NearestLine = GDF.iloc[Distances.idxmin()]
                 
                     # check it hasnt already been read
@@ -3440,13 +3443,13 @@ class Coast:
                     # add latest MHWS from previous node to start
                     # might need some logic here for first transect
                     if StartList[i] == 0:
-                        FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()[0]
+                        FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
                         ii = 1
                     else:
-                        FirstNode = CoastLine.Transects[StartList[i]-1].get_RecentPosition()[0]
+                        FirstNode = CoastLine.Transects[StartList[i]-1].get_RecentPosition()
                         ii = 0
                         if not FirstNode:
-                            FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()[0]
+                            FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
                             ii= 1
                     
                     if not FirstNode:
@@ -3464,15 +3467,15 @@ class Coast:
                             ProximityList.append(TempNode)
                         
                         else:
-                            ProximityList.append(Transect.get_RecentPosition()[0])
+                            ProximityList.append(Transect.get_RecentPosition())
                         
                                                 
                     # add latest MHWS from next node to end
                     # might need some logic here to finish
-                    if not CoastLine.Transects[EndList[i]].get_RecentPosition()[0]:
-                        LastNode = CoastLine.Transects[EndList[i]-1].get_RecentPosition()[0]
+                    if not CoastLine.Transects[EndList[i]].get_RecentPosition():
+                        LastNode = CoastLine.Transects[EndList[i]-1].get_RecentPosition()
                     else:
-                        LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition()[0]
+                        LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition()
                     
                     ProximityList.append(LastNode)
                     
@@ -3562,13 +3565,13 @@ class Coast:
                     # add latest MHWS from previous node to start
                     # might need some logic here for first transect
                     if StartList[i] == 0:
-                        FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()[0]
+                        FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
                         ii = 1
                     else:
-                        FirstNode = CoastLine.Transects[StartList[i]-1].get_RecentPosition()[0]
+                        FirstNode = CoastLine.Transects[StartList[i]-1].get_RecentPosition()
                         ii = 0
                         if not FirstNode:
-                            FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()[0]
+                            FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
                             ii= 1
                     
                     if not FirstNode:
@@ -3585,15 +3588,15 @@ class Coast:
                             FutureList.append(TempNode)
                         
                         else:
-                            FutureList.append(Transect.get_RecentPosition()[0])
+                            FutureList.append(Transect.get_RecentPosition())
                         
                                                 
                     # add latest MHWS from next node to end
                     # might need some logic here to finish
-                    if not CoastLine.Transects[EndList[i]].get_RecentPosition()[0]:
-                        LastNode = CoastLine.Transects[EndList[i]-1].get_RecentPosition()[0]
+                    if not CoastLine.Transects[EndList[i]].get_RecentPosition():
+                        LastNode = CoastLine.Transects[EndList[i]-1].get_RecentPosition()
                     else:
-                        LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition()[0]
+                        LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition()
                     
                     FutureList.append(LastNode)
                     
@@ -3679,13 +3682,13 @@ class Coast:
                 # add latest MHWS from previous node to start
                 # might need some logic here for first transect
                 if StartList[i] == 0:
-                    FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()[0]
+                    FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
                     ii = 1
                 else:
-                    FirstNode = CoastLine.Transects[StartList[i]-1].get_RecentPosition()[0]
+                    FirstNode = CoastLine.Transects[StartList[i]-1].get_RecentPosition()
                     ii = 0
                     if not FirstNode:
-                        FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()[0]
+                        FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
                         ii= 1
                             
                 FutureMinList.append(FirstNode)
@@ -3707,10 +3710,10 @@ class Coast:
                 # might need some logic here to finish
                 # add latest MHWS from next node to end
                 # might need some logic here to finish
-                if not CoastLine.Transects[EndList[i]].get_RecentPosition()[0]:
-                    LastNode = CoastLine.Transects[EndList[i]-1].get_RecentPosition()[0]
+                if not CoastLine.Transects[EndList[i]].get_RecentPosition():
+                    LastNode = CoastLine.Transects[EndList[i]-1].get_RecentPosition()
                 else:
-                    LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition()[0]
+                    LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition()
                     
                 FutureMinList.append(LastNode)
                 FutureMaxList.append(LastNode)
@@ -3804,13 +3807,13 @@ class Coast:
                 # might need some logic here for first transect
                 # might need some logic here for first transect
                 if StartList[i] == 0:
-                    FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()[0]
+                    FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
                     ii = 1
                 else:
-                    FirstNode = CoastLine.Transects[StartList[i]-1].get_RecentPosition()[0]
+                    FirstNode = CoastLine.Transects[StartList[i]-1].get_RecentPosition()
                     ii = 0
                     if not FirstNode:
-                        FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()[0]
+                        FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
                         ii= 1
                 
                 FutureMinList.append(FirstNode)
@@ -3827,11 +3830,11 @@ class Coast:
                 # add latest MHWS from next node to end
                 # might need some logic here to finish
                 if EndList[i] == CoastLine.NoTransects-1:
-                    LastNode = CoastLine.Transects[EndList[i]-1].get_RecentPosition()[0]
+                    LastNode = CoastLine.Transects[EndList[i]-1].get_RecentPosition()
                 else:
-                    LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition()[0]
+                    LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition()
                     if not LastNode:
-                        LastNode = CoastLine.Transects[EndList[i]-1].get_RecentPosition()[0]
+                        LastNode = CoastLine.Transects[EndList[i]-1].get_RecentPosition()
                 
                 FutureMinList.append(LastNode)
                 FutureMaxList.append(LastNode)
@@ -4559,6 +4562,41 @@ class Coast:
         NErodingTransects = len(HistoricRates)
         MeanErosionRate = np.nan_to_num(np.mean(HistoricRates))
 
+        return NErodingTransects, MeanErosionRate
+
+    def get_MeanDC1Erosion(self):
+
+        """ 
+        
+        Function to calculate the mean historic erosion on transects from DC1 data
+        
+        MDH, March 2021
+        
+        """
+
+        HistoricRates = []
+
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+
+                if not Transect.Future:
+                    continue
+                    
+                if not Transect.DC1:
+                    continue
+                
+                HistoricRate = Transect.DC1[2]/(Transect.DC1[1]-Transect.DC1[0])
+                
+                if not HistoricRate:
+                    continue
+                elif not HistoricRate < 0:
+                    continue
+                else:
+                    HistoricRates.append(HistoricRate)
+        
+        NErodingTransects = len(HistoricRates)
+        MeanErosionRate = np.nan_to_num(np.mean(HistoricRates))
+        
         return NErodingTransects, MeanErosionRate
 
     def get_MeanTotalErosion(self, Decade=2100):

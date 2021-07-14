@@ -38,8 +38,8 @@ NoSmooths = 50
 # get all coastal cells to loop through
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
-CellList = ["3a", "3f", "3g", "5a", "5b", "5c", "6a", "9f", "10b"]
-#CellList = ["5a","5b","5c","5d","5e","5f","5g","5h","5i","5j","5k"]
+#CellList = ["3a", "3f", "3g", "5a", "5b", "5c", "6a", "9f", "10b"]
+CellList = ["5a","5b","5c","5d","5e","5f","5g","5h","5i","5j","5k"]
 
 # loop through each cell
 #for index, Row in Cells.iterrows():
@@ -83,8 +83,6 @@ for CellSub in CellList:
     
     Filename2SaveCoast = GeometryPath / (RowName+"_InnerGeometry.pydata")
     
-    FirstTime = True
-    
     for Scenario, Percentile in zip(Scenarios, Percentiles):
         
         OutputPath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_InnerCoast")
@@ -125,11 +123,6 @@ for CellSub in CellList:
             with open(str(Filename2SaveCoast), 'wb') as PFile:
                 pickle.dump(CellCoast, PFile)
         
-        # force resampling of historical shorelines
-        if FirstTime:
-            CellCoast.GotHistoricShorelines = False
-            FirstTime = False
-        
         if not CellCoast.GotHistoricShorelines:
             
             # Sample MHWS positions
@@ -141,7 +134,7 @@ for CellSub in CellList:
             if not OldPath.is_file():
                 print("No 1890s MHWS file")
             else:
-                CellCoast.ExtractHistoricalShorelinePositions(str(OldPath),Reset=True)
+                CellCoast.ExtractHistoricalShorelinePositions(str(OldPath))
             
             if not QuiteOldPath.is_file():
                 print("No 1970s MHWS file")
@@ -205,6 +198,9 @@ for CellSub in CellList:
                 pickle.dump(CellCoast, PFile)
     
         if not CellCoast.PredictedFutureShorelines:    
+            
+            # Sample coastal defences
+            CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp")), 25.)
             
             CellCoast.Method = "Inner"
             

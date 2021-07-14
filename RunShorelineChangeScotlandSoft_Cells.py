@@ -39,7 +39,7 @@ NoSmooths = 100
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # Cell list
-CellList = ["10a","10b","10c","10d","10e","10f","10g","11a","11b","11c","11d","11e","11f","11g"]
+CellList = ["5f","5h","7"]
 
 # loop through each cell
 #for index, Row in Cells.iterrows():
@@ -78,6 +78,8 @@ for CellSub in CellList:
         continue
     
     Filename2SaveCoast = GeometryPath / (RowName+"_OpenGeometry.pydata")
+    
+    FirstTime = True
     
     for Scenario, Percentile in zip(Scenarios, Percentiles):
         
@@ -118,6 +120,11 @@ for CellSub in CellList:
             # SAVE ENTIRE COAST OBJECT
             with open(str(Filename2SaveCoast), 'wb') as PFile:
                 pickle.dump(CellCoast, PFile)
+        
+        # force resampling of historical shorelines
+        if FirstTime:
+            CellCoast.GotHistoricShorelines = False
+            FirstTime = False
         
         if not CellCoast.GotHistoricShorelines:
             
@@ -192,9 +199,6 @@ for CellSub in CellList:
                 pickle.dump(CellCoast, PFile)
         
         if not CellCoast.PredictedFutureShorelines:    
-            
-            # Sample coastal defences
-            CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp")), 25.)
             
             CellCoast.Method = "Open"
             

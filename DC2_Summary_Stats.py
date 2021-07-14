@@ -26,7 +26,7 @@ Percentiles = [95,50,50]
 
 # set up decades for analysis
 Decades = [2030, 2050, 2100]
-Columns = ['Cell','Cellsub','NoTransects','HistMeanErosion','HistNEroding','HistPercentEroding']
+Columns = ['Cell','Cellsub','NoTransects','DC1_ERate','DC1_NEroding','HistMeanErosion','HistNEroding','HistPercentEroding']
 
 for Decade in Decades:
     Columns.append("MeanErosion"+str(Decade))
@@ -128,17 +128,22 @@ with pd.ExcelWriter(SavePath / "DC2_Total_Erosion_Summary.xlsx") as Writer:
             
             # Get historic erosion
             if Open:
+                OpenDC1ERate = OpenCoast.get_MeanDC1Erosion()
                 OpenMeanHistoricErosion = OpenCoast.get_MeanHistoricErosion()
             
             if Inner:
+                InnerDC1ERate = InnerCoast.get_MeanDC1Erosion()
                 InnerMeanHistoricErosion = InnerCoast.get_MeanHistoricErosion()
             
             if Inner and Open:
-                MeanHistoricErosion = [(Open[0]+Inner[0], ((Open[0]*Open[1] + Inner[0]*Inner[1])/(Open[0]+Inner[0]))) for Open, Inner in zip(OpenMeanHistoricErosion,InnerMeanHistoricErosion)]
+                MeanHistoricErosion = OpenMeanHistoricErosion[0]+InnerMeanHistoricErosion[0], ((OpenMeanHistoricErosion[0]*OpenMeanHistoricErosion[1] + InnerMeanHistoricErosion[0]*InnerMeanHistoricErosion[1])/(OpenMeanHistoricErosion[0]+InnerMeanHistoricErosion[0]))
+                MeanDC1Erosion = OpenDC1ERate[0]+InnerDC1ERate[0], ((OpenDC1ERate[0]*OpenDC1ERate[1] + InnerDC1ERate[0]*InnerDC1ERate[1])/(OpenDC1ERate[0]+InnerDC1ERate[0]))
             elif Inner:
                 MeanHistoricErosion = InnerMeanHistoricErosion
+                MeanDC1Erosion = InnerDC1ERate
             elif Open:
                 MeanHistoricErosion = OpenMeanHistoricErosion
+                MeanDC1Erosion = OpenDC1ERate
             else:
                 raise("Refucked")
                 
@@ -159,6 +164,8 @@ with pd.ExcelWriter(SavePath / "DC2_Total_Erosion_Summary.xlsx") as Writer:
                 raise("FUCKED AGAIN")
                 
             values_to_add = {'Cell':Cell, 'Cellsub':Sub, 'NoTransects':NTransects,
+                             'DC1_MeanERate':MeanDC1Erosion[1],
+                             'DC1_NEroding':MeanDC1Erosion[0],
                              'HistMeanErosion':MeanHistoricErosion[1], 
                              'HistNEroding':MeanHistoricErosion[0],
                              'HistPercentEroding':100*MeanHistoricErosion[0]/NTransects}
@@ -182,13 +189,26 @@ with pd.ExcelWriter(SavePath / "DC2_Total_Erosion_Summary.xlsx") as Writer:
             TempDF = DF.loc[DF['Cell'] == Cell]
             
             TotalNTransects = TempDF.NoTransects.sum()
-            values_to_add = {'Cell':Cell, 'Cellsub':"all", 'NoTransects':TotalNTransects}
-        
+            
+            MeanDC1Erosion = (TempDF["DC1_MeanERate"] * TempDF["DC1_NEroding"]).sum()/TotalNTransects
+            DC1_NEroding = TempDF.DC1_NEroding.sum()
+                             
+            HistNEroding = TempDF.HistNEroding.sum()
+            HistMeanErosion = (TempDF["HistMeanErosion"] * TempDF["HistNEroding"]).sum()/HistNEroding
+            HistPercentEroding = 100*HistNEroding/TotalNTransects
+            
+            values_to_add = {'Cell':Cell, 'Cellsub':"all", 'NoTransects':TotalNTransects,
+                             'DC1_MeanERate':MeanDC1Erosion,
+                             'DC1_NEroding':DC1_NEroding,
+                             'HistMeanErosion':HistMeanErosion, 
+                             'HistNEroding':HistNEroding,
+                             'HistPercentEroding':HistPercentEroding}
+                
             for i, Decade in enumerate(Decades):
             
                 # calculate for all of Scotland
                 TotalNEroding = (TempDF["NEroding"+str(Decade)]).sum()
-                TotalMeanErosion = (TempDF["MeanErosion"+str(Decade)] * TempDF["NEroding"+str(Decade)]).sum()/TotalNEroding
+                TotalMeanErosion = (TempDF["MeanErosion"+str(Decade)] * TempDF["NEroding"+str(Decade)]).sum()/TotalNTransects
                 TotalPercentEroding = 100*TotalNEroding/TotalNTransects
                 
                 # update dictionary to add to dataframe
@@ -202,7 +222,21 @@ with pd.ExcelWriter(SavePath / "DC2_Total_Erosion_Summary.xlsx") as Writer:
             
         # CALCULATE TOTALS FOR SCOTLAND
         TotalNTransects = DF.NoTransects.sum()
-        values_to_add = {'Cell':"Scotland", 'Cellsub':"all",  'NoTransects':TotalNTransects}
+        
+        MeanDC1Erosion = (DF["DC1_MeanERate"] * DF["DC1_NEroding"]).sum()/DC1_NEroding
+        DC1_NEroding = DF.DC1_NEroding.sum()
+            
+        HistNEroding = DF.HistNEroding.sum()
+        HistMeanErosion = (DF["HistMeanErosion"] * DF["HistNEroding"]).sum()/HistNEroding
+        HistPercentEroding = 100*HistNEroding/TotalNTransects
+            
+        values_to_add = {'Cell':Cell, 'Cellsub':"all", 'NoTransects':TotalNTransects,
+                         'DC1_MeanERate':MeanDC1Erosion,
+                         'DC1_NEroding':DC1_NEroding,
+                         'HistMeanErosion':HistMeanErosion, 
+                         'HistNEroding':HistNEroding,
+                         'HistPercentEroding':HistPercentEroding}
+        
         for i, Decade in enumerate(Decades):
             
             # calculate for all of Scotland
