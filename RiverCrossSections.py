@@ -1,25 +1,19 @@
 
 """
-Testing.py
-MDH, June 2019
+RiverCrossSections.py
+MDH, July 2021
 """
 
-import numpy as np
-import itertools
-from Node import *
-from Transect import *
-from Line import *
+from Coast import *
 
-
-TESTFILE = "D:\\NCCA2\\StAndrews\\MHWS\\MHWS_2018.shp"
-ThisCoast = Coast(TESTFILE)
-ThisCoast.MergeCoastLines()
+InputLine = "D:\\NCCA2\\StAndrews\\MHWS\\MHWS_2018.shp"
+ThisCoast = Coast(InputLine)
 ThisCoast.SmoothCoastLines()
 
 SmoothedLine = "D:\\NCCA2\\StAndrews\\MHWS\\coast.shp"
-ThisCoast.WriteCoastShp(TESTFILE2)
+ThisCoast.WriteCoastShp(SmoothedLine)
 
 # generate perpendicular lines every 10 m extending by 100 m in both directions
-ThisCoast.GenerateNormals(10.,100.,100.)
-TESTFILE3 = "D:\\NCCA2\\StAndrews\\MHWS\\transects.shp"
-ThisCoast.WriteTransectsShp(TESTFILE3)
+ThisCoast.GenerateTransects(10.,100.,100.)
+OutputFile = "D:\\NCCA2\\StAndrews\\MHWS\\transects.shp"
+ThisCoast.WriteTransectsShp(OutputFile)
