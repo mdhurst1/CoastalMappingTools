@@ -8,6 +8,7 @@ Dynamic Coast 2 Project
 
 """
 
+# import modules
 import pickle, pathlib
 import geopandas as gp
 from Coast import *
@@ -28,7 +29,7 @@ MinLength = 50.
 # set the transect spacing along the coast line (in m)
 TransectSpacing = 10.
 
-# set the distance to extend the transects
+# set the distance to extend the transects (in m)
 DistanceOffshore = 250.
 DistanceInland = 250.
 
@@ -45,7 +46,7 @@ if not BaselinePath.is_file():
     print("No Baseline")
 
 # create a filename and path to save the results
-Filename2SaveCoast = BaselinePath / "My_Baseline.pydata")
+Filename2SaveCoast = BaselinePath / "My_Baseline.pydata"
 
 # check if the coast object already exists    
 try:
@@ -76,7 +77,7 @@ except:
         
         CellCoast.BuiltTransects = True
             
-        CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects.shp")))
+        CellCoast.WriteTransectsShp(str(BaselinePath / ("Transects.shp")))
             
         # SAVE ENTIRE COAST OBJECT
         with open(str(Filename2SaveCoast), 'wb') as PFile:
