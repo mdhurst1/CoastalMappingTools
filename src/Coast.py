@@ -1035,7 +1035,10 @@ class Coast:
                     if not Transect.DC1:
                         Transect.DC1 = ["","","",""]
                     else:
-                        Transect.DC1[3] = Transect.DC1[2]/(Transect.DC1[1]-Transect.DC1[0])
+                        try:
+                            Transect.DC1[3] = Transect.DC1[2]/(Transect.DC1[1]-Transect.DC1[0])
+                        except:
+                            Transect.DC1 = ["","","",""]
                     
                     # Create the record this could become a function in transect object...
                     Record = [str(self.Cell), str(self.SubCell), str(self.CMU), str(Line.ID), str(Transect.ID),
@@ -2130,6 +2133,8 @@ class Coast:
                         IntersectionYears.append(int(NearestLine.Surv_End_D))
                     elif "versiondat" in NearestLine:
                         IntersectionYears.append(int(NearestLine.versiondat[0:4]))
+                    elif "Year" in NearestLine:
+                        IntersectionYears.append(int(NearestLine.Year))
                     else:
                         sys.exit("Couldnt find survey year for MHWS historic shoreline position")
                 
@@ -3235,6 +3240,42 @@ class Coast:
                 # update transect progress no
                 CurrentTransect += 1
         
+        print("")
+
+    def AnalyseExtremeWater(self, WaterElevs):
+        
+        """
+        
+        Finds position of extreme water at given elevations e.g. high water
+
+        MDH, June 2022
+
+        """
+
+        print("Coast.AnalyseExtremeWater: Finding water surface positions at a given elevations and calculating metrics")
+
+        # update extreme water levels
+        self.ExtremeWaterLevels = WaterElevs
+
+        # Track progress
+        NoTransects = np.sum([Line.NoTransects for Line in self.CoastLines])-1
+        CurrentTransect = 0
+
+        # loop through transects and get contiguous barrier lines
+        for CoastLine in self.CoastLines:
+            for Transect in CoastLine.Transects:
+                
+                # print progress to screen
+                print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
+                    
+                # extract barrier width
+                #if Transect.ID == "138":
+                #    Transect.ExtractBarrierWidths(WaterElevs)
+                Transect.FindExtremeWaterIntersections(WaterElevs)
+
+                # update transect progress no
+                CurrentTransect += 1
+
         print("")
 
     def AnalyseBarrierWidths(self, WaterElevs):
@@ -4409,7 +4450,7 @@ class Coast:
                 # update counter
                 Count += 1
 
-    def SetMHWS(self,MHWS):
+    def SetMHWS(self, MHWS):
 
         """
         Sets MHWS on all lines and transects

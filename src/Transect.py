@@ -1482,6 +1482,156 @@ class Transect:
 
             return Width, Volume
 
+    
+
+    def FindExtremeWaterIntersections(self, WaterElevations=[0, 2.5, 5]):
+        """
+        Find Extreme Water Intersections
+        Doesnt require there to be a barrier
+        This is a quick fix for now
+
+        MDH, June 2022
+
+        """
+
+        # check if WaterElevs is single value or list
+        if not isinstance(WaterElevations, list):
+            self.ExtremeWaterLevels = [WaterElevations]
+        else:
+            self.ExtremeWaterLevels = WaterElevations
+        
+        # setup empty lists
+        self.ExtremeDistances = ["","",""]
+        self.ExtremeIndicesLists = ["","",""]
+        self.ExtremeInterpFractions = ["","",""]
+        self.Intersections = ["","",""]
+
+        # loop across elevations and perform analysis
+        for i, Elevation in enumerate(self.ExtremeWaterLevels):
+            
+            self.FindExtremeWaterIntersection(Elevation)
+
+            # add results to lists
+            self.ExtremeDistances[i] = self.ExtremeDistance
+            self.ExtremeIndicesLists[i] = self.ExtremeIndices
+            self.ExtremeInterpFractions[i] = self.InterpolateFractions
+            self.Intersections[i] = self.Intersection
+
+    def FindExtremeWaterIntersection(self, Elev):
+        """
+        Find Extreme Water Intersections
+        Doesnt require there to be a barrier
+        This is a quick fix for now
+
+        MDH, June 2022
+        
+        """
+
+        # add results to lists
+        # NEED TO FIX NDV AS GLOBAL FROM DEM
+        NDV = -10000
+        self.ExtremeDistance = [None,None]
+        self.ExtremeIndex = [None,None]
+        self.InterpolateFractions = [None,None]
+        self.ExtremeWidth = None
+        self.ExtremeVolume = None
+        self.FrontNode = None
+        self.BackNode = None
+        
+        # vector at fixed elevation running the length of the transect
+        Start, End = ma.notmasked_edges(self.Distance)
+        X1, Y1 = self.Distance[Start], Elev
+        X2, Y2 = self.Distance[End], Elev
+        
+        dX12 = X2-X1
+        dY12 = Y2-Y1
+        
+        # count and record locations of intersection
+        IntersectionCounter = 0
+        self.IntersectionIndices = []
+        InterpolateFractions = []
+        
+        # temporary fix for no assignment, need a function for reading in transect topo
+        # rather than having it set externally?
+        self.NoValues = len(self.Distance)
+        self.DistanceSpacing = self.Distance[End]-self.Distance[End-1]
+        
+        # loop across barrier topography
+        for i in range(Start, End-1):
+
+            # cut and paste interesction analysis
+            # do we want this to be a separate function somewhere?
+            # Loop through transects and count no of intersections with the barrier
+            # get transect line ends        
+            X3,Y3 = self.Distance[i], self.Elevation[i]
+            X4,Y4 = self.Distance[i+1], self.Elevation[i+1]
+            
+            dX34 = X4-X3
+            dY34 = Y4-Y3
+            
+            #Find the cross product of the two vectors
+            XProd = dX12*dY34 - dX34*dY12
+                
+            if (XProd != 0):
+                if (XProd > 0):
+                    XProdPos = 1
+                else:
+                    XProdPos = 0
+                    
+                #assign third test segment
+                dX31 = X1-X3
+                dY31 = Y1-Y3
+                    
+                #get cross products
+                S = dX12*dY31 - dY12*dX31
+                T = dX34*dY31 - dY34*dX31
+                
+                #logic for collision occurence
+                if ((S < 0) == XProdPos):
+                    continue
+                elif ((T < 0) == XProdPos):
+                    continue
+                elif ((S > XProd) == XProdPos):
+                    continue
+                elif ((T > XProd) == XProdPos):
+                    continue
+                else:
+                    IntersectionCounter += 1
+                    self.IntersectionIndices.append(i)
+                    Fraction = np.abs((Elev-Y3)/dY34)
+                    InterpolateFractions.append(Fraction)
+        
+        # calculate width and volume at this elevation
+        # if no intersection then either barrier crest is too low
+        # or back barrier is too high
+        if IntersectionCounter == 0:
+            if (self.CrestElevation < Elev):
+                self.ExtremeWidth = 0.
+                self.ExtremeVolume = 0.
+                self.ExtremeIndices = []
+                self.Intersection = False
+        
+        elif IntersectionCounter == 1:
+            
+            # no width or volume but get index
+            self.ExtremeWidth = -99
+            self.ExtremeVolume = -99
+            self.ExtremeIndices = []
+            
+            # calculate intersection distance and elevation
+            ExtremeDist = self.Distance[self.IntersectionIndices[0]] + InterpolateFractions[0]*self.DistanceSpacing
+            self.ExtremeIndices.append(self.IntersectionIndices[0])
+            self.InterpolationFractions = [InterpolateFractions[0]]
+
+            # get position of intersection
+            X1 = self.StartNode.X + ExtremeDist * np.sin( np.radians( self.Orientation ) )
+            Y1 = self.StartNode.Y + ExtremeDist * np.cos( np.radians( self.Orientation ) )
+            IntersectionNode = Node(X1,Y1,Elev)
+            self.IntersectionNodes.append(IntersectionNode)
+
+            # flag that an intersection has occurred
+            self.Intersection = True            
+
     def ExtractBarrierWidths(self,WaterElevations=[0, 2.5, 5]):
 
         """
@@ -1528,7 +1678,9 @@ class Transect:
             self.ExtremeFrontNodes[i] = self.FrontNode
             self.ExtremeBackNodes[i] = self.BackNode
             self.Intersections[i] = self.Intersection
-        
+
+    
+    
     def ExtractBarrierWidth(self, Elev):
 
         """
@@ -1833,7 +1985,10 @@ class Transect:
             ax.plot(self.Distance[self.BackToeInd], self.Elevation[self.BackToeInd], 'ko', ms=2, zorder=32)
         
         # add extreme water lines and volumes
-        self.ExtremeWaterLevels = None
+        #self.ExtremeWaterLevels = None
+        import pdb
+        pdb.set_trace()
+        
         if not self.ExtremeWaterLevels:
             Blah = "hello"
         else:
@@ -1890,19 +2045,20 @@ class Transect:
             plt.text(0.9, 0.9,'Land', ha='center', va='center', transform=ax.transAxes)
 
         # label axes
-        ax.set_aspect(10.)
+        ax.set_aspect(2.)
         ax.set_ylabel("Elevation (m OD)")
         ax.set_xlabel("Distance toward land (m)")
 
         # set axis limits 
-        Start, End = ma.notmasked_edges(self.Distance)
+        Start, End = ma.notmasked_edges(self.Elevation)
+        
         if Start != End:
             ax.set_xlim([self.Distance[Start],self.Distance[End]])
             ax.set_ylim([self.Elevation[Start],np.max(self.Elevation[Start:End])+1])
         
         # temporary over-ride to fix axis limits
-        ax.set_xlim([0.,600.])
-        ax.set_ylim([0.,20.])
+        ax.set_xlim([150.,300.])
+        ax.set_ylim([0.,15.])
 
         # flip the plot in the horizontal?
         if ReverseFlag:
@@ -1923,6 +2079,8 @@ class Transect:
 
         # close the figure
         plt.close(fig)
+
+        
 
     def PlotFuturePositions(self, PlotFolder):
 
