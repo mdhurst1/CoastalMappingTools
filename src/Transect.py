@@ -17,6 +17,10 @@ import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib import rcParams, cm
 
+import rasterio
+import geopandas as gp
+from shapely.geometry import Point, Polygon, LineString, MultiLineString, MultiPoint
+
 # import other custom classes
 from Node import *
 
@@ -110,6 +114,8 @@ class Transect:
         self.DistanceNodes = None
         self.Distance = None
         self.Elevation = None
+        self.Distance2 = None
+        self.Elevation2 = None
         self.ElevationMin = None
         self.ElevationMax = None
         self.ElevStd = None
@@ -363,6 +369,73 @@ class Transect:
         YNodes = np.linspace(self.StartNode.Y, self.EndNode.Y, self.NoNodes-1)
         self.DistanceNodes = [Node(X,Y) for X, Y in zip(XNodes,YNodes)]
         self.Distance = [self.StartNode.get_Distance(ThisNode) for ThisNode in self.DistanceNodes]
+
+    def SampleDEM(self,DEM):
+
+        """
+        Function to sample elevations from a single DEM on a single transect
+        
+        MDH, July, 2022
+        
+        """
+        DTM_Dataset = rasterio.open(DEM)
+        DTMArray = DTM_Dataset.read(1)
+        NCols = DTM_Dataset.width
+        NRows = DTM_Dataset.height
+        NDV = DTM_Dataset.nodata
+        Resolutions = DTM_Dataset.res
+        
+        # check if we're missing no data
+        if not DTM_Dataset.nodata:
+            raise SystemExit("DTM missing no data value")
+
+        # check for square pixels
+        if not DTM_Dataset.res[0] == DTM_Dataset.res[1]:
+            raise SystemExit("DTM has non-square cells")
+    
+        # get resolution
+        DTM_Resolution = DTM_Dataset.res[0]
+
+        # get extent of DTM and set up polygon of extent
+        XMin = DTM_Dataset.bounds[0]
+        XMax = DTM_Dataset.bounds[2]
+        YMin = DTM_Dataset.bounds[1]
+        YMax = DTM_Dataset.bounds[3]
+        DTM_Extent = Polygon([[XMin, YMin], [XMin, YMax], [XMax, YMax], [XMax, YMin]])
+
+        # Get vectors of X and Y coordinates, NB reversal of Y in line with 
+        # DTM indexing from top left
+        XVector = XMin+np.arange(0,NCols)*DTM_Resolution+0.5*DTM_Resolution
+        YVector = YMin+DTM_Resolution*np.arange(0,NRows)[::-1]+0.5*DTM_Resolution
+        # check we have nodes to sample
+        if not self.DistanceNodes:
+            self.DistanceSpacing = DTM_Dataset.res[0]
+            self.GenerateSampleNodes()
+
+        # check for intersection
+        if not self.LineString.intersects(DTM_Extent):
+            print("Transect does not intersect DTM")
+            return
+        
+        # get list of points that intersect DTM only
+        Points = [Point(ThisNode.X,ThisNode.Y) for ThisNode in self.DistanceNodes]
+        Points = [ThisPoint if ThisPoint.within(DTM_Extent) else Point((0,0)) for ThisPoint in Points]
+        Coords = [(Point.x, Point.y) for Point in Points]
+        Elevations = [Sample[0] for Sample in DTM_Dataset.sample(Coords)]
+        
+        # problem here gettign back to transects
+        for i, ThisNode in enumerate(self.DistanceNodes):
+            
+            if not ThisNode.Z and Elevations[i] > 0:
+                self.DistanceNodes[i].Z = Elevations[i]
+
+        # Set up the mask from NDVs
+        Mask = Elevations == NDV
+        self.Distance2 = ma.masked_where(Mask,self.Distance)
+        self.Elevation2 = ma.masked_where(Mask,Elevations)
+
+        # self.HaveTopography = True
+
 
     def CalculateHinterlandSlope(self):
 
@@ -2149,7 +2222,7 @@ class Transect:
     def get_CliffPosition(self):
 
         if not self.Cliff:
-            sys.exit("Transect.get_CliffPosition: Not a cliff!")
+            sys.exit("self.get_CliffPosition: Not a cliff!")
 
         # calculate X and Y
         CliffTopDist = self.Distance[self.CliffTopInd]
@@ -2176,7 +2249,7 @@ class Transect:
         """
 
         if not self.Barrier:
-            sys.exit("Transect.get_BarrierPosition: Not a barrier!")
+            sys.exit("self.get_BarrierPosition: Not a barrier!")
 
         # get distances
         BarrierFrontTopDist = self.Distance[self.FrontTopInd]
@@ -2218,7 +2291,7 @@ class Transect:
         
         """
         if not Ind in [0,1,2]:
-            sys,exit("Transect.get_ExtremePosition (Error): mist be an integer for extreme water (0,1, or 2)") 
+            sys,exit("self.get_ExtremePosition (Error): mist be an integer for extreme water (0,1, or 2)") 
             
         FrontDist = self.ExtremeDistances[Ind][0]
         BackDist = self.ExtremeDistances[Ind][1]
@@ -2548,7 +2621,7 @@ class Transect:
         # catch if no shoreline
         if len(self.HistoricShorelinesYears) == 0:
             return
-            #raise Exception("Transect.get_RecentPosition: No recent position")
+            #raise Exception("self.get_RecentPosition: No recent position")
 
         # find index of most recent historical shoreline
         Index = np.argmax(self.HistoricShorelinesYears)
@@ -2570,7 +2643,7 @@ class Transect:
         # catch if no shoreline
         if len(self.HistoricShorelinesYears) == 0:
             return
-            #raise Exception("Transect.get_RecentPosition: No recent position")
+            #raise Exception("self.get_RecentPosition: No recent position")
 
         # find index of most recent historical shoreline
         Index = np.argmax(self.HistoricShorelinesYears)
@@ -2590,7 +2663,7 @@ class Transect:
 
         # catch if no shoreline
         if len(self.HistoricShorelinesYears) == 0:
-            raise Exception("Transect.get_RecentPosition: No recent position")
+            raise Exception("self.get_RecentPosition: No recent position")
 
         # find index of most recent historical shoreline
         Index = np.argmax(self.HistoricShorelinesYears)

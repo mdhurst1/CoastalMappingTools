@@ -180,6 +180,6 @@ for Scenario, Percentile in zip(Scenarios, Percentiles):
     #ThisCoast.TruncateTransects()
     #ThisCoast.WriteFutureTransectsShp(str(OutputPath / (ProjectName + "_Transects_Truncated.shp")))
 
-ThisCoast.AnalyseBarrierWidths([3.2,4.0,4.9])
+ThisCoast.AnalyseExtremeWater([3.2,4.0,4.9])
 ThisCoast.PlotTransects(str(PlotPath))
     
