@@ -32,8 +32,8 @@ Filename = WorkingPath / "Geometry" / (ProjectName+"_Geometry.pydata")
 Cst = pickle.load( open( Filename, "rb" ) )
 
 # set a line and a transect if needed
-LineID = 0
-TransectID = 18
+LineID = "0"
+TransectID = "36"
 
 # get line
 Lns = Cst.CoastLines
@@ -44,5 +44,32 @@ Trs = Ln.Transects
 Tr = [Tr for Tr in Trs if Tr.ID == TransectID][0]
 
 # sample the revised DTM
+Tr.SampleDEM(NewSurface)
 
+# create figure
+fig = plt.figure(1,figsize=(6,3))
+ax = fig.add_subplot(111)
+        
 #replot
+Mask = (Tr.Elevation > -10)
+DistanceMask = Tr.Distance[Mask]
+ElevMask = Tr.Elevation[Mask]
+plt.plot(DistanceMask, ElevMask, 'k-', label="Current Topography")
+
+Mask2 = (Tr.Elevation2 > -10)
+NDistance = Tr.Distance2[Mask2].tolist()
+NElev = Tr.Elevation2[Mask2].tolist()
+NDistance.insert(0, DistanceMask[0])
+NElev.insert(0, ElevMask[0])
+
+plt.plot(NDistance,NElev,'k--',label="Proposed Surface")
+
+plt.xlabel("Distance (m)")
+plt.ylabel("Elevation (m)")
+
+plt.legend(loc=4)
+
+plt.title("Transect " + TransectID)
+plt.tight_layout()
+plt.savefig(str(WorkingPath)+"Transect"+ str(TransectID)+".png", dpi=300)
+plt.show()

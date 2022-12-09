@@ -572,10 +572,10 @@ class Transect:
         # boolean flag if making prediction
         self.Future = True
         
-        #if self.LineID == "74" and self.ID == "134":
-        #    import pdb
-        #    pdb.set_trace()
-            
+#        if self.LineID == "1" and self.ID == "10":
+#            import pdb
+#            pdb.set_trace()
+#            
         # cant make predictions without some historical shorelines
         if not self.HistoricShorelinesYears:
             #print("No historical shorelines", self.ID)
@@ -605,7 +605,7 @@ class Transect:
             return
 
         # check if the two most recent positions are closer than 5 years together
-        if (self.HistoricShorelinesYears[-1] - self.HistoricShorelinesYears[-2] < 5):
+        if (self.HistoricShorelinesYears[-1] - self.HistoricShorelinesYears[-2] < 4):
             self.HistoricShorelinesSources.pop(-2)
             self.HistoricShorelinesDistances.pop(-2)
             self.HistoricShorelinesPositions.pop(-2)
@@ -2059,15 +2059,18 @@ class Transect:
         
         # add extreme water lines and volumes
         #self.ExtremeWaterLevels = None
-        import pdb
-        pdb.set_trace()
-        
         if not self.ExtremeWaterLevels:
             Blah = "hello"
         else:
             for i, WaterLevel in enumerate(self.ExtremeWaterLevels):
                 
                 if self.Intersections[i]:
+
+                    # plot line and extend seaward
+                    LineDists = self.ExtremeDistances[i].copy()
+                    LineDists[0] -= 20.
+                    ax.plot(LineDists, [WaterLevel,WaterLevel], '-', lw=1., color=LineColour, zorder=20)
+                    
                     if (self.ExtremeWidths[i] is None) or (self.ExtremeWidths[i] == -99):
                         continue
     
@@ -2075,10 +2078,7 @@ class Transect:
                     Colour = 1.5*float(i)/(len(self.ExtremeWaterLevels))
                     LineColour = ColourMap(Colour)
         
-                    # plot line and extend seaward
-                    LineDists = self.ExtremeDistances[i].copy()
-                    LineDists[0] -= 20.
-                    ax.plot(LineDists, [WaterLevel,WaterLevel], '-', lw=1., color=LineColour, zorder=20)
+                    
                     
                     # colour in, this will have minor bug for now due to abs argmin returning either node before or node after
                     Inds = self.ExtremeIndicesLists[i]

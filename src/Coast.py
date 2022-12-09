@@ -360,7 +360,10 @@ class Coast:
                 
                 # build a spline representation of the line
                 Spline, u = splprep([XSmooth, YSmooth], u=Dist, s=0)
-
+                
+                import pdb
+                pdb.set_trace()
+                
                 # resample it at smaller distance intervals
                 Interp_Dist = np.arange(0, Dist[-1], 1.)
                 XSmooth, YSmooth = splev(Interp_Dist, Spline)
@@ -2117,7 +2120,7 @@ class Coast:
                     Distances = Lines.distance(Intersection)
                     # print(Distances.idxmin())
                     NearestLine = GDF.iloc[Distances.idxmin()]
-                
+                    
                     # check it hasnt already been read
                     if "FULLSHP_YR" in NearestLine:
                         IntersectionYears.append(int(NearestLine.FULLSHP_YR))
@@ -2135,6 +2138,8 @@ class Coast:
                         IntersectionYears.append(int(NearestLine.versiondat[0:4]))
                     elif "Year" in NearestLine:
                         IntersectionYears.append(int(NearestLine.Year))
+                    elif "YEAR" in NearestLine:
+                        IntersectionYears.append(int(NearestLine.YEAR))
                     else:
                         sys.exit("Couldnt find survey year for MHWS historic shoreline position")
                 
@@ -2439,8 +2444,11 @@ class Coast:
             for Line in self.CoastLines:
                 for i, Transect in enumerate(Line.Transects[:]):
                     for val in RSLRDataset.sample([(Transect.CoastNode.X,Transect.CoastNode.Y)]):
-                        Transect.HistoricalRSLR = val[0]
-
+                        if not val == RSLRDataset.nodata:
+                            Transect.HistoricalRSLR = val[0]
+                        else:
+                            Transect.HistoricalRSLR = 0
+                        
     def SampleMHWSElevation(self,MHWSRaster):
 
         """
@@ -2468,7 +2476,7 @@ class Coast:
                         Transect.MHWS = val[0]
 
 
-    def SampleFutureRSL(self, FutureRSLFolder, RCP=8, Percentile=95, Years=[2020,2030,2040,2050,2060,2070,2080,2090,2100]):
+    def SampleFutureRSL(self, FutureRSLFolder, RCP=8, Percentile=95, Years=[2020,2030,2040,2050,2060,2070,2080,2090,2100], Location=None):
 
         """ 
         
@@ -2485,6 +2493,7 @@ class Coast:
             Percentile scenario to use
         Years : list
             List of integers corresponding to the years to be analysed
+        Location: Node object with location to use
         
         MDH, September 2019
 
@@ -2507,9 +2516,14 @@ class Coast:
                 # loop through transects and sample
                 for Line in self.CoastLines:
                     for i, Transect in enumerate(Line.Transects[:]):
-                        for val in RSLDataset.sample([(Transect.CoastNode.X,Transect.CoastNode.Y)]):
-                            Transect.FutureSeaLevels.append(val[0])
-                            Transect.FutureSeaLevelYears.append(Year)
+                        if Location:
+                            for val in RSLDataset.sample([(Location.X,Location.Y)]):
+                                Transect.FutureSeaLevels.append(val[0])
+                                Transect.FutureSeaLevelYears.append(Year)
+                        else:
+                            for val in RSLDataset.sample([(Transect.CoastNode.X,Transect.CoastNode.Y)]):
+                                Transect.FutureSeaLevels.append(val[0])
+                                Transect.FutureSeaLevelYears.append(Year)
 
     def SampleRockHeadPosition(self, UPSMRaster, MaxRockHeadErosionDistance=25.):
 
