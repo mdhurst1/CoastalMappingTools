@@ -5,6 +5,7 @@ Created on Fri Jun 21 11:25:01 2019
 @author: mh322u
 """
 
+#import modules
 import pickle
 import pathlib
 from Coast import *
@@ -42,7 +43,13 @@ except:
     # SIMPLIFY COASTLINE
     ThisCoast.MergeCoastLines()
     ThisCoast.SmoothCoastLines(WindowSize=51)
+<<<<<<< HEAD
     ThisCoast.ReconfigureCoastLines("E") # point to bathy for using on other coasts
+=======
+
+    # update this function to look at MLWS
+    ThisCoast.ReconfigureCoastLines("E")
+>>>>>>> eb74b33cbc781e2d60024bae159368229ecc7978
     
     # WRITE COASTLINE TO SHAPEFILE
     ThisCoast.WriteCoastShp(str(SitePath / "Coast.shp"))
@@ -61,8 +68,13 @@ except:
         pickle.dump(ThisCoast, PFile)
     
 ## ANALYSE TRANSECTS
-#ThisCoast.FindRockyCoast()
+ThisCoast.FindRockyCoast()
 ThisCoast.AnalyseTransectMorphology()
+<<<<<<< HEAD
+=======
+
+# need a new function to read extreme surge levels for various return periods
+>>>>>>> eb74b33cbc781e2d60024bae159368229ecc7978
 ThisCoast.AnalyseBarrierWidths([4.,5.,6.])
 
 ## plot the results
