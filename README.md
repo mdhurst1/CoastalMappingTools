@@ -14,10 +14,16 @@ You can then use conda to set up an environment from the environment file includ
 
 `cd CoastalMappingTools`
 
-`conda env create -f environment.yml`
+`conda env create -f ./conda_env/environment.yml`
 
 ## Some Basic Applications
 
 ### Generate shore-normal transects
+
+### Genereate topographic cross sections
+
+### Analyse barrier morphology
+
+### Conduct shoreline change analysis
 
 Description goes here.
