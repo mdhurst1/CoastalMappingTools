@@ -4,9 +4,17 @@ Tools conducting topological and topographical analysis of coasts. Developed for
 
 ## Installation
 
-These tools are written in python and have a number of dependencies. I reccomend installing the Anaconda python distribution. You can then use conda to set up an environment from the environment file included in this repository that has all the dependencies required.
+These tools are written in python and have a number of dependencies. I reccomend installing the Anaconda python distribution. 
 
-Instructions on how to do this will follow just here.
+Clone the repo:
+
+`git clone https://github.com/mdhurst1/CoastalMappingTools.git`
+
+You can then use conda to set up an environment from the environment file included in this repository that has all the dependencies required.
+
+`cd CoastalMappingTools`
+
+`conda env create -f environment.yml`
 
 ## Some Basic Applications
 
