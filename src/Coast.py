@@ -23,7 +23,6 @@ from shapely.geometry import Point, Polygon, LineString, MultiLineString, MultiP
 from shapely.ops import nearest_points, linemerge
 
 from Line import *
-from IPython.display import clear_output
 
 # might do some multiprocessing?
 from multiprocessing import Pool
@@ -361,8 +360,6 @@ class Coast:
                 # build a spline representation of the line
                 Spline, u = splprep([XSmooth, YSmooth], u=Dist, s=0)
                 
-                import pdb
-                pdb.set_trace()
                 
                 # resample it at smaller distance intervals
                 Interp_Dist = np.arange(0, Dist[-1], 1.)

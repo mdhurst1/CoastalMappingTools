@@ -1,6 +1,5 @@
 """
-Driver for assessment of future shoreline change in Scotland
-Bruun Rule approach
+Driver for gennerating transects along a section of coast
 
 Martin Hurst
 University of Glasgow
@@ -9,12 +8,17 @@ Dynamic Coast 2 Project
 """
 
 # import modules
-import pickle, pathlib
+import pickle, sys
+from pathlib import Path
 import geopandas as gp
+
+# import Coast objects
+SourcePath = Path.cwd().parent / "src"
+sys.path.append(str(SourcePath))
 from Coast import *
 
 # define file names for analysis
-WorkingPath = pathlib.Path.cwd().parent
+WorkingPath = Path.cwd().parent.parent / "Musselburgh" 
 
 # set up output folders
 GeometryPath = WorkingPath/("Geometry")
@@ -40,13 +44,19 @@ SmoothingWindowSize = 21
 NoSmooths = 100
 
 # locate the baseline shapefile
-BaselinePath = WorkingPath / ("My_Baseline.shp")
+BaselinePath = WorkingPath / ("Musselburgh_Baseline.shp")
+
+# name the output files
+SmoothedBaselinePath = WorkingPath / ("Musselburgh_SmoothedBaseline.shp")
+TransectsPath = WorkingPath / ("Musselburgh_Transects.shp")
+
+# define MHWS shpaefile
     
 if not BaselinePath.is_file():
     print("No Baseline")
 
 # create a filename and path to save the results
-Filename2SaveCoast = BaselinePath / "My_Baseline.pydata"
+Filename2SaveCoast = WorkingPath / "Musselburgh.pydata"
 
 # check if the coast object already exists    
 try:
@@ -70,14 +80,14 @@ except:
         # CellCoast.CheckOrientation(str(SoftPath),str(MLWSPath))
         
         # write smoothed coast/bathy to file
-        CellCoast.WriteCoastShp(str(BaselinePath / ("Smoothed_Baseline.shp")))
+        CellCoast.WriteCoastShp(str(SmoothedBaselinePath))
     
         # create some initial dummy transects, check inland/offshore the right way around
         CellCoast.GenerateTransects(TransectSpacing, DistanceInland, DistanceOffshore, CheckTopology=False)
         
         CellCoast.BuiltTransects = True
             
-        CellCoast.WriteTransectsShp(str(BaselinePath / ("Transects.shp")))
+        CellCoast.WriteTransectsShp(str(TransectsPath))
             
         # SAVE ENTIRE COAST OBJECT
         with open(str(Filename2SaveCoast), 'wb') as PFile:

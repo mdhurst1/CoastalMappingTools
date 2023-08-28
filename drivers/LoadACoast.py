@@ -24,7 +24,7 @@ Filename2LoadCoast = WorkingPath / "Geometry" / ("Cell_" + Cell + "_" + InnerorO
 Cst = pickle.load( open( Filename2LoadCoast, "rb" ) )
 
 # set a line and a transect if needed
-LineID = "22"
+LineID = "1"
 TransectID = "341"
 
 # get line

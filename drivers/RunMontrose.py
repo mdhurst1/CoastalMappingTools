@@ -14,6 +14,8 @@ WorkingPath = pathlib.Path.cwd().parent
 SitePath = WorkingPath / "Montrose"
 PlotPath = SitePath / "Plots/" 
 TransectPath = SitePath / "Transects/"
+
+#input data
 LineShp = "Montrose_CoastTrend.shp"
 DTM = "DTM_1m.tif"
 
@@ -40,7 +42,7 @@ except:
     # SIMPLIFY COASTLINE
     ThisCoast.MergeCoastLines()
     ThisCoast.SmoothCoastLines(WindowSize=51)
-    ThisCoast.ReconfigureCoastLines("E")
+    ThisCoast.ReconfigureCoastLines("E") # point to bathy for using on other coasts
     
     # WRITE COASTLINE TO SHAPEFILE
     ThisCoast.WriteCoastShp(str(SitePath / "Coast.shp"))
@@ -61,10 +63,10 @@ except:
 ## ANALYSE TRANSECTS
 #ThisCoast.FindRockyCoast()
 ThisCoast.AnalyseTransectMorphology()
-#ThisCoast.AnalyseBarrierWidths([4.,5.,6.])
+ThisCoast.AnalyseBarrierWidths([4.,5.,6.])
 
 ## plot the results
-#ThisCoast.PlotTransects(str(PlotPath))
+ThisCoast.PlotTransects(str(PlotPath))
 
 ## write some stuff
 ThisCoast.WriteCliffShp(str(SitePath / "Cliffs.shp"))
@@ -75,9 +77,10 @@ ThisCoast.WriteCrestPointsShp(str(SitePath / "CrestPoints.shp"))
 ThisCoast.WriteFrontPointsShp(str(SitePath / "FrontPoints.shp"))
 
 ThisCoast.WriteBarriersTextFile(str(SitePath / "MontroseBarriers.csv"))
-#ThisCoast.WriteExtremeLevelsShp(str(SitePath / "Extreme.shp"))
+ThisCoast.WriteExtremeLevelsShp(str(SitePath / "Extreme.shp"))
 
 
 # WRITE TRANSECTS TO CSV
 ThisCoast.WriteTransectsCSV(Folder=str(TransectPath))
-    
+
+# TRANSECT CALLING

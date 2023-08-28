@@ -14,7 +14,7 @@ import pathlib
 import geopandas as gp
 
 # define file names for analysis
-WorkingPath = pathlib.Path.cwd().parent
+WorkingPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change")
 
 ### FUNCTIONALITY HERE TO SAMPLE FROM NATIONAL DATASETS BASED ON COASTAL CELLS ###
 # open shapefile of coastal cells
@@ -49,7 +49,7 @@ def ClipLines2Poly(LinesGDF,PolyGDF):
 
 
 # Cell list
-CellList = ["7"]
+CellList = ["6b"]
 
 for index, Row in Cells.iterrows():
 
@@ -99,15 +99,15 @@ for index, Row in Cells.iterrows():
     except:
         print("Unable to write 1970s for " + Row.Cell_sub)
         
-#    try:
-#        Old_Inner.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890_Inner.shp"))
-#    except:
-#        print("Unable to write inner 1890s for " + Row.Cell_sub)
-#        
-#    try:
-#        Old_Inter.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970_Inner.shp"))
-#    except:
-#        print("Unable to write inner 1970s for " + Row.Cell_sub)
+    try:
+        Old_Inner.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890_Inner.shp"))
+    except:
+        print("Unable to write inner 1890s for " + Row.Cell_sub)
+        
+    try:
+        Old_Inter.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970_Inner.shp"))
+    except:
+        print("Unable to write inner 1970s for " + Row.Cell_sub)
     
     try:    
         Soft.to_file(WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp"))

@@ -10,7 +10,7 @@ Dynamic Coast 2 Project
 
 import pickle, pathlib, sys
 import geopandas as gp
-from Coast import *
+from ..src import Coast
 
 # define file names for analysis
 WorkingPath = pathlib.Path.cwd().parent
