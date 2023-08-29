@@ -1,4 +1,4 @@
-name: DC2
+name: CMT
 channels:
   - conda-forge
   - defaults

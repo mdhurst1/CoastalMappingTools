@@ -84,7 +84,7 @@ if not ThisCoast.BuiltTransects:
     ThisCoast.SmoothCoastLines(WindowSize=SmoothingWindowSize,NoSmooths=NoSmooths)
         
     # make sure each line is correctly orientated with sea on left as you look down the line
-    # ThisCoast.CheckOrientation(str(SoftPath),str(MLWSPath))
+    ThisCoast.CheckOrientation(str(SoftPath),str(MLWSPath))
     
     # write smoothed coast/bathy to file
     ThisCoast.WriteCoastShp(str(SmoothedBaselinePath))
@@ -115,8 +115,8 @@ if not ThisCoast.SampledDEMs:
     ThisCoast.ExtractTransectTopography()
     
     # Extract as a swath profile (takes longer, especially with higher resolution DEMs and wider swaths)
-    # SwathDistance = 5. # max distance from transect line, default is 2*DEM_resolution
-    # ThisCoast.ExtractTransectTopographySwath(str(SitePath / DTM), SwathDistance)
+    SwathDistance = 5. # max distance from transect line, default is 2*DEM_resolution
+    ThisCoast.ExtractTransectTopographySwath(str(SitePath / DTM), SwathDistance)
     # This currently only works with a single DEM file, need to update to allow list of files similar to above
     
     ThisCoast.SampledDEMs = True
