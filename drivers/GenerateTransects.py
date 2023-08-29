@@ -43,18 +43,20 @@ DistanceInland = 250.
 SmoothingWindowSize = 21
 NoSmooths = 100
 
-# locate the baseline shapefile
+# locate the input files baseline shapefile
 BaselinePath = WorkingPath / ("Musselburgh_Baseline.shp")
+MLWSPath = WorkingPath / "Musselburgh_MLWS.shp"
 
 # name the output files
 SmoothedBaselinePath = WorkingPath / ("Musselburgh_SmoothedBaseline.shp")
 TransectsPath = WorkingPath / ("Musselburgh_Transects.shp")
 
-# define MHWS shpaefile
-    
+# Check input files
 if not BaselinePath.is_file():
-    print("No Baseline")
-
+    sys.exit("No Baseline: file ", str(BaselinePath), "does not exist.")
+if not MLWSPath.is_file():
+    sys.exit("No MLWS: file ", str(MLWSPath), "does not exist.")
+    
 # create a filename and path to save the results
 Filename2SaveCoast = WorkingPath / "Musselburgh.pydata"
 
@@ -76,7 +78,6 @@ except:
         CellCoast.SmoothCoastLines(WindowSize=SmoothingWindowSize,NoSmooths=NoSmooths)
             
         # make sure each line is correctly orientated with sea on left as you look down the line
-        # this is something we'll need to think about replacing
         # CellCoast.CheckOrientation(str(SoftPath),str(MLWSPath))
         
         # write smoothed coast/bathy to file
