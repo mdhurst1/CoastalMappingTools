@@ -599,14 +599,17 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             # catch no intersections
             if Intersections.geom_type == "GeometryCollection":
                 continue
+            # empty Intersections now appear to be LineString by default, shapely 2.0, CM Sept 23
+            elif Intersections.geom_type == "LineString":
+                continue
 
             # check there arent multiple intersections
             # get first intersection if so
             if Intersections.geom_type == "MultiPoint":
                 CoastPoint = Point(ThisTransect.CoastNode.X, ThisTransect.CoastNode.Y)
-                Distances = [IntersectPoint.distance(CoastPoint) for IntersectPoint in Intersections]
+                Distances = [IntersectPoint.distance(CoastPoint) for IntersectPoint in Intersections.geoms]
                 Index = Distances.index(min(Distances))
-                Intersection = Intersections[Index]
+                Intersection = Intersections.geoms[Index]
                 
             else:
                 # check if this is a new endnode by intersecting with line from startnode to endnode
