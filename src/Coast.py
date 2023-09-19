@@ -1464,11 +1464,14 @@ class Coast:
         elif MergedLine.geom_type == "MultiLineString":
             
             # loop through lines in MultiLineString
-            for i, TempLine in enumerate(MergedLine):
+            # NH change to fix compile error: MultiLineString not iterable. Original: for i, TempLine in enumerate(MergedLine):
+            i = 0
+            for TempLine in MergedLine.geoms:
                 
                 # get x and y and add to CoastLine object as Line
                 X, Y = TempLine.xy
                 self.CoastLines.append(Line(str(i), X, Y))
+                i = i+1
 
         else:
             print("Geometry not recognised!")
