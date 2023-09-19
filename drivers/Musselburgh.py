@@ -10,8 +10,15 @@ Modified by C. MacDonell, Musselburgh project 2023
 
 """
 
+# add modules
+import sys
 import pickle, pathlib
 import geopandas as gp
+
+# add src path to find custom modules
+sys.path.append("../src/")
+
+#import custom modules
 from Coast import *
 
 # define file names for analysis
