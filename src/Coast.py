@@ -1962,7 +1962,7 @@ class Coast:
 
                 # check there arent multiple intersections
                 # get first intersection if so
-                if Intersections.geom_type is "MultiPoint":
+                if Intersections.geom_type == "MultiPoint":
                     StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
                     Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections]
                     Index = Distances.index(min(Distances))
@@ -2093,7 +2093,7 @@ class Coast:
                 """
 
                 # store multiple intersections if so
-                if Intersections.geom_type is "MultiPoint":
+                if Intersections.geom_type == "MultiPoint":
                     CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
                     Distances = [IntersectPoint.distance(CoastPoint) for IntersectPoint in Intersections]
                     Index = Distances.index(min(Distances))
@@ -2678,7 +2678,7 @@ class Coast:
                 # check there arent multiple intersections
                 StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
                 # store multiple intersections if so
-                if Intersections.geom_type is "MultiPoint":
+                if Intersections.geom_type == "MultiPoint":
                     Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections]
                     Index = Distances.index(min(Distances))
                     Distance = Distances[Index]
@@ -2790,7 +2790,7 @@ class Coast:
                     continue
 
                 # check there arent multiple intersections, if there are just get the nearest
-                if Intersection.geom_type is "MultiPoint":
+                if Intersection.geom_type == "MultiPoint":
                     StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
                     Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection]
                     Index = Distances.index(min(Distances))
