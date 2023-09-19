@@ -602,7 +602,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
             # check there arent multiple intersections
             # get first intersection if so
-            if Intersections.geom_type is "MultiPoint":
+            if Intersections.geom_type == "MultiPoint":
                 CoastPoint = Point(ThisTransect.CoastNode.X, ThisTransect.CoastNode.Y)
                 Distances = [IntersectPoint.distance(CoastPoint) for IntersectPoint in Intersections]
                 Index = Distances.index(min(Distances))
@@ -738,7 +738,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
                 if Intersection.geom_type != "GeometryCollection":
                 
                     # check there arent multiple intersections, if there are just get the nearest
-                    if Intersection.geom_type is "MultiPoint":
+                    if Intersection.geom_type =="MultiPoint":
                         StartPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
                         Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection]
                         Index = Distances.index(min(Distances))
@@ -760,7 +760,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
                 if Intersection.geom_type != "GeometryCollection":
                     
                     # check there arent multiple intersections, if there are just get the nearest
-                    if Intersection.geom_type is "MultiPoint":
+                    if Intersection.geom_type == "MultiPoint":
                         StartPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
                         Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection]
                         Index = Distances.index(min(Distances))
@@ -886,7 +886,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
                 if Intersection.geom_type != "GeometryCollection":
                 
                     # check there arent multiple intersections, if there are just get the nearest
-                    if Intersection.geom_type is "MultiPoint":
+                    if Intersection.geom_type == "MultiPoint":
                         StartPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
                         Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection]
                         Index = Distances.index(min(Distances))
@@ -963,7 +963,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             if IntersectionLines.geom_type != "GeometryCollection":
             
                 # check there arent multiple intersections, if there are just get the nearest
-                if IntersectionLines.geom_type is "MultiLineString":
+                if IntersectionLines.geom_type == "MultiLineString":
                     StartPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
                     
                     MidPoints = []
