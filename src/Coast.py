@@ -1966,7 +1966,7 @@ class Coast:
                     StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
                     Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections.geoms]
                     Index = Distances.index(min(Distances))
-                    Intersection = Intersections[Index]
+                    Intersection = Intersections.geoms[Index]
                     
                 else:
                     # check if this is a new endnode by intersecting with line from startnode to endnode
