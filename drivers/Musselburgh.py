@@ -124,6 +124,8 @@ for CellSub in CellList:
             
             CellCoast.BuiltTransects = True
             
+            # write transect during debugging for GIS interface interogation
+            #print('Writing transects to',str(OutputPath / (RowName + "_Transects.shp")))
             #CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects.shp")))
             
             # SAVE ENTIRE COAST OBJECT
