@@ -2918,10 +2918,14 @@ class Coast:
             
             LineGDF = gp.GeoDataFrame(geometry=Lines,crs=PolyGDF.crs)
             
-            JoinGDF = gp.sjoin(LineGDF, PolyGDF, op='intersects')
+            #JoinGDF = gp.sjoin(LineGDF, PolyGDF, op='intersects')
+            JoinGDF = gp.sjoin(LineGDF, PolyGDF, predicate='intersects') # NH fix compile error about derpecated op parameter
             
             # set DEMs to list
             self.UniqueDEMList.extend(list(JoinGDF.location.unique()))
+            
+        # NH
+        # print(self.UniqueDEMList)
         
         # replace extension with *.tif
         #for i, DEMPath in enumerate(self.UniqueDEMList):
@@ -2958,7 +2962,10 @@ class Coast:
             
             # check if we're missing no data
             if not DTM_Dataset.nodata:
-                raise SystemExit("DTM missing no data value")
+                # raise SystemExit("DTM missing no data value") # NH: remove this as .asc files don't have nodata set.
+                # NH add print and NDV assignment
+                print("DTM missing no data value!")
+                NDV = -9999
 
             # check for square pixels
             if not DTM_Dataset.res[0] == DTM_Dataset.res[1]:
