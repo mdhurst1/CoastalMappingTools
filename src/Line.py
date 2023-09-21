@@ -1207,7 +1207,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             if not LineObj:
                 continue
             elif (LineObj.geom_type == "MultiLineString"):
-                for ThisLine in LineObj:
+                for ThisLine in LineObj.geoms:
                     LineList.append(ThisLine)
             elif (LineObj.geom_type == "LineString"):
                 LineList.append(LineObj)
