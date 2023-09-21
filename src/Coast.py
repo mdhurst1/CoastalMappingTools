@@ -1966,7 +1966,7 @@ class Coast:
                     StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
                     Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections.geoms]
                     Index = Distances.index(min(Distances))
-                    Intersection = Intersections[Index]
+                    Intersection = Intersections.geoms[Index]
                     
                 else:
                     # check if this is a new endnode by intersecting with line from startnode to endnode
@@ -2095,8 +2095,6 @@ class Coast:
                 # store multiple intersections if so
                 if Intersections.geom_type == "MultiPoint":
                     CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
-                    #import pdb
-                    #pdb.set_trace()
                     Distances = [IntersectPoint.distance(CoastPoint) for IntersectPoint in Intersections.geoms]
                     Index = Distances.index(min(Distances))
                     Indices = np.argsort(np.array(Distances))
@@ -2547,8 +2545,8 @@ class Coast:
                     Y1 = Transect.StartNode.Y
                     X2 = Transect.EndNode.X
                     Y2 = Transect.EndNode.Y
-                    X = np.linspace(X1,X2,50.)
-                    Y = np.linspace(Y1,Y2,50.)
+                    X = np.linspace(X1,X2,50)
+                    Y = np.linspace(Y1,Y2,50)
                     NodeList = tuple(zip(X, Y))
 
                     # build a list of X,Y values to check along transect to find position of rock head if present
@@ -2573,7 +2571,7 @@ class Coast:
                     # repeat to find to the nearest meter
                     dX = (X[JInd-1] - X[JInd+1])
                     dY = (Y[JInd-1] - Y[JInd+1])
-                    NVals = np.int(np.sqrt(dX**2. + dY**2.))
+                    NVals = np.int32(np.sqrt(dX**2. + dY**2.))
                     
                     X = np.linspace(X[JInd-1], X[JInd+1], NVals)
                     Y = np.linspace(Y[JInd-1], Y[JInd+1], NVals)
@@ -2683,7 +2681,7 @@ class Coast:
                     Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections.geoms]
                     Index = Distances.index(min(Distances))
                     Distance = Distances[Index]
-                    Intersection = Intersections[Index]
+                    Intersection = Intersections.geoms[Index]
                     
                 else:
                     # check if this is a new endnode by intersecting with line from startnode to endnode
@@ -2916,7 +2914,7 @@ class Coast:
             
             LineGDF = gp.GeoDataFrame(geometry=Lines,crs=PolyGDF.crs)
             
-            JoinGDF = gp.sjoin(LineGDF, PolyGDF, op='intersects')
+            JoinGDF = gp.sjoin(LineGDF, PolyGDF, predicate='intersects')
             
             # set DEMs to list
             self.UniqueDEMList.extend(list(JoinGDF.location.unique()))
