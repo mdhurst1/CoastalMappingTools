@@ -2914,7 +2914,7 @@ class Coast:
             
             LineGDF = gp.GeoDataFrame(geometry=Lines,crs=PolyGDF.crs)
             
-            JoinGDF = gp.sjoin(LineGDF, PolyGDF, op='intersects')
+            JoinGDF = gp.sjoin(LineGDF, PolyGDF, predicate='intersects')
             
             # set DEMs to list
             self.UniqueDEMList.extend(list(JoinGDF.location.unique()))
