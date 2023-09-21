@@ -2921,11 +2921,19 @@ class Coast:
             #JoinGDF = gp.sjoin(LineGDF, PolyGDF, op='intersects')
             JoinGDF = gp.sjoin(LineGDF, PolyGDF, predicate='intersects') # NH fix compile error about derpecated op parameter
             
-            # set DEMs to list
+            # set DEMs to list 
+            # NH: For each CoastLine, a list of unique DEMs. 
+            # But, if a DEM spans two CoastLines, it is also added for the second CoastLine interation. 
             self.UniqueDEMList.extend(list(JoinGDF.location.unique()))
             
-        # NH
-        # print(self.UniqueDEMList)
+        # NH: This list is only unique for each CoastLine, not unique overall
+        if __debug__:
+            print("DEM list: unique per CoastLine", self.UniqueDEMList,"\n")
+        
+        # NH fix: drop duplicate DEMs from final list: convert to dictionariy and back again to list
+        self.UniqueDEMList = list(dict.fromkeys(self.UniqueDEMList))
+        if __debug__:
+            print("DEM list: unique overall", self.UniqueDEMList)
         
         # replace extension with *.tif
         #for i, DEMPath in enumerate(self.UniqueDEMList):
@@ -3017,6 +3025,14 @@ class Coast:
                     Transect.Elevation = ma.masked_where(Mask,Elevations)
 
                     Transect.HaveTopography = True
+                    
+                    # NH add: Note: issue where transect overlaps 2 DTMs, gets overwritten. Need to fix.
+                    if __debug__:
+                        print(Line.ID, Transect.ID)
+                        print("Elevation:\n", Transect.Elevation)
+                        print("Distance:\n", Transect.Distance)
+                        #for i, ThisNode in enumerate(Transect.DistanceNodes):
+                            #print("DistNodes:\n", Transect.DistanceNodes[i].X, Transect.DistanceNodes[i].Y, Transect.DistanceNodes[i].Z)
 
     def ExtractTransectTopographySwath(self, DTMFile, SwathDistance=-9999):
         """
