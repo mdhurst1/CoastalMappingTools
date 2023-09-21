@@ -628,7 +628,7 @@ class Coast:
                     Intersection = TransectLine.intersection(SplineLine)
 
                     # catch no intersections and flag for deletion?
-                    if Intersection.geom_type == "GeometryCollection":
+                    if Intersection.is_empty:
                         continue
 
                     # check there arent multiple intersections, if there are just get the nearest
@@ -1959,17 +1959,17 @@ class Coast:
                     pdb.set_trace()
                     
                 # catch no intersections and flag for deletion?
-                if Intersections.geom_type == "GeometryCollection":
+                if Intersections.is_empty:
                     Transect.DeleteFlag = True
                     continue
 
                 # check there arent multiple intersections
                 # get first intersection if so
-                if Intersections.geom_type is "MultiPoint":
+                if Intersections.geom_type == "MultiPoint":
                     StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
-                    Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections]
+                    Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections.geoms]
                     Index = Distances.index(min(Distances))
-                    Intersection = Intersections[Index]
+                    Intersection = Intersections.geoms[Index]
                     
                 else:
                     # check if this is a new endnode by intersecting with line from startnode to endnode
@@ -2045,7 +2045,7 @@ class Coast:
                 elif Line.geom_type == "LineString":
                     MultiLines.append(Line)
                 elif Line.geom_type == "MultiLineString":
-                    for SubLine in Line:
+                    for SubLine in Line.geoms:
                         if SubLine.geom_type == "LineString":
                             MultiLines.append(SubLine)
 
@@ -2072,8 +2072,8 @@ class Coast:
                 # intersect with historical shoreline
                 Intersections = TransectLine.intersection(MultiLines)
                 
-                # catch no intersections and flag for deletion?
-                if Intersections.geom_type == "GeometryCollection":
+                # catch no intersections and flag for deletion? updated all references to GeometryCollection with isempty, CM 09/23
+                if Intersections.is_empty:
                     Transect.DeleteFlag = True
                     continue
 
@@ -2096,13 +2096,13 @@ class Coast:
                 """
 
                 # store multiple intersections if so
-                if Intersections.geom_type is "MultiPoint":
+                if Intersections.geom_type == "MultiPoint":
                     CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
-                    Distances = [IntersectPoint.distance(CoastPoint) for IntersectPoint in Intersections]
+                    Distances = [IntersectPoint.distance(CoastPoint) for IntersectPoint in Intersections.geoms]
                     Index = Distances.index(min(Distances))
                     Indices = np.argsort(np.array(Distances))
                     Distances = np.array(Distances)[Indices]
-                    IntersectionsList = [Intersections[i] for i in Indices]
+                    IntersectionsList = [Intersections.geoms[i] for i in Indices]
                     
                 else:
                     # check if this is a new endnode by intersecting with line from startnode to endnode
@@ -2118,7 +2118,6 @@ class Coast:
                     # use minimum of line.distance to find line
                     # need date attribute if rates are to be calculated
                     Distances = Lines.distance(Intersection)
-                    # print(Distances.idxmin())
                     NearestLine = GDF.iloc[Distances.idxmin()]
                     
                     # check it hasnt already been read
@@ -2549,8 +2548,8 @@ class Coast:
                     Y1 = Transect.StartNode.Y
                     X2 = Transect.EndNode.X
                     Y2 = Transect.EndNode.Y
-                    X = np.linspace(X1,X2,50.)
-                    Y = np.linspace(Y1,Y2,50.)
+                    X = np.linspace(X1,X2,50)
+                    Y = np.linspace(Y1,Y2,50)
                     NodeList = tuple(zip(X, Y))
 
                     # build a list of X,Y values to check along transect to find position of rock head if present
@@ -2575,7 +2574,7 @@ class Coast:
                     # repeat to find to the nearest meter
                     dX = (X[JInd-1] - X[JInd+1])
                     dY = (Y[JInd-1] - Y[JInd+1])
-                    NVals = np.int(np.sqrt(dX**2. + dY**2.))
+                    NVals = np.int32(np.sqrt(dX**2. + dY**2.))
                     
                     X = np.linspace(X[JInd-1], X[JInd+1], NVals)
                     Y = np.linspace(Y[JInd-1], Y[JInd+1], NVals)
@@ -2675,17 +2674,17 @@ class Coast:
                     pdb.set_trace()
                     
                 # catch no intersections and flag for deletion?
-                if Intersections.geom_type == "GeometryCollection":
+                if Intersections.is_empty:
                     continue
 
                 # check there arent multiple intersections
                 StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
                 # store multiple intersections if so
-                if Intersections.geom_type is "MultiPoint":
-                    Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections]
+                if Intersections.geom_type == "MultiPoint":
+                    Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections.geoms]
                     Index = Distances.index(min(Distances))
                     Distance = Distances[Index]
-                    Intersection = Intersections[Index]
+                    Intersection = Intersections.geoms[Index]
                     
                 else:
                     # check if this is a new endnode by intersecting with line from startnode to endnode
@@ -2788,14 +2787,14 @@ class Coast:
                 Intersection = TransectLine.intersection(MultiLines)
 
                 # catch no intersections and flag for deletion?
-                if Intersection.geom_type == "GeometryCollection":
+                if Intersection.is_empty:
                     Transect.VegEdge = False
                     continue
 
                 # check there arent multiple intersections, if there are just get the nearest
-                if Intersection.geom_type is "MultiPoint":
+                if Intersection.geom_type == "MultiPoint":
                     StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
-                    Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection]
+                    Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection.geoms]
                     Index = Distances.index(min(Distances))
                     Intersection = Intersection[Index]
 
@@ -2918,7 +2917,7 @@ class Coast:
             
             LineGDF = gp.GeoDataFrame(geometry=Lines,crs=PolyGDF.crs)
             
-            JoinGDF = gp.sjoin(LineGDF, PolyGDF, op='intersects')
+            JoinGDF = gp.sjoin(LineGDF, PolyGDF, predicate='intersects')
             
             # set DEMs to list
             self.UniqueDEMList.extend(list(JoinGDF.location.unique()))
