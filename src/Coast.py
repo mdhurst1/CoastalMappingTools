@@ -2344,6 +2344,10 @@ class Coast:
         # get lines geometry
         Lines = GDF['geometry']
         
+        if __debug__:
+            print(Lines.head(5))
+            print("Lines len =", len(Lines))
+        
         # catch situation where only one line
         MultiLines = []
 
@@ -2362,7 +2366,7 @@ class Coast:
                         if SubLine.geom_type == "LineString":
                             MultiLines.append(SubLine)
         
-        MultiLines = MultiLineString(MultiLines)
+            MultiLines = MultiLineString(MultiLines) # NH bug fix: Compile error: "object of type LineString has no len()". Change this to be inside the else statement. 
                     
         for ThisLine in self.CoastLines:
             for Transect in ThisLine.Transects:
