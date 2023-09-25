@@ -2176,8 +2176,9 @@ class Transect:
 
         # plot historic shoreline positions
         for i in range(0,len(self.HistoricShorelinesYears)):
-            ax.plot(self.HistoricShorelinesPositions[i].X,self.HistoricShorelinesPositions[i].Y,'bo')
-            ax.text(self.HistoricShorelinesPositions[i].X,self.HistoricShorelinesPositions[i].Y,str(self.HistoricShorelinesYears[i]))
+            
+            ax.plot(self.HistoricShorelinesPositions[i][0].X,self.HistoricShorelinesPositions[i][0].Y,'bo')
+            ax.text(self.HistoricShorelinesPositions[i][0].X,self.HistoricShorelinesPositions[i][0].Y,str(self.HistoricShorelinesYears[i]))
         
         # plot future shoreline positions
         
@@ -2188,13 +2189,39 @@ class Transect:
 
         plt.axis("equal")
         plt.xlabel("X [m]")
-        plt.xlabel("Y [m]")
+        plt.ylabel("Y [m]")
 
         # save the figure        
-        fig.savefig(PlotFolder+"TempTransectPlot.png", dpi=300)
+        fig.savefig(PlotFolder / "TempTransectPlot.png", dpi=300)
 
         # close the figure
-        #plt.close(fig)
+        plt.close(fig)
+
+    def PlotShorelineDistances(self, PlotFolder):
+
+        """
+        Plots shoreline positions through time for historic and future shorelines
+
+        MDH, Sept 2023
+
+        """
+
+        # Create figure and axis
+        fig = plt.figure(1,figsize=(6.,3.))
+        ax = fig.add_subplot(111)
+        
+        ax.plot(self.HistoricShorelinesYears,self.HistoricShorelinesDistances,'ko')
+        
+        #labels
+        plt.xlabel("Year")
+        plt.ylabel("Distance Landward (m)")
+
+        #finalise
+        plt.tight_layout()
+        fig.savefig(PlotFolder / "ShorelineDist.png", dpi=300)
+
+        # close the figure
+        plt.close(fig)
 
     def get_XY(self):
         
