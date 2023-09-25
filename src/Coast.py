@@ -1759,6 +1759,16 @@ class Coast:
             for Transect in Line.Transects:
                 Transect.CalculateIntertidalSlope()            
             
+    def GetShorefaceSlopesMLWS2(self):
+        """
+        
+        Function to extract shoreface slope from MLWS and MHWS
+        
+        NH Spetembeer 2023
+        
+        """
+        
+    
     def GenerateTransectsBetweenContoursShp(self, ContourShp1, ContourShp2, Distance2Sea=8000., Distance2Land=8000., TransectSpacing=20., CheckTopology=True):
         """
         Wrapper to the function in the Line object
@@ -2478,7 +2488,102 @@ class Coast:
                     for val in MHWSDataset.sample([(Transect.CoastNode.X,Transect.CoastNode.Y)]):
                         Transect.MHWS = val[0]
 
+    def SampleCoastNodeElevation(self, DEMFileList=None):
+    
+        """
+        Samples the elevation of each transect's CoastNode.
+        I.e. Samples elevation where each transect intersects the coastline contour.
+        E.g. If CoastLine was created from MHWS contour, this will give 
+        MHWS elevation of each transect.
+        
+        Assigns elevation to CoastNode.Z
+        
+        Parameters
+        ----------
+        
+        DEMFileList: list
+            List of unique DEMs associated with this part of the coast.
+        
+        NH, September 2023
+        
+        Works
+        
+        """
+        
+        print("Coast.SampleCoastNodeElevation: Sampling DEM at each transect's CoastNode")
+        
+        # set up dem file list
+        if DEMFileList:
+            # check if list and make list if not
+            if not isinstance(DEMFileList, list):
+                DEMFileList = [DEMFileList,]
+            self.UniqueDEMList = DEMFileList
 
+        # loop through DEMs
+        for DEM in self.UniqueDEMList:
+            
+            print("\t" + DEM.split("/")[-1])
+
+            DTM_Dataset = rasterio.open(DEM)
+            DTMArray = DTM_Dataset.read(1)
+            NCols = DTM_Dataset.width
+            NRows = DTM_Dataset.height
+            NDV = DTM_Dataset.nodata
+            Resolutions = DTM_Dataset.res
+            
+            # check if we're missing no data
+            if not DTM_Dataset.nodata:
+                # raise SystemExit("DTM missing no data value") # NH: remove this as .asc files don't have nodata set.
+                # NH add print and NDV assignment
+                print("DTM missing no data value!")
+                NDV = -9999
+
+            # check for square pixels
+            if not DTM_Dataset.res[0] == DTM_Dataset.res[1]:
+                raise SystemExit("DTM has non-square cells")
+        
+            # get resolution
+            DTM_Resolution = DTM_Dataset.res[0]
+
+            # get extent of DTM and set up polygon of extent
+            XMin = DTM_Dataset.bounds[0]
+            XMax = DTM_Dataset.bounds[2]
+            YMin = DTM_Dataset.bounds[1]
+            YMax = DTM_Dataset.bounds[3]
+            DTM_Extent = Polygon([[XMin, YMin], [XMin, YMax], [XMax, YMax], [XMax, YMin]])
+
+            for Line in self.CoastLines:
+                for Transect in Line.Transects:
+
+                    # check for intersection
+                    if not Transect.LineString.intersects(DTM_Extent):
+                        continue
+                    
+                    # get list of points that intersect DTM only
+                    CoastNodePoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y) 
+                    CoastNodePoint = CoastNodePoint if CoastNodePoint.within(DTM_Extent) else Point((0,0))
+                    Coords = [(CoastNodePoint.x, CoastNodePoint.y)]
+                 
+                    for val in DTM_Dataset.sample(Coords):
+                        Elevation = val[0] 
+                        #print(Elevation)
+
+                    if not Transect.CoastNode.Z and Elevation > 0:
+                        Transect.CoastNode.Z = Elevation
+
+                    # Set up the mask from NDVs. NH: Is this needed here?
+                    #Mask = Elevations == NDV
+                    #Transect.Distance = ma.masked_where(Mask,Transect.Distance)
+                    #Transect.Elevation = ma.masked_where(Mask,Elevations)
+
+                    #Transect.HaveTopography = True
+                    
+                    # NH add debug print
+                    if __debug__:
+                        print(Line.ID, Transect.ID)
+                        print("CoastNode Elevation:\n", Transect.CoastNode.Z)
+    
+    
     def SampleFutureRSL(self, FutureRSLFolder, RCP=8, Percentile=95, Years=[2020,2030,2040,2050,2060,2070,2080,2090,2100], Location=None):
 
         """ 
@@ -3028,11 +3133,11 @@ class Coast:
 
                     Transect.HaveTopography = True
                     
-                    # NH add: Note: issue where transect overlaps 2 DTMs, gets overwritten. Need to fix.
-                    if __debug__:
-                        print(Line.ID, Transect.ID)
-                        print("Elevation:\n", Transect.Elevation)
-                        print("Distance:\n", Transect.Distance)
+                    # NH add: Note: issue where transect overlaps 2 DTMs, gets overwritten (StF L0 T30). Need to fix.
+                    #if __debug__:
+                        #print(Line.ID, Transect.ID)
+                        #print("Elevation:\n", Transect.Elevation)
+                        #print("Distance:\n", Transect.Distance)
                         #for i, ThisNode in enumerate(Transect.DistanceNodes):
                             #print("DistNodes:\n", Transect.DistanceNodes[i].X, Transect.DistanceNodes[i].Y, Transect.DistanceNodes[i].Z)
 
