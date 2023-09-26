@@ -2438,7 +2438,7 @@ class Coast:
                 TransectLS = LineString([(ThisTransect.StartNode.X,ThisTransect.StartNode.Y), (ThisTransect.EndNode.X, ThisTransect.EndNode.Y)])
                 if TransectLS.intersects(MultiLines):
                     Intersection = TransectLS.intersection(MultiLines)
-                    # if more than one intersection, need to take action: TODO 
+                    # if more than one intersection, need to take action: TODO: Take point nearest to CodeNode
                     if Intersection.geom_type == "MultiPoint":
                         print("!Must handle more than one MLWS intersection!")
                 else:
@@ -2551,13 +2551,11 @@ class Coast:
                     for val in MHWSDataset.sample([(Transect.CoastNode.X,Transect.CoastNode.Y)]):
                         Transect.MHWS = val[0]
 
-    def SampleMLWSNodeElevation(self, DEMFileList=None):
+    def SampleMLWSElevation(self, DEMFileList=None):
         """
-        Samples the elevation of each transect's MLWS Node.
-        I.e. elevation where each transect intersects the MLWS contour.
-        Note: ExtractMLWSIntersection has to be called prior to this.
-        
-        Assigns elevation to MLWSIntersectNode.Z
+        Samples the elevation of each transect's MLWS intersection and nearest nodes.
+        Note: ExtractMLWSIntersection() and ExtractMLWS() has to be called prior to this.  
+        Assigns elevations to MLWSIntersectNode.Z and MLWS.Z
         
         Parameters
         ----------
@@ -2571,7 +2569,7 @@ class Coast:
         
         """
         
-        print("Coast.SampleMLWSNodeElevation: Sampling DEM at each transect's MLWSIntersectNode")
+        print("Coast.SampleMLWSNodeElevation: Sampling DEM at each transect's MLWS Node")
         
         if DEMFileList:
             # check if list and make list if not
@@ -2619,10 +2617,10 @@ class Coast:
                     if not Transect.LineString.intersects(DTM_Extent):
                         continue
                     
-                    # use point to sample elevation if inside DTM, else point zero and elevation zero
-                    MLWSNodePoint = Point(Transect.MLWSIntersectNode.X, Transect.MLWSIntersectNode.Y) 
-                    MLWSNodePoint = MLWSNodePoint if MLWSNodePoint.within(DTM_Extent) else Point((0,0))
-                    Coords = [(MLWSNodePoint.x, MLWSNodePoint.y)]
+                    # MLWS Intersect: use point to sample elevation if inside DTM, else point zero and elevation zero
+                    MLWSIntersectPoint = Point(Transect.MLWSIntersectNode.X, Transect.MLWSIntersectNode.Y) 
+                    MLWSIntersectPoint = MLWSIntersectPoint if MLWSIntersectPoint.within(DTM_Extent) else Point((0,0))
+                    Coords = [(MLWSIntersectPoint.x, MLWSIntersectPoint.y)]
                  
                     for val in DTM_Dataset.sample(Coords):
                         Elevation = val[0] 
@@ -2631,10 +2629,24 @@ class Coast:
                     if not Transect.MLWSIntersectNode.Z: #and Elevation > 0: # NH: remove the elev>0 condition, as MLWS may be below 0m??
                         #print("*")
                         Transect.MLWSIntersectNode.Z = Elevation
+                        
+                    # Repeat for MLWS nearest: use point to sample elevation if inside DTM, else point zero and elevation zero TODO: make this tidier by combining with above via array
+                    MLWSNearestPoint = Point(Transect.MLWS.X, Transect.MLWS.Y) 
+                    MLWSNearestPoint = MLWSNearestPoint if MLWSNearestPoint.within(DTM_Extent) else Point((0,0))
+                    Coords = [(MLWSNearestPoint.x, MLWSNearestPoint.y)]
+                 
+                    for val in DTM_Dataset.sample(Coords):
+                        Elevation = val[0] 
+                        #print(Elevation)
+
+                    if not Transect.MLWS.Z: #and Elevation > 0: # NH: remove the elev>0 condition, as MLWS may be below 0m??
+                        #print("*")
+                        Transect.MLWS.Z = Elevation
                     
                     # NH add debug print
                     if __debug__:
-                        print(Transect.LineID, Transect.ID, "MLWSIntersectNode Elevation:", Transect.MLWSIntersectNode.Z)
+                        print(Transect.LineID, Transect.ID) 
+                        print("MLWSIntersectNode Elevation:", Transect.MLWSIntersectNode.Z, "MLWS nearest point elevation:", Transect.MLWS.Z)
     
     
     def SampleCoastNodeElevation(self, DEMFileList=None):
