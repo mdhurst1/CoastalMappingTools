@@ -119,6 +119,7 @@ class Transect:
         self.ElevationMin = None
         self.ElevationMax = None
         self.ElevStd = None
+        self.MLWSIntersectNode = None
 
         # cliff metrics
         self.Cliff = False

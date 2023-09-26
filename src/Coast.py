@@ -1464,11 +1464,14 @@ class Coast:
         elif MergedLine.geom_type == "MultiLineString":
             
             # loop through lines in MultiLineString
-            for i, TempLine in enumerate(MergedLine):
+            # NH change to fix compile error: MultiLineString not iterable. Original: for i, TempLine in enumerate(MergedLine):
+            i = 0
+            for TempLine in MergedLine.geoms:
                 
                 # get x and y and add to CoastLine object as Line
                 X, Y = TempLine.xy
                 self.CoastLines.append(Line(str(i), X, Y))
+                i = i+1
 
         else:
             print("Geometry not recognised!")
@@ -1756,6 +1759,16 @@ class Coast:
             for Transect in Line.Transects:
                 Transect.CalculateIntertidalSlope()            
             
+    def GetShorefaceSlopesMLWS2(self):
+        """
+        
+        Function to extract shoreface slope from MLWS and MHWS
+        
+        NH Spetembeer 2023
+        
+        """
+        
+    
     def GenerateTransectsBetweenContoursShp(self, ContourShp1, ContourShp2, Distance2Sea=8000., Distance2Land=8000., TransectSpacing=20., CheckTopology=True):
         """
         Wrapper to the function in the Line object
@@ -2359,7 +2372,7 @@ class Coast:
                         if SubLine.geom_type == "LineString":
                             MultiLines.append(SubLine)
         
-        MultiLines = MultiLineString(MultiLines)
+            MultiLines = MultiLineString(MultiLines) # NH bug fix: Compile error: "object of type LineString has no len()". Change this to be inside the else statement. 
                     
         for ThisLine in self.CoastLines:
             for Transect in ThisLine.Transects:
@@ -2369,6 +2382,69 @@ class Coast:
                 NearestPoint = nearest_points(MultiLines, BasePoint)[0]
                 Transect.MLWS = Node(NearestPoint.x,NearestPoint.y)
 
+    def ExtractMLWSIntersection(self, MLWSShp):
+        
+        """
+        Function to find the intersection between each transect and the MLWS contour.
+
+        NH September 2023
+
+        Parameters
+        ----------
+        MLWSShp : string
+            Filename for polyline shapfile containing MLWS
+            
+        Writes to 
+        ---------
+        - Transect.MLWSIntersectNode (Node)
+        
+        """
+        
+        print("Coast.ExtractMLWSIntersection: Finding each transect's MLWS Intersection")
+        
+        # read shapefile using geopandas
+        GDF = gp.read_file(MLWSShp)
+        
+        # get lines geometry
+        MLWSLines = GDF['geometry']
+        
+        # catch situation where only one line
+        MultiLines = []
+
+        if len(MLWSLines) == 1:
+            MultiLines = Lines[0]
+        
+        # deal with invalid geometries on the fly? This is messy!
+        else:
+            for ThisLine in MLWSLines:
+                if not ThisLine:
+                    continue
+                elif ThisLine.geom_type == "LineString":
+                    MultiLines.append(ThisLine)
+                elif ThisLine.geom_type == "MultiLineString":
+                    for SubLine in ThisLine:
+                        if SubLine.geom_type == "LineString":
+                            MultiLines.append(SubLine)
+        
+            MultiLines = MultiLineString(MultiLines) 
+            
+        # Find coordinates of intersection between transect and MLWS. Save as Node.
+        for ThisLine in self.CoastLines:
+            for ThisTransect in ThisLine.Transects:
+                TransectLS = LineString([(ThisTransect.StartNode.X,ThisTransect.StartNode.Y), (ThisTransect.EndNode.X, ThisTransect.EndNode.Y)])
+                if TransectLS.intersects(MultiLines):
+                    Intersection = TransectLS.intersection(MultiLines)
+                    # if more than one intersection, need to take action: TODO 
+                    if Intersection.geom_type == "MultiPoint":
+                        print("!Must handle more than one MLWS intersection!")
+                else:
+                    Intersection = Point(0,0)
+                
+                ThisTransect.MLWSIntersectNode = Node(Intersection.x, Intersection.y)
+                print(ThisTransect.LineID, ThisTransect.ID, Intersection, ThisTransect.MLWSIntersectNode)
+                
+        
+       
     def ExtractContours(self,ContourShp):
 
         """
@@ -2471,7 +2547,102 @@ class Coast:
                     for val in MHWSDataset.sample([(Transect.CoastNode.X,Transect.CoastNode.Y)]):
                         Transect.MHWS = val[0]
 
+    def SampleCoastNodeElevation(self, DEMFileList=None):
+    
+        """
+        Samples the elevation of each transect's CoastNode.
+        I.e. Samples elevation where each transect intersects the coastline contour.
+        E.g. If CoastLine was created from MHWS contour, this will give 
+        MHWS elevation of each transect.
+        
+        Assigns elevation to CoastNode.Z
+        
+        Parameters
+        ----------
+        
+        DEMFileList: list
+            List of unique DEMs associated with this part of the coast.
+        
+        NH, September 2023
+        
+        Works
+        
+        """
+        
+        print("Coast.SampleCoastNodeElevation: Sampling DEM at each transect's CoastNode")
+        
+        # set up dem file list
+        if DEMFileList:
+            # check if list and make list if not
+            if not isinstance(DEMFileList, list):
+                DEMFileList = [DEMFileList,]
+            self.UniqueDEMList = DEMFileList
 
+        # loop through DEMs
+        for DEM in self.UniqueDEMList:
+            
+            print("\t" + DEM.split("/")[-1])
+
+            DTM_Dataset = rasterio.open(DEM)
+            DTMArray = DTM_Dataset.read(1)
+            NCols = DTM_Dataset.width
+            NRows = DTM_Dataset.height
+            NDV = DTM_Dataset.nodata
+            Resolutions = DTM_Dataset.res
+            
+            # check if we're missing no data
+            if not DTM_Dataset.nodata:
+                # raise SystemExit("DTM missing no data value") # NH: remove this as .asc files don't have nodata set.
+                # NH add print and NDV assignment
+                print("DTM missing no data value!")
+                NDV = -9999
+
+            # check for square pixels
+            if not DTM_Dataset.res[0] == DTM_Dataset.res[1]:
+                raise SystemExit("DTM has non-square cells")
+        
+            # get resolution
+            DTM_Resolution = DTM_Dataset.res[0]
+
+            # get extent of DTM and set up polygon of extent
+            XMin = DTM_Dataset.bounds[0]
+            XMax = DTM_Dataset.bounds[2]
+            YMin = DTM_Dataset.bounds[1]
+            YMax = DTM_Dataset.bounds[3]
+            DTM_Extent = Polygon([[XMin, YMin], [XMin, YMax], [XMax, YMax], [XMax, YMin]])
+
+            for Line in self.CoastLines:
+                for Transect in Line.Transects:
+
+                    # check for intersection
+                    if not Transect.LineString.intersects(DTM_Extent):
+                        continue
+                    
+                    # get list of points that intersect DTM only
+                    CoastNodePoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y) 
+                    CoastNodePoint = CoastNodePoint if CoastNodePoint.within(DTM_Extent) else Point((0,0))
+                    Coords = [(CoastNodePoint.x, CoastNodePoint.y)]
+                 
+                    for val in DTM_Dataset.sample(Coords):
+                        Elevation = val[0] 
+                        #print(Elevation)
+
+                    if not Transect.CoastNode.Z and Elevation > 0:
+                        Transect.CoastNode.Z = Elevation
+
+                    # Set up the mask from NDVs. NH: Is this needed here?
+                    #Mask = Elevations == NDV
+                    #Transect.Distance = ma.masked_where(Mask,Transect.Distance)
+                    #Transect.Elevation = ma.masked_where(Mask,Elevations)
+
+                    #Transect.HaveTopography = True
+                    
+                    # NH add debug print
+                    if __debug__:
+                        print(Line.ID, Transect.ID)
+                        print("CoastNode Elevation:\n", Transect.CoastNode.Z)
+    
+    
     def SampleFutureRSL(self, FutureRSLFolder, RCP=8, Percentile=95, Years=[2020,2030,2040,2050,2060,2070,2080,2090,2100], Location=None):
 
         """ 
@@ -2916,8 +3087,19 @@ class Coast:
             
             JoinGDF = gp.sjoin(LineGDF, PolyGDF, predicate='intersects')
             
-            # set DEMs to list
+            # set DEMs to list 
+            # NH: For each CoastLine, a list of unique DEMs. 
+            # But, if a DEM spans two CoastLines, it is also added for the second CoastLine interation. 
             self.UniqueDEMList.extend(list(JoinGDF.location.unique()))
+            
+        # NH: This list is only unique for each CoastLine, not unique overall
+        if __debug__:
+            print("DEM list: unique per CoastLine", self.UniqueDEMList,"\n")
+        
+        # NH fix: drop duplicate DEMs from final list: convert to dictionariy and back again to list
+        self.UniqueDEMList = list(dict.fromkeys(self.UniqueDEMList))
+        if __debug__:
+            print("DEM list: unique overall", self.UniqueDEMList)
         
         # replace extension with *.tif
         #for i, DEMPath in enumerate(self.UniqueDEMList):
@@ -2954,7 +3136,10 @@ class Coast:
             
             # check if we're missing no data
             if not DTM_Dataset.nodata:
-                raise SystemExit("DTM missing no data value")
+                # raise SystemExit("DTM missing no data value") # NH: remove this as .asc files don't have nodata set.
+                # NH add print and NDV assignment
+                print("DTM missing no data value!")
+                NDV = -9999
 
             # check for square pixels
             if not DTM_Dataset.res[0] == DTM_Dataset.res[1]:
@@ -3006,6 +3191,14 @@ class Coast:
                     Transect.Elevation = ma.masked_where(Mask,Elevations)
 
                     Transect.HaveTopography = True
+                    
+                    # NH add: Note: issue where transect overlaps 2 DTMs, gets overwritten (StF L0 T30). Need to fix.
+                    #if __debug__:
+                        #print(Line.ID, Transect.ID)
+                        #print("Elevation:\n", Transect.Elevation)
+                        #print("Distance:\n", Transect.Distance)
+                        #for i, ThisNode in enumerate(Transect.DistanceNodes):
+                            #print("DistNodes:\n", Transect.DistanceNodes[i].X, Transect.DistanceNodes[i].Y, Transect.DistanceNodes[i].Z)
 
     def ExtractTransectTopographySwath(self, DTMFile, SwathDistance=-9999):
         """
