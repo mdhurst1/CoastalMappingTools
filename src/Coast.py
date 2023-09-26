@@ -1762,11 +1762,15 @@ class Coast:
     def GetShorefaceSlopesMLWS2(self):
         """
         
-        Function to extract shoreface slope from MLWS and MHWS
+        Function to extract shoreface slope between CoastNode and MLWS node
+        where MLWS intersects transect. 
+        If no MLWS intersect, use nearest MLWS node (from ExtractMLWS()). 
         
         NH Spetembeer 2023
         
         """
+        
+        
         
     
     def GenerateTransectsBetweenContoursShp(self, ContourShp1, ContourShp2, Distance2Sea=8000., Distance2Land=8000., TransectSpacing=20., CheckTopology=True):
@@ -2441,7 +2445,7 @@ class Coast:
                     Intersection = Point(0,0)
                 
                 ThisTransect.MLWSIntersectNode = Node(Intersection.x, Intersection.y)
-                print(ThisTransect.LineID, ThisTransect.ID, Intersection, ThisTransect.MLWSIntersectNode)
+                #print(ThisTransect.LineID, ThisTransect.ID, Intersection, ThisTransect.MLWSIntersectNode)
                 
         
        
@@ -2547,6 +2551,92 @@ class Coast:
                     for val in MHWSDataset.sample([(Transect.CoastNode.X,Transect.CoastNode.Y)]):
                         Transect.MHWS = val[0]
 
+    def SampleMLWSNodeElevation(self, DEMFileList=None):
+        """
+        Samples the elevation of each transect's MLWS Node.
+        I.e. elevation where each transect intersects the MLWS contour.
+        Note: ExtractMLWSIntersection has to be called prior to this.
+        
+        Assigns elevation to MLWSIntersectNode.Z
+        
+        Parameters
+        ----------
+        
+        DEMFileList: list
+            List of unique DEMs associated with this part of the coast.
+        
+        NH, September 2023
+        
+        Works
+        
+        """
+        
+        print("Coast.SampleMLWSNodeElevation: Sampling DEM at each transect's MLWSIntersectNode")
+        
+        if DEMFileList:
+            # check if list and make list if not
+            if not isinstance(DEMFileList, list):
+                DEMFileList = [DEMFileList,]
+            self.UniqueDEMList = DEMFileList
+
+        # loop through DEMs
+        for DEM in self.UniqueDEMList:
+            
+            print("\t" + DEM.split("/")[-1])
+
+            DTM_Dataset = rasterio.open(DEM)
+            DTMArray = DTM_Dataset.read(1)
+            NCols = DTM_Dataset.width
+            NRows = DTM_Dataset.height
+            NDV = DTM_Dataset.nodata
+            Resolutions = DTM_Dataset.res
+            
+            # check if we're missing no data
+            if not DTM_Dataset.nodata:
+                # raise SystemExit("DTM missing no data value") # NH: remove this as .asc files don't have nodata set.
+                # NH add print and NDV assignment
+                print("DTM missing no data value!")
+                NDV = -9999
+
+            # check for square pixels
+            if not DTM_Dataset.res[0] == DTM_Dataset.res[1]:
+                raise SystemExit("DTM has non-square cells")
+        
+            # get resolution
+            DTM_Resolution = DTM_Dataset.res[0]
+
+            # get extent of DTM and set up polygon of extent
+            XMin = DTM_Dataset.bounds[0]
+            XMax = DTM_Dataset.bounds[2]
+            YMin = DTM_Dataset.bounds[1]
+            YMax = DTM_Dataset.bounds[3]
+            DTM_Extent = Polygon([[XMin, YMin], [XMin, YMax], [XMax, YMax], [XMax, YMin]])
+            
+            for Line in self.CoastLines:
+                for Transect in Line.Transects:
+
+                    # check for intersection
+                    if not Transect.LineString.intersects(DTM_Extent):
+                        continue
+                    
+                    # use point to sample elevation if inside DTM, else point zero and elevation zero
+                    MLWSNodePoint = Point(Transect.MLWSIntersectNode.X, Transect.MLWSIntersectNode.Y) 
+                    MLWSNodePoint = MLWSNodePoint if MLWSNodePoint.within(DTM_Extent) else Point((0,0))
+                    Coords = [(MLWSNodePoint.x, MLWSNodePoint.y)]
+                 
+                    for val in DTM_Dataset.sample(Coords):
+                        Elevation = val[0] 
+                        #print(Elevation)
+
+                    if not Transect.MLWSIntersectNode.Z: #and Elevation > 0: # NH: remove the elev>0 condition, as MLWS may be below 0m??
+                        #print("*")
+                        Transect.MLWSIntersectNode.Z = Elevation
+                    
+                    # NH add debug print
+                    if __debug__:
+                        print(Transect.LineID, Transect.ID, "MLWSIntersectNode Elevation:", Transect.MLWSIntersectNode.Z)
+    
+    
     def SampleCoastNodeElevation(self, DEMFileList=None):
     
         """
@@ -2618,7 +2708,7 @@ class Coast:
                     if not Transect.LineString.intersects(DTM_Extent):
                         continue
                     
-                    # get list of points that intersect DTM only
+                    # use point to sample elevation if inside DTM, else point zero and elevation zero
                     CoastNodePoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y) 
                     CoastNodePoint = CoastNodePoint if CoastNodePoint.within(DTM_Extent) else Point((0,0))
                     Coords = [(CoastNodePoint.x, CoastNodePoint.y)]
