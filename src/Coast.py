@@ -2390,42 +2390,47 @@ class Coast:
                 BasePoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
                 NearestPoint = nearest_points(MultiLines, BasePoint)[0]
                 Transect.MLWS = Node(NearestPoint.x,NearestPoint.y)
-
-    def ExtractMLWSIntersection(self, MLWSShp):
+            
+    
+    def ExtractIntersection(self, Shp, NodeToSave):
         
         """
-        Function to find the intersection between each transect and the MLWS contour.
+        Function to find the intersection between each transect and the given contour.
 
         NH September 2023
 
         Parameters
         ----------
-        MLWSShp : string
-            Filename for polyline shapfile containing MLWS
+        Shp : string
+            Filename for polyline shapefile containing contour
+        NodeToSave : string
+            Name of transect node in which to save intersect point
             
         Writes to 
         ---------
-        - Transect.MLWSIntersect (Node)
+        - Transect."NodeToSave" (Node)
+        
+        Works
         
         """
         
-        print("Coast.ExtractMLWSIntersection: Finding each transect's MLWS Intersection")
+        print("Coast.ExtractIntersection: Finding intersection between each transect and", Shp) 
         
         # read shapefile using geopandas
-        GDF = gp.read_file(MLWSShp)
+        GDF = gp.read_file(Shp)
         
         # get lines geometry
-        MLWSLines = GDF['geometry']
+        Lines = GDF['geometry']
         
         # catch situation where only one line
         MultiLines = []
 
-        if len(MLWSLines) == 1:
+        if len(Lines) == 1:
             MultiLines = Lines[0]
         
         # deal with invalid geometries on the fly? This is messy!
         else:
-            for ThisLine in MLWSLines:
+            for ThisLine in Lines:
                 if not ThisLine:
                     continue
                 elif ThisLine.geom_type == "LineString":
@@ -2436,23 +2441,40 @@ class Coast:
                             MultiLines.append(SubLine)
         
             MultiLines = MultiLineString(MultiLines) 
-            
-        # Find coordinates of intersection between transect and MLWS. Save as Node.
+
+        # Find coordinates of intersection between transect and contour. If no intersection (0,0). Save as Transect."NodeToSave"
         for ThisLine in self.CoastLines:
-            for ThisTransect in ThisLine.Transects:
-                TransectLS = LineString([(ThisTransect.StartNode.X,ThisTransect.StartNode.Y), (ThisTransect.EndNode.X, ThisTransect.EndNode.Y)])
+            for Transect in ThisLine.Transects:
+        
+                # construct linestring and find intersection
+                TransectLS = LineString([(Transect.StartNode.X,Transect.StartNode.Y), (Transect.EndNode.X,Transect.EndNode.Y)])
                 if TransectLS.intersects(MultiLines):
-                    Intersection = TransectLS.intersection(MultiLines)
-                    # if more than one intersection, need to take action: TODO: Take point nearest to CodeNode
-                    if Intersection.geom_type == "MultiPoint":
-                        print("!Must handle more than one MLWS intersection!")
+                    Intersections = TransectLS.intersection(MultiLines)
+                    
+                    # if more than one intersection, take point nearest to StartNode (sea)
+                    if Intersections.geom_type == "MultiPoint":
+                        print(Transect.LineID, Transect.ID, "\t More than one intersection!")
+                        StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
+                        Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections.geoms]
+                        Index = Distances.index(min(Distances))
+                        Intersection = Intersections.geoms[Index]
+                        
+                    else:
+                        Intersection = Intersections
+                        
                 else:
                     Intersection = Point(0,0)
                 
-                ThisTransect.MLWSIntersect = Node(Intersection.x, Intersection.y)
-                #print(ThisTransect.LineID, ThisTransect.ID, Intersection, ThisTransect.MLWSIntersect)
+                # check if Transect contains the passed nodename as attribute 
+                if not hasattr(Transect, NodeToSave):
+                    if __debug__:
+                        print(Transect.LineID, Transect.ID, "\t Transect has no attribute", NodeToSave)
+                    
+                setattr(Transect, NodeToSave, Node(Intersection.x, Intersection.y))
                 
-        
+                if __debug__:
+                    ThisNode = getattr(Transect, NodeToSave) 
+                    print(Transect.LineID, Transect.ID, "\t", NodeToSave, Intersection, ThisNode)            
        
     def ExtractContours(self,ContourShp):
 
