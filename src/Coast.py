@@ -2732,7 +2732,7 @@ class Coast:
                  
                     for val in DTM_Dataset.sample(Coords):
                         Elevation = val[0] 
-                        #print(Elevation)
+                        print(Transect.LineID, Transect.ID, Elevation)
 
                     if not Transect.CoastNode.Z and Elevation > 0:
                         Transect.CoastNode.Z = Elevation
@@ -2745,10 +2745,101 @@ class Coast:
                     #Transect.HaveTopography = True
                     
                     # NH add debug print
-                    if __debug__:
-                        print(Line.ID, Transect.ID)
-                        print("CoastNode Elevation:\n", Transect.CoastNode.Z)
+                    #if __debug__:
+                        #print(Line.ID, Transect.ID)
+                        #print("CoastNode Elevation:\n", Transect.CoastNode.Z)
     
+    def SampleNodeElevation(self, NodeToSample, DEMFileList=None):
+    
+        """
+        Samples the elevation of given node for each transect.
+        Assigns elevation to "ThisNode".Z
+        
+        Parameters
+        ----------
+        
+        DEMFileList: list
+            List of unique DEMs associated with this part of the coast.
+        NodeToSample: String
+            Name of node containing (x,y) coordinates to be sampled.
+        
+        NH, September 2023
+        
+        Works
+        
+        """
+        
+        print("Coast.SampleNodeElevation: Sampling DEM for given transect node:", NodeToSample)
+        
+        # set up dem file list
+        if DEMFileList:
+            # check if list and make list if not
+            if not isinstance(DEMFileList, list):
+                DEMFileList = [DEMFileList,]
+            self.UniqueDEMList = DEMFileList
+
+        # loop through DEMs
+        for DEM in self.UniqueDEMList:
+            
+            print("\t" + DEM.split("/")[-1])
+
+            DTM_Dataset = rasterio.open(DEM)
+            DTMArray = DTM_Dataset.read(1)
+            NCols = DTM_Dataset.width
+            NRows = DTM_Dataset.height
+            NDV = DTM_Dataset.nodata
+            Resolutions = DTM_Dataset.res
+            
+            # check if we're missing no data
+            if not DTM_Dataset.nodata:
+                # raise SystemExit("DTM missing no data value") # NH: remove this as .asc files don't have nodata set.
+                # NH add print and NDV assignment
+                print("DTM missing no data value!")
+                NDV = -9999
+
+            # check for square pixels
+            if not DTM_Dataset.res[0] == DTM_Dataset.res[1]:
+                raise SystemExit("DTM has non-square cells")
+        
+            # get resolution
+            DTM_Resolution = DTM_Dataset.res[0]
+
+            # get extent of DTM and set up polygon of extent
+            XMin = DTM_Dataset.bounds[0]
+            XMax = DTM_Dataset.bounds[2]
+            YMin = DTM_Dataset.bounds[1]
+            YMax = DTM_Dataset.bounds[3]
+            DTM_Extent = Polygon([[XMin, YMin], [XMin, YMax], [XMax, YMax], [XMax, YMin]])
+            
+            for Line in self.CoastLines:
+                for Transect in Line.Transects:
+
+                    # check for intersection
+                    if not Transect.LineString.intersects(DTM_Extent):
+                        continue
+                        
+                    # NH: check if Transect contains the passed nodename as attribute 
+                    if not hasattr(Transect, NodeToSample):
+                        print("Error: Transect has no attribute", NodeToSample)
+                        return
+                    #else:
+                        #print("ATTRIB FOUND:", NodeToSample)
+                        
+                    # get attribute   
+                    ThisNode = getattr(Transect, NodeToSample)                    
+                    
+                    # use point to sample elevation if inside DTM, else point zero and elevation zero
+                    NodePoint = Point(ThisNode.X, ThisNode.Y) 
+                    NodePoint = NodePoint if NodePoint.within(DTM_Extent) else Point((0,0))
+                    Coords = [(NodePoint.x, NodePoint.y)]
+                 
+                    for val in DTM_Dataset.sample(Coords):
+                        Elevation = val[0] 
+                        print(Transect.LineID, Transect.ID, Elevation)
+
+                    if not ThisNode.Z: #and Elevation > 0: NH remove as may be interested in negative values
+                        ThisNode.Z = Elevation
+                    
     
     def SampleFutureRSL(self, FutureRSLFolder, RCP=8, Percentile=95, Years=[2020,2030,2040,2050,2060,2070,2080,2090,2100], Location=None):
 
