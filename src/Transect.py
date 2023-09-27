@@ -563,7 +563,7 @@ class Transect:
         """
         
         # Check if the nodes exist
-        if not self.MLWSIntersectNode.X:
+        if not self.MLWSIntersect.X:
             print(self.LineID, self.ID, "CalculateIntertidalSlope2: No MLWS intersect data")
             if not self.MLWS.X:
                 print(self.LineID, self.ID, "CalculateIntertidalSlope2: No MLWS nearest data either!")
@@ -571,9 +571,10 @@ class Transect:
             else:
                 # Use MLWS data
                 MLWSNode = self.MLWS
+                print("     Using nearest MLWS node")
         else:
-            # use MLWSIntersectNode data
-            MLWSNode = self.MLWSIntersectNode
+            # use MLWSIntersect data
+            MLWSNode = self.MLWSIntersect
             
         if not self.CoastNode:
             print(self.LineID, self.ID, "CalculateIntertidalSlope2: No CoastNode!")
