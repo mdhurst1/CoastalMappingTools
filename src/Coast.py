@@ -2405,7 +2405,7 @@ class Coast:
             
         Writes to 
         ---------
-        - Transect.MLWSIntersectNode (Node)
+        - Transect.MLWSIntersect (Node)
         
         """
         
@@ -2449,8 +2449,8 @@ class Coast:
                 else:
                     Intersection = Point(0,0)
                 
-                ThisTransect.MLWSIntersectNode = Node(Intersection.x, Intersection.y)
-                #print(ThisTransect.LineID, ThisTransect.ID, Intersection, ThisTransect.MLWSIntersectNode)
+                ThisTransect.MLWSIntersect = Node(Intersection.x, Intersection.y)
+                #print(ThisTransect.LineID, ThisTransect.ID, Intersection, ThisTransect.MLWSIntersect)
                 
         
        
@@ -2560,7 +2560,7 @@ class Coast:
         """
         Samples the elevation of each transect's MLWS intersection and nearest nodes.
         Note: ExtractMLWSIntersection() and ExtractMLWS() has to be called prior to this.  
-        Assigns elevations to MLWSIntersectNode.Z and MLWS.Z
+        Assigns elevations to MLWSIntersect.Z and MLWS.Z
         
         Parameters
         ----------
@@ -2574,7 +2574,7 @@ class Coast:
         
         """
         
-        print("Coast.SampleMLWSNodeElevation: Sampling DEM at each transect's MLWS Node")
+        print("Coast.SampleMLWSElevation: Sampling DEM at each transect's MLWS Node")
         
         if DEMFileList:
             # check if list and make list if not
@@ -2623,17 +2623,17 @@ class Coast:
                         continue
                     
                     # MLWS Intersect: use point to sample elevation if inside DTM, else point zero and elevation zero
-                    MLWSIntersectPoint = Point(Transect.MLWSIntersectNode.X, Transect.MLWSIntersectNode.Y) 
+                    MLWSIntersectPoint = Point(Transect.MLWSIntersect.X, Transect.MLWSIntersect.Y) 
                     MLWSIntersectPoint = MLWSIntersectPoint if MLWSIntersectPoint.within(DTM_Extent) else Point((0,0))
                     Coords = [(MLWSIntersectPoint.x, MLWSIntersectPoint.y)]
                  
                     for val in DTM_Dataset.sample(Coords):
                         Elevation = val[0] 
-                        #print(Elevation)
+                        print(Elevation)
 
-                    if not Transect.MLWSIntersectNode.Z: #and Elevation > 0: # NH: remove the elev>0 condition, as MLWS may be below 0m??
+                    if not Transect.MLWSIntersect.Z: #and Elevation > 0: # NH: remove the elev>0 condition, as MLWS may be below 0m??
                         #print("*")
-                        Transect.MLWSIntersectNode.Z = Elevation
+                        Transect.MLWSIntersect.Z = Elevation
                         
                     # Repeat for MLWS nearest: use point to sample elevation if inside DTM, else point zero and elevation zero TODO: make this tidier by combining with above via array
                     MLWSNearestPoint = Point(Transect.MLWS.X, Transect.MLWS.Y) 
@@ -2642,7 +2642,7 @@ class Coast:
                  
                     for val in DTM_Dataset.sample(Coords):
                         Elevation = val[0] 
-                        #print(Elevation)
+                        print(Elevation)
 
                     if not Transect.MLWS.Z: #and Elevation > 0: # NH: remove the elev>0 condition, as MLWS may be below 0m??
                         #print("*")
@@ -2651,7 +2651,7 @@ class Coast:
                     # NH add debug print
                     if __debug__:
                         print(Transect.LineID, Transect.ID) 
-                        print("MLWSIntersectNode Elevation:", Transect.MLWSIntersectNode.Z, "MLWS nearest point elevation:", Transect.MLWS.Z)
+                        print("MLWSIntersect Elevation:", Transect.MLWSIntersect.Z, "MLWS nearest point elevation:", Transect.MLWS.Z)
     
     
     def SampleCoastNodeElevation(self, DEMFileList=None):
@@ -2753,7 +2753,7 @@ class Coast:
     
         """
         Samples the elevation of given node for each transect.
-        Assigns elevation to "ThisNode".Z
+        Assigns elevation to Transect."NodeToSample".Z
         
         Parameters
         ----------
@@ -2769,7 +2769,7 @@ class Coast:
         
         """
         
-        print("Coast.SampleNodeElevation: Sampling DEM for given transect node:", NodeToSample)
+        print("Coast.SampleNodeElevation: Sampling DEM for transect node", NodeToSample)
         
         # set up dem file list
         if DEMFileList:
@@ -2822,8 +2822,6 @@ class Coast:
                     if not hasattr(Transect, NodeToSample):
                         print("Error: Transect has no attribute", NodeToSample)
                         return
-                    #else:
-                        #print("ATTRIB FOUND:", NodeToSample)
                         
                     # get attribute   
                     ThisNode = getattr(Transect, NodeToSample)                    
@@ -2835,9 +2833,10 @@ class Coast:
                  
                     for val in DTM_Dataset.sample(Coords):
                         Elevation = val[0] 
-                        print(Transect.LineID, Transect.ID, Elevation)
+                        print(Transect.LineID, Transect.ID, "\t", Elevation)
 
-                    if not ThisNode.Z: #and Elevation > 0: NH remove as may be interested in negative values
+                    # ensure value not overwritten if node is outside current DTM (transect intersects but node outside)
+                    if not ThisNode.Z: 
                         ThisNode.Z = Elevation
                     
     
