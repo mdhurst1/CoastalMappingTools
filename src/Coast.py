@@ -1762,15 +1762,20 @@ class Coast:
     def GetShorefaceSlopesMLWS2(self):
         """
         
-        Function to extract shoreface slope between CoastNode and MLWS node
-        where MLWS intersects transect. 
+        Function to extract shoreface slope between CoastNode and MLWS node 
         If no MLWS intersect, use nearest MLWS node (from ExtractMLWS()). 
+        
+        Wrapper to function in the Transect object
         
         NH Spetembeer 2023
         
         """
         
+        print("Coast.GetShorefaceSlopeMLWS2: Slope = dz/dx between CoastNode and MLWS")
         
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                Transect.CalculateIntertidalSlope2()  
         
     
     def GenerateTransectsBetweenContoursShp(self, ContourShp1, ContourShp2, Distance2Sea=8000., Distance2Land=8000., TransectSpacing=20., CheckTopology=True):
@@ -3294,11 +3299,12 @@ class Coast:
 
                     Transect.HaveTopography = True
                     
-                    # NH add: Note: issue where transect overlaps 2 DTMs, gets overwritten (StF L0 T30). Need to fix.
-                    #if __debug__:
-                        #print(Line.ID, Transect.ID)
-                        #print("Elevation:\n", Transect.Elevation)
-                        #print("Distance:\n", Transect.Distance)
+                    # NH add: Note: issue where transect overlaps 2 DTMs, Transect.Elevation gets overwritten in 2nd DTM iteration (StF L0 T30)
+                    # But, correct elevations are in Transect.DisanceNodes.Z
+                    if __debug__:
+                        print(Line.ID, Transect.ID)
+                        print("Elevation:\n", Transect.Elevation)
+                        print("Distance:\n", Transect.Distance)
                         #for i, ThisNode in enumerate(Transect.DistanceNodes):
                             #print("DistNodes:\n", Transect.DistanceNodes[i].X, Transect.DistanceNodes[i].Y, Transect.DistanceNodes[i].Z)
 

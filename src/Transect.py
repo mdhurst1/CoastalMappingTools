@@ -549,6 +549,44 @@ class Transect:
         if self.ShorefaceSlope < 0.001:
             self.ShorefaceSlope = 0.001
             
+            
+    def CalculateIntertidalSlope2(self):
+    
+        """
+        
+        Function to extract transect's shoreface slope between CoastNode and MLWS node. 
+        If no MLWS intersect node, use nearest MLWS node (from ExtractMLWS()). 
+        
+        NH Spetembeer 2023
+        
+        """
+        
+        # Check if the nodes exist
+        if not self.MLWSIntersectNode.X:
+            print(self.LineID, self.ID, "CalculateIntertidalSlope2: No MLWS intersect data")
+            if not self.MLWS.X:
+                print(self.LineID, self.ID, "CalculateIntertidalSlope2: No MLWS nearest data either!")
+                return
+            else:
+                # Use MLWS data
+                MLWSNode = self.MLWS
+        else:
+            # use MLWSIntersectNode data
+            MLWSNode = self.MLWSIntersectNode
+            
+        if not self.CoastNode:
+            print(self.LineID, self.ID, "CalculateIntertidalSlope2: No CoastNode!")
+            return
+
+        else:
+            self.ShorefaceDistance = MLWSNode.get_Distance(self.CoastNode)
+            self.ShorefaceDepth = self.CoastNode.Z - MLWSNode.Z
+            self.ShorefaceSlope = self.ShorefaceDepth/self.ShorefaceDistance
+        
+        # set minimum shoreface slope to 0.001
+        if self.ShorefaceSlope < 0.001:
+            self.ShorefaceSlope = 0.001
+            
     def PredictFutureShorelines(self, MaxRockHeadErosionDistance=25.):
 
         """
