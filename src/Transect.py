@@ -555,7 +555,7 @@ class Transect:
     
         """
         
-        Function to extract transect's shoreface slope between CoastNode and MLWS node. 
+        Function to extract transect's shoreface slope between MHWS and MLWS nodes. 
         If no MLWS intersect node, use nearest MLWS node (from ExtractMLWS()). 
         
         NH Spetembeer 2023
@@ -576,13 +576,13 @@ class Transect:
             # use MLWSIntersect data
             MLWSNode = self.MLWSIntersect
             
-        if not self.CoastNode:
-            print(self.LineID, self.ID, "CalculateIntertidalSlope2: No CoastNode!")
+        if not self.MHWSIntersect:
+            print(self.LineID, self.ID, "CalculateIntertidalSlope2: No MHWSIntersect!")
             return
 
         else:
-            self.ShorefaceDistance = MLWSNode.get_Distance(self.CoastNode)
-            self.ShorefaceDepth = self.CoastNode.Z - MLWSNode.Z
+            self.ShorefaceDistance = MLWSNode.get_Distance(self.MHWSIntersect)
+            self.ShorefaceDepth = self.MHWSIntersect.Z - MLWSNode.Z
             self.ShorefaceSlope = self.ShorefaceDepth/self.ShorefaceDistance
         
         # set minimum shoreface slope to 0.001
