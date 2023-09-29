@@ -142,9 +142,13 @@ class Coast:
             # append to list of coast lines
             if ThisLine.TotalLength > MinLength:
                 self.CoastLines.append(ThisLine)
+                print("\t Adding", i+1) 
+            else:
+                print("\t %4d shorther than MinLength of %3d m" % (i+1, MinLength))
 
         # get new number of coastal segments based on the list built
         self.NoCoastLines = len(self.CoastLines)
+        print("Number of coast segments added:", self.NoCoastLines) 
 
         print("")    
 
