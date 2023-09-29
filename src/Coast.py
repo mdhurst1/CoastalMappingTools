@@ -2345,7 +2345,7 @@ class Coast:
                 """
 
 
-    def ExtractMLWS(self,MLWSShp):
+    def ExtractMLWS(self, MLWSShp, NearestNode=0):
 
         """
         Function to find nearest location of MLWS
@@ -2357,6 +2357,9 @@ class Coast:
         ----------
         MLWSShp : string
             Filename for polyline shapfile containing MLWS
+        NearestNode : string
+            Name of node from which to find the shortest distance to MLWS contour
+            If not spcified, use CoastNode.
         
         """
         print("Coast.ExtractMLWS: Finding nearest MLWS position")
@@ -2385,18 +2388,24 @@ class Coast:
                         if SubLine.geom_type == "LineString":
                             MultiLines.append(SubLine)
         
-            MultiLines = MultiLineString(MultiLines) # NH bug fix: Compile error: "object of type LineString has no len()". Change this to be inside the else statement. 
-                    
+            MultiLines = MultiLineString(MultiLines) # NH fix compile error: "object of type LineString has no len()". Change this to be inside the else statement. 
+        
         for ThisLine in self.CoastLines:
             for Transect in ThisLine.Transects:
                 
+                # NH: check if "NearestNode" specified and exists. If not use CoastNode
+                if NearestNode and hasattr(Transect, NearestNode):
+                    ThisNode = getattr(Transect, NearestNode)
+                else:
+                    ThisNode = getattr(Transect, "CoastNode")
+                
                 # shapely goes here
-                BasePoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                BasePoint = Point(ThisNode.X, ThisNode.Y)
                 NearestPoint = nearest_points(MultiLines, BasePoint)[0]
                 Transect.MLWS = Node(NearestPoint.x,NearestPoint.y)
             
     
-    def ExtractIntersection(self, Shp, NodeToSave):
+    def ExtractIntersection(self, Shp, NodeToSave, MostSeaward=1):
         
         """
         Function to find the intersection between each transect and the given contour.
@@ -2409,6 +2418,10 @@ class Coast:
             Filename for polyline shapefile containing contour
         NodeToSave : string
             Name of transect node in which to save intersect point
+        MostSeaward : boolean
+            In case of multiple intersections, this defines whether to
+            save the most seaward node (MostSeaward=1) or 
+            most landward node (MostSeaward=0)
             
         Writes to 
         ---------
@@ -2455,12 +2468,15 @@ class Coast:
                 if TransectLS.intersects(MultiLines):
                     Intersections = TransectLS.intersection(MultiLines)
                     
-                    # if more than one intersection, take point nearest to StartNode (sea)
+                    # if more than one intersection, use MostSeaward flag to pick point. StartNode is in the sea. 
                     if Intersections.geom_type == "MultiPoint":
                         print(Transect.LineID, Transect.ID, "\t More than one intersection!")
                         StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
                         Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections.geoms]
-                        Index = Distances.index(min(Distances))
+                        if MostSeaward:
+                            Index = Distances.index(min(Distances))
+                        else:
+                            Index = Distances.index(max(Distances))
                         Intersection = Intersections.geoms[Index]
                         
                     else:
@@ -2591,10 +2607,14 @@ class Coast:
         Parameters
         ----------
         
-        DEMFileList: list
-            List of unique DEMs associated with this part of the coast.
         NodeToSample: String
             Name of node containing (x,y) coordinates to be sampled.
+        DEMFileList: list
+            List of unique DEMs associated with this part of the coast.
+            
+        Writes to
+        ---------
+        Transect."NodeToSample".Z
         
         NH, September 2023
         
@@ -2651,7 +2671,8 @@ class Coast:
                     if not Transect.LineString.intersects(DTM_Extent):
                         continue
                         
-                    # NH: check if Transect contains the passed nodename as attribute 
+                    # Check if Transect contains the passed nodename as attribute 
+                    # If not, then return as need (x,y) coords to sample.
                     if not hasattr(Transect, NodeToSample):
                         print("Error: Transect has no attribute", NodeToSample)
                         return
