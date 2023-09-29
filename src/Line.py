@@ -234,7 +234,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
                 LS = Result
                 
             # merge lines that do not loop
-            while LS.type == "MultilineString":
+            while LS.geom_type == "MultilineString":
                 Lines2Merge = [L for L in LS if L.is_simple]
                 LS = linemerge(Lines2Merge)
                 
