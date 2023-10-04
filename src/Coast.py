@@ -2470,7 +2470,8 @@ class Coast:
                     
                     # if more than one intersection, use MostSeaward flag to pick point. StartNode is in the sea. 
                     if Intersections.geom_type == "MultiPoint":
-                        print(Transect.LineID, Transect.ID, "\t More than one intersection!")
+                        if __debug__:
+                            print(Transect.LineID, Transect.ID, "\t More than one intersection!")
                         StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
                         Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections.geoms]
                         if MostSeaward:
