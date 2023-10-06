@@ -119,7 +119,6 @@ class Transect:
         self.ElevationMin = None
         self.ElevationMax = None
         self.ElevStd = None
-        self.MLWSIntersectNode = None
 
         # cliff metrics
         self.Cliff = False
@@ -133,6 +132,8 @@ class Transect:
         # intertidal
         self.SlopeRoughness = None
         self.ElevationRoughness = None
+        self.MLWSIntersect = None
+        self.MHWSIntersect = None
 
         # barrier metrics
         self.Barrier = False
@@ -543,6 +544,45 @@ class Transect:
         else:
             self.ShorefaceDistance = self.MLWS.get_Distance(self.HistoricShorelinesPositions[-1][0])
             self.ShorefaceDepth = 2.*self.MHWS
+            self.ShorefaceSlope = self.ShorefaceDepth/self.ShorefaceDistance
+        
+        # set minimum shoreface slope to 0.001
+        if self.ShorefaceSlope < 0.001:
+            self.ShorefaceSlope = 0.001
+            
+            
+    def CalculateIntertidalSlope2(self):
+    
+        """
+        
+        Function to extract transect's shoreface slope between MHWS and MLWS nodes. 
+        If no MLWS intersect node, use nearest MLWS node (from ExtractMLWS()). 
+        
+        NH Spetembeer 2023
+        
+        """
+        
+        # Check if the nodes exist
+        if not self.MLWSIntersect.X:
+            print(self.LineID, self.ID, "CalculateIntertidalSlope2: No MLWS intersect data")
+            if not self.MLWS.X:
+                print(self.LineID, self.ID, "CalculateIntertidalSlope2: No MLWS nearest data either!")
+                return
+            else:
+                # Use MLWS data
+                MLWSNode = self.MLWS
+                print("     Using nearest MLWS node")
+        else:
+            # use MLWSIntersect data
+            MLWSNode = self.MLWSIntersect
+            
+        if not self.MHWSIntersect:
+            print(self.LineID, self.ID, "CalculateIntertidalSlope2: No MHWSIntersect!")
+            return
+
+        else:
+            self.ShorefaceDistance = MLWSNode.get_Distance(self.MHWSIntersect)
+            self.ShorefaceDepth = self.MHWSIntersect.Z - MLWSNode.Z
             self.ShorefaceSlope = self.ShorefaceDepth/self.ShorefaceDistance
         
         # set minimum shoreface slope to 0.001
