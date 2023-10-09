@@ -2503,9 +2503,9 @@ class Transect:
                 return
 
             # add a check in here if Year1 < Latest Shoreline
-            if Year1 < self.FutureSeaLevelYears:
+            if Year1 <= self.HistoricShorelinesYears[-1]:
                 print("There is a historic shoreline more recent than", Year1)
-                Distance1 = self.HistricShorelinesDistances[-1]
+                Distance1 = self.HistoricShorelinesDistances[-1]
             else:
                 Distance1 = self.FutureShorelinesDistances[Index1[0]]
 
@@ -2552,6 +2552,10 @@ class Transect:
         # check there are predictions for this transect
         if self.Future:
             
+            # check year1 isnt less than an historic shoreline
+            if Year1 < self.HistoricShorelinesYears[-1]:
+                Year1 = self.HistoricShorelinesYears[-1]
+
             # get the position change
             Distance = self.get_FuturePositionChange(Year1, Year2)
 
