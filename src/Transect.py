@@ -2488,7 +2488,6 @@ class Transect:
 
             # add a check in here if Year1 < Latest Shoreline
             if Year1 == self.HistoricShorelinesYears[-1]:
-                print("There is a historic shoreline more recent than", Year1)
                 Distance1 = self.HistoricShorelinesDistances[-1]
 
             else:
