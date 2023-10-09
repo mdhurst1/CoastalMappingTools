@@ -729,6 +729,8 @@ class Transect:
                 self.FutureShorelinesPositions.append(Node(X1,Y1))
                 self.FutureShorelinesRates.append(self.ChangeRates[-1])
                 self.FutureShorelinesDistances.append(self.HistoricShorelinesDistances[-1])
+
+                continue
             
             # self.InterpolatedRSLR
             BruunRuleComponent = -(1./self.BruunSlope)*(self.FutureSeaLevels[i]-self.LatestRSL)
