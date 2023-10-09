@@ -734,6 +734,11 @@ class Transect:
 
         # Future shoreline positions
         for i in range(0, len(self.FutureSeaLevelYears)):
+
+            # need a flag and conditional here if HistoricShorelinesYears[-1] > self.FutureSeaLevelYears!
+            if self.HistoricShorelinesYears[-1] > self.FutureSeaLevelYears[i]:
+                continue
+
             dT = self.FutureSeaLevelYears[i]-self.HistoricShorelinesYears[-1]
             
             # self.InterpolatedRSLR
@@ -2488,27 +2493,28 @@ class Transect:
         # check there are predictions for this transect
         if self.Future:
 
-            # find year index
-            Index1 = [i for i, x in enumerate(self.FutureSeaLevelYears) if x == Year1]
+            # add a check in here if Year1 < Latest Shoreline
+            if Year1 == self.HistoricShorelinesYears[-1]:
+                print("There is a historic shoreline more recent than", Year1)
+                Distance1 = self.HistoricShorelinesDistances[-1]
+
+            else:
+                # find year index
+                Index1 = [i for i, x in enumerate(self.FutureSeaLevelYears) if x == Year1]
+                if len(Index1) == 0:
+                    print("problem1")
+                    sys.exit()
+                    
+                Distance1 = self.FutureShorelinesDistances[Index1[0]]
+            
+            # find year index for second year
             Index2 = [i for i, x in enumerate(self.FutureSeaLevelYears) if x == Year2]
-
-            if len(Index1) == 0:
-                print("problem1")
-                sys.exit()
-                return
-
+            
             if len(Index2) == 0:
                 print("problem2")
                 sys.exit()
-                return
 
             # add a check in here if Year1 < Latest Shoreline
-            if Year1 <= self.HistoricShorelinesYears[-1]:
-                print("There is a historic shoreline more recent than", Year1)
-                Distance1 = self.HistoricShorelinesDistances[-1]
-            else:
-                Distance1 = self.FutureShorelinesDistances[Index1[0]]
-
             Distance2 = self.FutureShorelinesDistances[Index2[0]]
             
             return Distance1-Distance2
