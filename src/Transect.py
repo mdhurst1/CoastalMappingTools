@@ -2502,9 +2502,15 @@ class Transect:
                 sys.exit()
                 return
 
-            # use to access future position
-            Distance1 = self.FutureShorelinesDistances[Index1[0]]
+            # add a check in here if Year1 < Latest Shoreline
+            if Year1 < self.FutureSeaLevelYears:
+                print("There is a historic shoreline more recent than", Year1)
+                Distance1 = self.HistricShorelinesDistances[-1]
+            else:
+                Distance1 = self.FutureShorelinesDistances[Index1[0]]
+
             Distance2 = self.FutureShorelinesDistances[Index2[0]]
+            
             return Distance1-Distance2
 
         else:
