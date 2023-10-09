@@ -656,10 +656,6 @@ class Transect:
         if not self.HistoricFlag:
             self.CalculateHistoricalRates()
         
-        if self.HistoricShorelinesYears[-1] == 2022:
-            import pdb
-            pdb.set_trace()
-
         # interpolate to get average RSLR in each time stamp between 1870s and 2020
         FutureSeaLevelRate = (self.FutureSeaLevels[1] - self.FutureSeaLevels[0])/(self.FutureSeaLevelYears[1] - self.FutureSeaLevelYears[0])
         RSLRDiff= FutureSeaLevelRate-self.HistoricalRSLR/1000.
