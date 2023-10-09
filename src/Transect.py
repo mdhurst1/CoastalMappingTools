@@ -613,23 +613,10 @@ class Transect:
         # boolean flag if making prediction
         self.Future = True
         
-#        if self.LineID == "1" and self.ID == "10":
-#            import pdb
-#            pdb.set_trace()
-#            
         # cant make predictions without some historical shorelines
         if not self.HistoricShorelinesYears:
-            #print("No historical shorelines", self.ID)
             self.Future = False
             return
-
-        # dont let 1970s data be the baseline (most recent)
-        #if self.HistoricShorelinesSources[-1].endswith("1970.shp"):
-        #    self.HistoricShorelinesSources.pop(-1)
-        #    self.HistoricShorelinesDistances.pop(-1)
-        #    self.HistoricShorelinesPositions.pop(-1)
-        #    self.HistoricShorelinesErrors.pop(-1)
-        #    self.HistoricShorelinesYears.pop(-1)
 
         # dont let 1970s be calibration year if younger than modern soft
         if len(self.HistoricShorelinesYears) > 2:
@@ -639,23 +626,16 @@ class Transect:
                 self.HistoricShorelinesPositions.pop(-2)
                 self.HistoricShorelinesErrors.pop(-2)
                 self.HistoricShorelinesYears.pop(-2)
-            
-        if len(self.HistoricShorelinesYears) < 2:
-            #print("Not enough historical shorelines", self.ID)
-            self.Future = False
-            return
 
-        # check if the two most recent positions are closer than 5 years together
+        # check if the two most recent positions are closer than 4 years together
         if (self.HistoricShorelinesYears[-1] - self.HistoricShorelinesYears[-2] < 4):
             self.HistoricShorelinesSources.pop(-2)
             self.HistoricShorelinesDistances.pop(-2)
             self.HistoricShorelinesPositions.pop(-2)
             self.HistoricShorelinesErrors.pop(-2)
             self.HistoricShorelinesYears.pop(-2)
-            
 
         if len(self.HistoricShorelinesYears) < 2:
-            #print("Not enough historical shorelines", self.ID)
             self.Future = False
             return
         
@@ -676,6 +656,10 @@ class Transect:
         if not self.HistoricFlag:
             self.CalculateHistoricalRates()
         
+        if self.HistoricShorelinesYears[-1] == 2022:
+            import pdb
+            pdb.set_trace()
+
         # interpolate to get average RSLR in each time stamp between 1870s and 2020
         FutureSeaLevelRate = (self.FutureSeaLevels[1] - self.FutureSeaLevels[0])/(self.FutureSeaLevelYears[1] - self.FutureSeaLevelYears[0])
         RSLRDiff= FutureSeaLevelRate-self.HistoricalRSLR/1000.
@@ -735,11 +719,16 @@ class Transect:
         # Future shoreline positions
         for i in range(0, len(self.FutureSeaLevelYears)):
 
-            # need a flag and conditional here if HistoricShorelinesYears[-1] > self.FutureSeaLevelYears!
-            if self.HistoricShorelinesYears[-1] > self.FutureSeaLevelYears[i]:
-                continue
-
             dT = self.FutureSeaLevelYears[i]-self.HistoricShorelinesYears[-1]
+
+            # catch the condition where observed shorelines are more recent than those we're trying to make predictions for
+            if dT < 0:
+                X1 = self.HistoricShorelinesPosition[-1].X
+                Y1 = self.HistoricShorelinesPosition[-1].Y
+
+                self.FutureShorelinesPositions.append(Node(X1,Y1))
+                self.FutureShorelinesRates.append(self.ChangeRates[-1])
+                self.FutureShorelinesDistances.append(self.HistoricShorelinesDistances[-1])
             
             # self.InterpolatedRSLR
             BruunRuleComponent = -(1./self.BruunSlope)*(self.FutureSeaLevels[i]-self.LatestRSL)
@@ -2474,6 +2463,12 @@ class Transect:
                 return
 
             # use to access future position
+            try:
+                self.FutureShorelinesDistances[Index[0]]
+            except:
+                import pdb
+                pdb.set_trace()
+
             return self.FutureShorelinesDistances[Index[0]]
            
         else:
