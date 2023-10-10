@@ -281,9 +281,9 @@ class Coast:
         ErosionBackShp = ErosionShp.split(".")[0]+"_temp2.shp"
 
         # write lines then patches
-        self.WriteLinesShp("WriteFutureLines", ErosionBackShp, Smooth=True)
-        self.WriteLinesShp("WriteRecentLines", ErosionFrontShp, Smooth=True)
-        self.WritePatchesShp("WriteFutureLines", "WriteRecentLines", ErosionShp, Smooth=True)
+        self.WriteLinesShp("WriteFutureLines", ErosionBackShp, Smooth)
+        self.WriteLinesShp("WriteRecentLines", ErosionFrontShp, Smooth)
+        self.WritePatchesShp("WriteFutureLines", "WriteRecentLines", ErosionShp, Smooth)
 
     def WriteErosionProximityShp(self, ProximityShp, BufferDistance=10., Year=2100, Smooth=True):
 
@@ -309,9 +309,9 @@ class Coast:
         ErosionBufferShp = ProximityShp.split(".")[0]+"_temp2.shp"
 
         # write lines then patches
-        self.WriteLinesShp("WriteFutureLines", ErosionFutureShp, Smooth=True)
-        self.WriteLinesShp("WriteBufferLines", ErosionBufferShp, Smooth=True)
-        self.WritePatchesShp("WriteFutureLines", "WriteBufferLines", ProximityShp, Smooth=True)
+        self.WriteLinesShp("WriteFutureLines", ErosionFutureShp, Smooth)
+        self.WriteLinesShp("WriteBufferLines", ErosionBufferShp, Smooth)
+        self.WritePatchesShp("WriteFutureLines", "WriteBufferLines", ProximityShp, Smooth)
     
     
     def WriteFutureShorelinesShp(self, FutureShoreLinesShp, Smooth=True):
@@ -350,6 +350,7 @@ class Coast:
             Line.MakeSimple()
                 
             # get line node positions
+            # why are we not just recalling Line.SmoothLine here? What is different?
             X, Y = Line.get_XY()
 
             if Smooth and len(X) > 5:
@@ -374,39 +375,6 @@ class Coast:
                 X = np.append(XSmooth,X[-1])
                 Y = np.append(YSmooth,Y[-1])
                 
-#            # check for loops here and remove?
-#            TempLine = LineString(zip(X,Y))
-#            
-#            if not TempLine.is_simple:
-#                
-#                print("Spline line is not simple")
-#                
-#                X, Y = TempLine.coords.xy
-#                X = np.array(X)
-#                Y = np.array(Y)
-#
-#                #"Union" method will split self-intersection linestring.
-#                Result = TempLine.union(Point(X[0],Y[0]))
-#                KeepBool = np.zeros(len(X),dtype=bool)
-#                Index = 0
-#                NewIndex = 0
-#
-#                for L in Result:
-#
-#                    x,y = L.coords.xy
-#                    Index = NewIndex
-#                    NewIndex = Index+len(x)
-#
-#                    if not Point(L.coords[0]).distance(Point(L.coords[-1])) == 0:
-#                        KeepBool[Index:NewIndex-1] = 1
-#                        
-#                # get line node positions
-#                KeepBool[-1] = True
-#                X = X[KeepBool]
-#                Y = Y[KeepBool]
-#                TempLine = LineString(zip(X,Y))
-
-
             # convert to list for writing to shapefile
             WriteLine = [np.column_stack([X,Y]).tolist()]
             
@@ -522,7 +490,6 @@ class Coast:
 
             # get line node positions
             X, Y = Line.get_XY()
-
             
             # convert to list for writing to shapefile
             WriteLine = [np.column_stack([X, Y]).tolist()]

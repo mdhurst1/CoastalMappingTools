@@ -225,9 +225,10 @@ for CellSub in CellList:
                 pickle.dump(CellCoast, PFile)
         
         # write future shorelines
-        # write smoothed coast/bathy to file
+        # write coast/bathy to file
+        SmoothOutput = False
         CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
-        CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future.shp")),Smooth=True)
+        CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future.shp")),SmoothOutput)
         
         CellCoast.TruncateTransects()
         CellCoast.WriteFutureTransectsShp(str(OutputPath / (RowName + "_Transects.shp")))
