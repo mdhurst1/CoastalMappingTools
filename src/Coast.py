@@ -1208,7 +1208,7 @@ class Coast:
         f.write(self.Projection)
         f.close()
 
-    def WriteTransectsCSV(self,Folder=os.getcwd()):
+    def WriteTransectsCSV(self,Folder=os.getcwd(),Filename=""):
 
         """
 
@@ -1218,6 +1218,9 @@ class Coast:
         args: Folder in which to put files
 
         MDH, July 2019
+        
+        NH modification Octber 2023:
+        - Add Filename 
 
         """
         
@@ -1234,7 +1237,7 @@ class Coast:
                 print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
 
                 # write transect    
-                Transect.Write(Folder)
+                Transect.Write(Folder, Filename)
 
                 # update counter
                 CurrentTransect += 1

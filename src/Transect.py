@@ -2763,7 +2763,7 @@ class Transect:
     
     
 
-    def Write(self, Folder=os.getcwd(), delimiter=","):
+    def Write(self, Folder=os.getcwd(), Filename="", delimiter=","):
         
         """
         
@@ -2774,14 +2774,33 @@ class Transect:
         MDH, July 2019
         
         NH mod October 2023:
-        Change filename to include coastline number and transect number.
-        This fixes problem where csv files get overwritten in the case of 
-        multiple coastlines.
+        - Change filename to include coastline number and transect number.
+          This fixes problem where csv files get overwritten in the case of 
+          multiple coastlines.
+        - Add parameter for user-defined filename
+        
+        Parameters
+        ----------
+        Folder : str
+            Folder path of where the .csv files will be written 
+            
+        Filename : str
+            Start of the filename, before coastline ID and transect ID
 
+        delimiter : str
+            Delimiter used in csv output files
+            
+        Output
+        ------
+        One .csv file for each transect written to destination folder
+        
         """
 
         # define filename and open for writing
-        Filename=Folder+"/Transect_"+str(self.LineID)+"_"+str(self.ID)+".csv"
+        if not Filename:
+            Filename = Folder+"/Transect_"+str(self.LineID)+"_"+str(self.ID)+".csv"
+        else:
+            Filename = Folder+"/"+str(Filename)+"_"+str(self.LineID)+"_"+str(self.ID)+".csv"
         f = open(Filename,'w')
         
         # write headers
