@@ -3157,7 +3157,7 @@ class Coast:
             if not DTM_Dataset.nodata:
                 # raise SystemExit("DTM missing no data value") # NH: remove this as .asc files don't have nodata set.
                 # NH add print and NDV assignment
-                print("DTM missing no data value!")
+                print("\tDTM missing no data value!")
                 NDV = -9999
 
             # check for square pixels
@@ -3230,6 +3230,9 @@ class Coast:
 
         MDH, June 2019
         
+        NH modification, October 2023:
+        Add check for missing nodata value
+        
         Parameters
         ----------
         DTMFile : str
@@ -3241,7 +3244,7 @@ class Coast:
 
         """
         
-        print("Coast.EstractTransectTopography: Sampling DTMs for each transect")
+        print("Coast.EstractTransectTopographySwath: Sampling DTMs for each transect")
         
         # load the DTM and get its properties
         print("\tLoading DTM... ", end="")
@@ -3256,6 +3259,12 @@ class Coast:
         # check for square pixels
         if not DTM_Dataset.res[0] == DTM_Dataset.res[1]:
             raise SystemExit("DTM has non-square cells")
+            
+        # NH add: check if we're missing no data
+        if not DTM_Dataset.nodata:
+            # raise SystemExit("DTM missing no data value") # NH: remove this as .asc files don't have nodata set.
+            print("\tDTM missing no data value!")
+            NDV = -9999
         
         # get resolution
         DTM_Resolution = DTM_Dataset.res[0]
