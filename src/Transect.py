@@ -2772,11 +2772,16 @@ class Transect:
         Can sepcify filename or create using default name + ID
         
         MDH, July 2019
+        
+        NH mod October 2023:
+        Change filename to include coastline number and transect number.
+        This fixes problem where csv files get overwritten in the case of 
+        multiple coastlines.
 
         """
 
         # define filename and open for writing
-        Filename=Folder+"/Transect_"+str(self.ID)+".csv"
+        Filename=Folder+"/Transect_"+str(self.LineID)+"_"+str(self.ID)+".csv"
         f = open(Filename,'w')
         
         # write headers
