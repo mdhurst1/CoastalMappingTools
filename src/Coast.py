@@ -3284,14 +3284,20 @@ class Coast:
         
         DTM_Extent = Polygon([[XMin, YMin], [XMin,YMax], [XMax, YMax], [XMax, YMin]])
             
-            
+        if __debug__:
+            print("\tXMin, XMax, YMin, YMax = ", XMin, XMax, YMin, YMax)        
+        
         # Get vectors of X and Y coordinates, NB reversal of Y in line with 
         # DTM indexing from top left
         XVector = XMin+np.arange(0,NCols)*DTM_Resolution+0.5*DTM_Resolution
         YVector = YMin+DTM_Resolution*np.arange(0,NRows)[::-1]+0.5*DTM_Resolution
+        
+        if __debug__:
+            print("\tXVector len = ", len(XVector)) 
+            print("\tYVector len = ", len(YVector))
 
         # Track progress
-        NoTransects = np.sum([Line.NoTransects for Line in self.CoastLines])
+        NoTransects = np.sum([Line.NoTransects for Line in self.CoastLines])-1 # NH: subtract one as counting from zero
         CurrentTransect = 0
                         
         for Line in self.CoastLines:
@@ -3304,9 +3310,13 @@ class Coast:
                 X1, Y1 = Transect.StartNode.get_XY()
                 X2, Y2 = Transect.EndNode.get_XY()
                 TransectLine = LineString([(X1, Y1), (X2, Y2)])
+                
+                if __debug__:
+                    print("\tTransect X1, Y1, X2, Y2 = ", X1, Y1, X2, Y2)
 
                 # check for intersection
                 if not TransectLine.intersects(DTM_Extent):
+                    CurrentTransect += 1 # NH: increment transect count if no intersect
                     continue
 
                 #find indices for bounding box
@@ -3315,6 +3325,10 @@ class Coast:
                 iEnd = np.argmin(np.abs(YVector-np.min([Y1,Y2])))+1
                 jStart = np.argmin(np.abs(XVector-np.min([X1,X2])))-1
                 jEnd = np.argmin(np.abs(XVector-np.max([X1,X2])))+1
+                
+                if __debug__:
+                    print("\t\t\t\tiStart, iEnd, jStart, jEnd = ", iStart, iEnd, jStart, jEnd)
+                    #print("\tXVector[jStart], XVector[jEnd], YVector[iStart], YVector[iEND] = ", XVector[jStart], XVector[jEnd], YVector[iStart], YVector[iEnd])
 
                 #Get Vector X and Y
                 dX12 = X2-X1
