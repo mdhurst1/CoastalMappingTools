@@ -3337,12 +3337,20 @@ class Coast:
 
                     #find indices for bounding box
                     #need to be careful with reverse indexing
-                    # NH: todo: Need to catch Start index of -1, in case where transect intersects top of DEM. 
-                    # NH: Bottom intersection (End index of 1000) not a problem, due to the range function going to End-1
                     iStart = np.argmin(np.abs(YVector-np.max([Y1,Y2])))-1
                     iEnd = np.argmin(np.abs(YVector-np.min([Y1,Y2])))+1
                     jStart = np.argmin(np.abs(XVector-np.min([X1,X2])))-1
                     jEnd = np.argmin(np.abs(XVector-np.max([X1,X2])))+1
+                    
+                    # NH: Add index sanity check
+                    # Catch Start index of -1, in case where transect intersects top (i) or left hand side (j) of DEM.
+                    # Bottom intersection (End index of 1000) not a problem, due to the range function going to End-1
+                    if iStart < 0:
+                        print("\t\t\t\tiStart < 0! Setting to 0")
+                        iStart = 0
+                    if jStart < 0:
+                        print("\t\t\t\tjStart < 0! Setting to 0")
+                        jStart = 0
                     
                     if __debug__:
                         print("\t\t\t\tiStart, iEnd, jStart, jEnd = ", iStart, iEnd, jStart, jEnd)
