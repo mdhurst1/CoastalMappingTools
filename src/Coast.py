@@ -3223,7 +3223,7 @@ class Coast:
                         #for i, ThisNode in enumerate(Transect.DistanceNodes):
                             #print("DistNodes:\n", Transect.DistanceNodes[i].X, Transect.DistanceNodes[i].Y, Transect.DistanceNodes[i].Z)
 
-    def ExtractTransectTopographySwath(self, DEMFileList=None, SwathDistance=-9999):
+    def ExtractTransectTopographySwath(self, DEMFileList=None, SwathDistance=-9999, DistanceSpacing=None):
         """
         Profile to populate transects with topographic data
         Uses swath profile routine to collect elevations within a certain distance
@@ -3251,6 +3251,9 @@ class Coast:
         SwathDistance : float
             Distance away from transect line to sample elevations in DEM
             Default is 2 times the resolution of the DTM
+            
+        DistanceSpacing : float
+            Distance in m between elevation nodes on the transect
             
         """
         
@@ -3346,7 +3349,7 @@ class Coast:
                     
                     # NH: Add index sanity check
                     # Catch Start index of -1, in case where transect intersects top (i) or left hand side (j) of DEM.
-                    # Bottom intersection (End index of 1000) not a problem, due to the range function going to End-1
+                    # Bottom or rhs intersection (e.g. End index of 1000) not a problem, due to the range function going to End-1
                     if iStart < 0:
                         print("\t\t\t\tiStart < 0! Setting to 0")
                         iStart = 0
@@ -3419,11 +3422,18 @@ class Coast:
                         #DF = pd.DataFrame({"X": X, "Y": Y, "Z": Z, "DistAlong": DistAlong, "DistTo": DistTo})
                         #DF.to_pickle(SwathProfsFolder+"Swath_"+str(Transect.ID)+".pkl")
                     
-                    #Create a line for interpolating to
-                    # determination of distance spacing should be externalised
+                    # Create a line for interpolating to
+                    # Determination of distance spacing now externalised
+                    if not DistanceSpacing:
+                        DistanceSpacing = DTM_Resolution*2.
+                        
                     LineLength = np.sqrt((X2-X1)**2 + (Y2-Y1)**2)
-                    NoPoints = (int)(LineLength/(DTM_Resolution*2.))
-                    Transect.DistanceSpacing = DTM_Resolution*2.
+                    
+                    NoPoints = (int)(LineLength/DistanceSpacing)        #(int)(LineLength/(DTM_Resolution*2.))
+                    if NoPoints < 1:
+                        raise SystemExit("LineLength/DistanceSpacing leads to zero elevation points")
+                        
+                    Transect.DistanceSpacing = DistanceSpacing          #DTM_Resolution*2.
                     XLine = np.linspace(X1,X2,NoPoints)
                     YLine = np.linspace(Y1,Y2,NoPoints)
                     DistAlongTransect = np.zeros(len(XLine))
@@ -3436,10 +3446,10 @@ class Coast:
                     for i in range(0,NoPoints):
                         
                         #Calculate distance along the line
-                        DistAlongTransect[i] = i*DTM_Resolution*2.
+                        DistAlongTransect[i] = i*DistanceSpacing        #i*DTM_Resolution*2.
                         
                         # Sample a reduced array here i.e. a neighbourhood to reduce computation time
-                        Neighbourhood = np.abs(DistAlongTransect[i]-DistAlong) < DTM_Resolution*2.
+                        Neighbourhood = np.abs(DistAlongTransect[i]-DistAlong) < DTM_Resolution*2. # QUESTION: Is this unrelated to DistanceSpacing?
                         ZLocal = Z[Neighbourhood]
                         
                         if len(ZLocal) == 0:
