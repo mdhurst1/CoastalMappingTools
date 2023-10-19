@@ -3223,7 +3223,7 @@ class Coast:
                         #for i, ThisNode in enumerate(Transect.DistanceNodes):
                             #print("DistNodes:\n", Transect.DistanceNodes[i].X, Transect.DistanceNodes[i].Y, Transect.DistanceNodes[i].Z)
 
-    def ExtractTransectTopographySwath(self, DTMFile, SwathDistance=-9999, DEMFileList=None):
+    def ExtractTransectTopographySwath(self, DEMFileList=None, SwathDistance=-9999):
         """
         Profile to populate transects with topographic data
         Uses swath profile routine to collect elevations within a certain distance
@@ -3241,15 +3241,17 @@ class Coast:
         ----------
         DTMFile : str  - DEPRECATED
             Name of DTM File, must be a *.tif
+            
+        DEMFileList : list or single string - NEW
+            Either a) List of strings containing pathnames of unique DEMs for current coast
+            or     b) A single DTM filename string. Will cast to list inside function (backwards compatible)
+            Coast.FindDEM can be called prior to write to self.UniqueDEMList
+            In that case you don't have to send the list as a parameter.
 
         SwathDistance : float
             Distance away from transect line to sample elevations in DEM
             Default is 2 times the resolution of the DTM
             
-        DEMFileList : list - NEW
-            List of strings containing names of unique DEMs for current coast
-            From Coast.FindDEM function 
-
         """
         
         print("Coast.EstractTransectTopographySwath: Sampling DTMs for each transect")
