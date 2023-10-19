@@ -3307,6 +3307,10 @@ class Coast:
             # check swath distance
             if SwathDistance < 0:
                 SwathDistance = DTM_Resolution*2.
+            # NH: Check for stupidly big swath distance
+            if SwathDistance > DTM_Resolution*20:
+                print("\tSwathDistance > DTM_Resolution*20! Setting to DTM_Resolution*20")
+                SwathDistance = DTM_Resolution*20.
            
             # Get vectors of X and Y coordinates, NB reversal of Y in line with 
             # DTM indexing from top left
