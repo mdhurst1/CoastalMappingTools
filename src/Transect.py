@@ -119,6 +119,14 @@ class Transect:
         self.ElevationMin = None
         self.ElevationMax = None
         self.ElevStd = None
+        
+        # Elevation interpolation
+        self.InterpolationIncomplete = False
+        self.X = None
+        self.Y = None
+        self.Z = None
+        self.DistAlong = None
+        self.DistTo = None
 
         # cliff metrics
         self.Cliff = False
