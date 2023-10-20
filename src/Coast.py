@@ -3236,6 +3236,9 @@ class Coast:
         NH modification, October 2023:
         - Add check for missing nodata value
         - Add ability to work with multiple DTMs, as in ExtractTransectTopography
+        - Fix bug of negative index in bounding box
+        - Extend bounding box start and end coordinates by SwathDistance
+        - Handle transect crossing two DTMs
         
         Parameters
         ----------
@@ -3244,7 +3247,7 @@ class Coast:
             
         DEMFileList : list or single string - NEW
             Either a) List of strings containing pathnames of unique DEMs for current coast
-            or     b) A single DTM filename string. Will cast to list inside function (backwards compatible)
+            or     b) A single DTM filename string (backwards compatible)
             Coast.FindDEM can be called prior to write to self.UniqueDEMList
             In that case you don't have to send the list as a parameter.
 
@@ -3363,15 +3366,19 @@ class Coast:
                     if iStart < 0:
                         print("\t\t\t\tiStart < 0! Setting to 0")
                         iStart = 0
+                        Transect.InterpolationIncomplete = True
                     if jStart < 0:
                         print("\t\t\t\tjStart < 0! Setting to 0")
                         jStart = 0
+                        Transect.InterpolationIncomplete = True
                     if iEnd > len(YVector):
                         print("\t\t\t\tiEnd > len(YVector! Setting to", len(YVector))
                         iEnd = len(YVector)
+                        Transect.InterpolationIncomplete = True
                     if jEnd > len(XVector):
                         print("\t\t\t\tjEnd > len(XVector! Setting to", len(XVector))
-                        jEnd = len(XVector)    
+                        jEnd = len(XVector)
+                        Transect.InterpolationIncomplete = True                        
                     
                     if __debug__:
                         print("\t\t\t\tiStart, iEnd, jStart, jEnd = ", iStart, iEnd, jStart, jEnd)
@@ -3382,11 +3389,20 @@ class Coast:
                     dY12 = Y2-Y1
 
                     #Declare list holders for profile data
-                    X = []
-                    Y = []
-                    Z = []
-                    DistAlong = []
-                    DistTo = []
+                    if Transect.InterpolationIncomplete and Transect.DistTo: # second run
+                        X = Transect.X
+                        Y = Transect.Y
+                        Z = Transect.Z
+                        DistAlong = Transect.DistAlong
+                        DistTo = Transect.DistTo
+                        Transect.InterpolationIncomplete = False 
+                        print("SECOND RUN")
+                    else:
+                        X = []
+                        Y = []
+                        Z = []
+                        DistAlong = []
+                        DistTo = []
                     
                     for i in range(iStart,iEnd):
 
@@ -3425,6 +3441,17 @@ class Coast:
                                 DistTo.append(DistanceToLine)
                                 Z.append(DTMArray[i][j])
                                     
+                    # If first run of crossing transect, save values to Transect and don't complete IDW calculation
+                    if Transect.InterpolationIncomplete and not Transect.DistTo:
+                        Transect.X = X
+                        Transect.Y = Y
+                        Transect.Z = Z
+                        Transect.DistAlong = DistAlong
+                        Transect.DistTo = DistTo
+                        print("FIRST RUN... CONTINUING TO NEXT TRANSECT")
+                        CurrentTransect += 1
+                        continue
+                    
                     #Sort by distance along line, need to convert to numpy arrays as we go to sort
                     Sortedi = np.argsort(DistAlong)
                     X = np.asarray(X)[Sortedi]
