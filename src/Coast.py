@@ -3372,11 +3372,11 @@ class Coast:
                         jStart = 0
                         Transect.InterpolationIncomplete = True
                     if iEnd > len(YVector):
-                        print("\t\t\t\tiEnd > len(YVector! Setting to", len(YVector))
+                        print("\t\t\t\tiEnd > len(YVector)! Setting to", len(YVector))
                         iEnd = len(YVector)
                         Transect.InterpolationIncomplete = True
                     if jEnd > len(XVector):
-                        print("\t\t\t\tjEnd > len(XVector! Setting to", len(XVector))
+                        print("\t\t\t\tjEnd > len(XVector)! Setting to", len(XVector))
                         jEnd = len(XVector)
                         Transect.InterpolationIncomplete = True                        
                     
@@ -3541,6 +3541,105 @@ class Coast:
                     CurrentTransect += 1
             
             print("")
+            
+        # Catch outer edge transects: complete interpolation with existing data
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                if Transect.InterpolationIncomplete:
+                    print(f"Completing edge transect {Transect.LineID}/{Transect.ID} interpolation")
+                
+                    X = Transect.X
+                    Y = Transect.Y
+                    Z = Transect.Z
+                    DistAlong = Transect.DistAlong
+                    DistTo = Transect.DistTo
+                    
+                    #Sort by distance along line, need to convert to numpy arrays as we go to sort
+                    Sortedi = np.argsort(DistAlong)
+                    X = np.asarray(X)[Sortedi]
+                    Y = np.asarray(Y)[Sortedi]
+                    DistAlong = np.asarray(DistAlong)[Sortedi]
+                    DistTo = np.asarray(DistTo)[Sortedi]
+                    Z = np.asarray(Z)[Sortedi]
+                    
+                    # Determination of distance spacing now externalised
+                    if not DistanceSpacing:
+                        DistanceSpacing = DTM_Resolution*2.
+                    if DistanceSpacing < 0:
+                        DistanceSpacing = -DistanceSpacing
+                    
+                    #Get line points
+                    X1, Y1 = Transect.StartNode.get_XY()
+                    X2, Y2 = Transect.EndNode.get_XY()
+                    TransectLine = LineString([(X1, Y1), (X2, Y2)])
+                    
+                    # Create a line for interpolating to
+                    LineLength = np.sqrt((X2-X1)**2 + (Y2-Y1)**2)
+                    
+                    NoPoints = (int)(LineLength/DistanceSpacing)        #(int)(LineLength/(DTM_Resolution*2.))
+                    if NoPoints < 1:
+                        raise SystemExit("LineLength/DistanceSpacing leads to zero elevation points")
+                        
+                    Transect.DistanceSpacing = DistanceSpacing          #DTM_Resolution*2.
+                    XLine = np.linspace(X1,X2,NoPoints)
+                    YLine = np.linspace(Y1,Y2,NoPoints)
+                    DistAlongTransect = np.zeros(len(XLine))
+                    ZIDW = np.zeros(len(XLine))
+                    ZMin = np.zeros(len(XLine))
+                    ZMax = np.zeros(len(XLine))
+                    ZStd = np.zeros(len(XLine))
+                    
+                    #Loop along line
+                    for i in range(0,NoPoints):
+                        
+                        #Calculate distance along the line
+                        DistAlongTransect[i] = i*DistanceSpacing        #i*DTM_Resolution*2.
+                        
+                        # Sample a reduced array here i.e. a neighbourhood to reduce computation time
+                        Neighbourhood = np.abs(DistAlongTransect[i]-DistAlong) < DTM_Resolution*2. # QUESTION: Is this unrelated to DistanceSpacing?
+                        ZLocal = Z[Neighbourhood]
+                        
+                        if len(ZLocal) == 0:
+                            
+                            # Set to NDV
+                            ZIDW[i] = NDV
+                            ZMin[i] = NDV
+                            ZMax[i] = NDV
+                            ZStd[i] = NDV
+                            
+                            continue
+                        
+                        # Do IDW
+                        # Create a distance vector
+                        Dist = np.sqrt(DistAlong[Neighbourhood]**2. + DistTo[Neighbourhood]**2.)
+                        
+                        # Weights are inverse
+                        Weights = 1./Dist**2.
+                        
+                        # Interpolate Z
+                        ZIDW[i]  = np.sum(Z[Neighbourhood]*Weights)/np.sum(Weights)
+                        
+                        # Other Z Values
+                        ZMin[i] = np.min(ZLocal)
+                        ZMax[i] = np.max(ZLocal)
+                        ZStd[i] = np.std(ZLocal)
+                        
+                    # Set up the mask from NDVs
+                    Mask = ZIDW == NDV
+                    DistAlongTransect = ma.masked_where(Mask,DistAlongTransect)
+                    ZIDW = ma.masked_where(Mask,ZIDW)
+                    ZMin = ma.masked_where(Mask,ZMin)
+                    ZMax = ma.masked_where(Mask,ZMax)
+                    ZStd = ma.masked_where(Mask,ZStd)
+                    
+                    Transect.Distance = DistAlongTransect
+                    Transect.DistanceSpacing = DistAlongTransect[1]-DistAlongTransect[0]
+                    Transect.Elevation = ZIDW
+                    Transect.ElevationMin = ZMin
+                    Transect.ElevationMax = ZMax
+                    Transect.ElevStd = ZStd
+           
+                    Transect.InterpolationIncomplete = False
 
     def AnalyseTransectMorphology(self):
 
