@@ -3438,11 +3438,13 @@ class Coast:
                         #DF = pd.DataFrame({"X": X, "Y": Y, "Z": Z, "DistAlong": DistAlong, "DistTo": DistTo})
                         #DF.to_pickle(SwathProfsFolder+"Swath_"+str(Transect.ID)+".pkl")
                     
-                    # Create a line for interpolating to
                     # Determination of distance spacing now externalised
                     if not DistanceSpacing:
                         DistanceSpacing = DTM_Resolution*2.
-                        
+                    if DistanceSpacing < 0:
+                        DistanceSpacing = -DistanceSpacing
+                    
+                    # Create a line for interpolating to
                     LineLength = np.sqrt((X2-X1)**2 + (Y2-Y1)**2)
                     
                     NoPoints = (int)(LineLength/DistanceSpacing)        #(int)(LineLength/(DTM_Resolution*2.))
