@@ -1736,7 +1736,7 @@ class Coast:
     def GetShorefaceSlopesMLWS2(self):
         """
         
-        Function to extract shoreface slope between CoastNode and MLWS node 
+        Function to extract shoreface slope between MHWS and MLWS node 
         If no MLWS intersect, use nearest MLWS node (from ExtractMLWS()). 
         
         Wrapper to function in the Transect object
@@ -1745,7 +1745,7 @@ class Coast:
         
         """
         
-        print("Coast.GetShorefaceSlopeMLWS2: Slope = dz/dx between CoastNode and MLWS")
+        print("Coast.GetShorefaceSlopeMLWS2: Slope = dz/dx between MHWS and MLWS")
         
         for Line in self.CoastLines:
             for Transect in Line.Transects:
@@ -2460,6 +2460,7 @@ class Coast:
                 if not hasattr(Transect, NodeToSave):
                     if __debug__:
                         print(Transect.LineID, Transect.ID, "\t Transect has no attribute", NodeToSave)
+                        print("Creating", NodeToSave)
                     
                 setattr(Transect, NodeToSave, Node(Intersection.x, Intersection.y))
                 
@@ -2572,7 +2573,7 @@ class Coast:
     def SampleNodeElevation(self, NodeToSample, DEMFileList=None):
     
         """
-        Samples the elevation of given node for each transect.
+        Samples the DEM elevation of given node for each transect.
         Assigns elevation to Transect."NodeToSample".Z
         
         Parameters
@@ -2660,7 +2661,7 @@ class Coast:
                         Elevation = val[0] 
                         #print(Transect.LineID, Transect.ID, "\t", Elevation)
 
-                    # ensure value not overwritten if node is outside current DTM (transect intersects but node outside)
+                    # ensure value not overwritten if node is outside current DTM and was sampled previously
                     if not ThisNode.Z: 
                         ThisNode.Z = Elevation
                     
@@ -3396,7 +3397,7 @@ class Coast:
                         DistAlong = Transect.DistAlong
                         DistTo = Transect.DistTo
                         Transect.InterpolationIncomplete = False 
-                        print("SECOND RUN")
+                        print("\t\t\t\t\tSECOND run... Completing interpolation")
                     else:
                         X = []
                         Y = []
@@ -3448,7 +3449,7 @@ class Coast:
                         Transect.Z = Z
                         Transect.DistAlong = DistAlong
                         Transect.DistTo = DistTo
-                        print("FIRST RUN... CONTINUING TO NEXT TRANSECT")
+                        print("\t\t\t\t\tFIRST interpolation run... Save and continue")
                         CurrentTransect += 1
                         continue
                     
@@ -3546,6 +3547,7 @@ class Coast:
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 if Transect.InterpolationIncomplete:
+                    Transect.InterpolationIncomplete = False
                     print(f"Completing edge transect {Transect.LineID}/{Transect.ID} interpolation")
                 
                     X = Transect.X
@@ -3638,8 +3640,7 @@ class Coast:
                     Transect.ElevationMin = ZMin
                     Transect.ElevationMax = ZMax
                     Transect.ElevStd = ZStd
-           
-                    Transect.InterpolationIncomplete = False
+          
 
     def AnalyseTransectMorphology(self):
 
