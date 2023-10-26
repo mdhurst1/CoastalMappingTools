@@ -3475,7 +3475,7 @@ class Coast:
                     # Create a line for interpolating to
                     LineLength = np.sqrt((X2-X1)**2 + (Y2-Y1)**2)
                     
-                    NoPoints = (int)(LineLength/DistanceSpacing)        #(int)(LineLength/(DTM_Resolution*2.))
+                    NoPoints = (int)(LineLength/DistanceSpacing)+1        #(int)(LineLength/(DTM_Resolution*2.))
                     if NoPoints < 1:
                         raise SystemExit("LineLength/DistanceSpacing leads to zero elevation points")
                         
@@ -3537,7 +3537,7 @@ class Coast:
                     Transect.ElevationMin = ZMin
                     Transect.ElevationMax = ZMax
                     Transect.ElevStd = ZStd
-
+                    
                     # update transect no
                     CurrentTransect += 1
             
@@ -3640,8 +3640,7 @@ class Coast:
                     Transect.ElevationMin = ZMin
                     Transect.ElevationMax = ZMax
                     Transect.ElevStd = ZStd
-          
-
+             
     def AnalyseTransectMorphology(self):
 
         """
