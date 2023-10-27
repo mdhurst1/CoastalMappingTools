@@ -1208,7 +1208,7 @@ class Coast:
         f.write(self.Projection)
         f.close()
 
-    def WriteTransectsCSV(self,Folder=os.getcwd(),Filename=""):
+    def WriteTransectsCSV(self, Folder=os.getcwd(), Filename="", Swath=False):
 
         """
 
@@ -1220,7 +1220,8 @@ class Coast:
         MDH, July 2019
         
         NH modification Octber 2023:
-        - Add Filename 
+        - Add Filename
+        - Add flag Swath for saving additional swath data
 
         """
         
@@ -1235,9 +1236,12 @@ class Coast:
                 
                 # print progress to screen
                 print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
-
-                # write transect    
-                Transect.Write(Folder, Filename)
+                
+                # write transect
+                if Swath:
+                    Transect.WriteSwath(Folder, Filename)
+                else:
+                    Transect.Write(Folder, Filename)
 
                 # update counter
                 CurrentTransect += 1
@@ -3533,6 +3537,7 @@ class Coast:
                     
                     Transect.Distance = DistAlongTransect
                     Transect.DistanceSpacing = DistAlongTransect[1]-DistAlongTransect[0]
+                    Transect.DistanceNodes = [Node(X,Y) for X, Y in zip(XLine,YLine)]
                     Transect.Elevation = ZIDW
                     Transect.ElevationMin = ZMin
                     Transect.ElevationMax = ZMax
@@ -3640,6 +3645,23 @@ class Coast:
                     Transect.ElevationMin = ZMin
                     Transect.ElevationMax = ZMax
                     Transect.ElevStd = ZStd
+                    Transect.DistanceNodes = [Node(X,Y) for X, Y in zip(XLine,YLine)]
+                    
+    def ExtractIntertidalSlopesSwath(self):
+        
+        """
+        Wrapper function for Transect.ExtractSwathTidalElevations
+        
+        NH, October 2023
+        
+        """
+        
+        print("Coast.ExtractTidalElevationsSwath: Finding nearest swath elevations to transect MHWS/MLWS intersects")
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                Transect.ExtractTidalElevationsSwath()
+                Transect.CalculateIntertidalSlopeSwath()
              
     def AnalyseTransectMorphology(self):
 
