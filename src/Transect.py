@@ -601,89 +601,37 @@ class Transect:
         if self.ShorefaceSlope < 0.001:
             self.ShorefaceSlope = 0.001
             
-    def CalculateIntertidalSlopeSwath(self):
+            
+    def ExtractIndex(self, Elev=None, MostSeaward=None):
     
         """
+        Function to extract and return the index of the nearest elevation node
+        to the elevation specified in the function call.
         
-        Function to calculate the intertidal slope based on the swath elevations
-        nearest to the original transect's MHWS and MLWS interection nodes.
-        Need to call ExtractTidalElevationsSwath() prior to this.
+        Parameters
+        ----------
+        Elev - float
+            Decimal number of the elevation of interest
+        MostSeaward - boolean: FUNCTIONALITY TO BE ADDED
+            In case of topography with multiople peaks,
+            1 to find the most seaward elevation match
+            0 to find most landward elevation match
         
         NH, October 2023
-        
-        """
-        
-        # check if the swath elevations exist
-        if not self.SwathTidalElevationsExtracted:
-            print(self.LineID, self.ID, "CalculateIntertidalSlopeSwath: No elevation data")
-            return 
-        
-        # calculate intertidal slope        
-        self.ShorefaceDistance = self.MHWSDistance - self.MLWSDistance
-        self.ShorefaceDepth = self.MHWSElevationSwath - self.MLWSElevationSwath
-        self.ShorefaceSlope = self.ShorefaceDepth/self.ShorefaceDistance
-            
-    
-    def ExtractTidalElevationsSwath(self):
     
         """
         
-        Function to find interpolated elevations nearest to the MHWS and MLWS intersection 
-        nodes of the transect.
-        Save these to Transect.MHWSElevationSwath and Transect.MLWSElevationSwath
-        
-        Note: This is not the exact tidal elevations, but elevations of the
-        interpolated swath where the MHWS and MLWS contours intersect the transect.
-        The saved values will be used in CalculateIntertidalSlope2()
-        
-        If no MLWS intersection, use the MLWS node (nearest MLWS node to StartNode) 
-        
-        NH, October 2023
-        
-        """
-        
-        DistNodePoints = [Point(DistNode.X, DistNode.Y) for DistNode in self.DistanceNodes]
-        
-        # find nearest DistanceNode to MHWSIntersect node. Save swath elevation
-        # and disance along transect for intertidal slope calc
-        if self.MHWSIntersect.X != 0:
-            MHWSPoint = Point(self.MHWSIntersect.X, self.MHWSIntersect.Y)
-            Distances = [MHWSPoint.distance(DistNodePoints)]
-            ihigh = np.argmin(Distances)
-            self.MHWSElevationSwath = self.Elevation[ihigh]
-            self.MHWSDistance = self.Distance[ihigh]
-            
-        else:
-            print("ExtractTidalElevationsSwath:", self.LineID, self.ID, "No MHWSIntersect node")
+        # Check parameters were passed
+        if Elev is None:
+            print("Transect.ExtractIndex: Elev not specified!")
             return
+        if MostSeaward is None:
+            print("Transect.ExtractIndex: MostSeaward not specified, finding most seaward elevation match")
+            MostSeaward = True
         
-        # find find nearest DistanceNode to MLWSIntersect node. Save swath elevation
-        # and disance along transect for intertidal slope calc
-        if self.MLWSIntersect.X != 0:
-            MLWSPoint = Point(self.MLWSIntersect.X, self.MLWSIntersect.Y)
-            Distances = [MLWSPoint.distance(DistNodePoints)]
-            ilow = np.argmin(Distances)
-            self.MLWSElevationSwath = self.Elevation[ilow]
-            self.MLWSDistance = self.Distance[ilow]
-        else:
-            print(self.LineID, self.ID, "ExtractTidalElevationsSwath: No MLWSIntersect node, using MLWS node")
-            if not self.MLWS.X:
-                print(self.LineID, self.ID, "ExtractTidalElevationsSwath: No MLWS elevation data either!")
-                return
-            MLWSPoint = Point(self.MLWS.X, self.MLWS.Y)
-            self.MLWSDistance = -MLWSPoint.distance(Point(self.StartNode.X, self.StartNode.Y)) # negative as point seaward of transect. Strictly speaking should do dot product here...
-            self.MLWSElevationSwath = self.MLWS.Z
-            
-        self.SwathTidalElevationsExtracted = True
-           
-        if __debug__:
-            print(self.LineID, self.ID)
-            print(f"ihigh={ihigh}, Swath elev at MHWSIntersect = {self.MHWSElevationSwath}")
-            if self.MLWSIntersect.X != 0:
-                print(f"ilow={ilow}, Swath elev at MLWSIntersect = {self.MLWSElevationSwath}")
-            else:
-                print(f"Elev at nearset MLWS node = {self.MLWSElevationSwath}, {self.MLWSDistance} m away from StartNode")
-            
+        diff = abs(self.Elevation - Elev)
+        return(np.argmin(diff))
+    
     def PredictFutureShorelines(self, MaxRockHeadErosionDistance=25.):
 
         """
