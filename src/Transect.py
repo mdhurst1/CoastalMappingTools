@@ -119,6 +119,14 @@ class Transect:
         self.ElevationMin = None
         self.ElevationMax = None
         self.ElevStd = None
+        
+        # Elevation interpolation
+        self.InterpolationIncomplete = False
+        self.X = None
+        self.Y = None
+        self.Z = None
+        self.DistAlong = None
+        self.DistTo = None
 
         # cliff metrics
         self.Cliff = False
@@ -134,6 +142,10 @@ class Transect:
         self.ElevationRoughness = None
         self.MLWSIntersect = None
         self.MHWSIntersect = None
+        self.MHWSDistance = None
+        self.MLWSDistance = None
+        self.MHWSElevationSwath = None
+        self.MLWSElevationSwath = None
 
         # barrier metrics
         self.Barrier = False
@@ -571,7 +583,7 @@ class Transect:
             else:
                 # Use MLWS data
                 MLWSNode = self.MLWS
-                print("     Using nearest MLWS node")
+                print("\t\t\t\tUsing nearest MLWS node")
         else:
             # use MLWSIntersect data
             MLWSNode = self.MLWSIntersect
@@ -588,6 +600,89 @@ class Transect:
         # set minimum shoreface slope to 0.001
         if self.ShorefaceSlope < 0.001:
             self.ShorefaceSlope = 0.001
+            
+    def CalculateIntertidalSlopeSwath(self):
+    
+        """
+        
+        Function to calculate the intertidal slope based on the swath elevations
+        nearest to the original transect's MHWS and MLWS interection nodes.
+        Need to call ExtractTidalElevationsSwath() prior to this.
+        
+        NH, October 2023
+        
+        """
+        
+        # check if the swath elevations exist
+        if not self.SwathTidalElevationsExtracted:
+            print(self.LineID, self.ID, "CalculateIntertidalSlopeSwath: No elevation data")
+            return 
+        
+        # calculate intertidal slope        
+        self.ShorefaceDistance = self.MHWSDistance - self.MLWSDistance
+        self.ShorefaceDepth = self.MHWSElevationSwath - self.MLWSElevationSwath
+        self.ShorefaceSlope = self.ShorefaceDepth/self.ShorefaceDistance
+            
+    
+    def ExtractTidalElevationsSwath(self):
+    
+        """
+        
+        Function to find interpolated elevations nearest to the MHWS and MLWS intersection 
+        nodes of the transect.
+        Save these to Transect.MHWSElevationSwath and Transect.MLWSElevationSwath
+        
+        Note: This is not the exact tidal elevations, but elevations of the
+        interpolated swath where the MHWS and MLWS contours intersect the transect.
+        The saved values will be used in CalculateIntertidalSlope2()
+        
+        If no MLWS intersection, use the MLWS node (nearest MLWS node to StartNode) 
+        
+        NH, October 2023
+        
+        """
+        
+        DistNodePoints = [Point(DistNode.X, DistNode.Y) for DistNode in self.DistanceNodes]
+        
+        # find nearest DistanceNode to MHWSIntersect node. Save swath elevation
+        # and disance along transect for intertidal slope calc
+        if self.MHWSIntersect.X != 0:
+            MHWSPoint = Point(self.MHWSIntersect.X, self.MHWSIntersect.Y)
+            Distances = [MHWSPoint.distance(DistNodePoints)]
+            ihigh = np.argmin(Distances)
+            self.MHWSElevationSwath = self.Elevation[ihigh]
+            self.MHWSDistance = self.Distance[ihigh]
+            
+        else:
+            print("ExtractTidalElevationsSwath:", self.LineID, self.ID, "No MHWSIntersect node")
+            return
+        
+        # find find nearest DistanceNode to MLWSIntersect node. Save swath elevation
+        # and disance along transect for intertidal slope calc
+        if self.MLWSIntersect.X != 0:
+            MLWSPoint = Point(self.MLWSIntersect.X, self.MLWSIntersect.Y)
+            Distances = [MLWSPoint.distance(DistNodePoints)]
+            ilow = np.argmin(Distances)
+            self.MLWSElevationSwath = self.Elevation[ilow]
+            self.MLWSDistance = self.Distance[ilow]
+        else:
+            print(self.LineID, self.ID, "ExtractTidalElevationsSwath: No MLWSIntersect node, using MLWS node")
+            if not self.MLWS.X:
+                print(self.LineID, self.ID, "ExtractTidalElevationsSwath: No MLWS elevation data either!")
+                return
+            MLWSPoint = Point(self.MLWS.X, self.MLWS.Y)
+            self.MLWSDistance = -MLWSPoint.distance(Point(self.StartNode.X, self.StartNode.Y)) # negative as point seaward of transect. Strictly speaking should do dot product here...
+            self.MLWSElevationSwath = self.MLWS.Z
+            
+        self.SwathTidalElevationsExtracted = True
+           
+        if __debug__:
+            print(self.LineID, self.ID)
+            print(f"ihigh={ihigh}, Swath elev at MHWSIntersect = {self.MHWSElevationSwath}")
+            if self.MLWSIntersect.X != 0:
+                print(f"ilow={ilow}, Swath elev at MLWSIntersect = {self.MLWSElevationSwath}")
+            else:
+                print(f"Elev at nearset MLWS node = {self.MLWSElevationSwath}, {self.MLWSDistance} m away from StartNode")
             
     def PredictFutureShorelines(self, MaxRockHeadErosionDistance=25.):
 
@@ -2763,7 +2858,7 @@ class Transect:
     
     
 
-    def Write(self, Folder=os.getcwd(), delimiter=","):
+    def Write(self, Folder=os.getcwd(), Filename="", delimiter=","):
         
         """
         
@@ -2772,11 +2867,35 @@ class Transect:
         Can sepcify filename or create using default name + ID
         
         MDH, July 2019
+        
+        NH mod October 2023:
+        - Change filename to include coastline number and transect number.
+          This fixes problem where csv files get overwritten in the case of 
+          multiple coastlines.
+        - Add parameter for user-defined filename
+        
+        Parameters
+        ----------
+        Folder : str
+            Folder path of where the .csv files will be written 
+            
+        Filename : str
+            Start of the filename, before coastline ID and transect ID
 
+        delimiter : str
+            Delimiter used in csv output files
+            
+        Output
+        ------
+        One .csv file for each transect written to destination folder
+        
         """
 
         # define filename and open for writing
-        Filename=Folder+"/Transect_"+str(self.ID)+".csv"
+        if not Filename:
+            Filename = Folder+"/Transect_"+str(self.LineID)+"_"+str(self.ID)+".csv"
+        else:
+            Filename = Folder+"/"+str(Filename)+"_"+str(self.LineID)+"_"+str(self.ID)+".csv"
         f = open(Filename,'w')
         
         # write headers
@@ -2790,3 +2909,54 @@ class Transect:
             f.write(str(dist) + delimiter + str(z) + "\n")
 
         f.close()
+        
+        
+    def WriteSwath(self, Folder=os.getcwd(), Filename="", delimiter=","):
+    
+        """
+        Write tranect swath topography to file
+        Can sepcify filename or create using default name + ID
+        
+        NH, October 2023
+        
+        Parameters
+        ----------
+        Folder : str
+            Folder path of where the .csv files will be written 
+            
+        Filename : str
+            Start of the filename, before coastline ID and transect ID
+
+        delimiter : str
+            Delimiter used in csv output files
+            
+        Output
+        ------
+        One .csv file for each transect written to destination folder
+    
+        """
+    
+        # define filename and open for writing
+        if not Filename:
+            Filename = Folder+"/Transect_"+str(self.LineID)+"_"+str(self.ID)+".csv"
+        else:
+            Filename = Folder+"/"+str(Filename)+"_"+str(self.LineID)+"_"+str(self.ID)+".csv"
+        f = open(Filename,'w')
+        
+        # write headers
+        f.write("X" + delimiter + "Y" + "\n")
+        f.write(str(self.StartNode.X) + delimiter + str(self.StartNode.Y) + "\n")
+        f.write(str(self.EndNode.X) + delimiter + str(self.EndNode.Y) + "\n")
+        f.write("Distance" + delimiter + "ZIDW" + delimiter + "ZMin" + delimiter + "ZMax" +"\n")
+
+        #loop through transect and write data
+        for (dist, z, zmin, zmax) in zip(self.Distance, self.Elevation, self.ElevationMin, self.ElevationMax):
+            f.write(str(dist) + delimiter + str(z) + delimiter + str(zmin) + delimiter + str(zmax) + "\n")
+
+        f.close()
+
+
+    
+    
+    
+    
