@@ -3692,21 +3692,6 @@ class Coast:
                     Transect.ElevStd = ZStd
                     Transect.DistanceNodes = [Node(X,Y) for X, Y in zip(XLine,YLine)]
                     
-    def ExtractIntertidalSlopesSwath(self):
-        
-        """
-        Wrapper function for Transect.ExtractSwathTidalElevations
-        
-        NH, October 2023
-        
-        """
-        
-        print("Coast.ExtractTidalElevationsSwath: Finding nearest swath elevations to transect MHWS/MLWS intersects")
-        
-        for Line in self.CoastLines:
-            for Transect in Line.Transects:
-                Transect.ExtractTidalElevationsSwath()
-                Transect.CalculateIntertidalSlopeSwath()
              
     def AnalyseTransectMorphology(self):
 
