@@ -146,6 +146,7 @@ class Transect:
         self.MLWSDistance = None
         self.MHWSElevationSwath = None
         self.MLWSElevationSwath = None
+        self.ForeshoreSlope = None
 
         # barrier metrics
         self.Barrier = False
