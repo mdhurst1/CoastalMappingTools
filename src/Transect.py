@@ -602,35 +602,44 @@ class Transect:
             self.ShorefaceSlope = 0.001
             
             
-    def ExtractIndex(self, Elev=None, MostSeaward=None):
+    def ExtractIndex(self, Elev=None):
     
         """
-        Function to extract and return the index of the nearest elevation node
-        to the elevation specified in the function call.
+        Function to return the index of the most seaward node with Transect.Elevation
+        greater than the elevation specified in the function call.
+        
+        Returns -1 if no elevation specified, or no elevation greater than Elev found.
         
         Parameters
         ----------
         Elev - float
             Decimal number of the elevation of interest
-        MostSeaward - boolean: FUNCTIONALITY TO BE ADDED
-            In case of topography with multiople peaks,
-            1 to find the most seaward elevation match
-            0 to find most landward elevation match
         
         NH, October 2023
+        
+        Works
     
         """
         
         # Check parameters were passed
         if Elev is None:
             print("Transect.ExtractIndex: Elev not specified!")
-            return
-        if MostSeaward is None:
-            print("Transect.ExtractIndex: MostSeaward not specified, finding most seaward elevation match")
-            MostSeaward = True
+            return -1
         
-        diff = abs(self.Elevation - Elev)
-        return(np.argmin(diff))
+        # Find indexes of transect elevations greater than Elev: boolean array
+        elev_of_interest = self.Elevation > Elev
+        
+        # Check anything was found
+        if sum(elev_of_interest) == 0:
+            print(f"Transect.ExtractIndex: No Elevation above {Elev} m!")
+            return -1
+        
+        # Return the smallest index (most seaward)
+        for i in range(0, len(elev_of_interest)):
+            if elev_of_interest[i]:
+                return i
+            else:
+                continue
     
     def PredictFutureShorelines(self, MaxRockHeadErosionDistance=25.):
 
