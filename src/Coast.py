@@ -1737,10 +1737,10 @@ class Coast:
             for Transect in Line.Transects:
                 Transect.CalculateIntertidalSlope()            
             
-    def GetShorefaceSlopesMLWS2(self):
+    def GetIntertidalSlopes(self):
         """
         
-        Function to extract shoreface slope between MHWS and MLWS node 
+        Function to extract the slope between MHWS and MLWS node for each transect.
         If no MLWS intersect, use nearest MLWS node (from ExtractMLWS()). 
         
         Wrapper to function in the Transect object

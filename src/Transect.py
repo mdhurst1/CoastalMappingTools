@@ -567,7 +567,7 @@ class Transect:
     
         """
         
-        Function to extract transect's shoreface slope between MHWS and MLWS nodes. 
+        Function to extract transect's slope between MHWS and MLWS intersect nodes. 
         If no MLWS intersect node, use nearest MLWS node (from ExtractMLWS()). 
         
         NH Spetembeer 2023
