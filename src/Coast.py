@@ -1754,6 +1754,51 @@ class Coast:
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 Transect.CalculateIntertidalSlope2()  
+                
+    def GetForeshoreSlopes(self):
+    
+        """
+        Function to extract the upper shoreface slope for each transect
+        between the 0 m and MHWS elevations. 
+        Uses Transect.Elevation, so slopes can be from either the sampeld DTM elevations,
+        or the interpolated swath elevations.
+        
+        NH, October 2023
+        
+        """
+        
+        print("Coast.GetForeshoreSlopes: Slope = dz/dx between 0 m and MHWS elevation")
+        
+        # Extract indexes
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                ihigh = Transect.ExtractIndex(Elev=Transect.MHWS)
+                ilow = Transect.ExtractIndex(Elev=0.0)
+                
+                # check indexes valid
+                if (ihigh == -1 or ilow == -1):
+                    print(f"\t{Transect.LineID}, {Transect.ID}: Indexes not valid!", ihigh, ilow)
+                    Transect.ForeshoreSlope = None
+                    continue
+                if ihigh < ilow:
+                    print(f"\t{Transect.LineID}, {Transect.ID}: MHWS index < coastline index!")
+                    Transect.ForeshoreSlope = None
+                    continue
+                
+                # Calculate slopes
+                dz = Transect.Elevation[ihigh] - Transect.Elevation[ilow]
+                dx = Transect.Distance[ihigh] - Transect.Distance[ilow]
+                
+                # Catch divide by zero
+                if dx == 0:
+                    print(f"\t{Transect.LineID}, {Transect.ID}: \tdx = 0!")
+                    Transect.ForeshoreSlope = None
+                    continue
+                    
+                else:
+                    Transect.ForeshoreSlope = dz/dx
+        
+                print(f"\t{Transect.LineID}, {Transect.ID}: \tihigh={ihigh}, ilow={ilow}, \tdz={dz}, \tdx={dx}, \tslope={Transect.ForeshoreSlope}")
         
     
     def GenerateTransectsBetweenContoursShp(self, ContourShp1, ContourShp2, Distance2Sea=8000., Distance2Land=8000., TransectSpacing=20., CheckTopology=True):
