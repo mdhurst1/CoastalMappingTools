@@ -3264,12 +3264,12 @@ class Coast:
 
                     Transect.HaveTopography = True
                     
-                    # NH add: Note: issue where transect overlaps 2 DTMs, Transect.Elevation gets overwritten in 2nd DTM iteration (StF L0 T30)
+                    # NH add Note: issue where transect overlaps 2 DTMs, Transect.Elevation gets overwritten in 2nd DTM iteration (StF L0 T30)
                     # But, correct elevations are in Transect.DisanceNodes.Z
-                    if __debug__:
-                        print(Line.ID, Transect.ID)
-                        print("Elevation:\n", Transect.Elevation)
-                        print("Distance:\n", Transect.Distance)
+                    #if __debug__:
+                        #print(Line.ID, Transect.ID)
+                        #print("Elevation:\n", Transect.Elevation)
+                        #print("Distance:\n", Transect.Distance)
                         #for i, ThisNode in enumerate(Transect.DistanceNodes):
                             #print("DistNodes:\n", Transect.DistanceNodes[i].X, Transect.DistanceNodes[i].Y, Transect.DistanceNodes[i].Z)
 
@@ -3326,7 +3326,7 @@ class Coast:
 
             # load the DTM and get its properties
             print("\tLoading DTM... ", end="")
-            DTM_Dataset = rasterio.open(DEM) # rasterio.open(DTMFile)
+            DTM_Dataset = rasterio.open(DEM) 
             DTMArray = DTM_Dataset.read(1)
             NCols = DTM_Dataset.width
             NRows = DTM_Dataset.height
@@ -3360,7 +3360,7 @@ class Coast:
             # check swath distance
             if SwathDistance < 0:
                 SwathDistance = DTM_Resolution*2.
-            # NH: Check for stupidly big swath distance
+            
             if SwathDistance > DTM_Resolution*20:
                 print("\tSwathDistance > DTM_Resolution*20! Setting to DTM_Resolution*20")
                 SwathDistance = DTM_Resolution*20.
@@ -3389,50 +3389,42 @@ class Coast:
                     X2, Y2 = Transect.EndNode.get_XY()
                     TransectLine = LineString([(X1, Y1), (X2, Y2)])
                     
-                    if __debug__:
-                        print("\tTransect X1, Y1, X2, Y2 = ", X1, Y1, X2, Y2)
+                    #if __debug__:
+                        #print("\tTransect X1, Y1, X2, Y2 = ", X1, Y1, X2, Y2)
 
                     # check for intersection
                     if not TransectLine.intersects(DTM_Extent):
                         CurrentTransect += 1 # NH: increment transect count if no intersect
                         continue
 
-                    #find indices for bounding box
-                    #need to be careful with reverse indexing
-                    #iStart = np.argmin(np.abs(YVector-np.max([Y1,Y2])))-1
-                    #iEnd = np.argmin(np.abs(YVector-np.min([Y1,Y2])))+1
-                    #jStart = np.argmin(np.abs(XVector-np.min([X1,X2])))-1
-                    #jEnd = np.argmin(np.abs(XVector-np.max([X1,X2])))+1
-                    
-                    # NH: Change bounding box size to extend past transect bounds by SwathDistance
+                    # NH: Bounding box size to extend past transect bounds by SwathDistance
                     iStart = np.argmin(np.abs(YVector-np.max([Y1,Y2])))-(int)(SwathDistance/DTM_Resolution) 
                     iEnd = np.argmin(np.abs(YVector-np.min([Y1,Y2])))+(int)(SwathDistance/DTM_Resolution)
                     jStart = np.argmin(np.abs(XVector-np.min([X1,X2])))-(int)(SwathDistance/DTM_Resolution)
                     jEnd = np.argmin(np.abs(XVector-np.max([X1,X2])))+(int)(SwathDistance/DTM_Resolution)
                     
-                    # NH: Add index sanity check
-                    # Catch Start index of -1, in case where transect intersects top (i) or left hand side (j) of DEM.
-                    # Catch End index larger than the length or width of the DTM. This only applies for wider bounding box.  
+                    # Catch Start index of -1, when bounding box intersects top (i) or left hand side (j) of DEM.
+                    # Catch End index larger than the length or width of the DTM. Set InterpolationInconplete flag.  
                     if iStart < 0:
-                        print("\t\t\t\tiStart < 0! Setting to 0")
+                        print("\tiStart < 0! Setting to 0")
                         iStart = 0
                         Transect.InterpolationIncomplete = True
                     if jStart < 0:
-                        print("\t\t\t\tjStart < 0! Setting to 0")
+                        print("\tjStart < 0! Setting to 0")
                         jStart = 0
                         Transect.InterpolationIncomplete = True
                     if iEnd > len(YVector):
-                        print("\t\t\t\tiEnd > len(YVector)! Setting to", len(YVector))
+                        print("\tiEnd > len(YVector)! Setting to", len(YVector))
                         iEnd = len(YVector)
                         Transect.InterpolationIncomplete = True
                     if jEnd > len(XVector):
-                        print("\t\t\t\tjEnd > len(XVector)! Setting to", len(XVector))
+                        print("\tjEnd > len(XVector)! Setting to", len(XVector))
                         jEnd = len(XVector)
                         Transect.InterpolationIncomplete = True                        
                     
                     if __debug__:
-                        print("\t\t\t\tiStart, iEnd, jStart, jEnd = ", iStart, iEnd, jStart, jEnd)
-                        #print("\tXVector[jStart], XVector[jEnd], YVector[iStart], YVector[iEND] = ", XVector[jStart], XVector[jEnd], YVector[iStart], YVector[iEnd])
+                        print("\t\tiStart, iEnd, jStart, jEnd = ", iStart, iEnd, jStart, jEnd)
+                        #print("\tXVector[jStart], XVector[jEnd-1], YVector[iStart], YVector[iEnd-1] = ", XVector[jStart], XVector[jEnd-1], YVector[iStart], YVector[iEnd-1])
 
                     #Get Vector X and Y
                     dX12 = X2-X1
@@ -3446,7 +3438,7 @@ class Coast:
                         DistAlong = Transect.DistAlong
                         DistTo = Transect.DistTo
                         Transect.InterpolationIncomplete = False 
-                        print("\t\t\t\t\tSECOND run... Completing interpolation")
+                        print("\t\tSECOND run... Completing interpolation")
                     else:
                         X = []
                         Y = []
@@ -3498,7 +3490,7 @@ class Coast:
                         Transect.Z = Z
                         Transect.DistAlong = DistAlong
                         Transect.DistTo = DistTo
-                        print("\t\t\t\t\tFIRST interpolation run... Save and continue")
+                        print("\t\tFIRST interpolation run... Save and continue")
                         CurrentTransect += 1
                         continue
                     
@@ -3515,7 +3507,7 @@ class Coast:
                         #DF = pd.DataFrame({"X": X, "Y": Y, "Z": Z, "DistAlong": DistAlong, "DistTo": DistTo})
                         #DF.to_pickle(SwathProfsFolder+"Swath_"+str(Transect.ID)+".pkl")
                     
-                    # Determination of distance spacing now externalised
+                    # Determination of distance spacing now externalised.
                     if not DistanceSpacing:
                         DistanceSpacing = DTM_Resolution*2.
                     if DistanceSpacing < 0:
@@ -3524,11 +3516,11 @@ class Coast:
                     # Create a line for interpolating to
                     LineLength = np.sqrt((X2-X1)**2 + (Y2-Y1)**2)
                     
-                    NoPoints = (int)(LineLength/DistanceSpacing)+1        #(int)(LineLength/(DTM_Resolution*2.))
+                    NoPoints = (int)(LineLength/DistanceSpacing)+1
                     if NoPoints < 1:
                         raise SystemExit("LineLength/DistanceSpacing leads to zero elevation points")
                         
-                    Transect.DistanceSpacing = DistanceSpacing          #DTM_Resolution*2.
+                    Transect.DistanceSpacing = DistanceSpacing
                     XLine = np.linspace(X1,X2,NoPoints)
                     YLine = np.linspace(Y1,Y2,NoPoints)
                     DistAlongTransect = np.zeros(len(XLine))
@@ -3541,10 +3533,10 @@ class Coast:
                     for i in range(0,NoPoints):
                         
                         #Calculate distance along the line
-                        DistAlongTransect[i] = i*DistanceSpacing        #i*DTM_Resolution*2.
+                        DistAlongTransect[i] = i*DistanceSpacing
                         
                         # Sample a reduced array here i.e. a neighbourhood to reduce computation time
-                        Neighbourhood = np.abs(DistAlongTransect[i]-DistAlong) < DTM_Resolution*2. # QUESTION: Is this unrelated to DistanceSpacing?
+                        Neighbourhood = np.abs(DistAlongTransect[i]-DistAlong) < DTM_Resolution*2.
                         ZLocal = Z[Neighbourhood]
                         
                         if len(ZLocal) == 0:
@@ -3598,7 +3590,7 @@ class Coast:
             for Transect in Line.Transects:
                 if Transect.InterpolationIncomplete:
                     Transect.InterpolationIncomplete = False
-                    print(f"Completing edge transect {Transect.LineID}/{Transect.ID} interpolation")
+                    print(f"\tCompleting edge transect {Transect.LineID}:{Transect.ID} interpolation")
                 
                     X = Transect.X
                     Y = Transect.Y
@@ -3628,11 +3620,11 @@ class Coast:
                     # Create a line for interpolating to
                     LineLength = np.sqrt((X2-X1)**2 + (Y2-Y1)**2)
                     
-                    NoPoints = (int)(LineLength/DistanceSpacing)        #(int)(LineLength/(DTM_Resolution*2.))
+                    NoPoints = (int)(LineLength/DistanceSpacing)
                     if NoPoints < 1:
                         raise SystemExit("LineLength/DistanceSpacing leads to zero elevation points")
                         
-                    Transect.DistanceSpacing = DistanceSpacing          #DTM_Resolution*2.
+                    Transect.DistanceSpacing = DistanceSpacing
                     XLine = np.linspace(X1,X2,NoPoints)
                     YLine = np.linspace(Y1,Y2,NoPoints)
                     DistAlongTransect = np.zeros(len(XLine))
@@ -3645,10 +3637,10 @@ class Coast:
                     for i in range(0,NoPoints):
                         
                         #Calculate distance along the line
-                        DistAlongTransect[i] = i*DistanceSpacing        #i*DTM_Resolution*2.
+                        DistAlongTransect[i] = i*DistanceSpacing
                         
                         # Sample a reduced array here i.e. a neighbourhood to reduce computation time
-                        Neighbourhood = np.abs(DistAlongTransect[i]-DistAlong) < DTM_Resolution*2. # QUESTION: Is this unrelated to DistanceSpacing?
+                        Neighbourhood = np.abs(DistAlongTransect[i]-DistAlong) < DTM_Resolution*2.
                         ZLocal = Z[Neighbourhood]
                         
                         if len(ZLocal) == 0:
