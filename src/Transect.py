@@ -613,11 +613,12 @@ class Transect:
             self.IntertidalSlope = 0.001
             
             
-    def ExtractIndex(self, Elev=None):
+    def ExtractIndex(self, Elev=None, Landward=True):
     
         """
-        Function to return the index of the most seaward node with Transect.Elevation
-        greater than the elevation specified in the function call.
+        Starting at the seaward end, function to return the index of the 
+        node in Transect.Elevation that is immediately landward or seaward 
+        of the specified elevation.
         
         Returns -1 if no elevation specified, or no elevation greater than Elev found.
         
@@ -625,6 +626,9 @@ class Transect:
         ----------
         Elev - float
             Decimal number of the elevation of interest
+        Landward - boolean
+            Flag to specifiy whether to return the first elevation landward (or seaward)
+            of the elevation of interest
         
         NH, October 2023
         
@@ -645,10 +649,16 @@ class Transect:
             print(f"Transect.ExtractIndex: No Elevation above {Elev} m!")
             return -1
         
-        # Return the smallest index (most seaward)
+        # Find the smallest index (most seaward)
         for i in range(0, len(elev_of_interest)):
             if elev_of_interest[i]:
-                return i
+                if Landward:
+                    return i
+                else:
+                    if i > 0:
+                        return i-1
+                    else:
+                        return i
             else:
                 continue
     

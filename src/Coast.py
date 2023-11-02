@@ -1793,8 +1793,8 @@ class Coast:
         # Extract indexes
         for Line in self.CoastLines:
             for Transect in Line.Transects:
-                ihigh = Transect.ExtractIndex(Elev=Transect.MHWS)
-                ilow = Transect.ExtractIndex(Elev=0.0)
+                ihigh = Transect.ExtractIndex(Elev=Transect.MHWS, Landward=False)
+                ilow = Transect.ExtractIndex(Elev=0.0, Landward=True)
                 
                 # check indexes valid
                 if (ihigh == -1 or ilow == -1):
@@ -3332,7 +3332,9 @@ class Coast:
             Distance in m between elevation nodes on the transect
             
         CrossShoreWindowSize : float
-            Size in m of the cross-shore window used during interpolation
+            Size in m of the cross-shore window landward and seaward of
+            each point during the interpolation.
+            Ultimate inrerpolation window width is thus two times this value.
             Minimum of DTM resolution, max of 5*DTM resolution
             Default of 2*DTM resolution
             
