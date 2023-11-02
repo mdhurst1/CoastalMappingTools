@@ -3295,7 +3295,7 @@ class Coast:
                         #for i, ThisNode in enumerate(Transect.DistanceNodes):
                             #print("DistNodes:\n", Transect.DistanceNodes[i].X, Transect.DistanceNodes[i].Y, Transect.DistanceNodes[i].Z)
 
-    def ExtractTransectTopographySwath(self, DEMFileList=None, SwathDistance=-9999, DistanceSpacing=None):
+    def ExtractTransectTopographySwath(self, DEMFileList=None, SwathDistance=-9999, DistanceSpacing=None, CrossShoreWindowSize=None):
         """
         Profile to populate transects with topographic data
         Uses swath profile routine to collect elevations within a certain distance
@@ -3311,6 +3311,7 @@ class Coast:
         - Fix bug of negative index in bounding box
         - Extend bounding box start and end coordinates by SwathDistance
         - Handle transect crossing two DTMs
+        - Add parameter to set crosshore interpolation window size
         
         Parameters
         ----------
@@ -3330,10 +3331,15 @@ class Coast:
         DistanceSpacing : float
             Distance in m between elevation nodes on the transect
             
+        CrossShoreWindowSize : float
+            Size in m of the cross-shore window used during interpolation
+            Minimum of DTM resolution, max of 5*DTM resolution
+            Default of 2*DTM resolution
+            
         """
         
         print("Coast.EstractTransectTopographySwath: Sampling DTMs for each transect")
-        
+                            
         # set up dem file list
         if DEMFileList:
             # check if list and make list if not
@@ -3386,6 +3392,14 @@ class Coast:
             if SwathDistance > DTM_Resolution*20:
                 print("\tSwathDistance > DTM_Resolution*20! Setting to DTM_Resolution*20")
                 SwathDistance = DTM_Resolution*20.
+                
+            # check cross shore window size
+            if not CrossShoreWindowSize:
+                CrossShoreWindowSize = DTM_Resolution*2.
+            if CrossShoreWindowSize < DTM_Resolution:
+                CrossShoreWindowSize = DTM_Resolution
+            if CrossShoreWindowSize > DTM_Resolution*5.:
+                CrossShoreWindowSize = DTM_Resolution*5.
            
             # Get vectors of X and Y coordinates, NB reversal of Y in line with 
             # DTM indexing from top left
@@ -3557,8 +3571,8 @@ class Coast:
                         #Calculate distance along the line
                         DistAlongTransect[i] = i*DistanceSpacing
                         
-                        # Sample a reduced array here i.e. a neighbourhood to reduce computation time
-                        Neighbourhood = np.abs(DistAlongTransect[i]-DistAlong) < DTM_Resolution*2.
+                        # Sample a reduced array here i.e. a neighbourhood to reduce computation time                      
+                        Neighbourhood = np.abs(DistAlongTransect[i]-DistAlong) < CrossShoreWindowSize
                         ZLocal = Z[Neighbourhood]
                         
                         if len(ZLocal) == 0:
@@ -3662,7 +3676,7 @@ class Coast:
                         DistAlongTransect[i] = i*DistanceSpacing
                         
                         # Sample a reduced array here i.e. a neighbourhood to reduce computation time
-                        Neighbourhood = np.abs(DistAlongTransect[i]-DistAlong) < DTM_Resolution*2.
+                        Neighbourhood = np.abs(DistAlongTransect[i]-DistAlong) < CrossShoreWindowSize
                         ZLocal = Z[Neighbourhood]
                         
                         if len(ZLocal) == 0:
