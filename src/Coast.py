@@ -1274,6 +1274,27 @@ class Coast:
                 
         f.close()
         
+    def WriteSlopesTextfile(self, Filename, delimiter=","):
+        
+        """
+        NH, November 2023
+        """
+        
+        # define filename and open for writing
+        f = open(Filename,'w')
+        
+        # write headers
+        f.write("LineID" + delimiter + "TransectID" + delimiter + "ForeshoreSlope" + delimiter + "IntertidalSlope" + "\n")
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                f.write(str(Line.ID) + delimiter)
+                f.write(str(Transect.ID) + delimiter)
+                f.write(str(Transect.ForeshoreSlope) + delimiter)   # slope between 0 m and MHWS (interpolated elevations)
+                f.write(str(Transect.IntertidalSlope) + "\n")       # slope between MHWSIntersect and MLWSIntersect (sampled elevations)
+                
+        f.close()
+    
     def MergeReverseCoastLines(self):
 
         """
@@ -1749,7 +1770,7 @@ class Coast:
         
         """
         
-        print("Coast.GetShorefaceSlopeMLWS2: Slope = dz/dx between MHWS and MLWS")
+        print("Coast.GetIntertidalSlopes: Finding distance between MHWSIntersect and MLWSIntersect to calculate slope")
         
         for Line in self.CoastLines:
             for Transect in Line.Transects:
@@ -2514,9 +2535,9 @@ class Coast:
                     
                 setattr(Transect, NodeToSave, Node(Intersection.x, Intersection.y))
                 
-                if __debug__:
-                    ThisNode = getattr(Transect, NodeToSave) 
-                    print(Transect.LineID, Transect.ID, "\t", NodeToSave, Intersection, ThisNode)            
+                #if __debug__:
+                    #ThisNode = getattr(Transect, NodeToSave) 
+                    #print(Transect.LineID, Transect.ID, "\t", NodeToSave, Intersection, ThisNode)            
        
     def ExtractContours(self,ContourShp):
 
