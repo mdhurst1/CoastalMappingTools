@@ -143,6 +143,9 @@ class Transect:
         self.MLWSIntersect = None
         self.MHWSIntersect = None
         self.ForeshoreSlope = None
+        self.IntertidalSlope = None
+        self.IntertidalDepth = None
+        self.IntertidalDistance = None
 
         # barrier metrics
         self.Barrier = False
@@ -576,6 +579,7 @@ class Transect:
             print(self.LineID, self.ID, "CalculateIntertidalSlope2: No MLWS intersect data")
             if not self.MLWS.X:
                 print(self.LineID, self.ID, "CalculateIntertidalSlope2: No MLWS nearest data either!")
+                self.IntertidalSlope = -1
                 return
             else:
                 # Use MLWS data
@@ -585,18 +589,28 @@ class Transect:
             # use MLWSIntersect data
             MLWSNode = self.MLWSIntersect
             
-        if not self.MHWSIntersect:
+        if not self.MHWSIntersect.X:
             print(self.LineID, self.ID, "CalculateIntertidalSlope2: No MHWSIntersect!")
+            self.IntertidalSlope = -1
             return
 
-        else:
-            self.ShorefaceDistance = MLWSNode.get_Distance(self.MHWSIntersect)
-            self.ShorefaceDepth = self.MHWSIntersect.Z - MLWSNode.Z
-            self.ShorefaceSlope = self.ShorefaceDepth/self.ShorefaceDistance
+        # check if elevation data exists
+        if not MLWSNode.Z:
+            print(self.LineID, self.ID, "CalculateIntertidalSlope2: No MLWS elevation!")
+            self.IntertidalSlope = -1
+            return
+        if not self.MHWSIntersect.Z:
+            print(self.LineID, self.ID, "CalculateIntertidalSlope2: No MHWS elevation!")
+            self.IntertidalSlope = -1
+            return   
+        
+        self.IntertidalDistance = MLWSNode.get_Distance(self.MHWSIntersect)
+        self.IntertidalDepth = self.MHWSIntersect.Z - MLWSNode.Z
+        self.IntertidalSlope = self.IntertidalDepth/self.IntertidalDistance
         
         # set minimum shoreface slope to 0.001
-        if self.ShorefaceSlope < 0.001:
-            self.ShorefaceSlope = 0.001
+        if self.IntertidalSlope < 0.001:
+            self.IntertidalSlope = 0.001
             
             
     def ExtractIndex(self, Elev=None):
