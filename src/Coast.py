@@ -3606,17 +3606,18 @@ class Coast:
                     Mask = ZIDW == NDV
                     DistAlongTransect = ma.masked_where(Mask,DistAlongTransect)
                     ZIDW = ma.masked_where(Mask,ZIDW)
+                    #print("ZIDW.data=", ZIDW.data, "ZIDW.mask=", ZIDW.mask)        ### NH DEBUG: ZIDW does have .data and .mask componenets. BUT .mask is single boolean=False (not array) when no masked elements
                     ZMin = ma.masked_where(Mask,ZMin)
                     ZMax = ma.masked_where(Mask,ZMax)
                     ZStd = ma.masked_where(Mask,ZStd)
                     
-                    Transect.Distance = DistAlongTransect
+                    Transect.Distance = DistAlongTransect.copy()                    ### NH ADD: use ma.MaskedArray.copy() to copy whole masked array
                     Transect.DistanceSpacing = DistAlongTransect[1]-DistAlongTransect[0]
                     Transect.DistanceNodes = [Node(X,Y) for X, Y in zip(XLine,YLine)]
-                    Transect.Elevation = ZIDW
-                    Transect.ElevationMin = ZMin
-                    Transect.ElevationMax = ZMax
-                    Transect.ElevStd = ZStd
+                    Transect.Elevation = ZIDW.copy()
+                    Transect.ElevationMin = ZMin.copy()
+                    Transect.ElevationMax = ZMax.copy()
+                    Transect.ElevStd = ZStd.copy()
                     
                     # update transect no
                     CurrentTransect += 1
@@ -3714,12 +3715,12 @@ class Coast:
                     ZMax = ma.masked_where(Mask,ZMax)
                     ZStd = ma.masked_where(Mask,ZStd)
                     
-                    Transect.Distance = DistAlongTransect
+                    Transect.Distance = DistAlongTransect.copy()        ### NH ADD: use ma.MaskedArray.copy() to copy whole masked array
                     Transect.DistanceSpacing = DistAlongTransect[1]-DistAlongTransect[0]
-                    Transect.Elevation = ZIDW
-                    Transect.ElevationMin = ZMin
-                    Transect.ElevationMax = ZMax
-                    Transect.ElevStd = ZStd
+                    Transect.Elevation = ZIDW.copy()
+                    Transect.ElevationMin = ZMin.copy()
+                    Transect.ElevationMax = ZMax.copy()
+                    Transect.ElevStd = ZStd.copy()
                     Transect.DistanceNodes = [Node(X,Y) for X, Y in zip(XLine,YLine)]
                     
              
@@ -3747,7 +3748,7 @@ class Coast:
                 
                 # # Call analyses
                 #if Transect.ID == "13":
-                Transect.FindCliff()
+                # Transect.FindCliff()
                 Transect.FindBarrier()
                 
                 # update transect progress no

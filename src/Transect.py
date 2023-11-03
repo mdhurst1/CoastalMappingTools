@@ -1273,18 +1273,21 @@ class Transect:
         Description goes here
         MDH, June 2019
         """
+        print("Transect.FindBarrier")
+        
         # Check if rocky and dont look for barrier on rocky coast
         if self.Rocky:
-            #print("\n\tNot a barrier 1")
+            print("\n\tNot a barrier 1")
             self.Barrier = False
             return
 
         # Check if a cliff is present and only analyse topography up to the cliff toe
         # when looking for a barrier
-        Mask = self.Elevation.mask.copy()
+        #Mask = self.Elevation.mask.copy()              # Problem: this returns boolean value (not array) of False when no masked elements
+        Mask = ma.getmaskarray(self.Elevation)          # Return the mask of a masked array, or full boolean array of False.
         if self.Cliff:
             Mask[self.CliffToeInd+1:] = True
-
+        
         # mask below sea level, including tide, in future
         Mask[self.Elevation < 0] = True
 
@@ -1525,7 +1528,8 @@ class Transect:
             return        
             
         # Get Barrier Crest
-        Mask = self.Elevation.mask.copy()
+        #Mask = self.Elevation.mask.copy()              # Problem: this returns boolean value (not array) of False when no masked elements
+        Mask = ma.getmaskarray(self.Elevation)          # Return the mask of a masked array, or full boolean array of False.
         Mask[0:self.FrontToeInd] = True
         Mask[self.BackToeInd] = True
         ElevMasked = ma.masked_where(Mask,self.Elevation)
