@@ -31,7 +31,7 @@ from shapely.geometry import Point, LineString
 rcParams['font.family'] = 'sans-serif'
 rcParams['font.sans-serif'] = ['arial']
 rcParams['font.size'] = 10
-rcParams['text.usetex'] = True
+rcParams['text.usetex'] = False ##True  NH: SET TO FALSE as don't have latex installed. Else plot fails
 
 class Transect:
     """
@@ -1273,7 +1273,6 @@ class Transect:
         Description goes here
         MDH, June 2019
         """
-        print("Transect.FindBarrier")
         
         # Check if rocky and dont look for barrier on rocky coast
         if self.Rocky:
@@ -1298,6 +1297,7 @@ class Transect:
         # check that the whole topography has not been masked
         # this would indicate there is no barrier
         if ElevMasked.mask.all():
+            print("\n\tNot a barrier 2")
             self.Barrier = False
             return
 
@@ -1313,7 +1313,7 @@ class Transect:
             print("No value for ElevMasked[MaxInd]" + self.LineID + ", " + self.ID)
             sys.exit()
         if ElevMasked[MaxInd] < self.MHWS:
-            #print("\n\tNot a barrier 3")
+            print("\n\tNot a barrier 3")
             self.Barrier = False
             return
 
@@ -1326,6 +1326,7 @@ class Transect:
 
         # check highest point is not on seaward end
         if MaxInd == FirstInd:
+            print("\n\tNot a barrier 4")
             self.Barrier = False
             return
 
@@ -1339,6 +1340,8 @@ class Transect:
 
         while BarrierPositionChangeFlag:
 
+            Counter += 1                            # NH DEBUG
+            
             # reset flag
             BarrierPositionChangeFlag = False
 
@@ -1363,17 +1366,26 @@ class Transect:
             # mask values beyond the peak
             Mask = ElevMasked.mask.copy()
             Mask[0:FirstInd] = True
-            Mask[self.FrontTopInd+1:] = True
+            if self.FrontTopInd < LastInd:          ## NH ADD: Catch when highest elevation is the last node (self.FrontTopInd=MaxInd=LastInd). Prevents corrupt indexing.
+                Mask[self.FrontTopInd+1:] = True
             ElevDetrend = ma.masked_where(Mask, ElevDetrend)
             NewInd = np.argmax(ElevDetrend)
             
+            #print(Counter)                         # NH DEBUG
+            #print(f"FirstInd={FirstInd}, LastInd={LastInd}, MaxInd={MaxInd}, NewInd={NewInd}") 
+            #print(f"FrontTopInd={self.FrontTopInd}, FrontToeInd={self.FrontToeInd}, BackTopInd={self.BackTopInd}")
+            
             if (NewInd == FirstInd):
+                #print(f"{Counter}, Setting NewInd = MaxInd")
                 NewInd = MaxInd
             
             # Find Maximum detrended elevation. 
             # if at end of transect then not a barrier
             if (NewInd == LastInd):
-                #print("\n\tNot a barrier 5")
+                print("\n\tNot a barrier 5")
+                #print(self.LineID, self.ID)         # NH DEBUG
+                #print(f"FirstInd={FirstInd}, LastInd={LastInd}, MaxInd={MaxInd}, NewInd={NewInd}")
+                #print(f"FrontTopInd={self.FrontTopInd}, FrontToeInd={self.FrontToeInd}, BackTopInd={self.BackTopInd}")
                 #plt.plot(self.Distance,ElevMasked,'k-')
                 #plt.plot(self.Distance[self.FrontTopInd],self.Elevation[self.FrontTopInd],'bo')
                 #plt.plot(self.Distance[self.FrontToeInd],self.Elevation[self.FrontToeInd],'bs')
@@ -1410,7 +1422,8 @@ class Transect:
             # mask values beyond the barrier front top
             Mask = ElevMasked.mask.copy()
             #Mask[:self.FrontToeInd] = True
-            Mask[self.FrontTopInd+1:] = True
+            if self.FrontTopInd < LastInd:            ## NH ADD: Catch when highest elevation is the last node (self.FrontTopInd=MaxInd=LastInd). Prevents corrupt indexing.
+                Mask[self.FrontTopInd+1:] = True
             ElevDetrend = ma.masked_where(Mask, ElevDetrend)
             NewInd = np.argmin(ElevDetrend)
             
@@ -1442,13 +1455,14 @@ class Transect:
 
         # Check if coincides with a cliff
         if self.FrontTopInd == LastInd:
+            print("\n\tNot a barrier 7")
             self.Barrier = False
             return
 
         # this needs more work
         self.FrontHeight = self.Elevation[self.FrontTopInd]-self.Elevation[self.FrontToeInd]
         self.FrontSlope = self.FrontHeight/(self.Distance[self.FrontTopInd]-self.Distance[self.FrontToeInd])
-
+        
         # default back barrier positions
         self.BackTopInd = self.FrontTopInd
         Mask = ElevMasked.mask.copy()
@@ -1557,7 +1571,6 @@ class Transect:
         self.BarrierVolume -= 0.5 * (ElevMasked[self.FrontToeInd] + ElevMasked[self.BackToeInd-1]) \
                                  * np.abs(self.Distance[self.BackToeInd-1] - self.Distance[self.FrontToeInd])
         
-
         # switch flag to indicate a barrier has been found
         self.Barrier = True
     

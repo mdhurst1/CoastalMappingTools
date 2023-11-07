@@ -1254,6 +1254,8 @@ class Coast:
         MDH, July 2020
         """
         
+        print("Coast.WriteBarriersTextFile: Writing transects barrier toe and crest elevations to .csv file")
+        
         # define filename and open for writing
         f = open(Filename,'w')
         
@@ -1271,6 +1273,8 @@ class Coast:
                     f.write(str(Transect.Elevation[Transect.CrestInd]) + delimiter)
                     f.write(str(Width) + delimiter)
                     f.write(str(Volume) + "\n")
+                else:
+                    print(f"\t{Transect.LineID} {Transect.ID}: Not a barrier")
                 
         f.close()
         
