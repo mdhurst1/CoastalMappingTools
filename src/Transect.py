@@ -162,6 +162,7 @@ class Transect:
         self.FrontSlope = None
         self.BackSlope = None
         self.BarrierVolume = None
+        self.HinterlandHigher = False
 
         # other barrier metrics for extreme water levels
         # will need short term and long term here?
@@ -1379,13 +1380,14 @@ class Transect:
                 #print(f"{Counter}, Setting NewInd = MaxInd")
                 NewInd = MaxInd
             
-            # Find Maximum detrended elevation. 
-            # if at end of transect then not a barrier
+            # Find Maximum detrended elevation. Original: If at end of transect then not a barrier
+            # NH edit: rather than discard transect, keep as potential barrier and set flag that hinterland is higher than barrier crest.
             if (NewInd == LastInd):
                 print("\n\tNot a barrier 5")
+                
                 #print(self.LineID, self.ID)         # NH DEBUG
                 #print(f"FirstInd={FirstInd}, LastInd={LastInd}, MaxInd={MaxInd}, NewInd={NewInd}")
-                #print(f"FrontTopInd={self.FrontTopInd}, FrontToeInd={self.FrontToeInd}, BackTopInd={self.BackTopInd}")
+                #print(f"FrontTopInd={self.FrontTopInd}, FrontToeInd={self.FrontToeInd}")
                 #plt.plot(self.Distance,ElevMasked,'k-')
                 #plt.plot(self.Distance[self.FrontTopInd],self.Elevation[self.FrontTopInd],'bo')
                 #plt.plot(self.Distance[self.FrontToeInd],self.Elevation[self.FrontToeInd],'bs')
@@ -1394,11 +1396,14 @@ class Transect:
                 #plt.plot(self.Distance,ElevDetrend,'r-')
                 #plt.show()
                 #sys.exit()
-                self.Barrier = False
-                return
+                
+                #self.Barrier = False
+                #return
+                self.HinterlandHigher = True
 
             # Must be above MHWS to be considered a barrier top
-            elif ((NewInd < self.FrontTopInd) and (ElevDetrend[NewInd] > 0.001) and (ElevMasked[NewInd] > self.MHWS)):
+            # NH edit: Replace elif with if to align with not treating previous if statement as error.
+            if ((NewInd < self.FrontTopInd) and (ElevDetrend[NewInd] > 0.001) and (ElevMasked[NewInd] > self.MHWS)):
                 self.FrontTopInd = np.argmax(ElevDetrend)
                 BarrierPositionChangeFlag = True
 
@@ -1545,7 +1550,7 @@ class Transect:
         #Mask = self.Elevation.mask.copy()              # Problem: this returns boolean value (not array) of False when no masked elements
         Mask = ma.getmaskarray(self.Elevation)          # Return the mask of a masked array, or full boolean array of False.
         Mask[0:self.FrontToeInd] = True
-        Mask[self.BackToeInd] = True
+        Mask[self.BackToeInd+1:] = True                 # NH bug fix: exclude all elevations beyond BackToeInd, not just the single elev at BackToeInd
         ElevMasked = ma.masked_where(Mask,self.Elevation)
         self.CrestInd = ma.argmax(ElevMasked)
         self.CrestElevation = ElevMasked[self.CrestInd]
