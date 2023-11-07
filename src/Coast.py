@@ -1260,7 +1260,7 @@ class Coast:
         f = open(Filename,'w')
         
         # write headers
-        f.write("LineID" + delimiter + "TransectID" + delimiter + "FrontToeElev" + delimiter + "BackToeElev" + delimiter + "CrestElev" + delimiter + "ToeWidth" + delimiter + "Volume" + "\n")
+        f.write("LineID" + delimiter + "TransectID" + delimiter + "FrontToeElev" + delimiter + "BackToeElev" + delimiter + "FrontTopElev" + delimiter + "CrestElev" + "\n")#"ToeWidth" + delimiter + "Volume" + "\n")
         
         for Line in self.CoastLines:
             for Transect in Line.Transects:
@@ -1270,9 +1270,10 @@ class Coast:
                     f.write(str(Transect.ID) + delimiter)
                     f.write(str(Transect.Elevation[Transect.FrontToeInd]) + delimiter)
                     f.write(str(Transect.Elevation[Transect.BackToeInd]) + delimiter)
-                    f.write(str(Transect.Elevation[Transect.CrestInd]) + delimiter)
-                    f.write(str(Width) + delimiter)
-                    f.write(str(Volume) + "\n")
+                    f.write(str(Transect.Elevation[Transect.FrontTopInd]) + delimiter)
+                    f.write(str(Transect.Elevation[Transect.CrestInd]) + "\n") #delimiter)
+                    #f.write(str(Width) + delimiter)
+                    #f.write(str(Volume) + "\n")
                 else:
                     print(f"\t{Transect.LineID} {Transect.ID}: Not a barrier")
                 
