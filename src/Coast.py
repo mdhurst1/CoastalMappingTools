@@ -1299,6 +1299,41 @@ class Coast:
                 f.write(str(Transect.IntertidalSlope) + "\n")       # slope between MHWSIntersect and MLWSIntersect (sampled elevations)
                 
         f.close()
+        
+    def WriteSlopesDuneParamsTextfile(self, Filename, delimiter=","):
+        
+        """
+        Writes all transect slopes and dune parameters to .csv file
+        
+        NH, Novembeer 2023
+        
+        """
+        
+        print("Coast.WriteSlopesDuneParamsTextfile: Writing transects slopes, barrier toe and crest elevations to .csv file")
+        
+        # define filename and open for writing
+        f = open(Filename,'w')
+        
+        # write headers
+        f.write("LineID" + delimiter + "TransectID" + delimiter + "IntertidalSlope" + delimiter + "ForeshoreSlope" + delimiter +\
+                "FrontToeElev" + delimiter + "BackToeElev" + delimiter + "FrontTopElev" + delimiter + "CrestElev" + "\n")
+                
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                f.write(str(Line.ID) + delimiter)
+                f.write(str(Transect.ID) + delimiter)
+                f.write(str(Transect.IntertidalSlope) + delimiter)      # slope between MHWSIntersect and MLWSIntersect (sampled elevations)
+                f.write(str(Transect.ForeshoreSlope) + delimiter)       # slope between 0 m and MHWS (interpolated elevations)
+                if Transect.Barrier:
+                    f.write(str(Transect.Elevation[Transect.FrontToeInd]) + delimiter)
+                    f.write(str(Transect.Elevation[Transect.BackToeInd]) + delimiter)
+                    f.write(str(Transect.Elevation[Transect.FrontTopInd]) + delimiter)
+                    f.write(str(Transect.Elevation[Transect.CrestInd]) + "\n")
+                else:
+                    f.write("NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + "\n")
+                    
+        f.close()
+        
     
     def MergeReverseCoastLines(self):
 
