@@ -2730,7 +2730,7 @@ class Coast:
             if not DTM_Dataset.nodata:
                 # raise SystemExit("DTM missing no data value") # NH: remove this as .asc files don't have nodata set.
                 # NH add print and NDV assignment
-                print("DTM missing no data value!")
+                print("\tDTM missing no data value!")
                 NDV = -9999
 
             # check for square pixels
@@ -2757,7 +2757,7 @@ class Coast:
                     # Check if Transect contains the passed nodename as attribute 
                     # If not, then return as need (x,y) coords to sample.
                     if not hasattr(Transect, NodeToSample):
-                        print("Error: Transect has no attribute", NodeToSample)
+                        print("\tError: Transect has no attribute", NodeToSample)
                         return
                         
                     # get attribute   
@@ -3380,7 +3380,7 @@ class Coast:
             
         """
         
-        print("Coast.EstractTransectTopographySwath: Sampling DTMs for each transect")
+        print("Coast.ExtractTransectTopographySwath: Sampling DTMs for each transect")
                             
         # set up dem file list
         if DEMFileList:
