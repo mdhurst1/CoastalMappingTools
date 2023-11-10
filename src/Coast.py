@@ -2681,6 +2681,76 @@ class Coast:
                     for val in MHWSDataset.sample([(Transect.CoastNode.X,Transect.CoastNode.Y)]):
                         Transect.MHWS = val[0]
                         
+    def SampleRaster(self, Raster=None, NodeToSample=None, Attrib=None):
+    
+        """
+        Samples raster at the Transect CoastNode, 
+        and saves value to the specified attribute.
+        
+        Parameters
+        ----------
+        Raster : string
+            Filename of raster to be sampled
+        NodeToSample : string
+            Name of node containing (x,y) coordinates to be sampled.
+            Default is CoastNode
+        Attrib : string
+            Name of Transect attribute in which to save the sampled raster value
+        
+        NH, November 2023
+        
+        Works
+        
+        """
+        
+        print(f"Coast.SampleRaster: Sampling raster {Raster} band 0 and saving to Transect.{Attrib}")
+        
+        # check parameters
+        if not Raster:
+            raise SystemExit("\tNo raster passed in function call")
+        if not NodeToSample:
+            NodeToSample = "CoastNode"
+        if not Attrib:
+            raise SystemExit("\tNo Transect attribute passed in function call")
+            
+        RasterDataset = rasterio.open(Raster)
+        
+        # get extent of raster
+        XMin = RasterDataset.bounds[0]
+        XMax = RasterDataset.bounds[2]
+        YMin = RasterDataset.bounds[1]
+        YMax = RasterDataset.bounds[3]
+        RasterExtent = Polygon([[XMin, YMin], [XMin, YMax], [XMax, YMax], [XMax, YMin]])
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+        
+                # Check if Transect contains NodeToSample as attribute 
+                # If not, continue to next transect as need (x,y) coords to sample.
+                if not hasattr(Transect, NodeToSample):
+                    print(f"\t{Transect.LineID}_{Transect.ID}: Transect has no attribute", NodeToSample)
+                    continue
+                
+                # get attribute   
+                SampleNode = getattr(Transect, NodeToSample)  
+                    
+                # check if node inside raster
+                SamplePoint = Point(SampleNode.X, SampleNode.Y) 
+                if not SamplePoint.within(RasterExtent):
+                    print(f"\t{Transect.LineID}_{Transect.ID}: {NodeToSample} outwith {Raster}")
+                    continue
+                    
+                for val in RasterDataset.sample([(SampleNode.X, SampleNode.Y)]):
+                    sampled = val[0]
+                        
+                # check if Transect contains Attrib 
+                #if not hasattr(Transect, Attrib):
+                #    print(f"\t{Transect.LineID}_{Transect.ID}: Creating {Attrib}")
+                    
+                setattr(Transect, Attrib, sampled)
+                print("\t",getattr(Transect, Attrib))
+        
+    
     def SampleNodeElevation(self, NodeToSample, DEMFileList=None):
     
         """
