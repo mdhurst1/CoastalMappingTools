@@ -2748,7 +2748,7 @@ class Coast:
                 #    print(f"\t{Transect.LineID}_{Transect.ID}: Creating {Attrib}")
                     
                 setattr(Transect, Attrib, sampled)
-                print("\t",getattr(Transect, Attrib))
+                #print("\t",getattr(Transect, Attrib))
         
     
     def SampleNodeElevation(self, NodeToSample, DEMFileList=None):
