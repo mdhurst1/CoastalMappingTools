@@ -3900,21 +3900,70 @@ class Coast:
         
         print("Coast.CalculateExtremeRunup: Estimating extreme wave runup under storm conditions")
         
-        g = 9.81                            # gravitational constant in m/s2
+        # check input parameters
+        if not (Scenario == "Hist" or Scenario == "M45" or Scenario == "M85" or \
+                Scenario == "E45" or Scenario == "E85"):
+            print("\tInvalid Scenario:", Scenario)
+            sys.exit()
+        
+        g = 9.81                                                                        # gravitational constant in m/s2
         
         for Line in self.CoastLines:
             for Transect in Line.Transects:
+                Bf = Transect.ForeshoreSlope
+                
                 if Scenario == "Hist":
-                    L0 = g*Transect.H_Tp_p95**2/(2*np.pi)                                               # Stockdon eq(1)
-                    Iribarren = Transect.ForeshoreSlope / np.sqrt(Transect.H_Hs_p95/L0)                 # Stockdon eq(2)
-                    
-                    if Iribarren < 0.3:                                                                 # extremely dissipative beach
-                        Transect.H_R2 = 0.043*np.sqrt(Transect.H_Hs_p95 * L0)            # Stockdon eq(18)
+                    H0 = Transect.H_Hs_p95
+                    L0 = g*Transect.H_Tp_p95**2/(2*np.pi)                               # Stockdon eq(1)
+                    Iribarren = Bf/np.sqrt(H0/L0)                                       # Stockdon eq(2)
+                    if Iribarren < 0.3:                                                 # extremely dissipative beach
+                        Transect.H_R2 = 0.043*np.sqrt(H0*L0)                            # Stockdon eq(18)
                     else:
-                        Transect.H_R2 = 1.1*(0.35*Transect.ForeshoreSlope*np.sqrt(Transect.H_Hs_p95 * L0) + \
-                                        np.sqrt(Transect.H_Hs_p95*L0*(0.563*Transect.ForeshoreSlope**2 + 0.004))/2)     # Stockdon eq(19)
+                        Transect.H_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
+                                        np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)         # Stockdon eq(19)
+                                        
+                elif Scenario == "M45":
+                    H0 = Transect.M45_Hs_p95
+                    L0 = g*Transect.M45_Tp_p95**2/(2*np.pi)                                              
+                    Iribarren = Bf/np.sqrt(H0/L0)
+                    if Iribarren < 0.3:                                                
+                        Transect.M45_R2 = 0.043*np.sqrt(H0*L0)                           
+                    else:
+                        Transect.M45_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
+                                        np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)   
+                
+                elif Scenario == "M85":
+                    H0 = Transect.M85_Hs_p95
+                    L0 = g*Transect.M85_Tp_p95**2/(2*np.pi)                                              
+                    Iribarren = Bf/np.sqrt(H0/L0)
+                    if Iribarren < 0.3:                                                
+                        Transect.M85_R2 = 0.043*np.sqrt(H0*L0)                           
+                    else:
+                        Transect.M85_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
+                                        np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) 
+                                        
+                elif Scenario == "E45":
+                    H0 = Transect.E45_Hs_p95
+                    L0 = g*Transect.E45_Tp_p95**2/(2*np.pi)                                              
+                    Iribarren = Bf/np.sqrt(H0/L0)
+                    if Iribarren < 0.3:                                                
+                        Transect.E45_R2 = 0.043*np.sqrt(H0*L0)                           
+                    else:
+                        Transect.E45_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
+                                        np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)
+                                        
+                elif Scenario == "E85":
+                    H0 = Transect.E85_Hs_p95
+                    L0 = g*Transect.E85_Tp_p95**2/(2*np.pi)                                              
+                    Iribarren = Bf/np.sqrt(H0/L0)
+                    if Iribarren < 0.3:                                                
+                        Transect.E85_R2 = 0.043*np.sqrt(H0*L0)                           
+                    else:
+                        Transect.E85_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
+                                        np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) 
+                                        
                 else:
-                    print(f"\t{Transect.LineID}_{Transect.ID}:Invalid scenario")
+                    print(f"\t{Transect.LineID}_{Transect.ID}:Invalid scenario {Scenario}") # should not ever get this
 
     def AnalyseExtremeWater(self, WaterElevs):
         
