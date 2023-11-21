@@ -189,6 +189,15 @@ class Transect:
         self.ExtremeVolumeTotal = None
         self.ExtremeVolumes = ["","",""]
         self.ExtremeTotalVolumes = ["","",""]
+        
+        # extreme wave runup R2
+        # H=historic, M=mid-century, E=end-century, 45=RCP4.5, 85=RCP8.5
+        self.H_R2 = None
+        self.M45_R2 = None
+        self.M85_R2 = None
+        self.E45_R2 = None
+        self.E85_R2 = None
+        
     
     def __str__(self):
         String = "Transect Object:\nID: %s\n" % (str(self.ID))
