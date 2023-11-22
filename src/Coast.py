@@ -4056,20 +4056,43 @@ class Coast:
                     t25_near = t25_c3[Index]                   
                     t25_c3_array = t25_near.to_numpy()         
                     t25_c3_mean = np.mean(t25_c3_array)
-                    
-                    Transect.t25 = t25_mean
-                    Transect.t25_c1 = t25_c1_mean
-                    Transect.t25_c3 = t25_c3_mean
-                   
+                 
                 else:
-                    Transect.t25 = None
-                    Transect.t25_c1 = None
-                    Transect.t25_c3 = None
+                    print(f"\t{Transect.LineID}_{Transect.ID}: No nearby points")
                     continue
+                    
+                # save extracted ESL values to the given scenario
+                if Scenario == "Hist":
+                    Transect.H_ESL = t25_mean
+                    Transect.H_ESL_c1 = t25_c1_mean
+                    Transect.H_ESL_c3 = t25_c3_mean
+                    
+                elif Scenario == "M45":
+                    Transect.M45_ESL = t25_mean
+                    Transect.M45_ESL_c1 = t25_c1_mean
+                    Transect.M45_ESL_c3 = t25_c3_mean
+                
+                elif Scenario == "M85":
+                    Transect.M85_ESL = t25_mean
+                    Transect.M85_ESL_c1 = t25_c1_mean
+                    Transect.M85_ESL_c3 = t25_c3_mean
+                
+                elif Scenario == "E45":
+                    Transect.E45_ESL = t25_mean
+                    Transect.E45_ESL_c1 = t25_c1_mean
+                    Transect.E45_ESL_c3 = t25_c3_mean
+                
+                elif Scenario == "E85":
+                    Transect.E85_ESL = t25_mean
+                    Transect.E85_ESL_c1 = t25_c1_mean
+                    Transect.E85_ESL_c3 = t25_c3_mean
+                
+                else:
+                    print(f"\t{Transect.LineID}_{Transect.ID}:Invalid scenario {Scenario}")
            
-                #print(f"\t{Transect.LineID}_{Transect.ID}:{t25_array}, {Transect.t25}")
-                #print(f"\t\tc1: {t25_c1_array}, {Transect.t25_c1}")
-                #print(f"\t\tc3: {t25_c3_array}, {Transect.t25_c3}")
+                #print(f"\t{Transect.LineID}_{Transect.ID}:{t25_array}, {Transect.H_ESL}")
+                #print(f"\t\tc1: {t25_c1_array}, {Transect.H_ESL_c1}")
+                #print(f"\t\tc3: {t25_c3_array}, {Transect.H_ESL_c3}")
         
     def AnalyseExtremeWater(self, WaterElevs):
         
