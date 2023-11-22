@@ -3870,7 +3870,7 @@ class Coast:
         
         print("")
         
-    def CalculateExtremeRunup(self, Scenario):
+    def CalculateExtremeRunup(self, Scenario=None):
         
         """
         Implement the Stockdon (2006) equations that estimate 
@@ -3886,7 +3886,6 @@ class Coast:
         ----------
         Scenario - string   
             - String describing the scenario of interest
-            - Must be provided
             - Options: 
                 - "Hist" = Historic 
                 - "M45" = Mid-century RCP4.5
@@ -3917,12 +3916,12 @@ class Coast:
                     L0 = g*Transect.H_Tp_p95**2/(2*np.pi)                               # Stockdon eq(1)
                     Iribarren = Bf/np.sqrt(H0/L0)                                       # Stockdon eq(2)
                     if Iribarren < 0.3:                                                 # extremely dissipative beach
-                        Transect.H_R2 = 0.043*np.sqrt(H0*L0)                            # Stockdon eq(18)
+                        Transect.H_R2 = 0.043*np.sqrt(H0*L0)                            # Stockdon eq(18): Extreme wave runup
                     else:
                         Transect.H_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
-                                        np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)         # Stockdon eq(19)
+                                        np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)         # Stockdon eq(19): Extreme wave runup (all other sandy beaches)
                                         
-                elif Scenario == "M45":
+                elif Scenario == "M45":                                                 # repeat for each climate scenario
                     H0 = Transect.M45_Hs_p95
                     L0 = g*Transect.M45_Tp_p95**2/(2*np.pi)                                              
                     Iribarren = Bf/np.sqrt(H0/L0)
@@ -3965,6 +3964,98 @@ class Coast:
                 else:
                     print(f"\t{Transect.LineID}_{Transect.ID}:Invalid scenario {Scenario}") # should not ever get this
 
+    def ExtractExtremeSeaLevel(self, Shapefile=None, Scenario=None):
+        
+        """
+        Find geospatial vector data points within certain distance from transect.
+        Extract 25-yr return level and its likely range for each point.
+        Calculate mean and save to transect. 
+        
+        Parameters
+        ----------
+        Shapefile : geospatial point data vector location
+            - ESL data
+        Scenario : string
+            - String describing the scenario of interest
+            - Options: 
+                - "Hist" = Historic 
+                - "M45" = Mid-century RCP4.5
+                - "M85" = Mid-century RCP8.8
+                - "E45" = End-century RCP4.5
+                - "E85" = End-century RCP8.5
+                
+        NH, November 2023
+        
+        """
+        
+        print("Coast.ExtractExtremeSeaLevel: Extracting extreme still water level, uplifted according to climate change scenario")
+        
+        # check input parameters
+        if not (Scenario == "Hist" or Scenario == "M45" or Scenario == "M85" or \
+                Scenario == "E45" or Scenario == "E85"):
+            print("\tInvalid Scenario:", Scenario)
+            sys.exit()
+            
+        # read shapefile using geopandas
+        GDF = gp.read_file(Shapefile)
+        DataPoints = GDF['geometry']
+        
+        # Extract data: uplifted extreme still water levels for 25-yr return period, plus likely range
+        t25 = GDF["t25"]
+        
+        if len(DataPoints) == 0:
+            print(f"\tNo Points in {Shapefile}!")
+            return
+            
+        #if __debug__:
+            #print(f"\tNumber of points = {len(DataPoints)}; t25=")
+            #print(DataPoints)
+            #print(type(t25))
+            #print(t25)
+        
+        max_distance = 2500
+        
+        # For each transect, find points < maxDist (m) away from CoastNode
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                
+                points_within = []
+                CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                Distances = [DataPoint.distance(CoastPoint) for DataPoint in DataPoints] # works
+                    
+                for i in range(0, len(Distances)):
+                    points_within.append(Distances[i] < max_distance)
+                """    
+                if Transect.ID == "0":
+                    print(f"\t{Transect.LineID}_{Transect.ID}:Distances =")
+                    for i in range(0,50):
+                        print(Distances[i], points_within[i])
+                    print("len Distances=", len(Distances))
+                    print("len points_within=", len(points_within))    
+                """    
+                    
+                Index = np.where(points_within)[0]     # works. array of indexes         # fastest method for long lists (https://stackoverflow.com/questions/21448225/getting-indices-of-true-values-in-a-boolean-list)
+                
+                #if Transect.ID == "0":
+                    #print(f"\t{Transect.LineID}_{Transect.ID}: Index = {Index}")
+                    
+                if len(Index) > 0:
+                    t25_near = t25[Index]                   # this is geoseries of index,value pairs
+                    t25_array = t25_near.to_numpy()         # converts series values to numpy array
+                    t25_mean = np.mean(t25_array)
+                    
+                    Transect.t25 = t25_mean
+                    
+                else:
+                    Transect.t25 = None
+                    Transect.t25_c1 = None
+                    Transect.t25_c3 = None
+                    continue
+           
+                print(f"\t{Transect.LineID}_{Transect.ID}:{t25_array}, {Transect.t25}")
+        
+    
+    
     def AnalyseExtremeWater(self, WaterElevs):
         
         """
