@@ -4000,12 +4000,14 @@ class Coast:
         GDF = gp.read_file(Shapefile)
         DataPoints = GDF['geometry']
         
-        # Extract data: uplifted extreme still water levels for 25-yr return period, plus likely range
-        t25 = GDF["t25"]
-        
         if len(DataPoints) == 0:
             print(f"\tNo Points in {Shapefile}!")
             return
+        
+        # Extract data: uplifted extreme still water levels for 25-yr return period, plus likely range
+        t25 = GDF["t25"]
+        t25_c1 = GDF["c1_t25"]
+        t25_c3 = GDF["c3_t25"]
             
         #if __debug__:
             #print(f"\tNumber of points = {len(DataPoints)}; t25=")
@@ -4013,9 +4015,10 @@ class Coast:
             #print(type(t25))
             #print(t25)
         
-        max_distance = 2500
+        # 2.5 km radius of interest
+        max_distance = 2500             
         
-        # For each transect, find points < maxDist (m) away from CoastNode
+        # For each transect, find points < maxDist away from CoastNode
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 
@@ -4024,7 +4027,8 @@ class Coast:
                 Distances = [DataPoint.distance(CoastPoint) for DataPoint in DataPoints] # works
                     
                 for i in range(0, len(Distances)):
-                    points_within.append(Distances[i] < max_distance)
+                    points_within.append(Distances[i] < max_distance)       # boolean array
+                    
                 """    
                 if Transect.ID == "0":
                     print(f"\t{Transect.LineID}_{Transect.ID}:Distances =")
@@ -4033,8 +4037,9 @@ class Coast:
                     print("len Distances=", len(Distances))
                     print("len points_within=", len(points_within))    
                 """    
-                    
-                Index = np.where(points_within)[0]     # works. array of indexes         # fastest method for long lists (https://stackoverflow.com/questions/21448225/getting-indices-of-true-values-in-a-boolean-list)
+                
+                # array of indexes of points within maxDist from transect               
+                Index = np.where(points_within)[0]          # array of indexes where True. fastest method for long lists (https://stackoverflow.com/questions/21448225/getting-indices-of-true-values-in-a-boolean-list)
                 
                 #if Transect.ID == "0":
                     #print(f"\t{Transect.LineID}_{Transect.ID}: Index = {Index}")
@@ -4044,18 +4049,28 @@ class Coast:
                     t25_array = t25_near.to_numpy()         # converts series values to numpy array
                     t25_mean = np.mean(t25_array)
                     
-                    Transect.t25 = t25_mean
+                    t25_near = t25_c1[Index]                   
+                    t25_c1_array = t25_near.to_numpy()         
+                    t25_c1_mean = np.mean(t25_c1_array)
                     
+                    t25_near = t25_c3[Index]                   
+                    t25_c3_array = t25_near.to_numpy()         
+                    t25_c3_mean = np.mean(t25_c3_array)
+                    
+                    Transect.t25 = t25_mean
+                    Transect.t25_c1 = t25_c1_mean
+                    Transect.t25_c3 = t25_c3_mean
+                   
                 else:
                     Transect.t25 = None
                     Transect.t25_c1 = None
                     Transect.t25_c3 = None
                     continue
            
-                print(f"\t{Transect.LineID}_{Transect.ID}:{t25_array}, {Transect.t25}")
+                #print(f"\t{Transect.LineID}_{Transect.ID}:{t25_array}, {Transect.t25}")
+                #print(f"\t\tc1: {t25_c1_array}, {Transect.t25_c1}")
+                #print(f"\t\tc3: {t25_c3_array}, {Transect.t25_c3}")
         
-    
-    
     def AnalyseExtremeWater(self, WaterElevs):
         
         """
