@@ -2722,8 +2722,8 @@ class Coast:
         YMax = RasterDataset.bounds[3]
         RasterExtent = Polygon([[XMin, YMin], [XMin, YMax], [XMax, YMax], [XMax, YMin]])
         
-        #print("\tRaster width, height:", RasterDataset.width, RasterDataset.height)
-        #print("\tRaster bounds:", RasterDataset.bounds)
+        print("\tRaster width, height:", RasterDataset.width, RasterDataset.height)
+        print("\tRaster bounds:", RasterDataset.bounds)
         
         for Line in self.CoastLines:
             for Transect in Line.Transects:
@@ -3973,8 +3973,8 @@ class Coast:
         
         Parameters
         ----------
-        Shapefile : geospatial point data vector location
-            - ESL data
+        Shapefile : string 
+            - geospatial point data vector location of ESL data
         Scenario : string
             - String describing the scenario of interest
             - Options: 
@@ -4090,10 +4090,32 @@ class Coast:
                 else:
                     print(f"\t{Transect.LineID}_{Transect.ID}:Invalid scenario {Scenario}")
            
-                #print(f"\t{Transect.LineID}_{Transect.ID}:{t25_array}, {Transect.H_ESL}")
+                #print(f"\t{Transect.LineID}_{Transect.ID}:")
+                #print(f"\t\tt25:{t25_array}, {Transect.H_ESL}")
                 #print(f"\t\tc1: {t25_c1_array}, {Transect.H_ESL_c1}")
                 #print(f"\t\tc3: {t25_c3_array}, {Transect.H_ESL_c3}")
+    
+    def CalculateTotalWaterLevel(self):
+    
+        """
         
+        Adds up the extreme still water level and extreme wave runup 
+        to eestimate extreme total water level.
+        Repeat for each climate scenario.
+        
+        NH, Novembeer 2023
+        
+        """
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                Transect.H_TWL = Transect.H_ESL + Transect.H_R2
+                #Transect.M45_TWL = Transect.M45_ESL + Transect.M45_R2
+                #Transect.M85_TWL = Transect.M85_ESL + Transect.M85_R2
+                #Transect.E45_TWL = Transect.E45_ESL + Transect.E45_R2
+                #Transect.E85_TWL = Transect.E85_ESL + Transect.E85_R2
+    
+    
     def AnalyseExtremeWater(self, WaterElevs):
         
         """

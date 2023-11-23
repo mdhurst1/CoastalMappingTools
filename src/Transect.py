@@ -214,6 +214,12 @@ class Transect:
         self.E85_ESL = None
         self.E85_ESL_c1 = None
         self.E85_ESL_c3 = None
+        # extreme total water level
+        self.H_TWL = None
+        self.M45_TWL = None
+        self.M85_TWL = None
+        self.E45_TWL = None
+        self.E85_TWL = None
         
     
     def __str__(self):
