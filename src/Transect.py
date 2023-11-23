@@ -190,13 +190,30 @@ class Transect:
         self.ExtremeVolumes = ["","",""]
         self.ExtremeTotalVolumes = ["","",""]
         
-        # extreme wave runup R2
+        # storm impact analysis
         # H=historic, M=mid-century, E=end-century, 45=RCP4.5, 85=RCP8.5
+        # extreme wave runup
         self.H_R2 = None
         self.M45_R2 = None
         self.M85_R2 = None
         self.E45_R2 = None
         self.E85_R2 = None
+        # extreme still water level
+        self.H_ESL = None
+        self.H_ESL_c1 = None
+        self.H_ESL_c3 = None
+        self.M45_ESL = None
+        self.M45_ESL_c1 = None
+        self.M45_ESL_c3 = None
+        self.M85_ESL = None
+        self.M85_ESL_c1 = None
+        self.M85_ESL_c3 = None
+        self.E45_ESL = None
+        self.E45_ESL_c1 = None
+        self.E45_ESL_c3 = None
+        self.E85_ESL = None
+        self.E85_ESL_c1 = None
+        self.E85_ESL_c3 = None
         
     
     def __str__(self):
