@@ -1043,6 +1043,62 @@ class Coast:
         f.write(self.Projection)
         f.close()
 
+    def WriteStormImpactTransectsShp(self, TransectsShp):
+        
+        """
+        Write Tranects with storm impact scale data to shapefile
+        
+        NH, Novembeer 2023
+        
+        """
+        
+        print("Coast.WriteStormImpactTransectsShp: Writing coastal transects and storm impact data to shapefile")
+        
+        # open new shapefile        
+        WL = shapefile.Writer(TransectsShp,shapeType=shapefile.POLYLINE)
+        
+        # Create Fields
+        Fields = [('DeletionFlag','C',1,0), 
+        ['LineID', 'C', 3, 0], ['TransectID', 'C', 5, 0], 
+        ['H_R2','N', 5, 2], ['H_ESL','N', 5, 2], ['H_TWL','N', 5, 2], 
+        ['H_Toe_El','N', 5, 2],['H_Crest_El','N', 5, 2],
+        ['H_SIS', 'C', 10, 0]
+        ]
+        
+        WL.fields = Fields[1:]
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+
+                # get transect node positions
+                X, Y = Transect.get_XY()
+                
+                WriteTransect = [np.column_stack([X,Y]).tolist()]
+
+                # Create the record this could become a function in transect object...
+                Record = [str(Line.ID), str(Transect.ID), 
+                            Transect.H_R2, Transect.H_ESL, Transect.H_TWL,
+                            Transect.Elevation[Transect.FrontToeInd], Transect.Elevation[Transect.CrestInd],
+                            Transect.H_StormImpactScale]
+
+                # write transect and record
+                WL.line(WriteTransect)
+                try:
+                    WL.record(*Record) 
+                except:
+                    print(Transect.ID)
+                    print(Record)
+                    #print(Transect.ExtremeWidths)
+                    sys.exit()
+                
+        # close the shapefiles and clean up
+        WL.close()
+            
+        # create the projection file    
+        f = open(TransectsShp.rstrip("shp")+"prj","w")
+        f.write(self.Projection)
+        f.close()
+    
     def WriteCrestLinesShp(self, CrestLineShp):
 
         """
@@ -4091,9 +4147,9 @@ class Coast:
                     print(f"\t{Transect.LineID}_{Transect.ID}:Invalid scenario {Scenario}")
            
                 #print(f"\t{Transect.LineID}_{Transect.ID}:")
-                #print(f"\t\tt25:{t25_array}, {Transect.H_ESL}")
-                #print(f"\t\tc1: {t25_c1_array}, {Transect.H_ESL_c1}")
-                #print(f"\t\tc3: {t25_c3_array}, {Transect.H_ESL_c3}")
+                #print(f"\t\tt25:{t25_array}, {Transect.E85_ESL}")
+                #print(f"\t\tc1: {t25_c1_array}, {Transect.E85_ESL_c1}")
+                #print(f"\t\tc3: {t25_c3_array}, {Transect.E85_ESL_c3}")
     
     def CalculateTotalWaterLevel(self):
     
@@ -4114,10 +4170,10 @@ class Coast:
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 Transect.H_TWL = Transect.H_ESL + Transect.H_R2
-                #Transect.M45_TWL = Transect.M45_ESL + Transect.M45_R2
-                #Transect.M85_TWL = Transect.M85_ESL + Transect.M85_R2
-                #Transect.E45_TWL = Transect.E45_ESL + Transect.E45_R2
-                #Transect.E85_TWL = Transect.E85_ESL + Transect.E85_R2
+                Transect.M45_TWL = Transect.M45_ESL + Transect.M45_R2
+                Transect.M85_TWL = Transect.M85_ESL + Transect.M85_R2
+                Transect.E45_TWL = Transect.E45_ESL + Transect.E45_R2
+                Transect.E85_TWL = Transect.E85_ESL + Transect.E85_R2
     
     def StormImpactScale(self):
     
@@ -4139,7 +4195,19 @@ class Coast:
                 elif Transect.H_TWL > Transect.Elevation[Transect.CrestInd]:
                     Transect.H_StormImpactScale = "Overwash"
                 else:
-                    print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale!")
+                    print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for Historic scenario!")
+                
+                # NOTE: For all future scenarios the dune toe and crest still needs to be translated according to erosion status  
+                # IDEA: look at DC2 transects Rate_2050 and Rate_2100 to see if eroding. If so, don't adjust dune elevations. 
+                # If NoT eroding (rate is 0 or positive) increase dune toe and crest elevations by SLR for the year.  
+                if Transect.M45_TWL < Transect.Elevation[Transect.FrontToeInd]: # + Transect.M45_DuneElevAdjust 
+                    Transect.M45_StormImpactScale = "Swash"
+                elif Transect.M45_TWL > Transect.Elevation[Transect.FrontToeInd] and Transect.M45_TWL < Transect.Elevation[Transect.CrestInd]:
+                    Transect.H_StormImpactScale = "Collision"
+                elif Transect.M45_TWL > Transect.Elevation[Transect.CrestInd]:
+                    Transect.H_StormImpactScale = "Overwash"
+                else:
+                    print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for MidC RCP4.5 scenario!")
     
     def AnalyseExtremeWater(self, WaterElevs):
         
