@@ -4103,9 +4103,13 @@ class Coast:
         to eestimate extreme total water level.
         Repeat for each climate scenario.
         
+        Currently only considering central estimate of SLR, not whole likely range.
+        
         NH, Novembeer 2023
         
         """
+        
+        print("Coast.CalculateTotalWaterLevel: Adding extreme sea level to extreme wave runup")
         
         for Line in self.CoastLines:
             for Transect in Line.Transects:
@@ -4115,6 +4119,27 @@ class Coast:
                 #Transect.E45_TWL = Transect.E45_ESL + Transect.E45_R2
                 #Transect.E85_TWL = Transect.E85_ESL + Transect.E85_R2
     
+    def StormImpactScale(self):
+    
+        """
+        Apply Sallenger (2000) Storm Impact Scale
+        
+        NH, November 2023
+        
+        """
+        
+        print("Coast.StormImpactScale: Comparing total water level and dune elevations")
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                if Transect.H_TWL < Transect.Elevation[Transect.FrontToeInd]:
+                    Transect.H_StormImpactScale = "Swash"
+                elif Transect.H_TWL > Transect.Elevation[Transect.FrontToeInd] and Transect.H_TWL < Transect.Elevation[Transect.CrestInd]:
+                    Transect.H_StormImpactScale = "Collision"
+                elif Transect.H_TWL > Transect.Elevation[Transect.CrestInd]:
+                    Transect.H_StormImpactScale = "Overwash"
+                else:
+                    print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale!")
     
     def AnalyseExtremeWater(self, WaterElevs):
         
