@@ -226,6 +226,11 @@ class Transect:
         self.M85_StormImpactScale = None
         self.E45_StormImpactScale = None
         self.E85_StormImpactScale = None
+        self.NearestDC2Idx = None
+        self.M45_Erosion = None
+        self.M85_Erosion = None
+        self.E45_Erosion = None
+        self.E85_Erosion = None
         
     
     def __str__(self):

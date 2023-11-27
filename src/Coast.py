@@ -4243,7 +4243,7 @@ class Coast:
                 nearest_idx_array = TransectsGeom.sindex.nearest(CoastPoint, max_distance=200) 
                 
                 # save to Transect
-                Transect.NearestDC2Idx = nearest_idx_array[1]           ### TODO: Add to Transect parameters
+                Transect.NearestDC2Idx = nearest_idx_array[1]           
                 
                 if Transect.ID == "0":
                     print(f"\t{Transect.LineID}_{Transect.ID}:{Transect.NearestDC2Idx}")
