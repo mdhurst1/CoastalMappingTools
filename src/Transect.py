@@ -220,6 +220,12 @@ class Transect:
         self.M85_TWL = None
         self.E45_TWL = None
         self.E85_TWL = None
+        # Storm impact scale
+        self.H_StormImpactScale = None
+        self.M45_StormImpactScale = None
+        self.M85_StormImpactScale = None
+        self.E45_StormImpactScale = None
+        self.E85_StormImpactScale = None
         
     
     def __str__(self):
