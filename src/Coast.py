@@ -4023,7 +4023,9 @@ class Coast:
     def ExtractExtremeSeaLevel(self, Shapefile=None, Scenario=None):
         
         """
-        Find geospatial vector data points within certain distance from transect.
+        Input data is uplifted CFB2018 extreme still water levels, provided as
+        dataproduct by UKCP18.
+        Find input data points within certain distance from transect.
         Extract 25-yr return level and its likely range for each point.
         Calculate mean and save to transect. 
         
@@ -4202,7 +4204,7 @@ class Coast:
                 # Tot_E_2050 and TOT_E_2100 for RCP4.5 and RCP8.5 to see if eroding. If so, don't adjust dune elevations. 
                 # If NOT eroding (rate is 0 or positive) increase dune toe and crest elevations by SLR for the year.
                 
-                if Transect.M45_TWL < (Transect.Elevation[Transect.FrontToeInd]: #+ Transect.M45_DuneElevAdjust 
+                if Transect.M45_TWL < Transect.Elevation[Transect.FrontToeInd]: # + Transect.M45_DuneElevAdjust 
                     Transect.M45_StormImpactScale = "Swash"
                 elif Transect.M45_TWL > Transect.Elevation[Transect.FrontToeInd] and Transect.M45_TWL < Transect.Elevation[Transect.CrestInd]:
                     Transect.M45_StormImpactScale = "Collision"
@@ -4211,7 +4213,7 @@ class Coast:
                 else:
                     print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for MidC RCP4.5 scenario!")
                     
-                if Transect.M85_TWL < (Transect.Elevation[Transect.FrontToeInd]: #+ Transect.M85_DuneElevAdjust 
+                if Transect.M85_TWL < Transect.Elevation[Transect.FrontToeInd]: # + Transect.M85_DuneElevAdjust 
                     Transect.M85_StormImpactScale = "Swash"
                 elif Transect.M85_TWL > Transect.Elevation[Transect.FrontToeInd] and Transect.M85_TWL < Transect.Elevation[Transect.CrestInd]:
                     Transect.M85_StormImpactScale = "Collision"
@@ -4220,7 +4222,7 @@ class Coast:
                 else:
                     print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for MidC RCP8.5 scenario!")
                     
-                if Transect.E45_TWL < (Transect.Elevation[Transect.FrontToeInd]: #+ Transect.M45_DuneElevAdjust 
+                if Transect.E45_TWL < Transect.Elevation[Transect.FrontToeInd]: # + Transect.E45_DuneElevAdjust 
                     Transect.E45_StormImpactScale = "Swash"
                 elif Transect.E45_TWL > Transect.Elevation[Transect.FrontToeInd] and Transect.E45_TWL < Transect.Elevation[Transect.CrestInd]:
                     Transect.E45_StormImpactScale = "Collision"
@@ -4229,7 +4231,7 @@ class Coast:
                 else:
                     print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for EndC RCP4.5 scenario!")
                     
-                if Transect.E85_TWL < (Transect.Elevation[Transect.FrontToeInd]: #+ Transect.E85_DuneElevAdjust 
+                if Transect.E85_TWL < Transect.Elevation[Transect.FrontToeInd]: # + Transect.E85_DuneElevAdjust 
                     Transect.E85_StormImpactScale = "Swash"
                 elif Transect.E85_TWL > Transect.Elevation[Transect.FrontToeInd] and Transect.E85_TWL < Transect.Elevation[Transect.CrestInd]:
                     Transect.E85_StormImpactScale = "Collision"
@@ -4237,6 +4239,93 @@ class Coast:
                     Transect.E85_StormImpactScale = "Overwash"
                 else:
                     print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for EndC RCP8.5 scenario!")
+                    
+    def FindNearestIndex(self, Shapefile=None):
+    
+        """
+        Find index of nearest DC2 transect to Transect.CoastNode
+        Look only within 200 m of CoastNode.
+        
+        Parameters
+        ----------
+        Shapefile - string 
+            - geospatial multiline vector of DC2 transects
+            
+        NH, November 2023
+        
+        """
+        
+        print("Coast.FindNearestIndex: Saving index of nearest DC2 transect")
+            
+        # read shapefile using geopandas
+        GDF = gp.read_file(Shapefile)
+        TransectsGeom = GDF['geometry']
+        
+        if len(TransectsGeom) == 0:
+            print(f"\tNo geometries in {Shapefile}!")
+            return
+            
+        if __debug__:
+            print(f"\tNumber of geometries = {len(TransectsGeom)}")
+            print(TransectsGeom[0:5])
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects: 
+                CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                
+                # extract nearest DC2 transect index within 200m of CoastNode
+                nearest_idx_array = TransectsGeom.sindex.nearest(CoastPoint, max_distance=200) 
+                
+                # save to Transect
+                Transect.NearestDC2Idx = nearest_idx_array[1]           ### TODO: Add to Transect parameters
+                
+                if Transect.ID == "0":
+                    print(f"\t{Transect.LineID}_{Transect.ID}:{Transect.NearestDC2Idx}")
+                    
+    def ExtractFutureErosion(self, Shapefile=None, Scenario=None):
+    
+        """
+        Extract predicted future erosion from DC2 transect.
+        Requires Transect.NearestDC2Idx to be set by calling Coast.FindNearestIndex.
+        
+        Parameters
+        ----------
+        Shapefile - string 
+            - geospatial multiline vector of DC2 transects for given climate scenario
+        Scenario - string 
+            - Climate change scenario of interest
+            - Options: "RCP4" / "RCP8"
+            
+        NH, November 2023
+        
+        """
+        
+        print(f"Coast.ExtractFutureErosion: Read the predicted future erosion from DC2 transect for scenario {Scenario}")
+        
+        # check input parameters
+        if not (Scenario == "RCP4" or Scenario == "RCP8"):
+            print("\tInvalid Scenario:", Scenario)
+            sys.exit()
+            
+        # read shapefile using geopandas
+        GDF = gp.read_file(Shapefile)
+        Erosion_2050 = GDF['Tot_E_2050']
+        Erosion_2100 = GDF['Tot_E_2100']
+        
+        if len(Erosion_2050) == 0 or len(Erosion_2100) == 0:
+            print(f"\tNo erosion data in {Shapefile}!")
+            return
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects: 
+                # save predicted erosion values to the given scenario
+                if Scenario == "RCP4":
+                    Transect.M45_Erosion = Erosion_2050[Transect.NearestDC2Idx].to_numpy()
+                    Transect.E45_Erosion = Erosion_2100[Transect.NearestDC2Idx].to_numpy()
+                
+                elif Scenario == "RCP8":
+                    Transect.M85_Erosion = Erosion_2050[Transect.NearestDC2Idx].to_numpy()
+                    Transect.E85_Erosion = Erosion_2100[Transect.NearestDC2Idx].to_numpy()
     
     def AnalyseExtremeWater(self, WaterElevs):
         
