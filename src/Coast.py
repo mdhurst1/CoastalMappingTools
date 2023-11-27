@@ -4025,9 +4025,8 @@ class Coast:
         """
         Input data is uplifted CFB2018 extreme still water levels, provided as
         dataproduct by UKCP18.
-        Find input data points within certain distance from transect.
+        Find nearest input data point within 2.5 km of transect.
         Extract 25-yr return level and its likely range for each point.
-        Calculate mean and save to transect. 
         
         Parameters
         ----------
@@ -4063,95 +4062,62 @@ class Coast:
             return
         
         # Extract data: uplifted extreme still water levels for 25-yr return period, plus likely range
-        t25 = GDF["t25"]
-        t25_c1 = GDF["c1_t25"]
-        t25_c3 = GDF["c3_t25"]
-            
-        #if __debug__:
-            #print(f"\tNumber of points = {len(DataPoints)}; t25=")
-            #print(DataPoints)
-            #print(type(t25))
-            #print(t25)
+        t25_geoser = GDF["t25"]
+        t25_c1_geoser = GDF["c1_t25"]
+        t25_c3_geoser = GDF["c3_t25"]         
         
-        # 2.5 km radius of interest
-        max_distance = 2500             
-        
-        # For each transect, find points < maxDist away from CoastNode
+        # For each transect, find nearest ESL point to CoastNode
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 
-                points_within = []
                 CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
-                Distances = [DataPoint.distance(CoastPoint) for DataPoint in DataPoints] # works
-                    
-                for i in range(0, len(Distances)):
-                    points_within.append(Distances[i] < max_distance)       # boolean array
-                    
-                """    
-                if Transect.ID == "0":
-                    print(f"\t{Transect.LineID}_{Transect.ID}:Distances =")
-                    for i in range(0,50):
-                        print(Distances[i], points_within[i])
-                    print("len Distances=", len(Distances))
-                    print("len points_within=", len(points_within))    
-                """    
                 
-                # array of indexes of points within maxDist from transect               
-                Index = np.where(points_within)[0]          # array of indexes where True. fastest method for long lists (https://stackoverflow.com/questions/21448225/getting-indices-of-true-values-in-a-boolean-list)
-                
-                #if Transect.ID == "0":
-                    #print(f"\t{Transect.LineID}_{Transect.ID}: Index = {Index}")
+                # extract nearest ESL vector point index within 2.5 km of CoastNode
+                nearest_idx_array = DataPoints.sindex.nearest(CoastPoint, max_distance=2500) 
+                nearest_idx = nearest_idx_array[1]
+                     
+                if len(nearest_idx) > 0:
+                    t25 = t25_geoser[nearest_idx].to_numpy()                   # returns geoseries of index,value pairs. convert to numpy array of values only
+                    t25_c1 = t25_c1_geoser[nearest_idx].to_numpy()                    
+                    t25_c3 = t25_c3_geoser[nearest_idx].to_numpy()                    
                     
-                if len(Index) > 0:
-                    t25_near = t25[Index]                   # this is geoseries of index,value pairs
-                    t25_array = t25_near.to_numpy()         # converts series values to numpy array
-                    t25_mean = np.mean(t25_array)
-                    
-                    t25_near = t25_c1[Index]                   
-                    t25_c1_array = t25_near.to_numpy()         
-                    t25_c1_mean = np.mean(t25_c1_array)
-                    
-                    t25_near = t25_c3[Index]                   
-                    t25_c3_array = t25_near.to_numpy()         
-                    t25_c3_mean = np.mean(t25_c3_array)
-                 
                 else:
                     print(f"\t{Transect.LineID}_{Transect.ID}: No nearby points")
                     continue
                     
                 # save extracted ESL values to the given scenario
                 if Scenario == "Hist":
-                    Transect.H_ESL = t25_mean
-                    Transect.H_ESL_c1 = t25_c1_mean
-                    Transect.H_ESL_c3 = t25_c3_mean
+                    Transect.H_ESL = t25
+                    Transect.H_ESL_c1 = t25_c1
+                    Transect.H_ESL_c3 = t25_c3
                     
                 elif Scenario == "M45":
-                    Transect.M45_ESL = t25_mean
-                    Transect.M45_ESL_c1 = t25_c1_mean
-                    Transect.M45_ESL_c3 = t25_c3_mean
+                    Transect.M45_ESL = t25
+                    Transect.M45_ESL_c1 = t25_c1
+                    Transect.M45_ESL_c3 = t25_c3
                 
                 elif Scenario == "M85":
-                    Transect.M85_ESL = t25_mean
-                    Transect.M85_ESL_c1 = t25_c1_mean
-                    Transect.M85_ESL_c3 = t25_c3_mean
+                    Transect.M85_ESL = t25
+                    Transect.M85_ESL_c1 = t25_c1
+                    Transect.M85_ESL_c3 = t25_c3
                 
                 elif Scenario == "E45":
-                    Transect.E45_ESL = t25_mean
-                    Transect.E45_ESL_c1 = t25_c1_mean
-                    Transect.E45_ESL_c3 = t25_c3_mean
+                    Transect.E45_ESL = t25
+                    Transect.E45_ESL_c1 = t25_c1
+                    Transect.E45_ESL_c3 = t25_c3
                 
                 elif Scenario == "E85":
-                    Transect.E85_ESL = t25_mean
-                    Transect.E85_ESL_c1 = t25_c1_mean
-                    Transect.E85_ESL_c3 = t25_c3_mean
+                    Transect.E85_ESL = t25
+                    Transect.E85_ESL_c1 = t25_c1
+                    Transect.E85_ESL_c3 = t25_c3
                 
                 else:
                     print(f"\t{Transect.LineID}_{Transect.ID}:Invalid scenario {Scenario}")
            
                 #print(f"\t{Transect.LineID}_{Transect.ID}:")
-                #print(f"\t\tt25:{t25_array}, {Transect.E85_ESL}")
-                #print(f"\t\tc1: {t25_c1_array}, {Transect.E85_ESL_c1}")
-                #print(f"\t\tc3: {t25_c3_array}, {Transect.E85_ESL_c3}")
+                #print(f"\t\tt25:{t25}, {Transect.H_ESL}")
+                #print(f"\t\tc1: {t25_c1}, {Transect.H_ESL_c1}")
+                #print(f"\t\tc3: {t25_c3}, {Transect.H_ESL_c3}")
     
     def CalculateTotalWaterLevel(self):
     
