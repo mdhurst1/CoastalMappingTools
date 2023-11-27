@@ -4198,16 +4198,45 @@ class Coast:
                     print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for Historic scenario!")
                 
                 # NOTE: For all future scenarios the dune toe and crest still needs to be translated according to erosion status  
-                # IDEA: look at DC2 transects Rate_2050 and Rate_2100 to see if eroding. If so, don't adjust dune elevations. 
-                # If NoT eroding (rate is 0 or positive) increase dune toe and crest elevations by SLR for the year.  
-                if Transect.M45_TWL < Transect.Elevation[Transect.FrontToeInd]: # + Transect.M45_DuneElevAdjust 
+                # IDEA: look at nearest DC2 transect (shapely nearest_points? / geopandas.sindex.SpatialIndex.nearest?) 
+                # Tot_E_2050 and TOT_E_2100 for RCP4.5 and RCP8.5 to see if eroding. If so, don't adjust dune elevations. 
+                # If NOT eroding (rate is 0 or positive) increase dune toe and crest elevations by SLR for the year.
+                
+                if Transect.M45_TWL < (Transect.Elevation[Transect.FrontToeInd]: #+ Transect.M45_DuneElevAdjust 
                     Transect.M45_StormImpactScale = "Swash"
                 elif Transect.M45_TWL > Transect.Elevation[Transect.FrontToeInd] and Transect.M45_TWL < Transect.Elevation[Transect.CrestInd]:
-                    Transect.H_StormImpactScale = "Collision"
+                    Transect.M45_StormImpactScale = "Collision"
                 elif Transect.M45_TWL > Transect.Elevation[Transect.CrestInd]:
-                    Transect.H_StormImpactScale = "Overwash"
+                    Transect.M45_StormImpactScale = "Overwash"
                 else:
                     print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for MidC RCP4.5 scenario!")
+                    
+                if Transect.M85_TWL < (Transect.Elevation[Transect.FrontToeInd]: #+ Transect.M85_DuneElevAdjust 
+                    Transect.M85_StormImpactScale = "Swash"
+                elif Transect.M85_TWL > Transect.Elevation[Transect.FrontToeInd] and Transect.M85_TWL < Transect.Elevation[Transect.CrestInd]:
+                    Transect.M85_StormImpactScale = "Collision"
+                elif Transect.M85_TWL > Transect.Elevation[Transect.CrestInd]:
+                    Transect.M85_StormImpactScale = "Overwash"
+                else:
+                    print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for MidC RCP8.5 scenario!")
+                    
+                if Transect.E45_TWL < (Transect.Elevation[Transect.FrontToeInd]: #+ Transect.M45_DuneElevAdjust 
+                    Transect.E45_StormImpactScale = "Swash"
+                elif Transect.E45_TWL > Transect.Elevation[Transect.FrontToeInd] and Transect.E45_TWL < Transect.Elevation[Transect.CrestInd]:
+                    Transect.E45_StormImpactScale = "Collision"
+                elif Transect.E45_TWL > Transect.Elevation[Transect.CrestInd]:
+                    Transect.E45_StormImpactScale = "Overwash"
+                else:
+                    print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for EndC RCP4.5 scenario!")
+                    
+                if Transect.E85_TWL < (Transect.Elevation[Transect.FrontToeInd]: #+ Transect.E85_DuneElevAdjust 
+                    Transect.E85_StormImpactScale = "Swash"
+                elif Transect.E85_TWL > Transect.Elevation[Transect.FrontToeInd] and Transect.E85_TWL < Transect.Elevation[Transect.CrestInd]:
+                    Transect.E85_StormImpactScale = "Collision"
+                elif Transect.E85_TWL > Transect.Elevation[Transect.CrestInd]:
+                    Transect.E85_StormImpactScale = "Overwash"
+                else:
+                    print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for EndC RCP8.5 scenario!")
     
     def AnalyseExtremeWater(self, WaterElevs):
         
