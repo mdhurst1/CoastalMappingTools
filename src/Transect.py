@@ -31,7 +31,7 @@ from shapely.geometry import Point, LineString
 rcParams['font.family'] = 'sans-serif'
 rcParams['font.sans-serif'] = ['arial']
 rcParams['font.size'] = 10
-rcParams['text.usetex'] = True
+rcParams['text.usetex'] = False ##True  NH: SET TO FALSE as don't have latex installed. Else plot fails
 
 class Transect:
     """
@@ -142,10 +142,10 @@ class Transect:
         self.ElevationRoughness = None
         self.MLWSIntersect = None
         self.MHWSIntersect = None
-        self.MHWSDistance = None
-        self.MLWSDistance = None
-        self.MHWSElevationSwath = None
-        self.MLWSElevationSwath = None
+        self.ForeshoreSlope = None
+        self.IntertidalSlope = None
+        self.IntertidalDepth = None
+        self.IntertidalDistance = None
 
         # barrier metrics
         self.Barrier = False
@@ -162,6 +162,7 @@ class Transect:
         self.FrontSlope = None
         self.BackSlope = None
         self.BarrierVolume = None
+        self.HinterlandHigher = False
 
         # other barrier metrics for extreme water levels
         # will need short term and long term here?
@@ -567,7 +568,7 @@ class Transect:
     
         """
         
-        Function to extract transect's shoreface slope between MHWS and MLWS nodes. 
+        Function to extract transect's slope between MHWS and MLWS intersect nodes. 
         If no MLWS intersect node, use nearest MLWS node (from ExtractMLWS()). 
         
         NH Spetembeer 2023
@@ -579,6 +580,7 @@ class Transect:
             print(self.LineID, self.ID, "CalculateIntertidalSlope2: No MLWS intersect data")
             if not self.MLWS.X:
                 print(self.LineID, self.ID, "CalculateIntertidalSlope2: No MLWS nearest data either!")
+                self.IntertidalSlope = -1
                 return
             else:
                 # Use MLWS data
@@ -588,102 +590,79 @@ class Transect:
             # use MLWSIntersect data
             MLWSNode = self.MLWSIntersect
             
-        if not self.MHWSIntersect:
+        if not self.MHWSIntersect.X:
             print(self.LineID, self.ID, "CalculateIntertidalSlope2: No MHWSIntersect!")
+            self.IntertidalSlope = -1
             return
 
-        else:
-            self.ShorefaceDistance = MLWSNode.get_Distance(self.MHWSIntersect)
-            self.ShorefaceDepth = self.MHWSIntersect.Z - MLWSNode.Z
-            self.ShorefaceSlope = self.ShorefaceDepth/self.ShorefaceDistance
+        # check if elevation data exists
+        if not MLWSNode.Z:
+            print(self.LineID, self.ID, "CalculateIntertidalSlope2: No MLWS elevation!")
+            self.IntertidalSlope = -1
+            return
+        if not self.MHWSIntersect.Z:
+            print(self.LineID, self.ID, "CalculateIntertidalSlope2: No MHWS elevation!")
+            self.IntertidalSlope = -1
+            return   
+        
+        self.IntertidalDistance = MLWSNode.get_Distance(self.MHWSIntersect)
+        self.IntertidalDepth = self.MHWSIntersect.Z - MLWSNode.Z
+        self.IntertidalSlope = self.IntertidalDepth/self.IntertidalDistance
         
         # set minimum shoreface slope to 0.001
-        if self.ShorefaceSlope < 0.001:
-            self.ShorefaceSlope = 0.001
+        if self.IntertidalSlope < 0.001:
+            self.IntertidalSlope = 0.001
             
-    def CalculateIntertidalSlopeSwath(self):
+            
+    def ExtractIndex(self, Elev=None, Landward=True):
     
         """
+        Starting at the seaward end, function to return the index of the 
+        node in Transect.Elevation that is immediately landward or seaward 
+        of the specified elevation.
         
-        Function to calculate the intertidal slope based on the swath elevations
-        nearest to the original transect's MHWS and MLWS interection nodes.
-        Need to call ExtractTidalElevationsSwath() prior to this.
+        Returns -1 if no elevation specified, or no elevation greater than Elev found.
+        
+        Parameters
+        ----------
+        Elev - float
+            Decimal number of the elevation of interest
+        Landward - boolean
+            Flag to specifiy whether to return the first elevation landward (or seaward)
+            of the elevation of interest
         
         NH, October 2023
         
-        """
-        
-        # check if the swath elevations exist
-        if not self.SwathTidalElevationsExtracted:
-            print(self.LineID, self.ID, "CalculateIntertidalSlopeSwath: No elevation data")
-            return 
-        
-        # calculate intertidal slope        
-        self.ShorefaceDistance = self.MHWSDistance - self.MLWSDistance
-        self.ShorefaceDepth = self.MHWSElevationSwath - self.MLWSElevationSwath
-        self.ShorefaceSlope = self.ShorefaceDepth/self.ShorefaceDistance
-            
-    
-    def ExtractTidalElevationsSwath(self):
+        Works
     
         """
         
-        Function to find interpolated elevations nearest to the MHWS and MLWS intersection 
-        nodes of the transect.
-        Save these to Transect.MHWSElevationSwath and Transect.MLWSElevationSwath
+        # Check parameters were passed
+        if Elev is None:
+            print("Transect.ExtractIndex: Elev not specified!")
+            return -1
         
-        Note: This is not the exact tidal elevations, but elevations of the
-        interpolated swath where the MHWS and MLWS contours intersect the transect.
-        The saved values will be used in CalculateIntertidalSlope2()
+        # Find indexes of transect elevations greater than Elev: boolean array
+        elev_of_interest = self.Elevation > Elev
         
-        If no MLWS intersection, use the MLWS node (nearest MLWS node to StartNode) 
+        # Check anything was found
+        if sum(elev_of_interest) == 0:
+            print(f"Transect.ExtractIndex: No Elevation above {Elev} m!")
+            return -1
         
-        NH, October 2023
-        
-        """
-        
-        DistNodePoints = [Point(DistNode.X, DistNode.Y) for DistNode in self.DistanceNodes]
-        
-        # find nearest DistanceNode to MHWSIntersect node. Save swath elevation
-        # and disance along transect for intertidal slope calc
-        if self.MHWSIntersect.X != 0:
-            MHWSPoint = Point(self.MHWSIntersect.X, self.MHWSIntersect.Y)
-            Distances = [MHWSPoint.distance(DistNodePoints)]
-            ihigh = np.argmin(Distances)
-            self.MHWSElevationSwath = self.Elevation[ihigh]
-            self.MHWSDistance = self.Distance[ihigh]
-            
-        else:
-            print("ExtractTidalElevationsSwath:", self.LineID, self.ID, "No MHWSIntersect node")
-            return
-        
-        # find find nearest DistanceNode to MLWSIntersect node. Save swath elevation
-        # and disance along transect for intertidal slope calc
-        if self.MLWSIntersect.X != 0:
-            MLWSPoint = Point(self.MLWSIntersect.X, self.MLWSIntersect.Y)
-            Distances = [MLWSPoint.distance(DistNodePoints)]
-            ilow = np.argmin(Distances)
-            self.MLWSElevationSwath = self.Elevation[ilow]
-            self.MLWSDistance = self.Distance[ilow]
-        else:
-            print(self.LineID, self.ID, "ExtractTidalElevationsSwath: No MLWSIntersect node, using MLWS node")
-            if not self.MLWS.X:
-                print(self.LineID, self.ID, "ExtractTidalElevationsSwath: No MLWS elevation data either!")
-                return
-            MLWSPoint = Point(self.MLWS.X, self.MLWS.Y)
-            self.MLWSDistance = -MLWSPoint.distance(Point(self.StartNode.X, self.StartNode.Y)) # negative as point seaward of transect. Strictly speaking should do dot product here...
-            self.MLWSElevationSwath = self.MLWS.Z
-            
-        self.SwathTidalElevationsExtracted = True
-           
-        if __debug__:
-            print(self.LineID, self.ID)
-            print(f"ihigh={ihigh}, Swath elev at MHWSIntersect = {self.MHWSElevationSwath}")
-            if self.MLWSIntersect.X != 0:
-                print(f"ilow={ilow}, Swath elev at MLWSIntersect = {self.MLWSElevationSwath}")
+        # Find the smallest index (most seaward)
+        for i in range(0, len(elev_of_interest)):
+            if elev_of_interest[i]:
+                if Landward:
+                    return i
+                else:
+                    if i > 0:
+                        return i-1
+                    else:
+                        return i
             else:
-                print(f"Elev at nearset MLWS node = {self.MLWSElevationSwath}, {self.MLWSDistance} m away from StartNode")
-            
+                continue
+    
     def PredictFutureShorelines(self, MaxRockHeadErosionDistance=25.):
 
         """
@@ -1295,18 +1274,20 @@ class Transect:
         Description goes here
         MDH, June 2019
         """
+        
         # Check if rocky and dont look for barrier on rocky coast
         if self.Rocky:
-            #print("\n\tNot a barrier 1")
+            print("\n\tNot a barrier 1")
             self.Barrier = False
             return
 
         # Check if a cliff is present and only analyse topography up to the cliff toe
         # when looking for a barrier
-        Mask = self.Elevation.mask.copy()
+        #Mask = self.Elevation.mask.copy()              # Problem: this returns boolean value (not array) of False when no masked elements
+        Mask = ma.getmaskarray(self.Elevation)          # Return the mask of a masked array, or full boolean array of False.
         if self.Cliff:
             Mask[self.CliffToeInd+1:] = True
-
+        
         # mask below sea level, including tide, in future
         Mask[self.Elevation < 0] = True
 
@@ -1317,6 +1298,7 @@ class Transect:
         # check that the whole topography has not been masked
         # this would indicate there is no barrier
         if ElevMasked.mask.all():
+            print("\n\tNot a barrier 2")
             self.Barrier = False
             return
 
@@ -1332,7 +1314,7 @@ class Transect:
             print("No value for ElevMasked[MaxInd]" + self.LineID + ", " + self.ID)
             sys.exit()
         if ElevMasked[MaxInd] < self.MHWS:
-            #print("\n\tNot a barrier 3")
+            print("\n\tNot a barrier 3")
             self.Barrier = False
             return
 
@@ -1345,6 +1327,7 @@ class Transect:
 
         # check highest point is not on seaward end
         if MaxInd == FirstInd:
+            print("\n\tNot a barrier 4")
             self.Barrier = False
             return
 
@@ -1358,6 +1341,8 @@ class Transect:
 
         while BarrierPositionChangeFlag:
 
+            Counter += 1                            # NH DEBUG
+            
             # reset flag
             BarrierPositionChangeFlag = False
 
@@ -1382,17 +1367,27 @@ class Transect:
             # mask values beyond the peak
             Mask = ElevMasked.mask.copy()
             Mask[0:FirstInd] = True
-            Mask[self.FrontTopInd+1:] = True
+            if self.FrontTopInd < LastInd:          ## NH ADD: Catch when highest elevation is the last node (self.FrontTopInd=MaxInd=LastInd). Prevents corrupt indexing.
+                Mask[self.FrontTopInd+1:] = True
             ElevDetrend = ma.masked_where(Mask, ElevDetrend)
             NewInd = np.argmax(ElevDetrend)
             
+            #print(Counter)                         # NH DEBUG
+            #print(f"FirstInd={FirstInd}, LastInd={LastInd}, MaxInd={MaxInd}, NewInd={NewInd}") 
+            #print(f"FrontTopInd={self.FrontTopInd}, FrontToeInd={self.FrontToeInd}, BackTopInd={self.BackTopInd}")
+            
             if (NewInd == FirstInd):
+                #print(f"{Counter}, Setting NewInd = MaxInd")
                 NewInd = MaxInd
             
-            # Find Maximum detrended elevation. 
-            # if at end of transect then not a barrier
+            # Find Maximum detrended elevation. Original: If at end of transect then not a barrier
+            # NH edit: rather than discard transect, keep as potential barrier and set flag that hinterland is higher than barrier crest.
             if (NewInd == LastInd):
-                #print("\n\tNot a barrier 5")
+                print("\n\tNot a barrier 5")
+                
+                #print(self.LineID, self.ID)         # NH DEBUG
+                #print(f"FirstInd={FirstInd}, LastInd={LastInd}, MaxInd={MaxInd}, NewInd={NewInd}")
+                #print(f"FrontTopInd={self.FrontTopInd}, FrontToeInd={self.FrontToeInd}")
                 #plt.plot(self.Distance,ElevMasked,'k-')
                 #plt.plot(self.Distance[self.FrontTopInd],self.Elevation[self.FrontTopInd],'bo')
                 #plt.plot(self.Distance[self.FrontToeInd],self.Elevation[self.FrontToeInd],'bs')
@@ -1401,11 +1396,14 @@ class Transect:
                 #plt.plot(self.Distance,ElevDetrend,'r-')
                 #plt.show()
                 #sys.exit()
-                self.Barrier = False
-                return
+                
+                #self.Barrier = False
+                #return
+                self.HinterlandHigher = True
 
             # Must be above MHWS to be considered a barrier top
-            elif ((NewInd < self.FrontTopInd) and (ElevDetrend[NewInd] > 0.001) and (ElevMasked[NewInd] > self.MHWS)):
+            # NH edit: Replace elif with if to align with not treating previous if statement as error.
+            if ((NewInd < self.FrontTopInd) and (ElevDetrend[NewInd] > 0.001) and (ElevMasked[NewInd] > self.MHWS)):
                 self.FrontTopInd = np.argmax(ElevDetrend)
                 BarrierPositionChangeFlag = True
 
@@ -1429,7 +1427,8 @@ class Transect:
             # mask values beyond the barrier front top
             Mask = ElevMasked.mask.copy()
             #Mask[:self.FrontToeInd] = True
-            Mask[self.FrontTopInd+1:] = True
+            if self.FrontTopInd < LastInd:            ## NH ADD: Catch when highest elevation is the last node (self.FrontTopInd=MaxInd=LastInd). Prevents corrupt indexing.
+                Mask[self.FrontTopInd+1:] = True
             ElevDetrend = ma.masked_where(Mask, ElevDetrend)
             NewInd = np.argmin(ElevDetrend)
             
@@ -1461,13 +1460,14 @@ class Transect:
 
         # Check if coincides with a cliff
         if self.FrontTopInd == LastInd:
+            print("\n\tNot a barrier 7")
             self.Barrier = False
             return
 
         # this needs more work
         self.FrontHeight = self.Elevation[self.FrontTopInd]-self.Elevation[self.FrontToeInd]
         self.FrontSlope = self.FrontHeight/(self.Distance[self.FrontTopInd]-self.Distance[self.FrontToeInd])
-
+        
         # default back barrier positions
         self.BackTopInd = self.FrontTopInd
         Mask = ElevMasked.mask.copy()
@@ -1547,9 +1547,10 @@ class Transect:
             return        
             
         # Get Barrier Crest
-        Mask = self.Elevation.mask.copy()
+        #Mask = self.Elevation.mask.copy()              # Problem: this returns boolean value (not array) of False when no masked elements
+        Mask = ma.getmaskarray(self.Elevation)          # Return the mask of a masked array, or full boolean array of False.
         Mask[0:self.FrontToeInd] = True
-        Mask[self.BackToeInd] = True
+        Mask[self.BackToeInd+1:] = True                 # NH bug fix: exclude all elevations beyond BackToeInd, not just the single elev at BackToeInd
         ElevMasked = ma.masked_where(Mask,self.Elevation)
         self.CrestInd = ma.argmax(ElevMasked)
         self.CrestElevation = ElevMasked[self.CrestInd]
@@ -1575,7 +1576,6 @@ class Transect:
         self.BarrierVolume -= 0.5 * (ElevMasked[self.FrontToeInd] + ElevMasked[self.BackToeInd-1]) \
                                  * np.abs(self.Distance[self.BackToeInd-1] - self.Distance[self.FrontToeInd])
         
-
         # switch flag to indicate a barrier has been found
         self.Barrier = True
     

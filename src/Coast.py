@@ -1254,11 +1254,13 @@ class Coast:
         MDH, July 2020
         """
         
+        print("Coast.WriteBarriersTextFile: Writing transects barrier toe and crest elevations to .csv file")
+        
         # define filename and open for writing
         f = open(Filename,'w')
         
         # write headers
-        f.write("LineID" + delimiter + "TransectID" + delimiter + "FrontToeElev" + delimiter + "BackToeElev" + delimiter + "CrestElev" + delimiter + "ToeWidth" + delimiter + "Volume" + "\n")
+        f.write("LineID" + delimiter + "TransectID" + delimiter + "FrontToeElev" + delimiter + "BackToeElev" + delimiter + "FrontTopElev" + delimiter + "CrestElev" + "\n")#"ToeWidth" + delimiter + "Volume" + "\n")
         
         for Line in self.CoastLines:
             for Transect in Line.Transects:
@@ -1268,12 +1270,71 @@ class Coast:
                     f.write(str(Transect.ID) + delimiter)
                     f.write(str(Transect.Elevation[Transect.FrontToeInd]) + delimiter)
                     f.write(str(Transect.Elevation[Transect.BackToeInd]) + delimiter)
-                    f.write(str(Transect.Elevation[Transect.CrestInd]) + delimiter)
-                    f.write(str(Width) + delimiter)
-                    f.write(str(Volume) + "\n")
+                    f.write(str(Transect.Elevation[Transect.FrontTopInd]) + delimiter)
+                    f.write(str(Transect.Elevation[Transect.CrestInd]) + "\n") #delimiter)
+                    #f.write(str(Width) + delimiter)
+                    #f.write(str(Volume) + "\n")
+                else:
+                    print(f"\t{Transect.LineID} {Transect.ID}: Not a barrier")
                 
         f.close()
         
+    def WriteSlopesTextfile(self, Filename, delimiter=","):
+        
+        """
+        NH, November 2023
+        """
+        
+        # define filename and open for writing
+        f = open(Filename,'w')
+        
+        # write headers
+        f.write("LineID" + delimiter + "TransectID" + delimiter + "ForeshoreSlope" + delimiter + "IntertidalSlope" + "\n")
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                f.write(str(Line.ID) + delimiter)
+                f.write(str(Transect.ID) + delimiter)
+                f.write(str(Transect.ForeshoreSlope) + delimiter)   # slope between 0 m and MHWS (interpolated elevations)
+                f.write(str(Transect.IntertidalSlope) + "\n")       # slope between MHWSIntersect and MLWSIntersect (sampled elevations)
+                
+        f.close()
+        
+    def WriteSlopesDuneParamsTextfile(self, Filename, delimiter=","):
+        
+        """
+        Writes all transect slopes and dune parameters to .csv file
+        
+        NH, Novembeer 2023
+        
+        """
+        
+        print("Coast.WriteSlopesDuneParamsTextfile: Writing transects slopes, barrier toe and crest elevations to .csv file")
+        
+        # define filename and open for writing
+        f = open(Filename,'w')
+        
+        # write headers
+        f.write("LineID" + delimiter + "TransectID" + delimiter + "IntertidalSlope" + delimiter + "ForeshoreSlope" + delimiter +\
+                "FrontToeElev" + delimiter + "BackToeElev" + delimiter + "FrontTopElev" + delimiter + "CrestElev" + "\n")
+                
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                f.write(str(Line.ID) + delimiter)
+                f.write(str(Transect.ID) + delimiter)
+                f.write(str(Transect.IntertidalSlope) + delimiter)      # slope between MHWSIntersect and MLWSIntersect (sampled elevations)
+                f.write(str(Transect.ForeshoreSlope) + delimiter)       # slope between 0 m and MHWS (interpolated elevations)
+                if Transect.Barrier:
+                    f.write(str(Transect.Elevation[Transect.FrontToeInd]) + delimiter)
+                    f.write(str(Transect.Elevation[Transect.BackToeInd]) + delimiter)
+                    f.write(str(Transect.Elevation[Transect.FrontTopInd]) + delimiter)
+                    f.write(str(Transect.Elevation[Transect.CrestInd]) + "\n")
+                else:
+                    f.write("NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + "\n")
+                    
+        f.close()
+        
+    
     def MergeReverseCoastLines(self):
 
         """
@@ -1737,10 +1798,10 @@ class Coast:
             for Transect in Line.Transects:
                 Transect.CalculateIntertidalSlope()            
             
-    def GetShorefaceSlopesMLWS2(self):
+    def GetIntertidalSlopes(self):
         """
         
-        Function to extract shoreface slope between MHWS and MLWS node 
+        Function to extract the slope between MHWS and MLWS node for each transect.
         If no MLWS intersect, use nearest MLWS node (from ExtractMLWS()). 
         
         Wrapper to function in the Transect object
@@ -1749,11 +1810,57 @@ class Coast:
         
         """
         
-        print("Coast.GetShorefaceSlopeMLWS2: Slope = dz/dx between MHWS and MLWS")
+        print("Coast.GetIntertidalSlopes: Finding distance between MHWSIntersect and MLWSIntersect to calculate slope")
         
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 Transect.CalculateIntertidalSlope2()  
+                
+    def GetForeshoreSlopes(self):
+    
+        """
+        Function to extract the upper shoreface slope for each transect
+        between the 0 m and MHWS elevations. 
+        Uses Transect.Elevation, so slopes can be from either the sampeld DTM elevations,
+        or the interpolated swath elevations.
+        
+        NH, October 2023
+        
+        """
+        
+        print("Coast.GetForeshoreSlopes: Slope = dz/dx between 0 m and MHWS elevation")
+        
+        # Extract indexes
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                ihigh = Transect.ExtractIndex(Elev=Transect.MHWS, Landward=False)
+                ilow = Transect.ExtractIndex(Elev=0.0, Landward=True)
+                
+                # check indexes valid
+                if (ihigh == -1 or ilow == -1):
+                    print(f"\t{Transect.LineID}, {Transect.ID}: Indexes not valid!", ihigh, ilow)
+                    Transect.ForeshoreSlope = None
+                    continue
+                if ihigh < ilow:
+                    print(f"\t{Transect.LineID}, {Transect.ID}: MHWS index < coastline index!")
+                    Transect.ForeshoreSlope = None
+                    continue
+                
+                # Calculate slopes
+                dz = Transect.Elevation[ihigh] - Transect.Elevation[ilow]
+                dx = Transect.Distance[ihigh] - Transect.Distance[ilow]
+                
+                # Catch divide by zero
+                if dx == 0:
+                    print(f"\t{Transect.LineID}, {Transect.ID}: \tdx = 0!")
+                    Transect.ForeshoreSlope = None
+                    continue
+                    
+                else:
+                    Transect.ForeshoreSlope = dz/dx
+                
+                if __debug__:
+                    print(f"\t{Transect.LineID}, {Transect.ID}: \tihigh={ihigh}, ilow={ilow}, \tdz={dz}, \tdx={dx}, \tslope={Transect.ForeshoreSlope}")
         
     
     def GenerateTransectsBetweenContoursShp(self, ContourShp1, ContourShp2, Distance2Sea=8000., Distance2Land=8000., TransectSpacing=20., CheckTopology=True):
@@ -2468,9 +2575,9 @@ class Coast:
                     
                 setattr(Transect, NodeToSave, Node(Intersection.x, Intersection.y))
                 
-                if __debug__:
-                    ThisNode = getattr(Transect, NodeToSave) 
-                    print(Transect.LineID, Transect.ID, "\t", NodeToSave, Intersection, ThisNode)            
+                #if __debug__:
+                    #ThisNode = getattr(Transect, NodeToSave) 
+                    #print(Transect.LineID, Transect.ID, "\t", NodeToSave, Intersection, ThisNode)            
        
     def ExtractContours(self,ContourShp):
 
@@ -2623,7 +2730,7 @@ class Coast:
             if not DTM_Dataset.nodata:
                 # raise SystemExit("DTM missing no data value") # NH: remove this as .asc files don't have nodata set.
                 # NH add print and NDV assignment
-                print("DTM missing no data value!")
+                print("\tDTM missing no data value!")
                 NDV = -9999
 
             # check for square pixels
@@ -2650,7 +2757,7 @@ class Coast:
                     # Check if Transect contains the passed nodename as attribute 
                     # If not, then return as need (x,y) coords to sample.
                     if not hasattr(Transect, NodeToSample):
-                        print("Error: Transect has no attribute", NodeToSample)
+                        print("\tError: Transect has no attribute", NodeToSample)
                         return
                         
                     # get attribute   
@@ -3219,16 +3326,16 @@ class Coast:
 
                     Transect.HaveTopography = True
                     
-                    # NH add: Note: issue where transect overlaps 2 DTMs, Transect.Elevation gets overwritten in 2nd DTM iteration (StF L0 T30)
+                    # NH add Note: issue where transect overlaps 2 DTMs, Transect.Elevation gets overwritten in 2nd DTM iteration (StF L0 T30)
                     # But, correct elevations are in Transect.DisanceNodes.Z
-                    if __debug__:
-                        print(Line.ID, Transect.ID)
-                        print("Elevation:\n", Transect.Elevation)
-                        print("Distance:\n", Transect.Distance)
+                    #if __debug__:
+                        #print(Line.ID, Transect.ID)
+                        #print("Elevation:\n", Transect.Elevation)
+                        #print("Distance:\n", Transect.Distance)
                         #for i, ThisNode in enumerate(Transect.DistanceNodes):
                             #print("DistNodes:\n", Transect.DistanceNodes[i].X, Transect.DistanceNodes[i].Y, Transect.DistanceNodes[i].Z)
 
-    def ExtractTransectTopographySwath(self, DEMFileList=None, SwathDistance=-9999, DistanceSpacing=None):
+    def ExtractTransectTopographySwath(self, DEMFileList=None, SwathDistance=-9999, DistanceSpacing=None, CrossShoreWindowSize=None):
         """
         Profile to populate transects with topographic data
         Uses swath profile routine to collect elevations within a certain distance
@@ -3244,6 +3351,7 @@ class Coast:
         - Fix bug of negative index in bounding box
         - Extend bounding box start and end coordinates by SwathDistance
         - Handle transect crossing two DTMs
+        - Add parameter to set crosshore interpolation window size
         
         Parameters
         ----------
@@ -3263,10 +3371,17 @@ class Coast:
         DistanceSpacing : float
             Distance in m between elevation nodes on the transect
             
+        CrossShoreWindowSize : float
+            Size in m of the cross-shore window landward and seaward of
+            each point during the interpolation.
+            Ultimate inrerpolation window width is thus two times this value.
+            Minimum of DTM resolution, max of 5*DTM resolution
+            Default of 2*DTM resolution
+            
         """
         
-        print("Coast.EstractTransectTopographySwath: Sampling DTMs for each transect")
-        
+        print("Coast.ExtractTransectTopographySwath: Sampling DTMs for each transect")
+                            
         # set up dem file list
         if DEMFileList:
             # check if list and make list if not
@@ -3281,7 +3396,7 @@ class Coast:
 
             # load the DTM and get its properties
             print("\tLoading DTM... ", end="")
-            DTM_Dataset = rasterio.open(DEM) # rasterio.open(DTMFile)
+            DTM_Dataset = rasterio.open(DEM) 
             DTMArray = DTM_Dataset.read(1)
             NCols = DTM_Dataset.width
             NRows = DTM_Dataset.height
@@ -3315,10 +3430,18 @@ class Coast:
             # check swath distance
             if SwathDistance < 0:
                 SwathDistance = DTM_Resolution*2.
-            # NH: Check for stupidly big swath distance
+            
             if SwathDistance > DTM_Resolution*20:
                 print("\tSwathDistance > DTM_Resolution*20! Setting to DTM_Resolution*20")
                 SwathDistance = DTM_Resolution*20.
+                
+            # check cross shore window size
+            if not CrossShoreWindowSize:
+                CrossShoreWindowSize = DTM_Resolution*2.
+            if CrossShoreWindowSize < DTM_Resolution:
+                CrossShoreWindowSize = DTM_Resolution
+            if CrossShoreWindowSize > DTM_Resolution*5.:
+                CrossShoreWindowSize = DTM_Resolution*5.
            
             # Get vectors of X and Y coordinates, NB reversal of Y in line with 
             # DTM indexing from top left
@@ -3344,50 +3467,42 @@ class Coast:
                     X2, Y2 = Transect.EndNode.get_XY()
                     TransectLine = LineString([(X1, Y1), (X2, Y2)])
                     
-                    if __debug__:
-                        print("\tTransect X1, Y1, X2, Y2 = ", X1, Y1, X2, Y2)
+                    #if __debug__:
+                        #print("\tTransect X1, Y1, X2, Y2 = ", X1, Y1, X2, Y2)
 
                     # check for intersection
                     if not TransectLine.intersects(DTM_Extent):
                         CurrentTransect += 1 # NH: increment transect count if no intersect
                         continue
 
-                    #find indices for bounding box
-                    #need to be careful with reverse indexing
-                    #iStart = np.argmin(np.abs(YVector-np.max([Y1,Y2])))-1
-                    #iEnd = np.argmin(np.abs(YVector-np.min([Y1,Y2])))+1
-                    #jStart = np.argmin(np.abs(XVector-np.min([X1,X2])))-1
-                    #jEnd = np.argmin(np.abs(XVector-np.max([X1,X2])))+1
-                    
-                    # NH: Change bounding box size to extend past transect bounds by SwathDistance
+                    # NH: Bounding box size to extend past transect bounds by SwathDistance
                     iStart = np.argmin(np.abs(YVector-np.max([Y1,Y2])))-(int)(SwathDistance/DTM_Resolution) 
                     iEnd = np.argmin(np.abs(YVector-np.min([Y1,Y2])))+(int)(SwathDistance/DTM_Resolution)
                     jStart = np.argmin(np.abs(XVector-np.min([X1,X2])))-(int)(SwathDistance/DTM_Resolution)
                     jEnd = np.argmin(np.abs(XVector-np.max([X1,X2])))+(int)(SwathDistance/DTM_Resolution)
                     
-                    # NH: Add index sanity check
-                    # Catch Start index of -1, in case where transect intersects top (i) or left hand side (j) of DEM.
-                    # Catch End index larger than the length or width of the DTM. This only applies for wider bounding box.  
+                    # Catch Start index of -1, when bounding box intersects top (i) or left hand side (j) of DEM.
+                    # Catch End index larger than the length or width of the DTM. Set InterpolationInconplete flag.  
                     if iStart < 0:
-                        print("\t\t\t\tiStart < 0! Setting to 0")
+                        print("\tiStart < 0! Setting to 0")
                         iStart = 0
                         Transect.InterpolationIncomplete = True
                     if jStart < 0:
-                        print("\t\t\t\tjStart < 0! Setting to 0")
+                        print("\tjStart < 0! Setting to 0")
                         jStart = 0
                         Transect.InterpolationIncomplete = True
                     if iEnd > len(YVector):
-                        print("\t\t\t\tiEnd > len(YVector)! Setting to", len(YVector))
+                        print("\tiEnd > len(YVector)! Setting to", len(YVector))
                         iEnd = len(YVector)
                         Transect.InterpolationIncomplete = True
                     if jEnd > len(XVector):
-                        print("\t\t\t\tjEnd > len(XVector)! Setting to", len(XVector))
+                        print("\tjEnd > len(XVector)! Setting to", len(XVector))
                         jEnd = len(XVector)
                         Transect.InterpolationIncomplete = True                        
                     
                     if __debug__:
-                        print("\t\t\t\tiStart, iEnd, jStart, jEnd = ", iStart, iEnd, jStart, jEnd)
-                        #print("\tXVector[jStart], XVector[jEnd], YVector[iStart], YVector[iEND] = ", XVector[jStart], XVector[jEnd], YVector[iStart], YVector[iEnd])
+                        print("\t\tiStart, iEnd, jStart, jEnd = ", iStart, iEnd, jStart, jEnd)
+                        #print("\tXVector[jStart], XVector[jEnd-1], YVector[iStart], YVector[iEnd-1] = ", XVector[jStart], XVector[jEnd-1], YVector[iStart], YVector[iEnd-1])
 
                     #Get Vector X and Y
                     dX12 = X2-X1
@@ -3401,7 +3516,7 @@ class Coast:
                         DistAlong = Transect.DistAlong
                         DistTo = Transect.DistTo
                         Transect.InterpolationIncomplete = False 
-                        print("\t\t\t\t\tSECOND run... Completing interpolation")
+                        print("\t\tSECOND run... Completing interpolation")
                     else:
                         X = []
                         Y = []
@@ -3453,7 +3568,7 @@ class Coast:
                         Transect.Z = Z
                         Transect.DistAlong = DistAlong
                         Transect.DistTo = DistTo
-                        print("\t\t\t\t\tFIRST interpolation run... Save and continue")
+                        print("\t\tFIRST interpolation run... Save and continue")
                         CurrentTransect += 1
                         continue
                     
@@ -3470,7 +3585,7 @@ class Coast:
                         #DF = pd.DataFrame({"X": X, "Y": Y, "Z": Z, "DistAlong": DistAlong, "DistTo": DistTo})
                         #DF.to_pickle(SwathProfsFolder+"Swath_"+str(Transect.ID)+".pkl")
                     
-                    # Determination of distance spacing now externalised
+                    # Determination of distance spacing now externalised.
                     if not DistanceSpacing:
                         DistanceSpacing = DTM_Resolution*2.
                     if DistanceSpacing < 0:
@@ -3479,11 +3594,11 @@ class Coast:
                     # Create a line for interpolating to
                     LineLength = np.sqrt((X2-X1)**2 + (Y2-Y1)**2)
                     
-                    NoPoints = (int)(LineLength/DistanceSpacing)+1        #(int)(LineLength/(DTM_Resolution*2.))
+                    NoPoints = (int)(LineLength/DistanceSpacing)+1
                     if NoPoints < 1:
                         raise SystemExit("LineLength/DistanceSpacing leads to zero elevation points")
                         
-                    Transect.DistanceSpacing = DistanceSpacing          #DTM_Resolution*2.
+                    Transect.DistanceSpacing = DistanceSpacing
                     XLine = np.linspace(X1,X2,NoPoints)
                     YLine = np.linspace(Y1,Y2,NoPoints)
                     DistAlongTransect = np.zeros(len(XLine))
@@ -3496,10 +3611,10 @@ class Coast:
                     for i in range(0,NoPoints):
                         
                         #Calculate distance along the line
-                        DistAlongTransect[i] = i*DistanceSpacing        #i*DTM_Resolution*2.
+                        DistAlongTransect[i] = i*DistanceSpacing
                         
-                        # Sample a reduced array here i.e. a neighbourhood to reduce computation time
-                        Neighbourhood = np.abs(DistAlongTransect[i]-DistAlong) < DTM_Resolution*2. # QUESTION: Is this unrelated to DistanceSpacing?
+                        # Sample a reduced array here i.e. a neighbourhood to reduce computation time                      
+                        Neighbourhood = np.abs(DistAlongTransect[i]-DistAlong) < CrossShoreWindowSize
                         ZLocal = Z[Neighbourhood]
                         
                         if len(ZLocal) == 0:
@@ -3531,17 +3646,18 @@ class Coast:
                     Mask = ZIDW == NDV
                     DistAlongTransect = ma.masked_where(Mask,DistAlongTransect)
                     ZIDW = ma.masked_where(Mask,ZIDW)
+                    #print("ZIDW.data=", ZIDW.data, "ZIDW.mask=", ZIDW.mask)        ### NH DEBUG: ZIDW does have .data and .mask componenets. BUT .mask is single boolean=False (not array) when no masked elements
                     ZMin = ma.masked_where(Mask,ZMin)
                     ZMax = ma.masked_where(Mask,ZMax)
                     ZStd = ma.masked_where(Mask,ZStd)
                     
-                    Transect.Distance = DistAlongTransect
+                    Transect.Distance = DistAlongTransect.copy()                    ### NH ADD: use ma.MaskedArray.copy() to copy whole masked array
                     Transect.DistanceSpacing = DistAlongTransect[1]-DistAlongTransect[0]
                     Transect.DistanceNodes = [Node(X,Y) for X, Y in zip(XLine,YLine)]
-                    Transect.Elevation = ZIDW
-                    Transect.ElevationMin = ZMin
-                    Transect.ElevationMax = ZMax
-                    Transect.ElevStd = ZStd
+                    Transect.Elevation = ZIDW.copy()
+                    Transect.ElevationMin = ZMin.copy()
+                    Transect.ElevationMax = ZMax.copy()
+                    Transect.ElevStd = ZStd.copy()
                     
                     # update transect no
                     CurrentTransect += 1
@@ -3553,7 +3669,7 @@ class Coast:
             for Transect in Line.Transects:
                 if Transect.InterpolationIncomplete:
                     Transect.InterpolationIncomplete = False
-                    print(f"Completing edge transect {Transect.LineID}/{Transect.ID} interpolation")
+                    print(f"\tCompleting edge transect {Transect.LineID}:{Transect.ID} interpolation")
                 
                     X = Transect.X
                     Y = Transect.Y
@@ -3583,11 +3699,11 @@ class Coast:
                     # Create a line for interpolating to
                     LineLength = np.sqrt((X2-X1)**2 + (Y2-Y1)**2)
                     
-                    NoPoints = (int)(LineLength/DistanceSpacing)        #(int)(LineLength/(DTM_Resolution*2.))
+                    NoPoints = (int)(LineLength/DistanceSpacing)
                     if NoPoints < 1:
                         raise SystemExit("LineLength/DistanceSpacing leads to zero elevation points")
                         
-                    Transect.DistanceSpacing = DistanceSpacing          #DTM_Resolution*2.
+                    Transect.DistanceSpacing = DistanceSpacing
                     XLine = np.linspace(X1,X2,NoPoints)
                     YLine = np.linspace(Y1,Y2,NoPoints)
                     DistAlongTransect = np.zeros(len(XLine))
@@ -3600,10 +3716,10 @@ class Coast:
                     for i in range(0,NoPoints):
                         
                         #Calculate distance along the line
-                        DistAlongTransect[i] = i*DistanceSpacing        #i*DTM_Resolution*2.
+                        DistAlongTransect[i] = i*DistanceSpacing
                         
                         # Sample a reduced array here i.e. a neighbourhood to reduce computation time
-                        Neighbourhood = np.abs(DistAlongTransect[i]-DistAlong) < DTM_Resolution*2. # QUESTION: Is this unrelated to DistanceSpacing?
+                        Neighbourhood = np.abs(DistAlongTransect[i]-DistAlong) < CrossShoreWindowSize
                         ZLocal = Z[Neighbourhood]
                         
                         if len(ZLocal) == 0:
@@ -3639,29 +3755,14 @@ class Coast:
                     ZMax = ma.masked_where(Mask,ZMax)
                     ZStd = ma.masked_where(Mask,ZStd)
                     
-                    Transect.Distance = DistAlongTransect
+                    Transect.Distance = DistAlongTransect.copy()        ### NH ADD: use ma.MaskedArray.copy() to copy whole masked array
                     Transect.DistanceSpacing = DistAlongTransect[1]-DistAlongTransect[0]
-                    Transect.Elevation = ZIDW
-                    Transect.ElevationMin = ZMin
-                    Transect.ElevationMax = ZMax
-                    Transect.ElevStd = ZStd
+                    Transect.Elevation = ZIDW.copy()
+                    Transect.ElevationMin = ZMin.copy()
+                    Transect.ElevationMax = ZMax.copy()
+                    Transect.ElevStd = ZStd.copy()
                     Transect.DistanceNodes = [Node(X,Y) for X, Y in zip(XLine,YLine)]
                     
-    def ExtractIntertidalSlopesSwath(self):
-        
-        """
-        Wrapper function for Transect.ExtractSwathTidalElevations
-        
-        NH, October 2023
-        
-        """
-        
-        print("Coast.ExtractTidalElevationsSwath: Finding nearest swath elevations to transect MHWS/MLWS intersects")
-        
-        for Line in self.CoastLines:
-            for Transect in Line.Transects:
-                Transect.ExtractTidalElevationsSwath()
-                Transect.CalculateIntertidalSlopeSwath()
              
     def AnalyseTransectMorphology(self):
 
@@ -3687,7 +3788,7 @@ class Coast:
                 
                 # # Call analyses
                 #if Transect.ID == "13":
-                Transect.FindCliff()
+                # Transect.FindCliff()
                 Transect.FindBarrier()
                 
                 # update transect progress no
