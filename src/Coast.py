@@ -4072,14 +4072,14 @@ class Coast:
                 
                 CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
                 
-                # extract nearest ESL vector point index within 2.5 km of CoastNode
+                # extract nearest ESL index within 2.5 km of CoastNode
                 nearest_idx_array = DataPoints.sindex.nearest(CoastPoint, max_distance=2500) 
                 nearest_idx = nearest_idx_array[1]
                      
                 if len(nearest_idx) > 0:
-                    t25 = t25_geoser[nearest_idx].to_numpy()                   # returns geoseries of index,value pairs. convert to numpy array of values only
-                    t25_c1 = t25_c1_geoser[nearest_idx].to_numpy()                    
-                    t25_c3 = t25_c3_geoser[nearest_idx].to_numpy()                    
+                    t25 = t25_geoser[nearest_idx].values[0]                   # returns geoseries of index,value pair. get value only
+                    t25_c1 = t25_c1_geoser[nearest_idx].values[0]                     
+                    t25_c3 = t25_c3_geoser[nearest_idx].values[0]                    
                     
                 else:
                     print(f"\t{Transect.LineID}_{Transect.ID}: No nearby points")
@@ -4210,7 +4210,8 @@ class Coast:
     
         """
         Find index of nearest DC2 transect to Transect.CoastNode
-        Look only within 200 m of CoastNode.
+        Look only within 200 m of CoastNode
+        Save to Transect.NearestDC2Idx
         
         Parameters
         ----------
@@ -4240,13 +4241,14 @@ class Coast:
                 CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
                 
                 # extract nearest DC2 transect index within 200m of CoastNode
+                # returns input index in [0] (in the case of a point this is always 0), nearest index of TransectsGeom in [1]
                 nearest_idx_array = TransectsGeom.sindex.nearest(CoastPoint, max_distance=200) 
                 
                 # save to Transect
                 Transect.NearestDC2Idx = nearest_idx_array[1]           
                 
-                if Transect.ID == "0":
-                    print(f"\t{Transect.LineID}_{Transect.ID}:{Transect.NearestDC2Idx}")
+                #if Transect.ID == "0":
+                    #print(f"\t{Transect.LineID}_{Transect.ID}:{Transect.NearestDC2Idx}")
                     
     def ExtractFutureErosion(self, Shapefile=None, Scenario=None):
     
@@ -4284,14 +4286,19 @@ class Coast:
         
         for Line in self.CoastLines:
             for Transect in Line.Transects: 
-                # save predicted erosion values to the given scenario
+            
+                if not Transect.NearestDC2Idx:
+                    print(f"\t{Transect.LineID}_{Transect.ID}: No value for Transect.NearestDC2Idx")
+                    sys_exit()
+                    
+                # save predicted erosion values to given scenario
                 if Scenario == "RCP4":
-                    Transect.M45_Erosion = Erosion_2050[Transect.NearestDC2Idx].to_numpy()
-                    Transect.E45_Erosion = Erosion_2100[Transect.NearestDC2Idx].to_numpy()
+                    Transect.M45_Erosion = Erosion_2050[Transect.NearestDC2Idx].values[0] 
+                    Transect.E45_Erosion = Erosion_2100[Transect.NearestDC2Idx].values[0] 
                 
                 elif Scenario == "RCP8":
-                    Transect.M85_Erosion = Erosion_2050[Transect.NearestDC2Idx].to_numpy()
-                    Transect.E85_Erosion = Erosion_2100[Transect.NearestDC2Idx].to_numpy()
+                    Transect.M85_Erosion = Erosion_2050[Transect.NearestDC2Idx].values[0] 
+                    Transect.E85_Erosion = Erosion_2100[Transect.NearestDC2Idx].values[0] 
     
     def AnalyseExtremeWater(self, WaterElevs):
         
