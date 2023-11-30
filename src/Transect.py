@@ -231,7 +231,10 @@ class Transect:
         self.M85_Erosion = None
         self.E45_Erosion = None
         self.E85_Erosion = None
-        
+        self.M45_SLR = None
+        self.M85_SLR = None
+        self.E45_SLR = None
+        self.E85_SLR = None
     
     def __str__(self):
         String = "Transect Object:\nID: %s\n" % (str(self.ID))

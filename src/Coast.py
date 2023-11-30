@@ -4300,6 +4300,72 @@ class Coast:
                     Transect.M85_Erosion = Erosion_2050[Transect.NearestDC2Idx].values[0] 
                     Transect.E85_Erosion = Erosion_2100[Transect.NearestDC2Idx].values[0] 
     
+    def ExtractSeaLevelRise(self, Shapefile=None):
+    
+        """
+        Extract UKCP18 sea level rise projections from nearest point in shapefile
+        Extract 50th percentile for all scenarios: RCP4.5, RCP8.5, 2050, 2100
+        Save to Transect
+        
+        Parameters
+        ----------
+        Shapefile - string    
+            - location of shapefile with SLR data
+            - 14 column names: "lon" "lat" 
+                               "SLR_M45_c1" "SLR_M45_c2" "SLR_M45_c3" 
+                               "SLR_E45_c1" "SLR_E45_c2" "SLR_E45_c3"
+                               "SLR_M85_c1" "SLR_M85_c2" "SLR_M85_c3" 
+                               "SLR_E85_c1" "SLR_E85_c2" "SLR_E85_c3" 
+        
+        NH, November 2023
+        
+        """
+        
+        print("Coast.ExtractSeaLevelRise: Extracting UKCP18 SLR projections")
+        
+        # read shapefile using geopandas
+        GDF = gp.read_file(Shapefile)
+        VectorPoints = GDF['geometry']
+        
+        if len(VectorPoints) == 0:
+            print(f"\tNo Points in {Shapefile}!")
+            return
+        
+        # Extract data: future projected SLR for different CC scenearios and years. Central estimate for now
+        SLR_M45_geoser = GDF["SLR_M45_c2"]
+        SLR_E45_geoser = GDF["SLR_E45_c2"]
+        SLR_M85_geoser = GDF["SLR_M85_c2"]
+        SLR_E85_geoser = GDF["SLR_E85_c2"]        
+        
+        # For each transect, find nearest SLR point to CoastNode
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                
+                CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                
+                # extract nearest SLR vector index within 12 km of CoastNode
+                nearest_idx_array = VectorPoints.sindex.nearest(CoastPoint, max_distance=12000) 
+                nearest_idx = nearest_idx_array[1]
+                
+                if len(nearest_idx) > 0:
+                    SLR_M45 = SLR_M45_geoser[nearest_idx].values[0]                   # returns geoseries of index,value pair. get value only
+                    SLR_E45 = SLR_E45_geoser[nearest_idx].values[0]   
+                    SLR_M85 = SLR_M85_geoser[nearest_idx].values[0]      
+                    SLR_E85 = SLR_E85_geoser[nearest_idx].values[0] 
+                    
+                else:
+                    print(f"\t{Transect.LineID}_{Transect.ID}: No nearby points")
+                    continue
+                    
+                # save extracted ESL values to the given scenario                
+                Transect.M45_SLR = SLR_M45
+                Transect.E45_SLR = SLR_E45
+                Transect.M85_SLR = SLR_M85
+                Transect.E85_SLR = SLR_E85
+                
+                #print(f"\t{Transect.LineID}_{Transect.ID}:")
+                #print(f"\t\tM45_SLR:{Transect.M45_SLR} \tE45_SLR:{Transect.E45_SLR} \tM85_SLR:{Transect.M85_SLR} \tE85_SLR:{Transect.E85_SLR}")
+    
     def AnalyseExtremeWater(self, WaterElevs):
         
         """
