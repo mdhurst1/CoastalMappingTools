@@ -3973,49 +3973,79 @@ class Coast:
                     Iribarren = Bf/np.sqrt(H0/L0)                                       # Stockdon eq(2)
                     if Iribarren < 0.3:                                                 # extremely dissipative beach
                         Transect.H_R2 = 0.043*np.sqrt(H0*L0)                            # Stockdon eq(18): Extreme wave runup
+                        Transect.H_setup = 1.1*(0.016*np.sqrt(H0*L0))                   # Stockdon eq(16) into eq(9) : setup component of extreme wave runup
+                        Transect.H_swash = 1.1*(0.046/2*np.sqrt(H0*L0))                 # Stockdon eq(10) into eq(9) : swash component of extreme wave runup
+                        Transect.H_Dissipative = True                                   # set flag for extremely dissipative beach
                     else:
                         Transect.H_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
                                         np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)         # Stockdon eq(19): Extreme wave runup (all other sandy beaches)
+                        Transect.H_setup = 1.1*(0.35*Bf*np.sqrt(H0*L0)                  # Stockdon eq(19): setup component of extreme wave runup
+                        Transect.H_swash = 1.1*(np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) # Stockdon eq(19): swash component of extreme wave runup
+                        Transect.H_Dissipative = False
                                         
                 elif Scenario == "M45":                                                 # repeat for each climate scenario
                     H0 = Transect.M45_Hs_p95
                     L0 = g*Transect.M45_Tp_p95**2/(2*np.pi)                                              
                     Iribarren = Bf/np.sqrt(H0/L0)
                     if Iribarren < 0.3:                                                
-                        Transect.M45_R2 = 0.043*np.sqrt(H0*L0)                           
+                        Transect.M45_R2 = 0.043*np.sqrt(H0*L0)    
+                        Transect.M45_setup = 1.1*(0.016*np.sqrt(H0*L0))                   
+                        Transect.M45_swash = 1.1*(0.046/2*np.sqrt(H0*L0))                 
+                        Transect.M45_Dissipative = True
                     else:
                         Transect.M45_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
-                                        np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)   
+                                        np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) 
+                        Transect.M45_setup = 1.1*(0.35*Bf*np.sqrt(H0*L0)                      
+                        Transect.M45_swash = 1.1*(np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)     
+                        Transect.M45_Dissipative = False                                        
                 
                 elif Scenario == "M85":
                     H0 = Transect.M85_Hs_p95
                     L0 = g*Transect.M85_Tp_p95**2/(2*np.pi)                                              
                     Iribarren = Bf/np.sqrt(H0/L0)
                     if Iribarren < 0.3:                                                
-                        Transect.M85_R2 = 0.043*np.sqrt(H0*L0)                           
+                        Transect.M85_R2 = 0.043*np.sqrt(H0*L0) 
+                        Transect.M85_setup = 1.1*(0.016*np.sqrt(H0*L0))                   
+                        Transect.M85_swash = 1.1*(0.046/2*np.sqrt(H0*L0))                 
+                        Transect.M85_Dissipative = True
                     else:
                         Transect.M85_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
                                         np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) 
+                        Transect.M85_setup = 1.1*(0.35*Bf*np.sqrt(H0*L0)                      
+                        Transect.M85_swash = 1.1*(np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)     
+                        Transect.M85_Dissipative = False 
                                         
                 elif Scenario == "E45":
                     H0 = Transect.E45_Hs_p95
                     L0 = g*Transect.E45_Tp_p95**2/(2*np.pi)                                              
                     Iribarren = Bf/np.sqrt(H0/L0)
                     if Iribarren < 0.3:                                                
-                        Transect.E45_R2 = 0.043*np.sqrt(H0*L0)                           
+                        Transect.E45_R2 = 0.043*np.sqrt(H0*L0)   
+                        Transect.E45_setup = 1.1*(0.016*np.sqrt(H0*L0))                   
+                        Transect.E45_swash = 1.1*(0.046/2*np.sqrt(H0*L0))                 
+                        Transect.E45_Dissipative = True                        
                     else:
                         Transect.E45_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
                                         np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)
+                        Transect.E45_setup = 1.1*(0.35*Bf*np.sqrt(H0*L0)                      
+                        Transect.E45_swash = 1.1*(np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)     
+                        Transect.E45_Dissipative = False
                                         
                 elif Scenario == "E85":
                     H0 = Transect.E85_Hs_p95
                     L0 = g*Transect.E85_Tp_p95**2/(2*np.pi)                                              
                     Iribarren = Bf/np.sqrt(H0/L0)
                     if Iribarren < 0.3:                                                
-                        Transect.E85_R2 = 0.043*np.sqrt(H0*L0)                           
+                        Transect.E85_R2 = 0.043*np.sqrt(H0*L0)  
+                        Transect.E85_setup = 1.1*(0.016*np.sqrt(H0*L0))                   
+                        Transect.E85_swash = 1.1*(0.046/2*np.sqrt(H0*L0))                 
+                        Transect.E85_Dissipative = True  
                     else:
                         Transect.E85_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
                                         np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) 
+                        Transect.E85_setup = 1.1*(0.35*Bf*np.sqrt(H0*L0)                      
+                        Transect.E85_swash = 1.1*(np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)     
+                        Transect.E85_Dissipative = False
                                         
                 else:
                     print(f"\t{Transect.LineID}_{Transect.ID}:Invalid scenario {Scenario}") # should not ever get this
