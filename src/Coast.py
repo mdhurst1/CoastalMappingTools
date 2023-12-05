@@ -3979,7 +3979,7 @@ class Coast:
                     else:
                         Transect.H_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
                                         np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)         # Stockdon eq(19): Extreme wave runup (all other sandy beaches)
-                        Transect.H_setup = 1.1*(0.35*Bf*np.sqrt(H0*L0)                  # Stockdon eq(19): setup component of extreme wave runup
+                        Transect.H_setup = 1.1*(0.35*Bf*np.sqrt(H0*L0))                 # Stockdon eq(19): setup component of extreme wave runup. NOTE: MarineCalc does not include 1.1* in setuop calc...?
                         Transect.H_swash = 1.1*(np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) # Stockdon eq(19): swash component of extreme wave runup
                         Transect.H_Dissipative = False
                                         
@@ -3995,7 +3995,7 @@ class Coast:
                     else:
                         Transect.M45_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
                                         np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) 
-                        Transect.M45_setup = 1.1*(0.35*Bf*np.sqrt(H0*L0)                      
+                        Transect.M45_setup = 1.1*(0.35*Bf*np.sqrt(H0*L0))                      
                         Transect.M45_swash = 1.1*(np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)     
                         Transect.M45_Dissipative = False                                        
                 
@@ -4011,7 +4011,7 @@ class Coast:
                     else:
                         Transect.M85_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
                                         np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) 
-                        Transect.M85_setup = 1.1*(0.35*Bf*np.sqrt(H0*L0)                      
+                        Transect.M85_setup = 1.1*(0.35*Bf*np.sqrt(H0*L0))                      
                         Transect.M85_swash = 1.1*(np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)     
                         Transect.M85_Dissipative = False 
                                         
@@ -4027,7 +4027,7 @@ class Coast:
                     else:
                         Transect.E45_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
                                         np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)
-                        Transect.E45_setup = 1.1*(0.35*Bf*np.sqrt(H0*L0)                      
+                        Transect.E45_setup = 1.1*(0.35*Bf*np.sqrt(H0*L0))                      
                         Transect.E45_swash = 1.1*(np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)     
                         Transect.E45_Dissipative = False
                                         
@@ -4043,7 +4043,7 @@ class Coast:
                     else:
                         Transect.E85_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
                                         np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) 
-                        Transect.E85_setup = 1.1*(0.35*Bf*np.sqrt(H0*L0)                      
+                        Transect.E85_setup = 1.1*(0.35*Bf*np.sqrt(H0*L0))                      
                         Transect.E85_swash = 1.1*(np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)     
                         Transect.E85_Dissipative = False
                                         
@@ -4167,11 +4167,26 @@ class Coast:
         
         for Line in self.CoastLines:
             for Transect in Line.Transects:
+                # Wave component: total extreme runup level (Stockdon 20006)
                 Transect.H_TWL = Transect.H_ESL + Transect.H_R2
                 Transect.M45_TWL = Transect.M45_ESL + Transect.M45_R2
                 Transect.M85_TWL = Transect.M85_ESL + Transect.M85_R2
                 Transect.E45_TWL = Transect.E45_ESL + Transect.E45_R2
                 Transect.E85_TWL = Transect.E85_ESL + Transect.E85_R2
+                
+                # Wave component: only setup component of extreme wave runup (Stockdon 2006)
+                Transect.H_TWL_setup = Transect.H_ESL + Transect.H_setup
+                Transect.M45_TWL_setup = Transect.M45_ESL + Transect.M45_setup
+                Transect.M85_TWL_setup = Transect.M85_ESL + Transect.M85_setup
+                Transect.E45_TWL_setup = Transect.E45_ESL + Transect.E45_setup
+                Transect.E85_TWL_setup = Transect.E85_ESL + Transect.E85_setup
+                
+                # Wave component: only swash component of extreme wave runup (stockdon 2006)
+                Transect.H_TWL_swash = Transect.H_ESL + Transect.H_swash
+                Transect.M45_TWL_swash = Transect.M45_ESL + Transect.M45_swash
+                Transect.M85_TWL_swash = Transect.M85_ESL + Transect.M85_swash
+                Transect.E45_TWL_swash = Transect.E45_ESL + Transect.E45_swash
+                Transect.E85_TWL_swash = Transect.E85_ESL + Transect.E85_swash
     
     def StormImpactScale(self):
     
