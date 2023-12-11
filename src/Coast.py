@@ -1060,7 +1060,9 @@ class Coast:
         # Create Fields
         Fields = [('DeletionFlag','C',1,0), 
         ['LineID', 'C', 3, 0], ['TransectID', 'C', 5, 0], 
-        ['H_R2','N', 5, 2], ['H_ESL','N', 5, 2], ['H_TWL','N', 5, 2], 
+        ['Slope_FS','N', 5, 3],
+        ['H_Hs','N', 5, 2],['H_Tp','N', 5, 2], ['H_R2','N', 5, 2], ['H_setup','N', 5, 2], ['H_Diss','B', 7, 0],
+        ['H_ESL','N', 5, 2], ['H_TWL','N', 5, 2], ['H_TWL_sup','N', 5, 2], 
         ['H_Toe_El','N', 5, 2],['H_Crest_El','N', 5, 2],
         ['H_SIS', 'C', 10, 0]
         ]
@@ -1077,7 +1079,9 @@ class Coast:
 
                 # Create the record this could become a function in transect object...
                 Record = [str(Line.ID), str(Transect.ID), 
-                            Transect.H_R2, Transect.H_ESL, Transect.H_TWL,
+                            Transect.ForeshoreSlope,
+                            Transect.H_Hs_p95, Transect.H_Tp_p95, Transect.H_R2, Transect.H_setup, Transect.H_Dissipative,
+                            Transect.H_ESL, Transect.H_TWL, Transect.H_TWL_setup,
                             Transect.Elevation[Transect.FrontToeInd], Transect.Elevation[Transect.CrestInd],
                             Transect.H_StormImpactScale]
 
@@ -3973,14 +3977,12 @@ class Coast:
                     Iribarren = Bf/np.sqrt(H0/L0)                                       # Stockdon eq(2)
                     if Iribarren < 0.3:                                                 # extremely dissipative beach
                         Transect.H_R2 = 0.043*np.sqrt(H0*L0)                            # Stockdon eq(18): Extreme wave runup
-                        Transect.H_setup = 1.1*(0.016*np.sqrt(H0*L0))                   # Stockdon eq(16) into eq(9) : setup component of extreme wave runup
-                        Transect.H_swash = 1.1*(0.046/2*np.sqrt(H0*L0))                 # Stockdon eq(10) into eq(9) : swash component of extreme wave runup
+                        Transect.H_setup = 0.016*np.sqrt(H0*L0)                         # Stockdon eq(16) 
                         Transect.H_Dissipative = True                                   # set flag for extremely dissipative beach
                     else:
                         Transect.H_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
                                         np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)         # Stockdon eq(19): Extreme wave runup (all other sandy beaches)
-                        Transect.H_setup = 1.1*(0.35*Bf*np.sqrt(H0*L0))                 # Stockdon eq(19): setup component of extreme wave runup. NOTE: MarineCalc does not include 1.1* in setuop calc...?
-                        Transect.H_swash = 1.1*(np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) # Stockdon eq(19): swash component of extreme wave runup
+                        Transect.H_setup = 0.35*Bf*np.sqrt(H0*L0)                       # Stockdon eq(10)
                         Transect.H_Dissipative = False
                                         
                 elif Scenario == "M45":                                                 # repeat for each climate scenario
@@ -3989,14 +3991,12 @@ class Coast:
                     Iribarren = Bf/np.sqrt(H0/L0)
                     if Iribarren < 0.3:                                                
                         Transect.M45_R2 = 0.043*np.sqrt(H0*L0)    
-                        Transect.M45_setup = 1.1*(0.016*np.sqrt(H0*L0))                   
-                        Transect.M45_swash = 1.1*(0.046/2*np.sqrt(H0*L0))                 
+                        Transect.M45_setup = 0.016*np.sqrt(H0*L0)                                   
                         Transect.M45_Dissipative = True
                     else:
                         Transect.M45_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
                                         np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) 
-                        Transect.M45_setup = 1.1*(0.35*Bf*np.sqrt(H0*L0))                      
-                        Transect.M45_swash = 1.1*(np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)     
+                        Transect.M45_setup = 0.35*Bf*np.sqrt(H0*L0)                         
                         Transect.M45_Dissipative = False                                        
                 
                 elif Scenario == "M85":
@@ -4005,14 +4005,12 @@ class Coast:
                     Iribarren = Bf/np.sqrt(H0/L0)
                     if Iribarren < 0.3:                                                
                         Transect.M85_R2 = 0.043*np.sqrt(H0*L0) 
-                        Transect.M85_setup = 1.1*(0.016*np.sqrt(H0*L0))                   
-                        Transect.M85_swash = 1.1*(0.046/2*np.sqrt(H0*L0))                 
+                        Transect.M85_setup = 0.016*np.sqrt(H0*L0)                                
                         Transect.M85_Dissipative = True
                     else:
                         Transect.M85_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
                                         np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) 
-                        Transect.M85_setup = 1.1*(0.35*Bf*np.sqrt(H0*L0))                      
-                        Transect.M85_swash = 1.1*(np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)     
+                        Transect.M85_setup = 0.35*Bf*np.sqrt(H0*L0)                     
                         Transect.M85_Dissipative = False 
                                         
                 elif Scenario == "E45":
@@ -4021,14 +4019,12 @@ class Coast:
                     Iribarren = Bf/np.sqrt(H0/L0)
                     if Iribarren < 0.3:                                                
                         Transect.E45_R2 = 0.043*np.sqrt(H0*L0)   
-                        Transect.E45_setup = 1.1*(0.016*np.sqrt(H0*L0))                   
-                        Transect.E45_swash = 1.1*(0.046/2*np.sqrt(H0*L0))                 
+                        Transect.E45_setup = 0.016*np.sqrt(H0*L0)                                  
                         Transect.E45_Dissipative = True                        
                     else:
                         Transect.E45_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
                                         np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)
-                        Transect.E45_setup = 1.1*(0.35*Bf*np.sqrt(H0*L0))                      
-                        Transect.E45_swash = 1.1*(np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)     
+                        Transect.E45_setup = 0.35*Bf*np.sqrt(H0*L0)                       
                         Transect.E45_Dissipative = False
                                         
                 elif Scenario == "E85":
@@ -4037,14 +4033,12 @@ class Coast:
                     Iribarren = Bf/np.sqrt(H0/L0)
                     if Iribarren < 0.3:                                                
                         Transect.E85_R2 = 0.043*np.sqrt(H0*L0)  
-                        Transect.E85_setup = 1.1*(0.016*np.sqrt(H0*L0))                   
-                        Transect.E85_swash = 1.1*(0.046/2*np.sqrt(H0*L0))                 
+                        Transect.E85_setup = 0.016*np.sqrt(H0*L0)                                
                         Transect.E85_Dissipative = True  
                     else:
                         Transect.E85_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
                                         np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) 
-                        Transect.E85_setup = 1.1*(0.35*Bf*np.sqrt(H0*L0))                      
-                        Transect.E85_swash = 1.1*(np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)     
+                        Transect.E85_setup = 0.35*Bf*np.sqrt(H0*L0)                       
                         Transect.E85_Dissipative = False
                                         
                 else:
@@ -4154,7 +4148,8 @@ class Coast:
         """
         
         Adds up the extreme still water level and extreme wave runup 
-        to eestimate extreme total water level.
+        to estimate extreme total water level.
+        Also calculate extreme wave setup. 
         Repeat for each climate scenario.
         
         Currently only considering central estimate of SLR, not whole likely range.
@@ -4167,26 +4162,19 @@ class Coast:
         
         for Line in self.CoastLines:
             for Transect in Line.Transects:
-                # Wave component: total extreme runup level (Stockdon 20006)
+                # Wave total extreme runup level (Stockdon 20006)
                 Transect.H_TWL = Transect.H_ESL + Transect.H_R2
                 Transect.M45_TWL = Transect.M45_ESL + Transect.M45_R2
                 Transect.M85_TWL = Transect.M85_ESL + Transect.M85_R2
                 Transect.E45_TWL = Transect.E45_ESL + Transect.E45_R2
                 Transect.E85_TWL = Transect.E85_ESL + Transect.E85_R2
                 
-                # Wave component: only setup component of extreme wave runup (Stockdon 2006)
+                # Wave setup component of extreme wave runup (Stockdon 2006)
                 Transect.H_TWL_setup = Transect.H_ESL + Transect.H_setup
                 Transect.M45_TWL_setup = Transect.M45_ESL + Transect.M45_setup
                 Transect.M85_TWL_setup = Transect.M85_ESL + Transect.M85_setup
                 Transect.E45_TWL_setup = Transect.E45_ESL + Transect.E45_setup
                 Transect.E85_TWL_setup = Transect.E85_ESL + Transect.E85_setup
-                
-                # Wave component: only swash component of extreme wave runup (stockdon 2006)
-                Transect.H_TWL_swash = Transect.H_ESL + Transect.H_swash
-                Transect.M45_TWL_swash = Transect.M45_ESL + Transect.M45_swash
-                Transect.M85_TWL_swash = Transect.M85_ESL + Transect.M85_swash
-                Transect.E45_TWL_swash = Transect.E45_ESL + Transect.E45_swash
-                Transect.E85_TWL_swash = Transect.E85_ESL + Transect.E85_swash
     
     def StormImpactScale(self):
     
@@ -4206,7 +4194,10 @@ class Coast:
                 elif Transect.H_TWL > Transect.Elevation[Transect.FrontToeInd] and Transect.H_TWL < Transect.Elevation[Transect.CrestInd]:
                     Transect.H_StormImpactScale = "Collision"
                 elif Transect.H_TWL > Transect.Elevation[Transect.CrestInd]:
-                    Transect.H_StormImpactScale = "Overwash"
+                    if Transect.H_TWL_setup > Transect.Elevation[Transect.CrestInd]:
+                        Transect.H_StormImpactScale = "Inundation"
+                    else:
+                        Transect.H_StormImpactScale = "Overwash"
                 else:
                     print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for Historic scenario!")
                 
@@ -4220,7 +4211,10 @@ class Coast:
                 elif Transect.M45_TWL > Transect.Elevation[Transect.FrontToeInd] and Transect.M45_TWL < Transect.Elevation[Transect.CrestInd]:
                     Transect.M45_StormImpactScale = "Collision"
                 elif Transect.M45_TWL > Transect.Elevation[Transect.CrestInd]:
-                    Transect.M45_StormImpactScale = "Overwash"
+                    if Transect.M45_TWL_setup > Transect.Elevation[Transect.CrestInd]:
+                        Transect.M45_StormImpactScale = "Inundation"
+                    else:
+                        Transect.M45_StormImpactScale = "Overwash"
                 else:
                     print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for MidC RCP4.5 scenario!")
                     
@@ -4229,7 +4223,10 @@ class Coast:
                 elif Transect.M85_TWL > Transect.Elevation[Transect.FrontToeInd] and Transect.M85_TWL < Transect.Elevation[Transect.CrestInd]:
                     Transect.M85_StormImpactScale = "Collision"
                 elif Transect.M85_TWL > Transect.Elevation[Transect.CrestInd]:
-                    Transect.M85_StormImpactScale = "Overwash"
+                    if Transect.M85_TWL_setup > Transect.Elevation[Transect.CrestInd]:
+                        Transect.M85_StormImpactScale = "Inundation"
+                    else:
+                        Transect.M85_StormImpactScale = "Overwash"
                 else:
                     print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for MidC RCP8.5 scenario!")
                     
@@ -4238,7 +4235,10 @@ class Coast:
                 elif Transect.E45_TWL > Transect.Elevation[Transect.FrontToeInd] and Transect.E45_TWL < Transect.Elevation[Transect.CrestInd]:
                     Transect.E45_StormImpactScale = "Collision"
                 elif Transect.E45_TWL > Transect.Elevation[Transect.CrestInd]:
-                    Transect.E45_StormImpactScale = "Overwash"
+                    if Transect.E45_TWL_setup > Transect.Elevation[Transect.CrestInd]:
+                        Transect.E45_StormImpactScale = "Inundation"
+                    else:
+                        Transect.E45_StormImpactScale = "Overwash"
                 else:
                     print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for EndC RCP4.5 scenario!")
                     
@@ -4247,7 +4247,10 @@ class Coast:
                 elif Transect.E85_TWL > Transect.Elevation[Transect.FrontToeInd] and Transect.E85_TWL < Transect.Elevation[Transect.CrestInd]:
                     Transect.E85_StormImpactScale = "Collision"
                 elif Transect.E85_TWL > Transect.Elevation[Transect.CrestInd]:
-                    Transect.E85_StormImpactScale = "Overwash"
+                    if Transect.E85_TWL_setup > Transect.Elevation[Transect.CrestInd]:
+                        Transect.E85_StormImpactScale = "Inundation"
+                    else:
+                        Transect.E85_StormImpactScale = "Overwash"
                 else:
                     print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for EndC RCP8.5 scenario!")
                     

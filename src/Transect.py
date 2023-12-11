@@ -203,11 +203,6 @@ class Transect:
         self.M85_setup = None
         self.E45_setup = None
         self.E85_setup = None
-        self.H_swash = None
-        self.M45_swash = None
-        self.M85_swash = None
-        self.E45_swash = None
-        self.E85_swash = None
         self.H_Dissipative = None
         self.M45_Dissipative = None
         self.M85_Dissipative = None
