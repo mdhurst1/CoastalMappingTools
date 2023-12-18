@@ -227,8 +227,17 @@ for CellSub in CellList:
                 pickle.dump(CellCoast, PFile)
         
         # write future shorelines
-        # write coast/bathy to file
         SmoothOutput = True # smooth coastlines (true) or not (false)
+        
+        CellCoast.PredictFutureShorelines(MinMaxFlag="Min")
+        CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future_Min.shp")),SmoothOutput)
+
+        CellCoast.PredictFutureShorelines(MinMaxFlag="Max")
+        CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future_Max.shp")),SmoothOutput)
+
+        CellCoast.PredictFutureShorelines()
+
+        # write coast/bathy to file
         CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
         CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future.shp")),SmoothOutput)
         
