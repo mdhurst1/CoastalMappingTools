@@ -811,7 +811,7 @@ class Transect:
 
                 self.FutureShorelinesPositions.append(Node(X1,Y1))
                 self.FutureShorelinesRates.append(self.ChangeRates[-1])
-                self.FutureShorelinesDistances.append(self.HistoricShorelinesDistances[-1])
+                self.FutureShorelinesDistances.append(self.HistoricShorelinesDistances[-1][0])
 
                 continue
             
@@ -2596,7 +2596,7 @@ class Transect:
 
             # add a check in here if Year1 < Latest Shoreline
             if Year1 == self.HistoricShorelinesYears[-1]:
-                Distance1 = self.HistoricShorelinesDistances[-1]
+                Distance1 = self.HistoricShorelinesDistances[-1][0]
 
             else:
                 # find year index

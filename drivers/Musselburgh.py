@@ -22,7 +22,7 @@ sys.path.append("../src/")
 from Coast import *
 
 # define file names for analysis
-WorkingPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/Supersites/Musselburgh_2023")
+WorkingPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/Supersites/Musselburgh_2023/CMT")
 NationalDEMPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2Final/99_NationalData/OSTerrain5")
 
 # set sea level scenario
@@ -68,7 +68,7 @@ for CellSub in CellList:
     # get soft coast position as most recent
     ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Open_Baseline.shp") # extent???
     SoftPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp") # set, clipped to MB
-    LiDARPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR.shp") # set, new lines added, clipped to MB
+    LiDARPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR_M1SfM.shp") # set, new lines added, clipped to MB
     MLWSPath = WorkingPath / "MLWS_Lines" / (RowName + "_MLWS.shp") # set, simplify edits???
     BathyPath = WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp") # set, no change
     OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp") # set, clipped to MB
@@ -175,7 +175,9 @@ for CellSub in CellList:
             CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
             
             # Sample coastal defences
-            CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp")))
+            #CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp")), 25.)
+            #CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_CurrentDefences.shp")), 25.)
+            CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_ProposedDefences.shp")), 25.)
             
             CellCoast.GotHistoricShorelines = True
             
@@ -207,7 +209,7 @@ for CellSub in CellList:
         if not CellCoast.PredictedFutureShorelines:    
             
             # Sample coastal defences
-            CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp")), 25.)
+            #CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp")), 25.)
             
             CellCoast.Method = "Open"
             
@@ -226,7 +228,7 @@ for CellSub in CellList:
         
         # write future shorelines
         # write coast/bathy to file
-        SmoothOutput = False
+        SmoothOutput = True # smooth coastlines (true) or not (false)
         CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
         CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future.shp")),SmoothOutput)
         

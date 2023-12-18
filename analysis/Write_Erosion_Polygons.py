@@ -13,10 +13,12 @@ import geopandas as gp
 from Coast import *
 
 #set up working directory
-WorkingPath = pathlib.Path.cwd().parent
+#WorkingPath = pathlib.Path.cwd().parent
+WorkingPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/Supersites/Musselburgh_2023/CMT")
 
 # get all coastal cells to loop through
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
+CellList = ['1b']
 
 # set up scenarios
 Scenarios = [8,4,2]
@@ -38,6 +40,8 @@ for Scenario, Percentile in zip(Scenarios, Percentiles):
         RowName = "Cell_"+CellSub
         print("\t", RowName)
         
+        if not CellSub in CellList:
+            continue
         
         OpenCoastFlag = False
         InnerCoastFlag = False
