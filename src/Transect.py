@@ -663,7 +663,7 @@ class Transect:
             else:
                 continue
     
-    def PredictFutureShorelines(self, MaxRockHeadErosionDistance=25.):
+    def PredictFutureShorelines(self, MaxRockHeadErosionDistance=25., MinMaxFlag=None):
 
         """
         Function to predict the future position of the shoreline based on
@@ -671,7 +671,7 @@ class Transect:
         and future rates of sea level change following a calibrated Bruun Rule
         type approach.
 
-        This function requires several funcions with the Coast object to have been run
+        This function requires several functions with the Coast object to have been run
         first but the Coast wrapper should/could check for this.
 
         MDH, September 2019
@@ -781,6 +781,19 @@ class Transect:
             CalibrationRate = self.VolumetricCalibrationRates[0]
             self.ChangeRate = self.ChangeRates[0]
             self.CalibrationYear = self.HistoricShorelinesYears[0]
+
+        elif ((MinMaxFlag == "Min") or (MinMaxFlag == "min")):
+            Index = np.argmin(self.VolumetricCalibrationRates)
+            CalibrationRate = self.VolumetricCalibrationRates[Index]
+            self.ChangeRate = self.ChangeRates[Index]
+            self.CalibrationYear = self.HistoricShorelinesYears[Index]
+
+        elif ((MinMaxFlag == "Max") or (MinMaxFlag == "max")):
+            Index = np.argmax(self.VolumetricCalibrationRates)
+            CalibrationRate = self.VolumetricCalibrationRates[Index]
+            self.ChangeRate = self.ChangeRates[Index]
+            self.CalibrationYear = self.HistoricShorelinesYears[Index]
+
         else:
             CalibrationRate = self.VolumetricCalibrationRates[-1]
             self.ChangeRate = self.ChangeRates[-1]

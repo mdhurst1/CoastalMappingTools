@@ -2998,7 +2998,7 @@ class Coast:
                 Transect.DefencesDistance = Distance+MaxDefencesErosionDistance
                 Transect.DefencesPosition = Transect.get_Position(Transect.DefencesDistance)
                 
-    def PredictFutureShorelines(self):
+    def PredictFutureShorelines(self, MinMaxFlag=None):
 
         """
 
@@ -3008,6 +3008,21 @@ class Coast:
 
         """
         print("Coast.PredictFutureShorelines: predicting future shoreline positions")
+        # loop through transects and sample
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                Transect.PredictFutureShorelines(MinMaxFlag)
+
+    def PredictFutureShorelinesBestWorstCase(self):
+        """
+
+        Wrapper to call Transects function to predict future shoreline positions
+        flagged to use the best and worst case historic rates on each transect
+
+        MDH, December 2023
+
+        """
+        print("Coast.PredictFutureShorelinesBestWorstCase: predicting future shoreline positions")
         # loop through transects and sample
         for Line in self.CoastLines:
             for Transect in Line.Transects:
