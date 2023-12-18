@@ -548,6 +548,7 @@ class Transect:
                     else:
                         dEta = self.HistoricShorelinesDistance[i] - self.HistoricShorelinesDistance[i-j]
                         ErrorSum = self.HistoricShorelinesErrors[i] + self.HistoricShorelinesErrors[i-j]
+                        break
                 
             self.ChangeRates.append(-dEta/dT)
             self.ChangeRateErrors.append(ErrorSum/dT)
