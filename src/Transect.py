@@ -702,7 +702,7 @@ class Transect:
                 self.HistoricShorelinesYears.pop(-2)
 
         # check if the two most recent positions are closer than 4 years together
-        if (self.HistoricShorelinesYears[-1] - self.HistoricShorelinesYears[-2] < 4):
+        while (self.HistoricShorelinesYears[-1] - self.HistoricShorelinesYears[-2] < 4):
             self.HistoricShorelinesSources.pop(-2)
             self.HistoricShorelinesDistances.pop(-2)
             self.HistoricShorelinesPositions.pop(-2)
