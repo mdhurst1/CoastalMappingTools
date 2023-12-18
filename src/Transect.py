@@ -1376,7 +1376,7 @@ class Transect:
 
         # Find first real elevation location in masked array
         FirstInd = np.transpose(ElevMasked.nonzero())[0][0]
-        self.FrontToeInd = FirstInd
+        self.FrontToeInd = MaxInd ##FirstInd
         
         # Find last real elevation location in masked array
         LastInd = np.transpose(ElevMasked.nonzero())[-1][0]
@@ -1404,12 +1404,12 @@ class Transect:
 
             # Get Angle to detrend towards the coast
             # catch divide by zero
-            if DistanceMasked[MaxInd] == DistanceMasked[self.FrontToeInd]:
+            if DistanceMasked[self.FrontTopInd] == DistanceMasked[FirstInd]:
                 print("")
                 print(self.ID)
                 print("Divide by zero getting top!")
                 print(DistanceMasked)
-                print(MaxInd, self.FrontToeInd)
+                print(self.FrontTopInd, FirstInd)
                 sys.exit()
 
             # Get Angle to detrend towards the coast
@@ -1429,7 +1429,7 @@ class Transect:
             NewInd = np.argmax(ElevDetrend)
             
             #print(Counter)                         # NH DEBUG
-            #print(f"FirstInd={FirstInd}, LastInd={LastInd}, MaxInd={MaxInd}, NewInd={NewInd}") 
+            #print(f"a)FirstInd={FirstInd}, LastInd={LastInd}, MaxInd={MaxInd}, NewInd={NewInd}") 
             #print(f"FrontTopInd={self.FrontTopInd}, FrontToeInd={self.FrontToeInd}, BackTopInd={self.BackTopInd}")
             
             if (NewInd == FirstInd):
@@ -1467,14 +1467,14 @@ class Transect:
 
             # Get Angle to detrend towards the coast
             # catch divide by zero
-            if DistanceMasked[self.FrontTopInd] == DistanceMasked[FirstInd]:
+            if DistanceMasked[self.FrontToeInd] == DistanceMasked[FirstInd]:
                 print(self.ID)
-                print(DistanceMasked[self.FrontTopInd], DistanceMasked[FirstInd])
+                print(DistanceMasked[self.FrontToeInd], DistanceMasked[FirstInd])
                 print("Divide by zero getting toe!")
                 sys.exit()
 
-            Angle = np.degrees(np.arctan((ElevMasked[self.FrontTopInd]-ElevMasked[FirstInd]) 
-                                        / (DistanceMasked[self.FrontTopInd]-DistanceMasked[FirstInd])))
+            Angle = np.degrees(np.arctan((ElevMasked[self.FrontToeInd]-ElevMasked[FirstInd]) 
+                                        / (DistanceMasked[self.FrontToeInd]-DistanceMasked[FirstInd])))
             
             # Get detrended elevation
             ElevDetrend = ((ElevMasked-ElevMasked[FirstInd]) \
@@ -1483,21 +1483,32 @@ class Transect:
             # mask values beyond the barrier front top
             Mask = ElevMasked.mask.copy()
             #Mask[:self.FrontToeInd] = True
-            if self.FrontTopInd < LastInd:            ## NH ADD: Catch when highest elevation is the last node (self.FrontTopInd=MaxInd=LastInd). Prevents corrupt indexing.
-                Mask[self.FrontTopInd+1:] = True
+            if self.FrontToeInd < LastInd:            ## NH ADD: Catch when highest elevation is the last node (self.FrontTopInd=MaxInd=LastInd). Prevents corrupt indexing.
+                Mask[self.FrontToeInd+1:] = True
             ElevDetrend = ma.masked_where(Mask, ElevDetrend)
             NewInd = np.argmin(ElevDetrend)
             
+            #print(Counter)                         # NH DEBUG
+            #print(ElevDetrend)
+            #print(f"b)FirstInd={FirstInd}, LastInd={LastInd}, MaxInd={MaxInd}, NewInd={NewInd}") 
+            
             # Find Minimum detrended elevation, must be negative to be considered a low 
-            if ((NewInd > self.FrontToeInd) and (ElevDetrend[NewInd] < -0.001)):
+            if ((NewInd < self.FrontToeInd) and (ElevDetrend[NewInd] < -0.001) and (MHWSFlag == False)):       # don't keep searching below current toe elevation if previous toe was < MHWS elevation
                 self.FrontToeInd = NewInd
                 BarrierPositionChangeFlag = True
+                #print("*")                         # NH DEBUG
+            
+                # Must also be seaward of FrontTopInd (NH). If toe landward of top, set toe index to front top index.
+                if self.FrontToeInd > self.FrontTopInd:
+                    self.FrontToeInd = self.FrontTopInd
+            
             
             # Must also be above MHWS 
             # # only check this once   
             if (ElevMasked[self.FrontToeInd] < self.MHWS) and (MHWSFlag == False):
                 
                 MHWSFlag = True
+                #print("%")                         # NH DEBUG
 
                 # find MHWS as minimum point and check index is one node seaward of MHWS mark
                 Mask[:self.FrontToeInd] = True
@@ -1507,7 +1518,12 @@ class Transect:
 
                 self.FrontToeInd = NewInd
                 BarrierPositionChangeFlag = True
-                
+            
+            # NH DEBUG
+            #print(f"c)FirstInd={FirstInd}, LastInd={LastInd}, MaxInd={MaxInd}, NewInd={NewInd}") 
+            #print(f"FrontTopInd={self.FrontTopInd}, FrontToeInd={self.FrontToeInd}, BackTopInd={self.BackTopInd}")
+           
+            
         # check toe is not inland of barrier due to MHWS     
         if not self.FrontTopInd > self.FrontToeInd:
             print("\n\tNot a barrier 6")
