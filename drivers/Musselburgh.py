@@ -229,11 +229,12 @@ for CellSub in CellList:
         # write future shorelines
         SmoothOutput = True # smooth coastlines (true) or not (false)
         
+        # not min and max reversed due to sign convention on volumetric calibration terms
         CellCoast.PredictFutureShorelines(MinMaxFlag="Min")
-        CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future_Min.shp")),SmoothOutput)
+        CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future_Max.shp")),SmoothOutput)
 
         CellCoast.PredictFutureShorelines(MinMaxFlag="Max")
-        CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future_Max.shp")),SmoothOutput)
+        CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future_Min.shp")),SmoothOutput)
 
         CellCoast.PredictFutureShorelines()
 

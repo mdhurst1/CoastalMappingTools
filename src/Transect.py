@@ -535,9 +535,19 @@ class Transect:
             
             # otherwise do the shorter period
             else:
-                dEta = self.HistoricShorelinesDistance[i] - self.HistoricShorelinesDistance[i-1]
-                ErrorSum = self.HistoricShorelinesErrors[i] + self.HistoricShorelinesErrors[i-1]
-                dT = self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[i-1]
+                j = 1
+                while True:
+                    dT = self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[i-j]
+                    if (i-j == 0):
+                        dEta = self.HistoricShorelinesDistance[i] - self.HistoricShorelinesDistance[i-j]
+                        ErrorSum = self.HistoricShorelinesErrors[i] + self.HistoricShorelinesErrors[i-j]
+                        break
+                    elif dT < 4:
+                        j += 1
+                        continue
+                    else:
+                        dEta = self.HistoricShorelinesDistance[i] - self.HistoricShorelinesDistance[i-j]
+                        ErrorSum = self.HistoricShorelinesErrors[i] + self.HistoricShorelinesErrors[i-j]
                 
             self.ChangeRates.append(-dEta/dT)
             self.ChangeRateErrors.append(ErrorSum/dT)
@@ -775,13 +785,14 @@ class Transect:
         else:
             Interp = (self.FutureSeaLevelYears[1]-self.HistoricShorelinesYears[-1])/(self.FutureSeaLevelYears[1]-self.FutureSeaLevelYears[0])
             self.LatestRSL = self.FutureSeaLevels[1]-Interp*(self.FutureSeaLevels[1]-self.FutureSeaLevels[0])
+
+        # print(MinMaxFlag)
         
         # set index for calibration
         if self.LongTermOnly:
             CalibrationRate = self.VolumetricCalibrationRates[0]
             self.ChangeRate = self.ChangeRates[0]
             self.CalibrationYear = self.HistoricShorelinesYears[0]
-
         elif ((MinMaxFlag == "Min") or (MinMaxFlag == "min")):
             Index = np.argmin(self.VolumetricCalibrationRates)
             CalibrationRate = self.VolumetricCalibrationRates[Index]

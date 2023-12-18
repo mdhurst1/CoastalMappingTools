@@ -3011,7 +3011,7 @@ class Coast:
         # loop through transects and sample
         for Line in self.CoastLines:
             for Transect in Line.Transects:
-                Transect.PredictFutureShorelines(MinMaxFlag)
+                Transect.PredictFutureShorelines(MinMaxFlag=MinMaxFlag)
 
     def PredictFutureShorelinesBestWorstCase(self):
         """
