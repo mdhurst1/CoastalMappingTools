@@ -1376,7 +1376,8 @@ class Coast:
         
         # write headers
         f.write("LineID" + delimiter + "TransectID" + delimiter + "IntertidalSlope" + delimiter + "ForeshoreSlope" + delimiter +\
-                "FrontToeElev" + delimiter + "BackToeElev" + delimiter + "FrontTopElev" + delimiter + "CrestElev" + "\n")
+                "FrontToeElev" + delimiter + "BackToeElev" + delimiter + "FrontTopElev" + delimiter + "CrestElev" + delimiter +\
+                "FrontToeDist" + delimiter + "BackToeDist" + delimiter + "FrontTopDist" + delimiter + "CrestDist" + "\n")
                 
         for Line in self.CoastLines:
             for Transect in Line.Transects:
@@ -1388,9 +1389,14 @@ class Coast:
                     f.write(str(Transect.Elevation[Transect.FrontToeInd]) + delimiter)
                     f.write(str(Transect.Elevation[Transect.BackToeInd]) + delimiter)
                     f.write(str(Transect.Elevation[Transect.FrontTopInd]) + delimiter)
-                    f.write(str(Transect.Elevation[Transect.CrestInd]) + "\n")
+                    f.write(str(Transect.Elevation[Transect.CrestInd]) + delimiter)
+                    f.write(str(Transect.Distance[Transect.FrontToeInd]) + delimiter)
+                    f.write(str(Transect.Distance[Transect.BackToeInd]) + delimiter)
+                    f.write(str(Transect.Distance[Transect.FrontTopInd]) + delimiter)
+                    f.write(str(Transect.Distance[Transect.CrestInd]) + "\n")
                 else:
-                    f.write("NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + "\n")
+                    f.write("NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + \
+                            "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + "\n")
                     
         f.close()
         
@@ -1919,8 +1925,8 @@ class Coast:
                 else:
                     Transect.ForeshoreSlope = dz/dx
                 
-                if __debug__:
-                    print(f"\t{Transect.LineID}, {Transect.ID}: \tihigh={ihigh}, ilow={ilow}, \tdz={dz}, \tdx={dx}, \tslope={Transect.ForeshoreSlope}")
+                #if __debug__:
+                    #print(f"\t{Transect.LineID}, {Transect.ID}: \tihigh={ihigh}, ilow={ilow}, \tdz={dz}, \tdx={dx}, \tslope={Transect.ForeshoreSlope}")
         
     
     def GenerateTransectsBetweenContoursShp(self, ContourShp1, ContourShp2, Distance2Sea=8000., Distance2Land=8000., TransectSpacing=20., CheckTopology=True):
@@ -3634,8 +3640,8 @@ class Coast:
                         jEnd = len(XVector)
                         Transect.InterpolationIncomplete = True                        
                     
-                    if __debug__:
-                        print("\t\tiStart, iEnd, jStart, jEnd = ", iStart, iEnd, jStart, jEnd)
+                    #if __debug__:
+                        #print("\t\tiStart, iEnd, jStart, jEnd = ", iStart, iEnd, jStart, jEnd)
                         #print("\tXVector[jStart], XVector[jEnd-1], YVector[iStart], YVector[iEnd-1] = ", XVector[jStart], XVector[jEnd-1], YVector[iStart], YVector[iEnd-1])
 
                     #Get Vector X and Y
@@ -3923,6 +3929,8 @@ class Coast:
                 # # Call analyses
                 #if Transect.ID == "13":
                 # Transect.FindCliff()
+                
+                #if Transect.ID == "0":
                 Transect.FindBarrier()
                 
                 # update transect progress no
