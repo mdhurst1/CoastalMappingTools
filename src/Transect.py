@@ -795,13 +795,17 @@ class Transect:
             self.ChangeRate = self.ChangeRates[0]
             self.CalibrationYear = self.HistoricShorelinesYears[0]
         elif ((MinMaxFlag == "Min") or (MinMaxFlag == "min")):
-            Index = np.argmin(self.VolumetricCalibrationRates)
+            TempIndex = np.argmin(self.VolumetricCalibrationRates[np.array(self.HistoricShorelinesYears) > 2000])
+            Index = np.where(np.array(self.HistoricShorelinesYears) > 2000)[0][TempIndex]
+
             CalibrationRate = self.VolumetricCalibrationRates[Index]
             self.ChangeRate = self.ChangeRates[Index]
             self.CalibrationYear = self.HistoricShorelinesYears[Index]
 
         elif ((MinMaxFlag == "Max") or (MinMaxFlag == "max")):
-            Index = np.argmax(self.VolumetricCalibrationRates)
+            TempIndex = np.argmax(self.VolumetricCalibrationRates[np.array(self.HistoricShorelinesYears) > 2000])
+            Index = np.where(np.array(self.HistoricShorelinesYears) > 2000)[0][TempIndex]
+
             CalibrationRate = self.VolumetricCalibrationRates[Index]
             self.ChangeRate = self.ChangeRates[Index]
             self.CalibrationYear = self.HistoricShorelinesYears[Index]
