@@ -226,6 +226,11 @@ for CellSub in CellList:
         
         CellCoast.PredictFutureShorelines(MinMaxFlag="Min")
         CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future_Min.shp")),SmoothOutput)
+        OpenCoast.WriteErodedAreaShp(str(OpenPath / (RowName + "_ErodedArea_" + str(Decade) + ".shp")), Year=Decade)
+                OpenCoast.WriteErodedAreaShp(str(OpenPath / (RowName + "_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
+                OpenCoast.WriteErosionProximityShp(str(OpenPath / (RowName + "_Influence_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
+                OpenCoast.WriteErosionProximityShp(str(OpenPath / (RowName + "_Vicinity_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
+                
 
         CellCoast.PredictFutureShorelines(MinMaxFlag="Max")
         CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future_Max.shp")),SmoothOutput)
