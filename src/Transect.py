@@ -559,12 +559,12 @@ class Transect:
 
         # add logic here to get best change rate and min/max?
         # get min 
-        TempIndex = np.argmin(self.ChangeRates[np.array(self.HistoricShorelinesYears) > 2000])
+        TempIndex = np.argmin(np.array(self.ChangeRates)[np.array(self.HistoricShorelinesYears) > 2000])
         IndexMin = np.where(np.array(self.HistoricShorelinesYears) > 2000)[0][TempIndex]
         self.MinChangeRate = self.ChangeRates[IndexMin]
 
         # and max rates
-        TempIndex = np.argmax(self.ChangeRates[np.array(self.HistoricShorelinesYears) > 2000])
+        TempIndex = np.argmax(np.array(self.ChangeRates)[np.array(self.HistoricShorelinesYears) > 2000])
         IndexMax = np.where(np.array(self.HistoricShorelinesYears) > 2000)[0][TempIndex]
         self.MaxChangeRate = self.ChangeRates[IndexMax]
 
