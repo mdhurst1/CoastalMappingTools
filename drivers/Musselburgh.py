@@ -30,8 +30,12 @@ NationalDEMPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shar
 Scenarios = [2,4,8]
 Percentiles = [50,50,95]
 
+# Decades for writing
+Decades = [2020, 2030, 2040, 2050, 2060, 2070, 2080, 2090, 2100]
+
 # set up output folders
 GeometryPath = WorkingPath/("Geometry")
+
        
 if not GeometryPath.exists(): # checks if geometry folder exists, if not create
     GeometryPath.mkdir(parents=True, exist_ok=True)
@@ -91,9 +95,13 @@ for CellSub in CellList:
     for Scenario, Percentile in zip(Scenarios, Percentiles): # main loop starting
         
         OutputPath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_OpenCoast")
+        PolygonsPath = OutputPath/("Polygons")
         
         if not OutputPath.exists():
             OutputPath.mkdir(parents=True, exist_ok=True)
+        
+        if not PolygonsPath.exists():
+            PolygonsPath.mkdir(parents=True, exist_ok=True)
         
         # # this checks to see whether coast object already exists
         Filename2SaveAll = OutputPath / (RowName+"_OpenChange.pydata")
@@ -229,13 +237,56 @@ for CellSub in CellList:
         # write future shorelines
         SmoothOutput = True # smooth coastlines (true) or not (false)
         
-        # not min and max reversed due to sign convention on volumetric calibration terms
+        # write coast/bathy to file
+        CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
+        CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future.shp")),SmoothOutput)
+
+        #Loop through decades
+        for i, Decade in enumerate(Decades):
+
+            #skip 2020
+            if i == 0:
+                continue
+
+            CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_" + str(Decade) + ".shp")), Year=Decade)
+            CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
+            CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Influence_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
+            CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Vicinity_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
+        
+
+        # note min and max reversed due to sign convention on volumetric calibration terms
         CellCoast.PredictFutureShorelines(MinMaxFlag="Min")
         CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future_Max.shp")),SmoothOutput)
+
+        #Loop through decades
+        for i, Decade in enumerate(Decades):
+
+            #skip 2020
+            if i == 0:
+                continue
+
+            CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_Max" + str(Decade) + ".shp")), Year=Decade)
+            CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_Max" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
+            CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Influence_Max" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
+            CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Vicinity_Max" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
+        
 
         CellCoast.PredictFutureShorelines(MinMaxFlag="Max")
         CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future_Min.shp")),SmoothOutput)
 
+        #Loop through decades
+        for i, Decade in enumerate(Decades):
+
+            #skip 2020
+            if i == 0:
+                continue
+
+            CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_Min" + str(Decade) + ".shp")), Year=Decade)
+            CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_Min" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
+            CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Influence_Min" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
+            CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Vicinity_Min" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
+        
+        # reset
         CellCoast.PredictFutureShorelines()
 
         # write coast/bathy to file
