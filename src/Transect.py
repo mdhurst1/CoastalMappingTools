@@ -72,6 +72,8 @@ class Transect:
         self.ChangeRates = []
         self.ChangeRateErrors = []
         self.ChangeRate = None      # value used in calibration
+        self.MinChangeRate = None
+        self.MaxChangeRate = None
         self.DeleteFlag = False
 
         # rock head info
@@ -555,6 +557,8 @@ class Transect:
         
         self.HistoricFlag = True
 
+        # add logic here to get best change rate and min/max?
+
     def CalculateIntertidalSlope(self):
         
         if not self.MLWS:
@@ -793,22 +797,29 @@ class Transect:
         if self.LongTermOnly:
             CalibrationRate = self.VolumetricCalibrationRates[0]
             self.ChangeRate = self.ChangeRates[0]
+            self.MinChangeRate = self.ChangeRate
+            self.MaxChangeRate = self.ChangeRate
             self.CalibrationYear = self.HistoricShorelinesYears[0]
-        elif ((MinMaxFlag == "Min") or (MinMaxFlag == "min")):
-            TempIndex = np.argmin(self.VolumetricCalibrationRates[np.array(self.HistoricShorelinesYears) > 2000])
-            Index = np.where(np.array(self.HistoricShorelinesYears) > 2000)[0][TempIndex]
 
-            CalibrationRate = self.VolumetricCalibrationRates[Index]
-            self.ChangeRate = self.ChangeRates[Index]
-            self.CalibrationYear = self.HistoricShorelinesYears[Index]
+        # get min 
+        TempIndex = np.argmin(self.VolumetricCalibrationRates[np.array(self.HistoricShorelinesYears) > 2000])
+        IndexMin = np.where(np.array(self.HistoricShorelinesYears) > 2000)[0][TempIndex]
+        self.MinChangeRate = self.ChangeRates[IndexMin]
+        
+        # and max rates
+        TempIndex = np.argmax(self.VolumetricCalibrationRates[np.array(self.HistoricShorelinesYears) > 2000])
+        IndexMax = np.where(np.array(self.HistoricShorelinesYears) > 2000)[0][TempIndex]
+        self.MaxChangeRate = self.ChangeRates[IndexMax]
+
+        if ((MinMaxFlag == "Min") or (MinMaxFlag == "min")):
+            CalibrationRate = self.VolumetricCalibrationRates[IndexMin]
+            self.ChangeRate = self.ChangeRates[IndexMin]
+            self.CalibrationYear = self.HistoricShorelinesYears[IndexMin]
 
         elif ((MinMaxFlag == "Max") or (MinMaxFlag == "max")):
-            TempIndex = np.argmax(self.VolumetricCalibrationRates[np.array(self.HistoricShorelinesYears) > 2000])
-            Index = np.where(np.array(self.HistoricShorelinesYears) > 2000)[0][TempIndex]
-
-            CalibrationRate = self.VolumetricCalibrationRates[Index]
-            self.ChangeRate = self.ChangeRates[Index]
-            self.CalibrationYear = self.HistoricShorelinesYears[Index]
+            CalibrationRate = self.VolumetricCalibrationRates[IndexMax]
+            self.ChangeRate = self.ChangeRates[IndexMax]
+            self.CalibrationYear = self.HistoricShorelinesYears[IndexMax]
 
         else:
             CalibrationRate = self.VolumetricCalibrationRates[-1]

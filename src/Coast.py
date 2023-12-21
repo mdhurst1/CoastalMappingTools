@@ -974,7 +974,7 @@ class Coast:
         # Create Fields
         Fields = [('DeletionFlag','C',1,0), 
         ['Cell', 'C', 3, 0], ['SubCell', 'C', 3, 0], ['CMU','C', 20, 0],
-        ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], ['Hist_Rate','N', 4, 4],
+        ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], ['Min_Rate','N', 4, 4], ['Max_Rate','N', 4, 4], ['Hist_Rate','N', 4, 4], 
         ['CalibYr','N', 4, 0], ['BaseLYr','N', 4, 0], ['BaseLSrc','C', 50, 0], 
         ['Extrap2050','N', 6, 4], ['Extrap2100','N', 6, 4], ['FirstEYr','N',4, 4],
         ['Dist_2030', 'N', 6, 4], ['Rate_2030', 'N', 6, 4], 
@@ -1013,7 +1013,7 @@ class Coast:
                     
                     # Create the record this could become a function in transect object...
                     Record = [str(self.Cell), str(self.SubCell), str(self.CMU), str(Line.ID), str(Transect.ID),
-                                Transect.ChangeRate, 
+                                Transect.MinChangeRate, Transect.MaxChangeRate, Transect.ChangeRate, 
                                 Transect.CalibrationYear, Transect.HistoricShorelinesYears[-1], Transect.HistoricShorelinesSources[-1], 
                                 Transect.get_ExtrapDistance(2050), Transect.get_ExtrapDistance(2100), Transect.get_FirstFutureErosionYear(),
                                 Transect.get_FuturePositionChange(2020, 2030), Transect.get_FutureRate(2020, 2030),
