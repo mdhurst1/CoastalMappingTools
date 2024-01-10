@@ -3931,7 +3931,7 @@ class Coast:
                 # Transect.FindCliff()
                 
                 #if Transect.ID == "0":
-                Transect.FindBarrier()
+                Transect.FindBarrier2()     # REVISED TOE DETECTION
                 
                 # update transect progress no
                 CurrentTransect += 1
