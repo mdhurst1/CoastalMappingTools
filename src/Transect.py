@@ -1645,6 +1645,336 @@ class Transect:
         # switch flag to indicate a barrier has been found
         self.Barrier = True
     
+    def FindBarrier2(self):
+        
+        """
+        Description goes here
+        MDH, June 2019
+        
+        Toe detection revised
+        NH Dec 2023
+        """
+        
+        # Check if rocky and dont look for barrier on rocky coast
+        if self.Rocky:
+            print("\n\tNot a barrier 1")
+            self.Barrier = False
+            return
+
+        # Check if a cliff is present and only analyse topography up to the cliff toe
+        # when looking for a barrier
+        #Mask = self.Elevation.mask.copy()              # Problem: this returns boolean value (not array) of False when no masked elements
+        Mask = ma.getmaskarray(self.Elevation)          # Return the mask of a masked array, or full boolean array of False.
+        if self.Cliff:
+            Mask[self.CliffToeInd+1:] = True
+        
+        # mask below sea level, including tide, in future
+        Mask[self.Elevation < 0] = True
+
+        # apply mask
+        ElevMasked = ma.masked_where(Mask, self.Elevation)
+        DistanceMasked = ma.masked_where(Mask, self.Distance)
+
+        # check that the whole topography has not been masked
+        # this would indicate there is no barrier
+        if ElevMasked.mask.all():
+            print("\n\tNot a barrier 2")
+            self.Barrier = False
+            return
+
+        # Find the highest point to start from
+        MaxInd = np.argmax(ElevMasked)
+        self.FrontTopInd = MaxInd
+
+        # if highest point is not above MHWS then cant be a barrier
+        if not self.MHWS:
+            print("No MHWS data for " + self.LineID + ", " + self.ID)
+            sys.exit()
+        elif not ElevMasked[MaxInd]:
+            print("No value for ElevMasked[MaxInd]" + self.LineID + ", " + self.ID)
+            sys.exit()
+        if ElevMasked[MaxInd] < self.MHWS:
+            print("\n\tNot a barrier 3")
+            self.Barrier = False
+            return
+
+        # Find first real elevation location in masked array
+        FirstInd = np.transpose(ElevMasked.nonzero())[0][0]
+        self.FrontToeInd = MaxInd ##FirstInd
+        
+        # Find last real elevation location in masked array
+        LastInd = np.transpose(ElevMasked.nonzero())[-1][0]
+
+        # check highest point is not on seaward end
+        if MaxInd == FirstInd:
+            print("\n\tNot a barrier 4")
+            self.Barrier = False
+            return
+
+        # flag for changing position
+        # we'll keep applygin the barrier finder until the 
+        # top and toe positions dont change
+        BarrierPositionChangeFlag = True
+
+        Counter = 0
+        MHWSFlag = False
+
+        while BarrierPositionChangeFlag:
+
+            Counter += 1                            # NH DEBUG
+            
+            # reset flag
+            BarrierPositionChangeFlag = False
+
+            # Get Angle to detrend towards the coast
+            # catch divide by zero
+            if DistanceMasked[self.FrontTopInd] == DistanceMasked[FirstInd]:
+                print("")
+                print(self.ID)
+                print("Divide by zero getting top!")
+                print(DistanceMasked)
+                print(self.FrontTopInd, FirstInd)
+                sys.exit()
+
+            # Get Angle to detrend towards the coast
+            Angle = np.degrees(np.arctan((ElevMasked[self.FrontTopInd]-ElevMasked[FirstInd]) 
+                                        / (DistanceMasked[self.FrontTopInd]-DistanceMasked[FirstInd])))
+        
+            # Get detrended elevation
+            ElevDetrend = ((ElevMasked-ElevMasked[FirstInd])+(DistanceMasked[FirstInd]-DistanceMasked) \
+                                * np.tan(np.radians(Angle)))
+
+            # mask values beyond the peak
+            Mask = ElevMasked.mask.copy()
+            Mask[0:FirstInd] = True
+            if self.FrontTopInd < LastInd:          ## NH ADD: Catch when highest elevation is the last node (self.FrontTopInd=MaxInd=LastInd). Prevents corrupt indexing.
+                Mask[self.FrontTopInd+1:] = True
+            ElevDetrend = ma.masked_where(Mask, ElevDetrend)
+            NewInd = np.argmax(ElevDetrend)
+            
+            #print(Counter)                         # NH DEBUG
+            #print(f"a)FirstInd={FirstInd}, LastInd={LastInd}, MaxInd={MaxInd}, NewInd={NewInd}") 
+            #print(f"FrontTopInd={self.FrontTopInd}, FrontToeInd={self.FrontToeInd}, BackTopInd={self.BackTopInd}")
+            
+            if (NewInd == FirstInd):
+                #print(f"{Counter}, Setting NewInd = MaxInd")
+                NewInd = MaxInd
+            
+            # Find Maximum detrended elevation. Original: If at end of transect then not a barrier
+            # NH edit: rather than discard transect, keep as potential barrier and set flag that hinterland is higher than barrier crest.
+            if (NewInd == LastInd):
+                print("\n\tNot a barrier 5")
+                
+                #print(self.LineID, self.ID)         # NH DEBUG
+                #print(f"FirstInd={FirstInd}, LastInd={LastInd}, MaxInd={MaxInd}, NewInd={NewInd}")
+                #print(f"FrontTopInd={self.FrontTopInd}, FrontToeInd={self.FrontToeInd}")
+                #plt.plot(self.Distance,ElevMasked,'k-')
+                #plt.plot(self.Distance[self.FrontTopInd],self.Elevation[self.FrontTopInd],'bo')
+                #plt.plot(self.Distance[self.FrontToeInd],self.Elevation[self.FrontToeInd],'bs')
+                #plt.plot(self.Distance[self.BackTopInd],self.Elevation[self.BackTopInd],'ro')
+                #plt.plot(self.Distance[self.BackToeInd],self.Elevation[self.BackToeInd],'rs')
+                #plt.plot(self.Distance,ElevDetrend,'r-')
+                #plt.show()
+                #sys.exit()
+                
+                #self.Barrier = False
+                #return
+                self.HinterlandHigher = True
+
+            # Must be above MHWS to be considered a barrier top
+            # NH edit: Replace elif with if to align with not treating previous if statement as error.
+            if ((NewInd < self.FrontTopInd) and (ElevDetrend[NewInd] > 0.001) and (ElevMasked[NewInd] > self.MHWS)):
+                self.FrontTopInd = np.argmax(ElevDetrend)
+                BarrierPositionChangeFlag = True
+
+            # THEN Barrier TOE
+
+            # Get Angle to detrend towards the coast
+            # catch divide by zero
+            if DistanceMasked[self.FrontToeInd] == DistanceMasked[FirstInd]:
+                print(self.ID)
+                print(DistanceMasked[self.FrontToeInd], DistanceMasked[FirstInd])
+                print("Divide by zero getting toe!")
+                sys.exit()
+
+            Angle = np.degrees(np.arctan((ElevMasked[self.FrontToeInd]-ElevMasked[FirstInd]) 
+                                        / (DistanceMasked[self.FrontToeInd]-DistanceMasked[FirstInd])))
+            
+            # Get detrended elevation
+            ElevDetrend = ((ElevMasked-ElevMasked[FirstInd]) \
+             + (DistanceMasked[FirstInd] - DistanceMasked) * np.tan(np.radians(Angle)))
+
+            # mask values beyond the barrier front top
+            Mask = ElevMasked.mask.copy()
+            #Mask[:self.FrontToeInd] = True
+            if self.FrontToeInd < LastInd:            ## NH ADD: Catch when highest elevation is the last node (self.FrontTopInd=MaxInd=LastInd). Prevents corrupt indexing.
+                Mask[self.FrontToeInd+1:] = True
+            ElevDetrend = ma.masked_where(Mask, ElevDetrend)
+            NewInd = np.argmin(ElevDetrend)
+            
+            #print(Counter)                         # NH DEBUG
+            #print(ElevDetrend)
+            #print(f"b)FirstInd={FirstInd}, LastInd={LastInd}, MaxInd={MaxInd}, NewInd={NewInd}") 
+            
+            # Find Minimum detrended elevation, must be negative to be considered a low 
+            if ((NewInd < self.FrontToeInd) and (ElevDetrend[NewInd] < -0.001) and (MHWSFlag == False)):       # don't keep searching below current toe elevation if previous toe was < MHWS elevation
+                self.FrontToeInd = NewInd
+                BarrierPositionChangeFlag = True
+                #print("*")                         # NH DEBUG
+            
+                # Must also be seaward of FrontTopInd (NH). If toe landward of top, set toe index to front top index.
+                if self.FrontToeInd > self.FrontTopInd:
+                    self.FrontToeInd = self.FrontTopInd
+            
+            
+            # Must also be above MHWS 
+            # # only check this once   
+            if (ElevMasked[self.FrontToeInd] < self.MHWS) and (MHWSFlag == False):
+                
+                MHWSFlag = True
+                #print("%")                         # NH DEBUG
+
+                # find MHWS as minimum point and check index is one node seaward of MHWS mark
+                Mask[:self.FrontToeInd] = True
+                NewInd = np.argmin(np.abs(ma.masked_where(Mask, ElevMasked)-self.MHWS))
+                if ElevMasked[NewInd] > self.MHWS:
+                    NewInd -= 1
+
+                self.FrontToeInd = NewInd
+                BarrierPositionChangeFlag = True
+            
+            # NH DEBUG
+            #print(f"c)FirstInd={FirstInd}, LastInd={LastInd}, MaxInd={MaxInd}, NewInd={NewInd}") 
+            #print(f"FrontTopInd={self.FrontTopInd}, FrontToeInd={self.FrontToeInd}, BackTopInd={self.BackTopInd}")
+           
+            
+        # check toe is not inland of barrier due to MHWS     
+        if not self.FrontTopInd > self.FrontToeInd:
+            print("\n\tNot a barrier 6")
+            self.Barrier = False
+            return
+
+        # Check if coincides with a cliff
+        if self.FrontTopInd == LastInd:
+            print("\n\tNot a barrier 7")
+            self.Barrier = False
+            return
+
+        # this needs more work
+        self.FrontHeight = self.Elevation[self.FrontTopInd]-self.Elevation[self.FrontToeInd]
+        self.FrontSlope = self.FrontHeight/(self.Distance[self.FrontTopInd]-self.Distance[self.FrontToeInd])
+        
+        # default back barrier positions
+        self.BackTopInd = self.FrontTopInd
+        Mask = ElevMasked.mask.copy()
+        Mask[0:self.FrontTopInd] = True
+        ElevMasked = ma.masked_where(Mask,ElevMasked)
+
+        # MIN IND OR LAST IND HERE?
+        MinInd = np.argmin(np.abs(self.Distance-(self.Distance[self.FrontTopInd]+300)))
+        if MinInd > LastInd:
+            MinInd = LastInd
+        self.BackToeInd = MinInd
+        #plt.plot(DistanceMasked[MinInd],ElevMasked[MinInd],'k+',ms=20)
+
+        # catch where Minimum Elevation coincides with "barrier" front
+        if MinInd == self.FrontTopInd:
+            self.BackToeInd = LastInd
+        
+        # flag for changing position
+        BarrierPositionChangeFlag = True
+        
+        while BarrierPositionChangeFlag:
+            
+            # FIRST Back Barrier TOE
+            
+            # reset flag
+            BarrierPositionChangeFlag = False
+
+            # Get Angle to detrend towards the coast
+            Angle = np.degrees(np.arctan((ElevMasked[MinInd]-ElevMasked[self.FrontTopInd]) 
+                                        / (DistanceMasked[MinInd]-DistanceMasked[self.FrontTopInd])))
+            
+            # Get detrended elevation
+            ElevDetrend = ((ElevMasked-ElevMasked[self.FrontTopInd]) + (DistanceMasked[self.FrontTopInd] - DistanceMasked) \
+                            * np.tan(np.radians(Angle)))
+
+            # mask values seaward of the barrier front top
+            Mask = ElevMasked.mask.copy()
+            Mask[0:self.BackTopInd] = True
+            Mask[MinInd+1:] = True
+            ElevDetrend = ma.masked_where(Mask, ElevDetrend)
+            NewInd = np.argmin(ElevDetrend)
+            #plt.plot(DistanceMasked,ElevDetrend,'r-')
+            
+            # Find Minimum detrended elevation, must be negative to be considered a low (probably never a worry)
+            if not NewInd == self.BackToeInd:
+                if ((NewInd < self.BackToeInd) and (ElevDetrend[NewInd] < -0.001) and (NewInd > self.BackTopInd)):
+                    self.BackToeInd = NewInd
+                    BarrierPositionChangeFlag = True
+
+            # THEN Back Top
+            
+            # Get Angle to detrend towards away from the coast
+            
+            Angle = np.degrees(np.arctan((ElevMasked[self.BackToeInd]-ElevMasked[self.FrontTopInd])
+                                        / (DistanceMasked[self.BackToeInd]-DistanceMasked[self.FrontTopInd])))
+            
+            # Get detrended elevation
+            ElevDetrend = ((ElevMasked-ElevMasked[self.FrontTopInd])+(DistanceMasked[self.FrontTopInd]-DistanceMasked) \
+                            * np.tan(np.radians(Angle)))
+
+            # mask values up to the peak
+            Mask = ElevMasked.mask.copy()
+            Mask[0:self.FrontTopInd] = True
+            Mask[self.BackToeInd+1:] = True
+            ElevDetrend = ma.masked_where(Mask,ElevDetrend)
+            NewInd = np.argmax(ElevDetrend)
+            
+            # Find Maximum detrended elevation. Must be positive to be considered a change in barrier back top position
+            if not self.BackTopInd == NewInd:
+                if ((NewInd < self.BackToeInd) and (ElevDetrend[np.argmax(ElevDetrend)] > 0.001)):
+                    self.BackTopInd = np.argmax(ElevDetrend)
+                    BarrierPositionChangeFlag = True
+                    
+        if self.BackTopInd == LastInd:
+            print("\n\tNot a barrier 8")
+            self.Barrier = False
+            return        
+            
+        # Get Barrier Crest
+        #Mask = self.Elevation.mask.copy()              # Problem: this returns boolean value (not array) of False when no masked elements
+        Mask = ma.getmaskarray(self.Elevation)          # Return the mask of a masked array, or full boolean array of False.
+        Mask[0:self.FrontToeInd] = True
+        Mask[self.BackToeInd+1:] = True                 # NH bug fix: exclude all elevations beyond BackToeInd, not just the single elev at BackToeInd
+        ElevMasked = ma.masked_where(Mask,self.Elevation)
+        self.CrestInd = ma.argmax(ElevMasked)
+        self.CrestElevation = ElevMasked[self.CrestInd]
+            
+        # Calculate Barrier Height, front and back
+        self.FrontHeight = self.Elevation[self.FrontTopInd]-self.Elevation[self.FrontToeInd]
+        self.BackHeight = self.Elevation[self.BackTopInd]-self.Elevation[self.BackToeInd]
+        
+        # Calculate Barrier Width, top and bottom
+        self.ToeWidth = np.abs(self.Distance[self.FrontToeInd]-self.Distance[self.BackToeInd])
+        self.TopWidth = np.abs(self.Distance[self.FrontTopInd]-self.Distance[self.BackTopInd])
+        
+        # Calculate Slope, front and back
+        self.FrontSlope = self.FrontHeight/(self.Distance[self.FrontTopInd]-self.Distance[self.FrontToeInd])
+        self.BackSlope = self.BackHeight/(self.Distance[self.BackTopInd]-self.Distance[self.BackToeInd])
+        
+        # Volume m3/m
+        Start, End = ma.notmasked_edges(self.Distance)
+        self.DistanceSpacing = self.Distance[Start+1]-self.Distance[Start] # temporary fix
+        
+        self.BarrierVolume = ma.sum(ElevMasked)*self.DistanceSpacing
+        
+        self.BarrierVolume -= 0.5 * (ElevMasked[self.FrontToeInd] + ElevMasked[self.BackToeInd-1]) \
+                                 * np.abs(self.Distance[self.BackToeInd-1] - self.Distance[self.FrontToeInd])
+        
+        # switch flag to indicate a barrier has been found
+        self.Barrier = True
+    
     def ExtractBarrierWidthVolume(self,Elevation=None):
 
         """
