@@ -1080,7 +1080,7 @@ class Coast:
                 # Create the record this could become a function in transect object...
                 Record = [str(Line.ID), str(Transect.ID), 
                             Transect.ForeshoreSlope,
-                            Transect.H_Hs_p95, Transect.H_Tp_p95, Transect.H_R2, Transect.H_setup, Transect.H_Dissipative,
+                            Transect.H_Hs_p99, Transect.H_Tp_p99, Transect.H_R2, Transect.H_setup, Transect.H_Dissipative,
                             Transect.H_ESL, Transect.H_TWL, Transect.H_TWL_setup,
                             Transect.Elevation[Transect.FrontToeInd], Transect.Elevation[Transect.CrestInd],
                             Transect.H_StormImpactScale]
@@ -3980,8 +3980,8 @@ class Coast:
                 Bf = Transect.ForeshoreSlope
                 
                 if Scenario == "Hist":
-                    H0 = Transect.H_Hs_p95
-                    L0 = g*Transect.H_Tp_p95**2/(2*np.pi)                               # Stockdon eq(1)
+                    H0 = Transect.H_Hs_p99
+                    L0 = g*Transect.H_Tp_p99**2/(2*np.pi)                               # Stockdon eq(1)
                     Iribarren = Bf/np.sqrt(H0/L0)                                       # Stockdon eq(2)
                     if Iribarren < 0.3:                                                 # extremely dissipative beach
                         Transect.H_R2 = 0.043*np.sqrt(H0*L0)                            # Stockdon eq(18): Extreme wave runup
@@ -3994,8 +3994,8 @@ class Coast:
                         Transect.H_Dissipative = False
                                         
                 elif Scenario == "M45":                                                 # repeat for each climate scenario
-                    H0 = Transect.M45_Hs_p95
-                    L0 = g*Transect.M45_Tp_p95**2/(2*np.pi)                                              
+                    H0 = Transect.M45_Hs_p99
+                    L0 = g*Transect.M45_Tp_p99**2/(2*np.pi)                                              
                     Iribarren = Bf/np.sqrt(H0/L0)
                     if Iribarren < 0.3:                                                
                         Transect.M45_R2 = 0.043*np.sqrt(H0*L0)    
@@ -4008,8 +4008,8 @@ class Coast:
                         Transect.M45_Dissipative = False                                        
                 
                 elif Scenario == "M85":
-                    H0 = Transect.M85_Hs_p95
-                    L0 = g*Transect.M85_Tp_p95**2/(2*np.pi)                                              
+                    H0 = Transect.M85_Hs_p99
+                    L0 = g*Transect.M85_Tp_p99**2/(2*np.pi)                                              
                     Iribarren = Bf/np.sqrt(H0/L0)
                     if Iribarren < 0.3:                                                
                         Transect.M85_R2 = 0.043*np.sqrt(H0*L0) 
@@ -4022,8 +4022,8 @@ class Coast:
                         Transect.M85_Dissipative = False 
                                         
                 elif Scenario == "E45":
-                    H0 = Transect.E45_Hs_p95
-                    L0 = g*Transect.E45_Tp_p95**2/(2*np.pi)                                              
+                    H0 = Transect.E45_Hs_p99
+                    L0 = g*Transect.E45_Tp_p99**2/(2*np.pi)                                              
                     Iribarren = Bf/np.sqrt(H0/L0)
                     if Iribarren < 0.3:                                                
                         Transect.E45_R2 = 0.043*np.sqrt(H0*L0)   
@@ -4036,8 +4036,8 @@ class Coast:
                         Transect.E45_Dissipative = False
                                         
                 elif Scenario == "E85":
-                    H0 = Transect.E85_Hs_p95
-                    L0 = g*Transect.E85_Tp_p95**2/(2*np.pi)                                              
+                    H0 = Transect.E85_Hs_p99
+                    L0 = g*Transect.E85_Tp_p99**2/(2*np.pi)                                              
                     Iribarren = Bf/np.sqrt(H0/L0)
                     if Iribarren < 0.3:                                                
                         Transect.E85_R2 = 0.043*np.sqrt(H0*L0)  
