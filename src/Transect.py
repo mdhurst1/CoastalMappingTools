@@ -245,6 +245,15 @@ class Transect:
         self.M85_SLR = None
         self.E45_SLR = None
         self.E85_SLR = None
+        # Estimated future dune front toe and crest elevations
+        self.M45_FrontToe = None
+        self.M85_FrontToe = None
+        self.E45_FrontToe = None
+        self.E85_FrontToe = None
+        self.M45_Crest = None
+        self.M85_Crest = None
+        self.E45_Crest = None
+        self.E85_Crest = None
     
     def __str__(self):
         String = "Transect Object:\nID: %s\n" % (str(self.ID))

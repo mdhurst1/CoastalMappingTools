@@ -4461,6 +4461,61 @@ class Coast:
                 #print(f"\t{Transect.LineID}_{Transect.ID}:")
                 #print(f"\t\tM45_SLR:{Transect.M45_SLR} \tE45_SLR:{Transect.E45_SLR} \tM85_SLR:{Transect.M85_SLR} \tE85_SLR:{Transect.E85_SLR}")
     
+    def AdjustFutureDuneElevations(self):
+    
+        """
+        According to the below conceptual model of dune evolution, adjust dune 
+        front toe and crest elevations for future storm impact analysis. 
+        
+        Conceptual model of dune evolution:
+        For historically stable or eroding coastlines, assume that increase in 
+        extreme water level impact hours per year will not allow dunes to keep 
+        pace with SLR. For historiclaly accreting coastlines, assume that dunes will 
+        keep pace with SLR until 2050. After that, coastline accretion is likely to
+        change to stability/erosion due to accelearting SLR, and dune elevations may 
+        not keep pace with SLR. Thus after 2050 keep dune elevations at 2050 levels. 
+        
+        Need to know future SLR from Coast.ExtractSeaLevelRise.
+        
+        NH, Jan 2024
+    
+        """
+        
+        print(f"Coast.AdjustFutureDuneelevations: Adjust future dune toe and crest elevations for storm impact analysis")
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                
+                # Historically stable or eroding coastline: rate < 0.25 m/yr (chosen from qual comp w DC2 RCP8.5 2050 and 2100 erosion predictions)
+                # Dune toe and crest elevations maintained at present levels for 2050 and 2100
+                if Transect.Hist_Rate < 0.25:
+                    Transect.M45_FrontToe = Transect.Elevation[Transect.FrontToeInd]
+                    Transect.E45_FrontToe = Transect.Elevation[Transect.FrontToeInd]
+                    Transect.M85_FrontToe = Transect.Elevation[Transect.FrontToeInd]
+                    Transect.E85_FrontToe = Transect.Elevation[Transect.FrontToeInd]
+                    
+                    Transect.M45_Crest = Transect.Elevation[Transect.CrestInd]
+                    Transect.E45_Crest = Transect.Elevation[Transect.CrestInd]
+                    Transect.M85_Crest = Transect.Elevation[Transect.CrestInd]
+                    Transect.E85_Crest = Transect.Elevation[Transect.CrestInd]
+                
+                # Historically accreitng coastline: Increase elevations with SLR to 2050, maintain constant thereafter
+                else:
+                    Transect.M45_FrontToe = Transect.Elevation[Transect.FrontToeInd] + Transect.M45_SLR
+                    Transect.E45_FrontToe = Transect.M45_FrontToe
+                    Transect.M85_FrontToe = Transect.Elevation[Transect.FrontToeInd] + Transect.M85_SLR
+                    Transect.E85_FrontToe = Transect.M85_FrontToe
+                    
+                    Transect.M45_Crest = Transect.Elevation[Transect.CrestInd] + Transect.M45_SLR
+                    Transect.E45_Crest = Transect.M45_Crest
+                    Transect.M85_Crest = Transect.Elevation[Transect.CrestInd] + Transect.M85_SLR
+                    Transect.E85_Crest = Transect.M85_Crest
+                    
+                if Transect.ID == '36':
+                    print(f"\t{Transect.LineID}_{Transect.ID}: HistRate:{Transect.Hist_Rate} \tToe:{Transect.Elevation[Transect.FrontToeInd]}\tCrest:{Transect.Elevation[Transect.CrestInd]}")
+                    print(f"\t\tM45_SLR:{Transect.M45_SLR},\tM45Toe:{Transect.M45_FrontToe}, E45Toe:{Transect.E45_FrontToe} \tM85_SLR:{Transect.M85_SLR} M85Toe:{Transect.M85_FrontToe} E85Toe:{Transect.E85_FrontToe}")
+                    print(f"\t\tM45Crest:{Transect.M45_Crest}, E45Crest:{Transect.E45_Crest} M85Crest:{Transect.M85_Crest} E85Crest:{Transect.E85_Crest}")
+    
     def AnalyseExtremeWater(self, WaterElevs):
         
         """
