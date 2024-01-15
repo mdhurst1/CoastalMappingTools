@@ -1060,11 +1060,28 @@ class Coast:
         # Create Fields
         Fields = [('DeletionFlag','C',1,0), 
         ['LineID', 'C', 3, 0], ['TransectID', 'C', 5, 0], 
+        ['Hist_Rate','N', 5, 2],
         ['Slope_FS','N', 5, 3],
-        ['H_Hs','N', 5, 2],['H_Tp','N', 5, 2], ['H_R2','N', 5, 2], ['H_setup','N', 5, 2], ['H_Diss','B', 7, 0],
-        ['H_ESL','N', 5, 2], ['H_TWL','N', 5, 2], ['H_TWL_sup','N', 5, 2], 
-        ['H_Toe_El','N', 5, 2],['H_Crest_El','N', 5, 2],
-        ['H_SIS', 'C', 10, 0]
+        ['H_Hs','N', 5, 2],['H_Tp','N', 5, 2], ['H_Diss','B', 7, 0], ['H_R2','N', 5, 2], ['H_setup','N', 5, 2], 
+        ['H_ESL','N', 5, 2], ['H_TWL','N', 5, 2], ['H_TWL_su','N', 5, 2], 
+        ['H_Toe','N', 5, 2],['H_Crest','N', 5, 2],
+        ['H_SIS', 'C', 10, 0],
+        ['M45_Hs','N', 5, 2],['M45_Tp','N', 5, 2], ['M45_Diss','B', 7, 0], ['M45_R2','N', 5, 2], ['M45_setup','N', 5, 2], 
+        ['M45_ESL','N', 5, 2], ['M45_TWL','N', 5, 2], ['M45_TWL_su','N', 5, 2], 
+        ['M45_Toe','N', 5, 2],['M45_Crest','N', 5, 2],
+        ['M45_SIS', 'C', 10, 0],
+        ['E45_Hs','N', 5, 2],['E45_Tp','N', 5, 2], ['E45_Diss','B', 7, 0], ['E45_R2','N', 5, 2], ['E45_setup','N', 5, 2], 
+        ['E45_ESL','N', 5, 2], ['E45_TWL','N', 5, 2], ['E45_TWL_su','N', 5, 2], 
+        ['E45_Toe','N', 5, 2],['E45_Crest','N', 5, 2],
+        ['E45_SIS', 'C', 10, 0],
+        ['M85_Hs','N', 5, 2],['M85_Tp','N', 5, 2], ['M85_Diss','B', 7, 0], ['M85_R2','N', 5, 2], ['M85_setup','N', 5, 2], 
+        ['M85_ESL','N', 5, 2], ['M85_TWL','N', 5, 2], ['M85_TWL_su','N', 5, 2], 
+        ['M85_Toe','N', 5, 2],['M85_Crest','N', 5, 2],
+        ['M85_SIS', 'C', 10, 0],
+        ['E85_Hs','N', 5, 2],['E85_Tp','N', 5, 2], ['E85_Diss','B', 7, 0], ['E85_R2','N', 5, 2], ['E85_setup','N', 5, 2], 
+        ['E85_ESL','N', 5, 2], ['E85_TWL','N', 5, 2], ['E85_TWL_su','N', 5, 2], 
+        ['E85_Toe','N', 5, 2],['E85_Crest','N', 5, 2],
+        ['E85_SIS', 'C', 10, 0]
         ]
         
         WL.fields = Fields[1:]
@@ -1078,12 +1095,29 @@ class Coast:
                 WriteTransect = [np.column_stack([X,Y]).tolist()]
 
                 # Create the record this could become a function in transect object...
-                Record = [str(Line.ID), str(Transect.ID), 
+                Record = [str(Line.ID), str(Transect.ID),
+                            Transect.Hist_Rate,                
                             Transect.ForeshoreSlope,
-                            Transect.H_Hs_p99, Transect.H_Tp_p99, Transect.H_R2, Transect.H_setup, Transect.H_Dissipative,
-                            Transect.H_ESL, Transect.H_TWL, Transect.H_TWL_setup,
+                            Transect.H_Hs_p99, Transect.H_Tp_p99, Transect.H_Dissipative, Transect.H_R2, Transect.H_setup, 
+                            Transect.H_ESL_c3, Transect.H_TWL, Transect.H_TWL_setup,
                             Transect.Elevation[Transect.FrontToeInd], Transect.Elevation[Transect.CrestInd],
-                            Transect.H_StormImpactScale]
+                            Transect.H_StormImpactScale,
+                            Transect.M45_Hs_p99, Transect.M45_Tp_p99, Transect.M45_Dissipative, Transect.M45_R2, Transect.M45_setup, 
+                            Transect.M45_ESL_c3, Transect.M45_TWL, Transect.M45_TWL_setup,
+                            Transect.M45_FrontToe, Transect.M45_Crest,
+                            Transect.M45_StormImpactScale,
+                            Transect.E45_Hs_p99, Transect.E45_Tp_p99, Transect.E45_Dissipative, Transect.E45_R2, Transect.E45_setup, 
+                            Transect.E45_ESL_c3, Transect.E45_TWL, Transect.E45_TWL_setup,
+                            Transect.E45_FrontToe, Transect.E45_Crest,
+                            Transect.E45_StormImpactScale,
+                            Transect.M85_Hs_p99, Transect.M85_Tp_p99, Transect.M85_Dissipative, Transect.M85_R2, Transect.M85_setup, 
+                            Transect.M85_ESL_c3, Transect.M85_TWL, Transect.M85_TWL_setup,
+                            Transect.M85_FrontToe, Transect.M85_Crest,
+                            Transect.M85_StormImpactScale,
+                            Transect.E85_Hs_p99, Transect.E85_Tp_p99, Transect.E85_Dissipative, Transect.E85_R2, Transect.E85_setup, 
+                            Transect.E85_ESL_c3, Transect.E85_TWL, Transect.E85_TWL_setup,
+                            Transect.E85_FrontToe, Transect.E85_Crest,
+                            Transect.E85_StormImpactScale]
 
                 # write transect and record
                 WL.line(WriteTransect)
@@ -4055,10 +4089,11 @@ class Coast:
     def ExtractExtremeSeaLevel(self, Shapefile=None, Scenario=None):
         
         """
-        Input data is uplifted CFB2018 extreme still water levels, provided as
+        Input data is SLR uplifted CFB2018 extreme still water levels, provided as
         dataproduct by UKCP18.
         Find nearest input data point within 2.5 km of transect.
         Extract 25-yr return level and its likely range for each point.
+        Likely range: c1 = 5th percentile, c3 = 95th percentile of projected SLR
         
         Parameters
         ----------
@@ -4158,9 +4193,7 @@ class Coast:
         Adds up the extreme still water level and extreme wave runup 
         to estimate extreme total water level.
         Also calculate extreme wave setup. 
-        Repeat for each climate scenario.
-        
-        Currently only considering central estimate of SLR, not whole likely range.
+        Repeat for each climate scenario. Use 95th percentile SLR.
         
         NH, Novembeer 2023
         
@@ -4171,23 +4204,24 @@ class Coast:
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 # Wave total extreme runup level (Stockdon 20006)
-                Transect.H_TWL = Transect.H_ESL + Transect.H_R2
-                Transect.M45_TWL = Transect.M45_ESL + Transect.M45_R2
-                Transect.M85_TWL = Transect.M85_ESL + Transect.M85_R2
-                Transect.E45_TWL = Transect.E45_ESL + Transect.E45_R2
-                Transect.E85_TWL = Transect.E85_ESL + Transect.E85_R2
+                Transect.H_TWL = Transect.H_ESL_c3 + Transect.H_R2
+                Transect.M45_TWL = Transect.M45_ESL_c3 + Transect.M45_R2
+                Transect.M85_TWL = Transect.M85_ESL_c3 + Transect.M85_R2
+                Transect.E45_TWL = Transect.E45_ESL_c3 + Transect.E45_R2
+                Transect.E85_TWL = Transect.E85_ESL_c3 + Transect.E85_R2
                 
                 # Wave setup component of extreme wave runup (Stockdon 2006)
-                Transect.H_TWL_setup = Transect.H_ESL + Transect.H_setup
-                Transect.M45_TWL_setup = Transect.M45_ESL + Transect.M45_setup
-                Transect.M85_TWL_setup = Transect.M85_ESL + Transect.M85_setup
-                Transect.E45_TWL_setup = Transect.E45_ESL + Transect.E45_setup
-                Transect.E85_TWL_setup = Transect.E85_ESL + Transect.E85_setup
+                Transect.H_TWL_setup = Transect.H_ESL_c3 + Transect.H_setup
+                Transect.M45_TWL_setup = Transect.M45_ESL_c3 + Transect.M45_setup
+                Transect.M85_TWL_setup = Transect.M85_ESL_c3 + Transect.M85_setup
+                Transect.E45_TWL_setup = Transect.E45_ESL_c3 + Transect.E45_setup
+                Transect.E85_TWL_setup = Transect.E85_ESL_c3 + Transect.E85_setup
     
     def StormImpactScale(self):
     
         """
         Apply Sallenger (2000) Storm Impact Scale
+        For future scenarios use adjusted dune elevations.
         
         NH, November 2023
         
@@ -4209,53 +4243,48 @@ class Coast:
                 else:
                     print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for Historic scenario!")
                 
-                # NOTE: For all future scenarios the dune toe and crest still needs to be translated according to erosion status  
-                # IDEA: look at nearest DC2 transect (shapely nearest_points? / geopandas.sindex.SpatialIndex.nearest?) 
-                # Tot_E_2050 and TOT_E_2100 for RCP4.5 and RCP8.5 to see if eroding. If so, don't adjust dune elevations. 
-                # If NOT eroding (rate is 0 or positive) increase dune toe and crest elevations by SLR for the year.
-                
-                if Transect.M45_TWL < Transect.Elevation[Transect.FrontToeInd]: # + Transect.M45_DuneElevAdjust 
+                if Transect.M45_TWL < Transect.M45_FrontToe:
                     Transect.M45_StormImpactScale = "Swash"
-                elif Transect.M45_TWL > Transect.Elevation[Transect.FrontToeInd] and Transect.M45_TWL < Transect.Elevation[Transect.CrestInd]:
+                elif Transect.M45_TWL > Transect.M45_FrontToe and Transect.M45_TWL < Transect.M45_Crest:
                     Transect.M45_StormImpactScale = "Collision"
-                elif Transect.M45_TWL > Transect.Elevation[Transect.CrestInd]:
-                    if Transect.M45_TWL_setup > Transect.Elevation[Transect.CrestInd]:
+                elif Transect.M45_TWL > Transect.M45_Crest:
+                    if Transect.M45_TWL_setup > Transect.M45_Crest:
                         Transect.M45_StormImpactScale = "Inundation"
                     else:
                         Transect.M45_StormImpactScale = "Overwash"
                 else:
                     print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for MidC RCP4.5 scenario!")
                     
-                if Transect.M85_TWL < Transect.Elevation[Transect.FrontToeInd]: # + Transect.M85_DuneElevAdjust 
+                if Transect.M85_TWL < Transect.M85_FrontToe:
                     Transect.M85_StormImpactScale = "Swash"
-                elif Transect.M85_TWL > Transect.Elevation[Transect.FrontToeInd] and Transect.M85_TWL < Transect.Elevation[Transect.CrestInd]:
+                elif Transect.M85_TWL > Transect.M85_FrontToe and Transect.M85_TWL < Transect.M85_Crest:
                     Transect.M85_StormImpactScale = "Collision"
-                elif Transect.M85_TWL > Transect.Elevation[Transect.CrestInd]:
-                    if Transect.M85_TWL_setup > Transect.Elevation[Transect.CrestInd]:
+                elif Transect.M85_TWL > Transect.M85_Crest:
+                    if Transect.M85_TWL_setup > Transect.M85_Crest:
                         Transect.M85_StormImpactScale = "Inundation"
                     else:
                         Transect.M85_StormImpactScale = "Overwash"
                 else:
                     print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for MidC RCP8.5 scenario!")
                     
-                if Transect.E45_TWL < Transect.Elevation[Transect.FrontToeInd]: # + Transect.E45_DuneElevAdjust 
+                if Transect.E45_TWL < Transect.E45_FrontToe:
                     Transect.E45_StormImpactScale = "Swash"
-                elif Transect.E45_TWL > Transect.Elevation[Transect.FrontToeInd] and Transect.E45_TWL < Transect.Elevation[Transect.CrestInd]:
+                elif Transect.E45_TWL > Transect.E45_FrontToe and Transect.E45_TWL < Transect.E45_Crest:
                     Transect.E45_StormImpactScale = "Collision"
-                elif Transect.E45_TWL > Transect.Elevation[Transect.CrestInd]:
-                    if Transect.E45_TWL_setup > Transect.Elevation[Transect.CrestInd]:
+                elif Transect.E45_TWL > Transect.E45_Crest:
+                    if Transect.E45_TWL_setup > Transect.E45_Crest:
                         Transect.E45_StormImpactScale = "Inundation"
                     else:
                         Transect.E45_StormImpactScale = "Overwash"
                 else:
                     print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for EndC RCP4.5 scenario!")
                     
-                if Transect.E85_TWL < Transect.Elevation[Transect.FrontToeInd]: # + Transect.E85_DuneElevAdjust 
+                if Transect.E85_TWL < Transect.E85_FrontToe:
                     Transect.E85_StormImpactScale = "Swash"
-                elif Transect.E85_TWL > Transect.Elevation[Transect.FrontToeInd] and Transect.E85_TWL < Transect.Elevation[Transect.CrestInd]:
+                elif Transect.E85_TWL > Transect.E85_FrontToe and Transect.E85_TWL < Transect.E85_Crest:
                     Transect.E85_StormImpactScale = "Collision"
-                elif Transect.E85_TWL > Transect.Elevation[Transect.CrestInd]:
-                    if Transect.E85_TWL_setup > Transect.Elevation[Transect.CrestInd]:
+                elif Transect.E85_TWL > Transect.E85_Crest:
+                    if Transect.E85_TWL_setup > Transect.E85_Crest:
                         Transect.E85_StormImpactScale = "Inundation"
                     else:
                         Transect.E85_StormImpactScale = "Overwash"
@@ -4511,10 +4540,10 @@ class Coast:
                     Transect.M85_Crest = Transect.Elevation[Transect.CrestInd] + Transect.M85_SLR
                     Transect.E85_Crest = Transect.M85_Crest
                     
-                if Transect.ID == '36':
-                    print(f"\t{Transect.LineID}_{Transect.ID}: HistRate:{Transect.Hist_Rate} \tToe:{Transect.Elevation[Transect.FrontToeInd]}\tCrest:{Transect.Elevation[Transect.CrestInd]}")
-                    print(f"\t\tM45_SLR:{Transect.M45_SLR},\tM45Toe:{Transect.M45_FrontToe}, E45Toe:{Transect.E45_FrontToe} \tM85_SLR:{Transect.M85_SLR} M85Toe:{Transect.M85_FrontToe} E85Toe:{Transect.E85_FrontToe}")
-                    print(f"\t\tM45Crest:{Transect.M45_Crest}, E45Crest:{Transect.E45_Crest} M85Crest:{Transect.M85_Crest} E85Crest:{Transect.E85_Crest}")
+                #if Transect.ID == '36':
+                    #print(f"\t{Transect.LineID}_{Transect.ID}: HistRate:{Transect.Hist_Rate} \tToe:{Transect.Elevation[Transect.FrontToeInd]}\tCrest:{Transect.Elevation[Transect.CrestInd]}")
+                    #print(f"\t\tM45_SLR:{Transect.M45_SLR},\tM45Toe:{Transect.M45_FrontToe}, E45Toe:{Transect.E45_FrontToe} \tM85_SLR:{Transect.M85_SLR} M85Toe:{Transect.M85_FrontToe} E85Toe:{Transect.E85_FrontToe}")
+                    #print(f"\t\tM45Crest:{Transect.M45_Crest}, E45Crest:{Transect.E45_Crest} M85Crest:{Transect.M85_Crest} E85Crest:{Transect.E85_Crest}")
     
     def AnalyseExtremeWater(self, WaterElevs):
         
