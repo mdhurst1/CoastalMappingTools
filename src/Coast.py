@@ -4356,6 +4356,44 @@ class Coast:
                     Transect.M85_Erosion = Erosion_2050[Transect.NearestDC2Idx].values[0] 
                     Transect.E85_Erosion = Erosion_2100[Transect.NearestDC2Idx].values[0] 
     
+    def ExtractHistoricCoastalChange(self, Shapefile=None):
+    
+        """
+        Extract historic change rates in m/yr from the DC2 transect shapefile dataset.
+        Save to storm impact transect. 
+        Requires Transect.NearestDC2Idx to be set by calling Coast.FindNearestIndex.
+        
+        Parameters
+        ----------
+        Shapefile - string 
+            - geospatial multiline vector of DC2 transects for given climate scenario
+            
+        NH, Jan 2024
+        
+        """
+        
+        print(f"Coast.ExtractHistoricCoastalChange: Read historic change rate for nearest DC2 transect")
+        
+        # read shapefile using geopandas
+        GDF = gp.read_file(Shapefile)
+        HistRate = GDF['Hist_Rate']
+        
+        if len(HistRate) == 0:
+            print(f"\tNo historic change rate data in {Shapefile}!")
+            return
+            
+        for Line in self.CoastLines:
+            for Transect in Line.Transects: 
+            
+                if not Transect.NearestDC2Idx:
+                    print(f"\t{Transect.LineID}_{Transect.ID}: No value for Transect.NearestDC2Idx")
+                    sys_exit()
+                    
+                Transect.Hist_Rate = HistRate[Transect.NearestDC2Idx].values[0] 
+        
+                #print(f"\t{Transect.LineID}_{Transect.ID}:")
+                #print(f"\t\tHistRate:{Transect.Hist_Rate}")
+                
     def ExtractSeaLevelRise(self, Shapefile=None):
     
         """
@@ -4372,6 +4410,7 @@ class Coast:
                                "SLR_E45_c1" "SLR_E45_c2" "SLR_E45_c3"
                                "SLR_M85_c1" "SLR_M85_c2" "SLR_M85_c3" 
                                "SLR_E85_c1" "SLR_E85_c2" "SLR_E85_c3" 
+            - c1 = 5th percentile, c2 = 50th percentile, c3 = 95th percentile of model simulations
         
         NH, November 2023
         
@@ -4387,11 +4426,11 @@ class Coast:
             print(f"\tNo Points in {Shapefile}!")
             return
         
-        # Extract data: future projected SLR for different CC scenearios and years. Central estimate for now
-        SLR_M45_geoser = GDF["SLR_M45_c2"]
-        SLR_E45_geoser = GDF["SLR_E45_c2"]
-        SLR_M85_geoser = GDF["SLR_M85_c2"]
-        SLR_E85_geoser = GDF["SLR_E85_c2"]        
+        # Extract data: future projected SLR for different CC scenearios and years. 95th percentile
+        SLR_M45_geoser = GDF["SLR_M45_c3"]
+        SLR_E45_geoser = GDF["SLR_E45_c3"]
+        SLR_M85_geoser = GDF["SLR_M85_c3"]
+        SLR_E85_geoser = GDF["SLR_E85_c3"]        
         
         # For each transect, find nearest SLR point to CoastNode
         for Line in self.CoastLines:
