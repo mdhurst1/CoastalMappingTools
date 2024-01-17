@@ -3511,6 +3511,12 @@ class Coast:
 
     def ExtractTransectTopographySwath(self, DEMFileList=None, SwathDistance=-9999, DistanceSpacing=None, CrossShoreWindowSize=None):
         """
+        Now deprecated, as this function only handles transect crossing 2 DTMs.
+        Replaced with SampleTransectTopographySwath and PerformIDWInterpolation.
+        This separates topo sampling and IDW interpolation into separate functions,
+        and handles transect spanning multiple DTMs.
+        
+        ExtractTransectTopographySwath:
         Profile to populate transects with topographic data
         Uses swath profile routine to collect elevations within a certain distance
         of each transect line then takes IDW values for the transect topography
@@ -3937,7 +3943,358 @@ class Coast:
                     Transect.ElevStd = ZStd.copy()
                     Transect.DistanceNodes = [Node(X,Y) for X, Y in zip(XLine,YLine)]
                     
-             
+    def SampleTransectTopographySwath(self, DEMFileList=None, SwathDistance=-9999):
+        """
+        Profile to populate transects with topographic data
+        Uses swath profile routine to collect elevations within a certain distance
+        of each transect line
+        
+        Original by MDH. Now split into separate sampling function here.
+        Thi sis to allow multiple rasters to be sampled by a transect.
+
+        NH, Jan 2024
+        
+        Parameters
+        ----------
+        DEMFileList : list or single string - NEW
+            Either a) List of strings containing pathnames of unique DEMs for current coast
+            or     b) A single DTM filename string (backwards compatible)
+            Coast.FindDEM can be called prior to write to self.UniqueDEMList
+            In that case you don't have to send the list as a parameter.
+
+        SwathDistance : float
+            Distance away from transect line to sample elevations in DEM
+            Default is 2 times the resolution of the DTM
+            
+        """  
+        
+        print("Coast.SampleTransectTopographySwath: Sampling DTMs for each transect")
+                            
+        # set up dem file list
+        if DEMFileList:
+            # check if list and make list if not
+            if not isinstance(DEMFileList, list):
+                DEMFileList = [DEMFileList,]
+            self.UniqueDEMList = DEMFileList
+
+        # loop through DEMs
+        for DEM in self.UniqueDEMList:
+            
+            print("\t" + DEM.split("/")[-1])
+
+            # load the DTM and get its properties
+            print("\tLoading DTM... ", end="")
+            DTM_Dataset = rasterio.open(DEM) 
+            DTMArray = DTM_Dataset.read(1)
+            NCols = DTM_Dataset.width
+            NRows = DTM_Dataset.height
+            NDV = DTM_Dataset.nodata
+            Resolutions = DTM_Dataset.res
+            print("Done")
+
+            # check for square pixels
+            if not DTM_Dataset.res[0] == DTM_Dataset.res[1]:
+                raise SystemExit("DTM has non-square cells")
+            
+            # NH add: check if we're missing no data
+            if not DTM_Dataset.nodata:
+                # raise SystemExit("DTM missing no data value") # NH: remove this as .asc files don't have nodata set.
+                print("\tDTM missing no data value!")
+                NDV = -9999
+        
+            # get resolution
+            DTM_Resolution = DTM_Dataset.res[0]
+
+            # get extent of DTM and set up polygon of extent
+            XMin = DTM_Dataset.bounds[0]
+            XMax = DTM_Dataset.bounds[2]
+            YMin = DTM_Dataset.bounds[1]
+            YMax = DTM_Dataset.bounds[3]
+            DTM_Extent = Polygon([[XMin, YMin], [XMin,YMax], [XMax, YMax], [XMax, YMin]])
+            
+            if __debug__:
+                print("\tXMin, XMax, YMin, YMax = ", XMin, XMax, YMin, YMax) 
+
+            # check swath distance
+            if SwathDistance < 0:
+                SwathDistance = DTM_Resolution*2.
+            
+            if SwathDistance > DTM_Resolution*20:
+                print("\tSwathDistance > DTM_Resolution*20! Setting to DTM_Resolution*20")
+                SwathDistance = DTM_Resolution*20.
+           
+            # Get vectors of X and Y coordinates, NB reversal of Y in line with 
+            # DTM indexing from top left
+            XVector = XMin+np.arange(0,NCols)*DTM_Resolution+0.5*DTM_Resolution
+            YVector = YMin+DTM_Resolution*np.arange(0,NRows)[::-1]+0.5*DTM_Resolution
+        
+            if __debug__:
+                print("\tXVector len = ", len(XVector)) 
+                print("\tYVector len = ", len(YVector))
+
+            # Track progress
+            NoTransects = np.sum([Line.NoTransects for Line in self.CoastLines])-1 # NH: subtract one as counting from zero
+            CurrentTransect = 0
+            
+            for Line in self.CoastLines:
+                for Transect in Line.Transects:
+                    
+                    # print progress to screen
+                    print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
+
+                    #Get line points
+                    X1, Y1 = Transect.StartNode.get_XY()
+                    X2, Y2 = Transect.EndNode.get_XY()
+                    TransectLine = LineString([(X1, Y1), (X2, Y2)])
+                    
+                    #if __debug__:
+                        #print("\tTransect X1, Y1, X2, Y2 = ", X1, Y1, X2, Y2)
+
+                    # check for intersection
+                    if not TransectLine.intersects(DTM_Extent):
+                        CurrentTransect += 1 # NH: increment transect count if no intersect
+                        continue
+
+                    # NH: Bounding box size to extend past transect bounds by SwathDistance
+                    iStart = np.argmin(np.abs(YVector-np.max([Y1,Y2])))-(int)(SwathDistance/DTM_Resolution) 
+                    iEnd = np.argmin(np.abs(YVector-np.min([Y1,Y2])))+(int)(SwathDistance/DTM_Resolution)
+                    jStart = np.argmin(np.abs(XVector-np.min([X1,X2])))-(int)(SwathDistance/DTM_Resolution)
+                    jEnd = np.argmin(np.abs(XVector-np.max([X1,X2])))+(int)(SwathDistance/DTM_Resolution)
+                    
+                    # Catch Start index of -1, when bounding box intersects top (i) or left hand side (j) of DEM.
+                    # Catch End index larger than the length or width of the DTM. Set InterpolationInconplete flag.  
+                    if iStart < 0:
+                        print("\tiStart < 0! Setting to 0")
+                        iStart = 0
+                        #Transect.InterpolationIncomplete = True
+                    if jStart < 0:
+                        print("\tjStart < 0! Setting to 0")
+                        jStart = 0
+                        #Transect.InterpolationIncomplete = True
+                    if iEnd > len(YVector):
+                        print("\tiEnd > len(YVector)! Setting to", len(YVector))
+                        iEnd = len(YVector)
+                        #Transect.InterpolationIncomplete = True
+                    if jEnd > len(XVector):
+                        print("\tjEnd > len(XVector)! Setting to", len(XVector))
+                        jEnd = len(XVector)
+                        #Transect.InterpolationIncomplete = True                        
+                    
+                    #if __debug__:
+                        #print("\t\tiStart, iEnd, jStart, jEnd = ", iStart, iEnd, jStart, jEnd)
+                        #print("\tXVector[jStart], XVector[jEnd-1], YVector[iStart], YVector[iEnd-1] = ", XVector[jStart], XVector[jEnd-1], YVector[iStart], YVector[iEnd-1])
+
+                    #Get Vector X and Y
+                    dX12 = X2-X1
+                    dY12 = Y2-Y1
+
+                    # Declare list holders for profile data
+                    # If data sampled previously from another raster, load it
+                    if Transect.X: 
+                        X = Transect.X
+                        Y = Transect.Y
+                        Z = Transect.Z
+                        DistAlong = Transect.DistAlong
+                        DistTo = Transect.DistTo
+                        Transect.InterpolationIncomplete = False 
+                        print("\t\tContinuing elevation sampling...")
+                    else:
+                        X = []
+                        Y = []
+                        Z = []
+                        DistAlong = []
+                        DistTo = []
+                        print("\t\tStarting elevation sampling...")
+                    
+                    # Sample elevation data in swath around transect
+                    for i in range(iStart,iEnd):
+
+                        #get Y position
+                        YNode = YMax-DTM_Resolution*i-0.5*DTM_Resolution
+
+                        for j in range(jStart,jEnd):
+                            
+                            #get X position
+                            XNode = XMin + j*DTM_Resolution + 0.5*DTM_Resolution;
+
+                            #Get 2nd Vector Properties in Array
+                            dX13 = XNode-X1
+                            dY13 = YNode-Y1
+
+                            #Find Dot Product
+                            DotProduct = dX12*dX13 + dY12*dY13;
+
+                            #calculate fraction of distance along line
+                            t = DotProduct/(dX12*dX12 + dY12*dY12)
+                            if ((t < 0.) or (t > 1.)):
+                                continue
+                        
+                            #Find point along line
+                            XLine = X1 + t*dX12
+                            YLine = Y1 + t*dY12
+                            DistanceAlongLine = t*np.sqrt(dX12*dX12 + dY12*dY12)
+
+                            #find distance to point
+                            DistanceToLine = np.sqrt((XLine-XNode)*(XLine-XNode) + (YLine-YNode)*(YLine-YNode))
+
+                            if ((DistanceToLine < SwathDistance) and (DTMArray[i][j] != NDV)):
+                                X.append(XNode)
+                                Y.append(YNode)
+                                DistAlong.append(DistanceAlongLine)
+                                DistTo.append(DistanceToLine)
+                                Z.append(DTMArray[i][j])
+                    
+                    # Save data                    
+                    Transect.X = X
+                    Transect.Y = Y
+                    Transect.Z = Z
+                    Transect.DistAlong = DistAlong
+                    Transect.DistTo = DistTo
+                    Transect.DTM_Resolution = DTM_Resolution
+                    Transect.NDV = NDV
+                    CurrentTransect += 1
+            
+            print("")
+            
+    
+    def PerformIDWInterpolation(self, DistanceSpacing=None, CrossShoreWindowSize=None):
+        """
+        Perform inverse distance weighted interpolation on the sampled swath data
+        
+        Parameters
+        ----------
+        DistanceSpacing : float
+            Distance in m between elevation nodes on the transect
+            
+        CrossShoreWindowSize : float
+            Size in m of the cross-shore window landward and seaward of
+            each point during the interpolation.
+            Ultimate inrerpolation window width is thus two times this value.
+            Minimum of DTM resolution, max of 5*DTM resolution
+            Default of 2*DTM resolution
+            
+        """
+        
+        print("Coast.PerformIDWInterpolation: IDW interpolation on sampled elevation data")
+        
+        # Track progress
+        NoTransects = np.sum([Line.NoTransects for Line in self.CoastLines])-1  # counting from zero
+        CurrentTransect = 0
+        
+        # Perfrom interpolation        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+            
+                # print progress to screen
+                print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
+                
+                # Load sampled topography data
+                X = Transect.X
+                Y = Transect.Y
+                Z = Transect.Z
+                DistAlong = Transect.DistAlong
+                DistTo = Transect.DistTo
+                DTM_Resolution = Transect.DTM_Resolution
+                NDV = Transect.NDV
+                
+                # check input parameters - have to do this here as need transect saved data
+                if not DistanceSpacing:
+                    DistanceSpacing = DTM_Resolution*2.
+                if DistanceSpacing < 0:
+                    DistanceSpacing = -DistanceSpacing
+                    
+                if not CrossShoreWindowSize:
+                    CrossShoreWindowSize = DTM_Resolution*2.
+                if CrossShoreWindowSize < DTM_Resolution:
+                    CrossShoreWindowSize = DTM_Resolution
+                if CrossShoreWindowSize > DTM_Resolution*5.:
+                    CrossShoreWindowSize = DTM_Resolution*5.
+        
+                #Get line points
+                X1, Y1 = Transect.StartNode.get_XY()
+                X2, Y2 = Transect.EndNode.get_XY()
+                    
+                #Sort by distance along line, need to convert to numpy arrays as we go to sort
+                Sortedi = np.argsort(DistAlong)
+                X = np.asarray(X)[Sortedi]
+                Y = np.asarray(Y)[Sortedi]
+                DistAlong = np.asarray(DistAlong)[Sortedi]
+                DistTo = np.asarray(DistTo)[Sortedi]
+                Z = np.asarray(Z)[Sortedi]
+                
+                # Create a line for interpolating to
+                LineLength = np.sqrt((X2-X1)**2 + (Y2-Y1)**2)
+                
+                NoPoints = (int)(LineLength/DistanceSpacing)+1
+                if NoPoints < 1:
+                    raise SystemExit("LineLength/DistanceSpacing leads to zero elevation points")
+                    
+                Transect.DistanceSpacing = DistanceSpacing
+                XLine = np.linspace(X1,X2,NoPoints)
+                YLine = np.linspace(Y1,Y2,NoPoints)
+                DistAlongTransect = np.zeros(len(XLine))
+                ZIDW = np.zeros(len(XLine))
+                ZMin = np.zeros(len(XLine))
+                ZMax = np.zeros(len(XLine))
+                ZStd = np.zeros(len(XLine))
+                                
+                #Loop along line
+                for i in range(0,NoPoints):
+                    
+                    #Calculate distance along the line
+                    DistAlongTransect[i] = i*DistanceSpacing
+                    
+                    # Sample a reduced array here i.e. a neighbourhood to reduce computation time                      
+                    Neighbourhood = np.abs(DistAlongTransect[i]-DistAlong) < CrossShoreWindowSize
+                    ZLocal = Z[Neighbourhood]
+                    
+                    if len(ZLocal) == 0:
+                        
+                        # Set to NDV
+                        ZIDW[i] = NDV
+                        ZMin[i] = NDV
+                        ZMax[i] = NDV
+                        ZStd[i] = NDV
+                        
+                        continue
+                    
+                    # Do IDW
+                    # Create a distance vector
+                    Dist = np.sqrt(DistAlong[Neighbourhood]**2. + DistTo[Neighbourhood]**2.)
+                    
+                    # Weights are inverse
+                    Weights = 1./Dist**2.
+                    
+                    # Interpolate Z
+                    ZIDW[i]  = np.sum(Z[Neighbourhood]*Weights)/np.sum(Weights)
+                    
+                    # Other Z Values
+                    ZMin[i] = np.min(ZLocal)
+                    ZMax[i] = np.max(ZLocal)
+                    ZStd[i] = np.std(ZLocal)
+                    
+                # Set up the mask from NDVs
+                Mask = ZIDW == NDV
+                DistAlongTransect = ma.masked_where(Mask,DistAlongTransect)
+                ZIDW = ma.masked_where(Mask,ZIDW)
+                #print("ZIDW.data=", ZIDW.data, "ZIDW.mask=", ZIDW.mask)        ### NH DEBUG: ZIDW does have .data and .mask componenets. BUT .mask is single boolean=False (not array) when no masked elements
+                ZMin = ma.masked_where(Mask,ZMin)
+                ZMax = ma.masked_where(Mask,ZMax)
+                ZStd = ma.masked_where(Mask,ZStd)
+                
+                Transect.Distance = DistAlongTransect.copy()                    ### NH ADD: use ma.MaskedArray.copy() to copy whole masked array
+                Transect.DistanceSpacing = DistAlongTransect[1]-DistAlongTransect[0]
+                Transect.DistanceNodes = [Node(X,Y) for X, Y in zip(XLine,YLine)]
+                Transect.Elevation = ZIDW.copy()
+                Transect.ElevationMin = ZMin.copy()
+                Transect.ElevationMax = ZMax.copy()
+                Transect.ElevStd = ZStd.copy()
+                
+                # update transect no
+                CurrentTransect += 1
+                
+        print("")
+    
     def AnalyseTransectMorphology(self):
 
         """
