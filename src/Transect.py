@@ -1880,9 +1880,9 @@ class Transect:
         ElevMasked = ma.masked_where(Mask,ElevMasked)
 
         # MIN IND OR LAST IND HERE?
-        MinInd = np.argmin(np.abs(self.Distance-(self.Distance[self.FrontTopInd]+300)))
+        MinInd = np.argmin(np.abs(self.Distance-(self.Distance[self.FrontTopInd]+300))) # this sets MinInd to 300m past FrontTopInd... Setting to argmin(ElevMasked) doesn't work, backtoes worse
         if MinInd > LastInd:
-            MinInd = LastInd
+            MinInd = LastInd-1          # NH -1 as masking from MinInd+1 below
         self.BackToeInd = MinInd
         #plt.plot(DistanceMasked[MinInd],ElevMasked[MinInd],'k+',ms=20)
 
