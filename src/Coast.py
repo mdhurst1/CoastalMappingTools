@@ -1410,8 +1410,8 @@ class Coast:
         
         # write headers
         f.write("LineID" + delimiter + "TransectID" + delimiter + "IntertidalSlope" + delimiter + "ForeshoreSlope" + delimiter +\
-                "FrontToeElev" + delimiter + "BackToeElev" + delimiter + "FrontTopElev" + delimiter + "CrestElev" + delimiter +\
-                "FrontToeDist" + delimiter + "BackToeDist" + delimiter + "FrontTopDist" + delimiter + "CrestDist" + "\n")
+                "FrontToeElev" + delimiter + "BackToeElev" + delimiter + "FrontTopElev" + delimiter + "BackTopElev" + delimiter + "CrestElev" + delimiter +\
+                "FrontToeDist" + delimiter + "BackToeDist" + delimiter + "FrontTopDist" + delimiter + "BackTopDist" + delimiter + "CrestDist" + "\n")
                 
         for Line in self.CoastLines:
             for Transect in Line.Transects:
@@ -1423,14 +1423,16 @@ class Coast:
                     f.write(str(Transect.Elevation[Transect.FrontToeInd]) + delimiter)
                     f.write(str(Transect.Elevation[Transect.BackToeInd]) + delimiter)
                     f.write(str(Transect.Elevation[Transect.FrontTopInd]) + delimiter)
+                    f.write(str(Transect.Elevation[Transect.BackTopInd]) + delimiter)
                     f.write(str(Transect.Elevation[Transect.CrestInd]) + delimiter)
                     f.write(str(Transect.Distance[Transect.FrontToeInd]) + delimiter)
                     f.write(str(Transect.Distance[Transect.BackToeInd]) + delimiter)
                     f.write(str(Transect.Distance[Transect.FrontTopInd]) + delimiter)
+                    f.write(str(Transect.Distance[Transect.BackTopInd]) + delimiter)
                     f.write(str(Transect.Distance[Transect.CrestInd]) + "\n")
                 else:
-                    f.write("NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + \
-                            "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + "\n")
+                    f.write("NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + \
+                            "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + "\n")
                     
         f.close()
         
@@ -2634,7 +2636,7 @@ class Coast:
                 elif ThisLine.geom_type == "LineString":
                     MultiLines.append(ThisLine)
                 elif ThisLine.geom_type == "MultiLineString":
-                    for SubLine in ThisLine:
+                    for SubLine in ThisLine.geoms:
                         if SubLine.geom_type == "LineString":
                             MultiLines.append(SubLine)
         
@@ -4448,7 +4450,7 @@ class Coast:
         """
         Input data is SLR uplifted CFB2018 extreme still water levels, provided as
         dataproduct by UKCP18.
-        Find nearest input data point within 2.5 km of transect.
+        Find nearest input data point within 3 km of transect.
         Extract 25-yr return level and its likely range for each point.
         Likely range: c1 = 5th percentile, c3 = 95th percentile of projected SLR
         
@@ -4470,6 +4472,8 @@ class Coast:
         """
         
         print("Coast.ExtractExtremeSeaLevel: Extracting extreme still water level, uplifted according to climate change scenario")
+        
+        MaxDist = 3000
         
         # check input parameters
         if not (Scenario == "Hist" or Scenario == "M45" or Scenario == "M85" or \
@@ -4497,7 +4501,7 @@ class Coast:
                 CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
                 
                 # extract nearest ESL index within 2.5 km of CoastNode
-                nearest_idx_array = DataPoints.sindex.nearest(CoastPoint, max_distance=2500) 
+                nearest_idx_array = DataPoints.sindex.nearest(CoastPoint, max_distance=MaxDist) 
                 nearest_idx = nearest_idx_array[1]
                      
                 if len(nearest_idx) > 0:
@@ -4506,8 +4510,8 @@ class Coast:
                     t25_c3 = t25_c3_geoser[nearest_idx].values[0]                    
                     
                 else:
-                    print(f"\t{Transect.LineID}_{Transect.ID}: No nearby points")
-                    continue
+                    print(f"\t{Transect.LineID}_{Transect.ID}: No nearby points!")
+                    sys.exit()
                     
                 # save extracted ESL values to the given scenario
                 if Scenario == "Hist":
@@ -4550,7 +4554,7 @@ class Coast:
         Adds up the extreme still water level and extreme wave runup 
         to estimate extreme total water level.
         Also calculate extreme wave setup. 
-        Repeat for each climate scenario. Use 95th percentile SLR.
+        Repeat for each climate scenario. Use 95th percentile SLR (c3 data in uplifted ESL).
         
         NH, Novembeer 2023
         
@@ -4686,11 +4690,16 @@ class Coast:
                 # returns input index in [0] (in the case of a point this is always 0), nearest index of TransectsGeom in [1]
                 nearest_idx_array = TransectsGeom.sindex.nearest(CoastPoint, max_distance=200) 
                 
-                # save to Transect
-                Transect.NearestDC2Idx = nearest_idx_array[1]           
+                # if no DC2 transect within 200 m of my transect, set index to None
+                if len(nearest_idx_array[1]) == 0:
+                    #print(f"\t{Transect.LineID}_{Transect.ID}:{nearest_idx_array[1]}")
+                    Transect.NearestDC2Idx = None
                 
-                #if Transect.ID == "0":
-                    #print(f"\t{Transect.LineID}_{Transect.ID}:{Transect.NearestDC2Idx}")
+                else:                
+                    # save index to Transect
+                    Transect.NearestDC2Idx = nearest_idx_array[1]           
+                
+                
                     
     def ExtractFutureErosion(self, Shapefile=None, Scenario=None):
     
@@ -4731,7 +4740,7 @@ class Coast:
             
                 if not Transect.NearestDC2Idx:
                     print(f"\t{Transect.LineID}_{Transect.ID}: No value for Transect.NearestDC2Idx")
-                    sys_exit()
+                    continue
                     
                 # save predicted erosion values to given scenario
                 if Scenario == "RCP4":
@@ -4771,14 +4780,14 @@ class Coast:
         for Line in self.CoastLines:
             for Transect in Line.Transects: 
             
-                if not Transect.NearestDC2Idx:
+                if Transect.NearestDC2Idx == None:
                     print(f"\t{Transect.LineID}_{Transect.ID}: No value for Transect.NearestDC2Idx")
-                    sys_exit()
+                    Transect.Hist_Rate = None            # set to None so can check for this later when value gets used
+                    continue
                     
                 Transect.Hist_Rate = HistRate[Transect.NearestDC2Idx].values[0] 
         
-                #print(f"\t{Transect.LineID}_{Transect.ID}:")
-                #print(f"\t\tHistRate:{Transect.Hist_Rate}")
+                #print(f"\t{Transect.LineID}_{Transect.ID}:\tHistRate:{Transect.Hist_Rate}")
                 
     def ExtractSeaLevelRise(self, Shapefile=None):
     
@@ -4872,9 +4881,9 @@ class Coast:
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 
-                # Historically stable or eroding coastline: rate < 0.25 m/yr (chosen from qual comp w DC2 RCP8.5 2050 and 2100 erosion predictions)
-                # Dune toe and crest elevations maintained at present levels for 2050 and 2100
-                if Transect.Hist_Rate < 0.25:
+                # Hist_Rate = None if NearestDC2Index was not found by FindNearestIndex i.e. no DC2 transect within 200m of my transect:
+                # Dune toe and crest elevations maintained at present-day levels for 2050 and 2100 (i.e. cannot keep pace with SLR). Precautionary
+                if Transect.Hist_Rate == None:
                     Transect.M45_FrontToe = Transect.Elevation[Transect.FrontToeInd]
                     Transect.E45_FrontToe = Transect.Elevation[Transect.FrontToeInd]
                     Transect.M85_FrontToe = Transect.Elevation[Transect.FrontToeInd]
@@ -4884,18 +4893,32 @@ class Coast:
                     Transect.E45_Crest = Transect.Elevation[Transect.CrestInd]
                     Transect.M85_Crest = Transect.Elevation[Transect.CrestInd]
                     Transect.E85_Crest = Transect.Elevation[Transect.CrestInd]
-                
-                # Historically accreitng coastline: Increase elevations with SLR to 2050, maintain constant thereafter
-                else:
-                    Transect.M45_FrontToe = Transect.Elevation[Transect.FrontToeInd] + Transect.M45_SLR
-                    Transect.E45_FrontToe = Transect.M45_FrontToe
-                    Transect.M85_FrontToe = Transect.Elevation[Transect.FrontToeInd] + Transect.M85_SLR
-                    Transect.E85_FrontToe = Transect.M85_FrontToe
                     
-                    Transect.M45_Crest = Transect.Elevation[Transect.CrestInd] + Transect.M45_SLR
-                    Transect.E45_Crest = Transect.M45_Crest
-                    Transect.M85_Crest = Transect.Elevation[Transect.CrestInd] + Transect.M85_SLR
-                    Transect.E85_Crest = Transect.M85_Crest
+                else:
+                    # Historically stable or eroding coastline (rate < 0.25 m/yr chosen from qual comp w DC2 RCP8.5 2050 and 2100 erosion predictions):
+                    # Dune toe and crest elevations maintained at present-day levels for 2050 and 2100 (i.e. cannot keep pace with SLR)
+                    if Transect.Hist_Rate < 0.25:
+                        Transect.M45_FrontToe = Transect.Elevation[Transect.FrontToeInd]
+                        Transect.E45_FrontToe = Transect.Elevation[Transect.FrontToeInd]
+                        Transect.M85_FrontToe = Transect.Elevation[Transect.FrontToeInd]
+                        Transect.E85_FrontToe = Transect.Elevation[Transect.FrontToeInd]
+                        
+                        Transect.M45_Crest = Transect.Elevation[Transect.CrestInd]
+                        Transect.E45_Crest = Transect.Elevation[Transect.CrestInd]
+                        Transect.M85_Crest = Transect.Elevation[Transect.CrestInd]
+                        Transect.E85_Crest = Transect.Elevation[Transect.CrestInd]
+                    
+                    # Historically accreting coastline: Increase elevations with SLR to 2050, maintain constant thereafter
+                    else:
+                        Transect.M45_FrontToe = Transect.Elevation[Transect.FrontToeInd] + Transect.M45_SLR
+                        Transect.E45_FrontToe = Transect.M45_FrontToe
+                        Transect.M85_FrontToe = Transect.Elevation[Transect.FrontToeInd] + Transect.M85_SLR
+                        Transect.E85_FrontToe = Transect.M85_FrontToe
+                        
+                        Transect.M45_Crest = Transect.Elevation[Transect.CrestInd] + Transect.M45_SLR
+                        Transect.E45_Crest = Transect.M45_Crest
+                        Transect.M85_Crest = Transect.Elevation[Transect.CrestInd] + Transect.M85_SLR
+                        Transect.E85_Crest = Transect.M85_Crest
                     
                 #if Transect.ID == '36':
                     #print(f"\t{Transect.LineID}_{Transect.ID}: HistRate:{Transect.Hist_Rate} \tToe:{Transect.Elevation[Transect.FrontToeInd]}\tCrest:{Transect.Elevation[Transect.CrestInd]}")
