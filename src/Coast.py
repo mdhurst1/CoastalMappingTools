@@ -1941,11 +1941,11 @@ class Coast:
                 # check indexes valid
                 if (ihigh == -1 or ilow == -1):
                     print(f"\t{Transect.LineID}, {Transect.ID}: Indexes not valid!", ihigh, ilow)
-                    Transect.ForeshoreSlope = None
+                    Transect.ForeshoreSlope = -1
                     continue
                 if ihigh < ilow:
                     print(f"\t{Transect.LineID}, {Transect.ID}: MHWS index < coastline index!")
-                    Transect.ForeshoreSlope = None
+                    Transect.ForeshoreSlope = -1
                     continue
                 
                 # Calculate slopes
@@ -1955,7 +1955,7 @@ class Coast:
                 # Catch divide by zero
                 if dx == 0:
                     print(f"\t{Transect.LineID}, {Transect.ID}: \tdx = 0!")
-                    Transect.ForeshoreSlope = None
+                    Transect.ForeshoreSlope = -1
                     continue
                     
                 else:
@@ -1963,6 +1963,33 @@ class Coast:
                 
                 #if __debug__:
                     #print(f"\t{Transect.LineID}, {Transect.ID}: \tihigh={ihigh}, ilow={ilow}, \tdz={dz}, \tdx={dx}, \tslope={Transect.ForeshoreSlope}")
+        
+    def CheckForeshoreSlopes(self):
+    
+        """
+        Check for invalid Transect.ForeshoreSlopes (negative)
+        Set to Transect.IntertidalSlope, if this is valid
+        Else, set to None and throw exception
+        
+        NH, Jan 2024
+    
+        """
+        
+        print("Coast.CheckForeshoreSlopes: Checking foreshoreslopes are greater than 0")
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+            
+                # Foreshoreslope could not be extracted, or is actually negative (also wrong)
+                if Transect.ForeshoreSlope < 0:
+                    # if valid IntertidalSlope, copy to ForeshoreSlope
+                    if Transect.IntertidalSlope > 0:
+                        Transect.ForeshoreSlope = Transect.IntertidalSlope
+                        print(f"\t{Transect.LineID}, {Transect.ID}: \tForeshoreSlope = {Transect.ForeshoreSlope}")
+                    else:
+                        Transect.ForeshoreSlope = None
+                        print(f"\t{Transect.LineID}, {Transect.ID}: No valid foreshore/intertidal slopes!!")
+                        sys.exit()
         
     
     def GenerateTransectsBetweenContoursShp(self, ContourShp1, ContourShp2, Distance2Sea=8000., Distance2Land=8000., TransectSpacing=20., CheckTopology=True):

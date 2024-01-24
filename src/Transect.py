@@ -704,7 +704,7 @@ class Transect:
         
         # Check parameters were passed
         if Elev is None:
-            print("Transect.ExtractIndex: Elev not specified!")
+            print("\tTransect.ExtractIndex: Elev not specified!")
             return -1
         
         # Find indexes of transect elevations greater than Elev: boolean array
@@ -712,7 +712,7 @@ class Transect:
         
         # Check anything was found
         if sum(elev_of_interest) == 0:
-            print(f"Transect.ExtractIndex: No Elevation above {Elev} m!")
+            print(f"\tTransect.ExtractIndex: No Elevation above {Elev} m!")
             return -1
         
         # Find the smallest index (most seaward)
