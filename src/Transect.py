@@ -1831,9 +1831,9 @@ class Transect:
                 BarrierPositionChangeFlag = True
                 #print("*")                         # NH DEBUG
             
-                # Must also be seaward of FrontTopInd (NH). If toe landward of top, set toe index to front top index.
-                if self.FrontToeInd > self.FrontTopInd:
-                    self.FrontToeInd = self.FrontTopInd
+            # Must also be seaward of FrontTopInd (NH). If toe landward of top, set toe index to front top index.
+            if self.FrontToeInd > self.FrontTopInd:
+                self.FrontToeInd = self.FrontTopInd
             
             
             # Must also be above MHWS 
