@@ -3349,9 +3349,9 @@ class Transect:
         f = open(Filename,'w')
         
         # write headers
-        f.write("X" + delimiter + "Y" + "\n")
-        f.write(str(self.StartNode.X) + delimiter + str(self.StartNode.Y) + "\n")
-        f.write(str(self.EndNode.X) + delimiter + str(self.EndNode.Y) + "\n")
+        #f.write("X" + delimiter + "Y" + "\n")
+        #f.write(str(self.StartNode.X) + delimiter + str(self.StartNode.Y) + "\n")
+        #f.write(str(self.EndNode.X) + delimiter + str(self.EndNode.Y) + "\n")
         f.write("Distance" + delimiter + "ZIDW" + delimiter + "ZMin" + delimiter + "ZMax" +"\n")
 
         #loop through transect and write data
