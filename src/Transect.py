@@ -245,6 +245,12 @@ class Transect:
         self.M85_SLR = None
         self.E45_SLR = None
         self.E85_SLR = None
+        # Present day dune elevations
+        self.H_FrontToe = None
+        self.H_FrontTop = None
+        self.H_BackToe = None
+        self.H_BackTop = None
+        self.H_Crest = None
         # Estimated future dune front toe and crest elevations
         self.M45_FrontToe = None
         self.M85_FrontToe = None
@@ -1983,6 +1989,22 @@ class Transect:
         
         # switch flag to indicate a barrier has been found
         self.Barrier = True
+    
+    def SaveBarrierElevations(self):
+        
+        """
+        Use the dune toe and crest indexes from FindBarrier2 to save elevations to Transect
+        Only save if transect is a barrier. Else keep as None.
+        
+        NH, Jan 2024
+        
+        """
+        if self.Barrier:
+            self.H_FrontToe = self.Elevation[self.FrontToeInd]
+            self.H_FrontTop = self.Elevation[self.FrontTopInd]
+            self.H_BackToe = self.Elevation[self.BackToeInd]
+            self.H_BackTop = self.Elevation[self.BackTopInd]
+            self.H_Crest = self.Elevation[self.CrestInd]
     
     def ExtractBarrierWidthVolume(self,Elevation=None):
 

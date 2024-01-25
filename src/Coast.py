@@ -1095,29 +1095,54 @@ class Coast:
                 WriteTransect = [np.column_stack([X,Y]).tolist()]
 
                 # Create the record this could become a function in transect object...
-                Record = [str(Line.ID), str(Transect.ID),
-                            Transect.Hist_Rate,                
-                            Transect.ForeshoreSlope,
-                            Transect.H_Hs_p99, Transect.H_Tp_p99, Transect.H_Dissipative, Transect.H_R2, Transect.H_setup, 
-                            Transect.H_ESL_c3, Transect.H_TWL, Transect.H_TWL_setup,
-                            Transect.Elevation[Transect.FrontToeInd], Transect.Elevation[Transect.CrestInd],
-                            Transect.H_StormImpactScale,
-                            Transect.M45_Hs_p99, Transect.M45_Tp_p99, Transect.M45_Dissipative, Transect.M45_R2, Transect.M45_setup, 
-                            Transect.M45_ESL_c3, Transect.M45_TWL, Transect.M45_TWL_setup,
-                            Transect.M45_FrontToe, Transect.M45_Crest,
-                            Transect.M45_StormImpactScale,
-                            Transect.E45_Hs_p99, Transect.E45_Tp_p99, Transect.E45_Dissipative, Transect.E45_R2, Transect.E45_setup, 
-                            Transect.E45_ESL_c3, Transect.E45_TWL, Transect.E45_TWL_setup,
-                            Transect.E45_FrontToe, Transect.E45_Crest,
-                            Transect.E45_StormImpactScale,
-                            Transect.M85_Hs_p99, Transect.M85_Tp_p99, Transect.M85_Dissipative, Transect.M85_R2, Transect.M85_setup, 
-                            Transect.M85_ESL_c3, Transect.M85_TWL, Transect.M85_TWL_setup,
-                            Transect.M85_FrontToe, Transect.M85_Crest,
-                            Transect.M85_StormImpactScale,
-                            Transect.E85_Hs_p99, Transect.E85_Tp_p99, Transect.E85_Dissipative, Transect.E85_R2, Transect.E85_setup, 
-                            Transect.E85_ESL_c3, Transect.E85_TWL, Transect.E85_TWL_setup,
-                            Transect.E85_FrontToe, Transect.E85_Crest,
-                            Transect.E85_StormImpactScale]
+                if Transect.Barrier:
+                    Record = [str(Line.ID), str(Transect.ID),
+                                Transect.Hist_Rate,                
+                                Transect.ForeshoreSlope,
+                                Transect.H_Hs_p99, Transect.H_Tp_p99, Transect.H_Dissipative, Transect.H_R2, Transect.H_setup, 
+                                Transect.H_ESL_c3, Transect.H_TWL, Transect.H_TWL_setup,
+                                Transect.H_FrontToe, Transect.H_Crest,
+                                Transect.H_StormImpactScale,
+                                Transect.M45_Hs_p99, Transect.M45_Tp_p99, Transect.M45_Dissipative, Transect.M45_R2, Transect.M45_setup, 
+                                Transect.M45_ESL_c3, Transect.M45_TWL, Transect.M45_TWL_setup,
+                                Transect.M45_FrontToe, Transect.M45_Crest,
+                                Transect.M45_StormImpactScale,
+                                Transect.E45_Hs_p99, Transect.E45_Tp_p99, Transect.E45_Dissipative, Transect.E45_R2, Transect.E45_setup, 
+                                Transect.E45_ESL_c3, Transect.E45_TWL, Transect.E45_TWL_setup,
+                                Transect.E45_FrontToe, Transect.E45_Crest,
+                                Transect.E45_StormImpactScale,
+                                Transect.M85_Hs_p99, Transect.M85_Tp_p99, Transect.M85_Dissipative, Transect.M85_R2, Transect.M85_setup, 
+                                Transect.M85_ESL_c3, Transect.M85_TWL, Transect.M85_TWL_setup,
+                                Transect.M85_FrontToe, Transect.M85_Crest,
+                                Transect.M85_StormImpactScale,
+                                Transect.E85_Hs_p99, Transect.E85_Tp_p99, Transect.E85_Dissipative, Transect.E85_R2, Transect.E85_setup, 
+                                Transect.E85_ESL_c3, Transect.E85_TWL, Transect.E85_TWL_setup,
+                                Transect.E85_FrontToe, Transect.E85_Crest,
+                                Transect.E85_StormImpactScale]
+                else:
+                    Record = [str(Line.ID), str(Transect.ID),
+                                Transect.Hist_Rate,                
+                                Transect.ForeshoreSlope,
+                                Transect.H_Hs_p99, Transect.H_Tp_p99, Transect.H_Dissipative, Transect.H_R2, Transect.H_setup, 
+                                Transect.H_ESL_c3, Transect.H_TWL, Transect.H_TWL_setup,
+                                "", "",
+                                "",
+                                Transect.M45_Hs_p99, Transect.M45_Tp_p99, Transect.M45_Dissipative, Transect.M45_R2, Transect.M45_setup, 
+                                Transect.M45_ESL_c3, Transect.M45_TWL, Transect.M45_TWL_setup,
+                                "", "",
+                                "",
+                                Transect.E45_Hs_p99, Transect.E45_Tp_p99, Transect.E45_Dissipative, Transect.E45_R2, Transect.E45_setup, 
+                                Transect.E45_ESL_c3, Transect.E45_TWL, Transect.E45_TWL_setup,
+                                "", "",
+                                "",
+                                Transect.M85_Hs_p99, Transect.M85_Tp_p99, Transect.M85_Dissipative, Transect.M85_R2, Transect.M85_setup, 
+                                Transect.M85_ESL_c3, Transect.M85_TWL, Transect.M85_TWL_setup,
+                                "", "",
+                                "",
+                                Transect.E85_Hs_p99, Transect.E85_Tp_p99, Transect.E85_Dissipative, Transect.E85_R2, Transect.E85_setup, 
+                                Transect.E85_ESL_c3, Transect.E85_TWL, Transect.E85_TWL_setup,
+                                "", "",
+                                ""]
 
                 # write transect and record
                 WL.line(WriteTransect)
@@ -1420,11 +1445,11 @@ class Coast:
                 f.write(str(Transect.IntertidalSlope) + delimiter)      # slope between MHWSIntersect and MLWSIntersect (sampled elevations)
                 f.write(str(Transect.ForeshoreSlope) + delimiter)       # slope between 0 m and MHWS (interpolated elevations)
                 if Transect.Barrier:
-                    f.write(str(Transect.Elevation[Transect.FrontToeInd]) + delimiter)
-                    f.write(str(Transect.Elevation[Transect.BackToeInd]) + delimiter)
-                    f.write(str(Transect.Elevation[Transect.FrontTopInd]) + delimiter)
-                    f.write(str(Transect.Elevation[Transect.BackTopInd]) + delimiter)
-                    f.write(str(Transect.Elevation[Transect.CrestInd]) + delimiter)
+                    f.write(str(Transect.H_FrontToe) + delimiter)
+                    f.write(str(Transect.H_BackToe) + delimiter)
+                    f.write(str(Transect.H_FrontTop) + delimiter)
+                    f.write(str(Transect.H_BackTop) + delimiter)
+                    f.write(str(Transect.H_Crest) + delimiter)
                     f.write(str(Transect.Distance[Transect.FrontToeInd]) + delimiter)
                     f.write(str(Transect.Distance[Transect.BackToeInd]) + delimiter)
                     f.write(str(Transect.Distance[Transect.FrontTopInd]) + delimiter)
@@ -1985,7 +2010,7 @@ class Coast:
                     # if valid IntertidalSlope, copy to ForeshoreSlope
                     if Transect.IntertidalSlope > 0:
                         Transect.ForeshoreSlope = Transect.IntertidalSlope
-                        print(f"\t{Transect.LineID}, {Transect.ID}: \tForeshoreSlope = {Transect.ForeshoreSlope}")
+                        print(f"\t{Transect.LineID}, {Transect.ID}: \tForeshoreSlope set to IntertidalSlope = {Transect.ForeshoreSlope}")
                     else:
                         Transect.ForeshoreSlope = None
                         print(f"\t{Transect.LineID}, {Transect.ID}: No valid foreshore/intertidal slopes!!")
@@ -4350,8 +4375,11 @@ class Coast:
                 #if Transect.ID == "13":
                 # Transect.FindCliff()
                 
-                #if Transect.ID == "0":
-                Transect.FindBarrier2()     # REVISED TOE DETECTION
+                # NH: Revised toe detection (MDH original code in FindBarrier)
+                Transect.FindBarrier2()
+
+                # Save dune toe and crest elevations
+                Transect.SaveBarrierElevations()
                 
                 # update transect progress no
                 CurrentTransect += 1
@@ -4477,7 +4505,7 @@ class Coast:
         """
         Input data is SLR uplifted CFB2018 extreme still water levels, provided as
         dataproduct by UKCP18.
-        Find nearest input data point within 3 km of transect.
+        Find nearest input data point within 4 km of transect.
         Extract 25-yr return level and its likely range for each point.
         Likely range: c1 = 5th percentile, c3 = 95th percentile of projected SLR
         
@@ -4500,7 +4528,7 @@ class Coast:
         
         print("Coast.ExtractExtremeSeaLevel: Extracting extreme still water level, uplifted according to climate change scenario")
         
-        MaxDist = 3000
+        MaxDist = 4000
         
         # check input parameters
         if not (Scenario == "Hist" or Scenario == "M45" or Scenario == "M85" or \
@@ -4619,65 +4647,68 @@ class Coast:
         
         for Line in self.CoastLines:
             for Transect in Line.Transects:
-                if Transect.H_TWL < Transect.Elevation[Transect.FrontToeInd]:
-                    Transect.H_StormImpactScale = "Swash"
-                elif Transect.H_TWL > Transect.Elevation[Transect.FrontToeInd] and Transect.H_TWL < Transect.Elevation[Transect.CrestInd]:
-                    Transect.H_StormImpactScale = "Collision"
-                elif Transect.H_TWL > Transect.Elevation[Transect.CrestInd]:
-                    if Transect.H_TWL_setup > Transect.Elevation[Transect.CrestInd]:
-                        Transect.H_StormImpactScale = "Inundation"
+                if Transect.Barrier:
+                    if Transect.H_TWL < Transect.H_FrontToe:
+                        Transect.H_StormImpactScale = "Swash"
+                    elif Transect.H_TWL > Transect.H_FrontToe and Transect.H_TWL < Transect.H_Crest:
+                        Transect.H_StormImpactScale = "Collision"
+                    elif Transect.H_TWL > Transect.H_Crest:
+                        if Transect.H_TWL_setup > Transect.H_Crest:
+                            Transect.H_StormImpactScale = "Inundation"
+                        else:
+                            Transect.H_StormImpactScale = "Overwash"
                     else:
-                        Transect.H_StormImpactScale = "Overwash"
-                else:
-                    print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for Historic scenario!")
-                
-                if Transect.M45_TWL < Transect.M45_FrontToe:
-                    Transect.M45_StormImpactScale = "Swash"
-                elif Transect.M45_TWL > Transect.M45_FrontToe and Transect.M45_TWL < Transect.M45_Crest:
-                    Transect.M45_StormImpactScale = "Collision"
-                elif Transect.M45_TWL > Transect.M45_Crest:
-                    if Transect.M45_TWL_setup > Transect.M45_Crest:
-                        Transect.M45_StormImpactScale = "Inundation"
-                    else:
-                        Transect.M45_StormImpactScale = "Overwash"
-                else:
-                    print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for MidC RCP4.5 scenario!")
+                        print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for Historic scenario!")
                     
-                if Transect.M85_TWL < Transect.M85_FrontToe:
-                    Transect.M85_StormImpactScale = "Swash"
-                elif Transect.M85_TWL > Transect.M85_FrontToe and Transect.M85_TWL < Transect.M85_Crest:
-                    Transect.M85_StormImpactScale = "Collision"
-                elif Transect.M85_TWL > Transect.M85_Crest:
-                    if Transect.M85_TWL_setup > Transect.M85_Crest:
-                        Transect.M85_StormImpactScale = "Inundation"
+                    if Transect.M45_TWL < Transect.M45_FrontToe:
+                        Transect.M45_StormImpactScale = "Swash"
+                    elif Transect.M45_TWL > Transect.M45_FrontToe and Transect.M45_TWL < Transect.M45_Crest:
+                        Transect.M45_StormImpactScale = "Collision"
+                    elif Transect.M45_TWL > Transect.M45_Crest:
+                        if Transect.M45_TWL_setup > Transect.M45_Crest:
+                            Transect.M45_StormImpactScale = "Inundation"
+                        else:
+                            Transect.M45_StormImpactScale = "Overwash"
                     else:
-                        Transect.M85_StormImpactScale = "Overwash"
-                else:
-                    print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for MidC RCP8.5 scenario!")
-                    
-                if Transect.E45_TWL < Transect.E45_FrontToe:
-                    Transect.E45_StormImpactScale = "Swash"
-                elif Transect.E45_TWL > Transect.E45_FrontToe and Transect.E45_TWL < Transect.E45_Crest:
-                    Transect.E45_StormImpactScale = "Collision"
-                elif Transect.E45_TWL > Transect.E45_Crest:
-                    if Transect.E45_TWL_setup > Transect.E45_Crest:
-                        Transect.E45_StormImpactScale = "Inundation"
+                        print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for MidC RCP4.5 scenario!")
+                        
+                    if Transect.M85_TWL < Transect.M85_FrontToe:
+                        Transect.M85_StormImpactScale = "Swash"
+                    elif Transect.M85_TWL > Transect.M85_FrontToe and Transect.M85_TWL < Transect.M85_Crest:
+                        Transect.M85_StormImpactScale = "Collision"
+                    elif Transect.M85_TWL > Transect.M85_Crest:
+                        if Transect.M85_TWL_setup > Transect.M85_Crest:
+                            Transect.M85_StormImpactScale = "Inundation"
+                        else:
+                            Transect.M85_StormImpactScale = "Overwash"
                     else:
-                        Transect.E45_StormImpactScale = "Overwash"
-                else:
-                    print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for EndC RCP4.5 scenario!")
-                    
-                if Transect.E85_TWL < Transect.E85_FrontToe:
-                    Transect.E85_StormImpactScale = "Swash"
-                elif Transect.E85_TWL > Transect.E85_FrontToe and Transect.E85_TWL < Transect.E85_Crest:
-                    Transect.E85_StormImpactScale = "Collision"
-                elif Transect.E85_TWL > Transect.E85_Crest:
-                    if Transect.E85_TWL_setup > Transect.E85_Crest:
-                        Transect.E85_StormImpactScale = "Inundation"
+                        print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for MidC RCP8.5 scenario!")
+                        
+                    if Transect.E45_TWL < Transect.E45_FrontToe:
+                        Transect.E45_StormImpactScale = "Swash"
+                    elif Transect.E45_TWL > Transect.E45_FrontToe and Transect.E45_TWL < Transect.E45_Crest:
+                        Transect.E45_StormImpactScale = "Collision"
+                    elif Transect.E45_TWL > Transect.E45_Crest:
+                        if Transect.E45_TWL_setup > Transect.E45_Crest:
+                            Transect.E45_StormImpactScale = "Inundation"
+                        else:
+                            Transect.E45_StormImpactScale = "Overwash"
                     else:
-                        Transect.E85_StormImpactScale = "Overwash"
+                        print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for EndC RCP4.5 scenario!")
+                        
+                    if Transect.E85_TWL < Transect.E85_FrontToe:
+                        Transect.E85_StormImpactScale = "Swash"
+                    elif Transect.E85_TWL > Transect.E85_FrontToe and Transect.E85_TWL < Transect.E85_Crest:
+                        Transect.E85_StormImpactScale = "Collision"
+                    elif Transect.E85_TWL > Transect.E85_Crest:
+                        if Transect.E85_TWL_setup > Transect.E85_Crest:
+                            Transect.E85_StormImpactScale = "Inundation"
+                        else:
+                            Transect.E85_StormImpactScale = "Overwash"
+                    else:
+                        print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for EndC RCP8.5 scenario!")
                 else:
-                    print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for EndC RCP8.5 scenario!")
+                    print(f"\t{Transect.LineID}_{Transect.ID}: Not a barrier")
                     
     def FindNearestIndex(self, Shapefile=None):
     
@@ -4903,52 +4934,55 @@ class Coast:
     
         """
         
-        print(f"Coast.AdjustFutureDuneelevations: Adjust future dune toe and crest elevations for storm impact analysis")
+        print(f"Coast.AdjustFutureDuneElevations: Adjust future dune toe and crest elevations for storm impact analysis")
         
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 
-                # Hist_Rate = None if NearestDC2Index was not found by FindNearestIndex i.e. no DC2 transect within 200m of my transect:
-                # Dune toe and crest elevations maintained at present-day levels for 2050 and 2100 (i.e. cannot keep pace with SLR). Precautionary
-                if Transect.Hist_Rate == None:
-                    Transect.M45_FrontToe = Transect.Elevation[Transect.FrontToeInd]
-                    Transect.E45_FrontToe = Transect.Elevation[Transect.FrontToeInd]
-                    Transect.M85_FrontToe = Transect.Elevation[Transect.FrontToeInd]
-                    Transect.E85_FrontToe = Transect.Elevation[Transect.FrontToeInd]
-                    
-                    Transect.M45_Crest = Transect.Elevation[Transect.CrestInd]
-                    Transect.E45_Crest = Transect.Elevation[Transect.CrestInd]
-                    Transect.M85_Crest = Transect.Elevation[Transect.CrestInd]
-                    Transect.E85_Crest = Transect.Elevation[Transect.CrestInd]
-                    
-                else:
-                    # Historically stable or eroding coastline (rate < 0.25 m/yr chosen from qual comp w DC2 RCP8.5 2050 and 2100 erosion predictions):
-                    # Dune toe and crest elevations maintained at present-day levels for 2050 and 2100 (i.e. cannot keep pace with SLR)
-                    if Transect.Hist_Rate < 0.25:
-                        Transect.M45_FrontToe = Transect.Elevation[Transect.FrontToeInd]
-                        Transect.E45_FrontToe = Transect.Elevation[Transect.FrontToeInd]
-                        Transect.M85_FrontToe = Transect.Elevation[Transect.FrontToeInd]
-                        Transect.E85_FrontToe = Transect.Elevation[Transect.FrontToeInd]
+                # Only adjust elevations if transect contains a barrier
+                if Transect.Barrier:
+                
+                    # Hist_Rate = None if NearestDC2Index was not found by FindNearestIndex i.e. no DC2 transect within 200m of my transect:
+                    # Dune toe and crest elevations maintained at present-day levels for 2050 and 2100 (i.e. cannot keep pace with SLR). Precautionary
+                    if Transect.Hist_Rate == None:
+                        Transect.M45_FrontToe = Transect.H_FrontToe
+                        Transect.E45_FrontToe = Transect.H_FrontToe
+                        Transect.M85_FrontToe = Transect.H_FrontToe
+                        Transect.E85_FrontToe = Transect.H_FrontToe
                         
-                        Transect.M45_Crest = Transect.Elevation[Transect.CrestInd]
-                        Transect.E45_Crest = Transect.Elevation[Transect.CrestInd]
-                        Transect.M85_Crest = Transect.Elevation[Transect.CrestInd]
-                        Transect.E85_Crest = Transect.Elevation[Transect.CrestInd]
-                    
-                    # Historically accreting coastline: Increase elevations with SLR to 2050, maintain constant thereafter
+                        Transect.M45_Crest = Transect.H_Crest
+                        Transect.E45_Crest = Transect.H_Crest
+                        Transect.M85_Crest = Transect.H_Crest
+                        Transect.E85_Crest = Transect.H_Crest
+                        
                     else:
-                        Transect.M45_FrontToe = Transect.Elevation[Transect.FrontToeInd] + Transect.M45_SLR
-                        Transect.E45_FrontToe = Transect.M45_FrontToe
-                        Transect.M85_FrontToe = Transect.Elevation[Transect.FrontToeInd] + Transect.M85_SLR
-                        Transect.E85_FrontToe = Transect.M85_FrontToe
+                        # Historically stable or eroding coastline (rate < 0.25 m/yr chosen from qual comp w DC2 RCP8.5 2050 and 2100 erosion predictions):
+                        # Dune toe and crest elevations maintained at present-day levels for 2050 and 2100 (i.e. cannot keep pace with SLR)
+                        if Transect.Hist_Rate < 0.25:
+                            Transect.M45_FrontToe = Transect.H_FrontToe
+                            Transect.E45_FrontToe = Transect.H_FrontToe
+                            Transect.M85_FrontToe = Transect.H_FrontToe
+                            Transect.E85_FrontToe = Transect.H_FrontToe
+                            
+                            Transect.M45_Crest = Transect.H_Crest
+                            Transect.E45_Crest = Transect.H_Crest
+                            Transect.M85_Crest = Transect.H_Crest
+                            Transect.E85_Crest = Transect.H_Crest
                         
-                        Transect.M45_Crest = Transect.Elevation[Transect.CrestInd] + Transect.M45_SLR
-                        Transect.E45_Crest = Transect.M45_Crest
-                        Transect.M85_Crest = Transect.Elevation[Transect.CrestInd] + Transect.M85_SLR
-                        Transect.E85_Crest = Transect.M85_Crest
+                        # Historically accreting coastline: Increase elevations with SLR to 2050, maintain constant thereafter
+                        else:
+                            Transect.M45_FrontToe = Transect.H_FrontToe + Transect.M45_SLR
+                            Transect.E45_FrontToe = Transect.M45_FrontToe
+                            Transect.M85_FrontToe = Transect.H_FrontToe + Transect.M85_SLR
+                            Transect.E85_FrontToe = Transect.M85_FrontToe
+                            
+                            Transect.M45_Crest = Transect.H_Crest + Transect.M45_SLR
+                            Transect.E45_Crest = Transect.M45_Crest
+                            Transect.M85_Crest = Transect.H_Crest + Transect.M85_SLR
+                            Transect.E85_Crest = Transect.M85_Crest
                     
                 #if Transect.ID == '36':
-                    #print(f"\t{Transect.LineID}_{Transect.ID}: HistRate:{Transect.Hist_Rate} \tToe:{Transect.Elevation[Transect.FrontToeInd]}\tCrest:{Transect.Elevation[Transect.CrestInd]}")
+                    #print(f"\t{Transect.LineID}_{Transect.ID}: HistRate:{Transect.Hist_Rate} \tToe:{Transect.H_FrontToe}\tCrest:{Transect.H_Crest}")
                     #print(f"\t\tM45_SLR:{Transect.M45_SLR},\tM45Toe:{Transect.M45_FrontToe}, E45Toe:{Transect.E45_FrontToe} \tM85_SLR:{Transect.M85_SLR} M85Toe:{Transect.M85_FrontToe} E85Toe:{Transect.E85_FrontToe}")
                     #print(f"\t\tM45Crest:{Transect.M45_Crest}, E45Crest:{Transect.E45_Crest} M85Crest:{Transect.M85_Crest} E85Crest:{Transect.E85_Crest}")
     
