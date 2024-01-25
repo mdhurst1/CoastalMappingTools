@@ -1834,7 +1834,7 @@ class Transect:
             # Must also be seaward of FrontTopInd (NH). If toe landward of top, set toe index to front top index.
             if self.FrontToeInd > self.FrontTopInd:
                 self.FrontToeInd = self.FrontTopInd
-            
+                BarrierPositionChangeFlag = True
             
             # Must also be above MHWS 
             # # only check this once   
