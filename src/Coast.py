@@ -1461,6 +1461,56 @@ class Coast:
                     
         f.close()
         
+    def WriteSlopesDuneParSISTextfile(self, Filename, delimiter=","):
+        
+        """
+        Writes all transect slopes and dune parameters to .csv file
+        Water levels and storm impacts for Historical (present day) scenario
+        
+        NH, Novembeer 2023
+        
+        """
+        
+        print("Coast.WriteSlopesDuneParSISTextfile: Writing transects slopes, barrier toe and crest elevations and water levels to .csv file")
+        
+        # define filename and open for writing
+        f = open(Filename,'w')
+        
+        # write headers
+        f.write("LineID" + delimiter + "TransectID" + delimiter + "IntertidalSlope" + delimiter + "ForeshoreSlope" + delimiter +\
+                "MHWS" + delimiter + "H_ESL" + delimiter + "H_R2" + delimiter + "H_TWL" + delimiter + "H_TWL_setup" + delimiter +\
+                "FrontToeElev" + delimiter + "BackToeElev" + delimiter + "FrontTopElev" + delimiter + "BackTopElev" + delimiter + "CrestElev" + delimiter +\
+                "FrontToeDist" + delimiter + "BackToeDist" + delimiter + "FrontTopDist" + delimiter + "BackTopDist" + delimiter + "CrestDist" + delimiter +\
+                "StormRegime" + "\n")
+                
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                f.write(str(Line.ID) + delimiter)
+                f.write(str(Transect.ID) + delimiter)
+                f.write(str(Transect.IntertidalSlope) + delimiter)      # slope between MHWSIntersect and MLWSIntersect (sampled elevations)
+                f.write(str(Transect.ForeshoreSlope) + delimiter)       # slope between 0 m and MHWS (interpolated elevations)
+                f.write(str(Transect.MHWS) + delimiter)
+                f.write(str(Transect.H_ESL) + delimiter)
+                f.write(str(Transect.H_R2) + delimiter)
+                f.write(str(Transect.H_TWL) + delimiter)
+                f.write(str(Transect.H_TWL_setup) + delimiter)
+                if Transect.Barrier:
+                    f.write(str(Transect.H_FrontToe) + delimiter)
+                    f.write(str(Transect.H_BackToe) + delimiter)
+                    f.write(str(Transect.H_FrontTop) + delimiter)
+                    f.write(str(Transect.H_BackTop) + delimiter)
+                    f.write(str(Transect.H_Crest) + delimiter)
+                    f.write(str(Transect.Distance[Transect.FrontToeInd]) + delimiter)
+                    f.write(str(Transect.Distance[Transect.BackToeInd]) + delimiter)
+                    f.write(str(Transect.Distance[Transect.FrontTopInd]) + delimiter)
+                    f.write(str(Transect.Distance[Transect.BackTopInd]) + delimiter)
+                    f.write(str(Transect.Distance[Transect.CrestInd]) + delimiter)
+                    f.write(str(Transect.H_StormImpactScale) + "\n")
+                else:
+                    f.write("NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + \
+                            "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + "\n")
+                    
+        f.close()
     
     def MergeReverseCoastLines(self):
 
