@@ -230,6 +230,11 @@ class Transect:
         self.M85_TWL = None
         self.E45_TWL = None
         self.E85_TWL = None
+        self.H_TWL_setup = None
+        self.M45_TWL_setup = None
+        self.M85_TWL_setup = None
+        self.E45_TWL_setup = None
+        self.E85_TWL_setup = None
         # Storm impact scale
         self.H_StormImpactScale = None
         self.M45_StormImpactScale = None
