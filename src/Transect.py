@@ -649,6 +649,8 @@ class Transect:
         
         NH Spetembeer 2023
         
+        (NOW SUPERSEDED BY CalculateIntertidalSlope3())
+        
         """
         
         # Check if the nodes exist
@@ -683,6 +685,59 @@ class Transect:
         
         self.IntertidalDistance = MLWSNode.get_Distance(self.MHWSIntersect)
         self.IntertidalDepth = self.MHWSIntersect.Z - MLWSNode.Z
+        self.IntertidalSlope = self.IntertidalDepth/self.IntertidalDistance
+        
+        # set minimum shoreface slope to 0.001
+        if self.IntertidalSlope < 0.001:
+            self.IntertidalSlope = 0.001
+    
+    def CalculateIntertidalSlope3(self):
+    
+        """
+        
+        Function to extract transect's slope between MHWS and MLWS contours. 
+        dz = 2*MWHS elevation, assuming sinusoidal tidal elevations
+        dx = distance between MHWS and MLWS contour intersections
+        If no MLWS intersect node, use nearest MLWS node (from ExtractMLWS()). 
+        
+        This code improves v2 of the function, as the elevation data is only really
+        valid landward of MHWS. Seaward elevations do exist in OST5 and LiDAR, but
+        are either the water level elevations (LiDAR) or linear line to a predifined min
+        (OST5), thus not a representation of nearshore bathymetry.
+        
+        NH Jan 2024
+        
+        """
+        
+        # Check if the nodes exist
+        # If MLWS intersections does not exist, use nearest point to MLWS contour
+        if not self.MLWSIntersect.X:
+            print(self.LineID, self.ID, "CalculateIntertidalSlope3: No MLWS intersect data")
+            if not self.MLWS.X:
+                print(self.LineID, self.ID, "CalculateIntertidalSlope3: No MLWS nearest data either!")
+                self.IntertidalSlope = -1
+                sys.exit()
+            else:
+                # Use MLWS data
+                MLWSNode = self.MLWS
+                print("\t\t\t\tUsing nearest MLWS node")
+        else:
+            # use MLWSIntersect data
+            MLWSNode = self.MLWSIntersect
+            
+        if not self.MHWSIntersect.X:
+            print(self.LineID, self.ID, "CalculateIntertidalSlope3: No MHWSIntersect!")
+            self.IntertidalSlope = -1
+            sys.exit()
+
+        # Check if MHWS elevation data exists
+        if not self.MHWS:
+            print(self.LineID, self.ID, "CalculateIntertidalSlope3: No MHWS elevation data!")
+            self.IntertidalSlope = -1
+            sys.exit()
+        
+        self.IntertidalDistance = MLWSNode.get_Distance(self.MHWSIntersect)
+        self.IntertidalDepth = 2*self.MHWS
         self.IntertidalSlope = self.IntertidalDepth/self.IntertidalDistance
         
         # set minimum shoreface slope to 0.001
@@ -1765,8 +1820,11 @@ class Transect:
                                 * np.tan(np.radians(Angle)))
 
             # mask values beyond the peak
-            Mask = ElevMasked.mask.copy()
-            Mask[0:FirstInd] = True
+            #Mask = ElevMasked.mask.copy()              # Problem: this returns boolean value (not array) of False when no masked elements
+            Mask = ma.getmaskarray(ElevMasked)          # Return the mask of a masked array, or full boolean array of False.
+            
+            if FirstInd > 0:
+                Mask[0:FirstInd] = True
             if self.FrontTopInd < LastInd:          ## NH ADD: Catch when highest elevation is the last node (self.FrontTopInd=MaxInd=LastInd). Prevents corrupt indexing.
                 Mask[self.FrontTopInd+1:] = True
             ElevDetrend = ma.masked_where(Mask, ElevDetrend)
@@ -1825,7 +1883,8 @@ class Transect:
              + (DistanceMasked[FirstInd] - DistanceMasked) * np.tan(np.radians(Angle)))
 
             # mask values beyond the barrier front top
-            Mask = ElevMasked.mask.copy()
+            #Mask = ElevMasked.mask.copy()               # Problem: this returns boolean value (not array) of False when no masked elements
+            Mask = ma.getmaskarray(ElevMasked)          # Return the mask of a masked array, or full boolean array of False.
             #Mask[:self.FrontToeInd] = True
             if self.FrontToeInd < LastInd:            ## NH ADD: Catch when highest elevation is the last node (self.FrontTopInd=MaxInd=LastInd). Prevents corrupt indexing.
                 Mask[self.FrontToeInd+1:] = True
@@ -1886,7 +1945,8 @@ class Transect:
         
         # default back barrier positions
         self.BackTopInd = self.FrontTopInd
-        Mask = ElevMasked.mask.copy()
+        #Mask = ElevMasked.mask.copy()                      # Problem: this returns boolean value (not array) of False when no masked elements
+        Mask = ma.getmaskarray(ElevMasked)                  # Return the mask of a masked array, or full boolean array of False.
         Mask[0:self.FrontTopInd] = True
         ElevMasked = ma.masked_where(Mask,ElevMasked)
 
@@ -1920,7 +1980,8 @@ class Transect:
                             * np.tan(np.radians(Angle)))
 
             # mask values seaward of the barrier front top
-            Mask = ElevMasked.mask.copy()
+            #Mask = ElevMasked.mask.copy()              # Problem: this returns boolean value (not array) of False when no masked elements
+            Mask = ma.getmaskarray(ElevMasked)          # Return the mask of a masked array, or full boolean array of False.
             Mask[0:self.BackTopInd] = True
             Mask[MinInd+1:] = True
             ElevDetrend = ma.masked_where(Mask, ElevDetrend)
@@ -1945,7 +2006,8 @@ class Transect:
                             * np.tan(np.radians(Angle)))
 
             # mask values up to the peak
-            Mask = ElevMasked.mask.copy()
+            #Mask = ElevMasked.mask.copy()              # Problem: this returns boolean value (not array) of False when no masked elements
+            Mask = ma.getmaskarray(ElevMasked)          # Return the mask of a masked array, or full boolean array of False.
             Mask[0:self.FrontTopInd] = True
             Mask[self.BackToeInd+1:] = True
             ElevDetrend = ma.masked_where(Mask,ElevDetrend)
