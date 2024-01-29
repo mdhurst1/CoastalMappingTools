@@ -1061,7 +1061,7 @@ class Coast:
         Fields = [('DeletionFlag','C',1,0), 
         ['LineID', 'C', 3, 0], ['TransectID', 'C', 5, 0], 
         ['Hist_Rate','N', 5, 2],
-        ['Slope_FS','N', 5, 3],
+        ['Slope_Int','N', 5, 3],
         ['H_Hs','N', 5, 2],['H_Tp','N', 5, 2], ['H_Diss','B', 7, 0], ['H_R2','N', 5, 2], ['H_setup','N', 5, 2], 
         ['H_ESL','N', 5, 2], ['H_TWL','N', 5, 2], ['H_TWL_su','N', 5, 2], 
         ['H_Toe','N', 5, 2],['H_Crest','N', 5, 2],
@@ -1098,7 +1098,7 @@ class Coast:
                 if Transect.Barrier:
                     Record = [str(Line.ID), str(Transect.ID),
                                 Transect.Hist_Rate,                
-                                Transect.ForeshoreSlope,
+                                Transect.IntertidalSlope,
                                 Transect.H_Hs_p99, Transect.H_Tp_p99, Transect.H_Dissipative, Transect.H_R2, Transect.H_setup, 
                                 Transect.H_ESL_c3, Transect.H_TWL, Transect.H_TWL_setup,
                                 Transect.H_FrontToe, Transect.H_Crest,
@@ -1122,7 +1122,7 @@ class Coast:
                 else:
                     Record = [str(Line.ID), str(Transect.ID),
                                 Transect.Hist_Rate,                
-                                Transect.ForeshoreSlope,
+                                Transect.IntertidalSlope,
                                 Transect.H_Hs_p99, Transect.H_Tp_p99, Transect.H_Dissipative, Transect.H_R2, Transect.H_setup, 
                                 Transect.H_ESL_c3, Transect.H_TWL, Transect.H_TWL_setup,
                                 "", "",
@@ -1434,7 +1434,7 @@ class Coast:
         f = open(Filename,'w')
         
         # write headers
-        f.write("LineID" + delimiter + "TransectID" + delimiter + "IntertidalSlope" + delimiter + "ForeshoreSlope" + delimiter +\
+        f.write("LineID" + delimiter + "TransectID" + delimiter + "IntertidalSlope" + delimiter +\
                 "FrontToeElev" + delimiter + "BackToeElev" + delimiter + "FrontTopElev" + delimiter + "BackTopElev" + delimiter + "CrestElev" + delimiter +\
                 "FrontToeDist" + delimiter + "BackToeDist" + delimiter + "FrontTopDist" + delimiter + "BackTopDist" + delimiter + "CrestDist" + "\n")
                 
@@ -1442,8 +1442,8 @@ class Coast:
             for Transect in Line.Transects:
                 f.write(str(Line.ID) + delimiter)
                 f.write(str(Transect.ID) + delimiter)
-                f.write(str(Transect.IntertidalSlope) + delimiter)      # slope between MHWSIntersect and MLWSIntersect (sampled elevations)
-                f.write(str(Transect.ForeshoreSlope) + delimiter)       # slope between 0 m and MHWS (interpolated elevations)
+                f.write(str(Transect.IntertidalSlope) + delimiter)      # slope between MHWSIntersect and MLWSIntersect
+                #f.write(str(Transect.ForeshoreSlope) + delimiter)       # slope between 0 m and MHWS (interpolated elevations)
                 if Transect.Barrier:
                     f.write(str(Transect.H_FrontToe) + delimiter)
                     f.write(str(Transect.H_BackToe) + delimiter)
@@ -1477,7 +1477,7 @@ class Coast:
         f = open(Filename,'w')
         
         # write headers
-        f.write("LineID" + delimiter + "TransectID" + delimiter + "IntertidalSlope" + delimiter + "ForeshoreSlope" + delimiter +\
+        f.write("LineID" + delimiter + "TransectID" + delimiter + "IntertidalSlope" + delimiter +\
                 "MHWS" + delimiter + "H_ESL" + delimiter + "H_R2" + delimiter + "H_TWL" + delimiter + "H_TWL_setup" + delimiter +\
                 "FrontToeElev" + delimiter + "BackToeElev" + delimiter + "FrontTopElev" + delimiter + "BackTopElev" + delimiter + "CrestElev" + delimiter +\
                 "FrontToeDist" + delimiter + "BackToeDist" + delimiter + "FrontTopDist" + delimiter + "BackTopDist" + delimiter + "CrestDist" + delimiter +\
@@ -1487,8 +1487,8 @@ class Coast:
             for Transect in Line.Transects:
                 f.write(str(Line.ID) + delimiter)
                 f.write(str(Transect.ID) + delimiter)
-                f.write(str(Transect.IntertidalSlope) + delimiter)      # slope between MHWSIntersect and MLWSIntersect (sampled elevations)
-                f.write(str(Transect.ForeshoreSlope) + delimiter)       # slope between 0 m and MHWS (interpolated elevations)
+                f.write(str(Transect.IntertidalSlope) + delimiter)      # slope between MHWSIntersect and MLWSIntersect
+                #f.write(str(Transect.ForeshoreSlope) + delimiter)       # slope between 0 m and MHWS (interpolated elevations)
                 f.write(str(Transect.MHWS) + delimiter)
                 f.write(str(Transect.H_ESL) + delimiter)
                 f.write(str(Transect.H_R2) + delimiter)
@@ -1991,7 +1991,7 @@ class Coast:
         
         for Line in self.CoastLines:
             for Transect in Line.Transects:
-                Transect.CalculateIntertidalSlope2()  
+                Transect.CalculateIntertidalSlope3()  
                 
     def GetForeshoreSlopes(self):
     
@@ -3502,7 +3502,9 @@ class Coast:
             # set DEMs to list 
             # NH: For each CoastLine, a list of unique DEMs. 
             # But, if a DEM spans two CoastLines, it is also added for the second CoastLine interation. 
-            self.UniqueDEMList.extend(list(JoinGDF.location.unique()))
+            ### self.UniqueDEMList.extend(list(JoinGDF.location.unique()))
+            self.UniqueDEMList.extend(list(JoinGDF[JoinGDF['HiResExist']=='Y'].loc_HiRes.unique()))
+            self.UniqueDEMList.extend(list(JoinGDF[JoinGDF['HiResExist']=='N'].location.unique()))
             
         # NH: This list is only unique for each CoastLine, not unique overall
         if __debug__:
@@ -4475,7 +4477,7 @@ class Coast:
         
         for Line in self.CoastLines:
             for Transect in Line.Transects:
-                Bf = Transect.ForeshoreSlope
+                Bf = Transect.IntertidalSlope #ForeshoreSlope
                 
                 if Scenario == "Hist":
                     H0 = Transect.H_Hs_p99
