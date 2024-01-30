@@ -1745,6 +1745,9 @@ class Transect:
         
         # mask below sea level, including tide, in future
         Mask[self.Elevation < 0] = True
+        
+        # Bodge: set first (most seaward) element's mask to avoid compile error when no mask is set
+        Mask[0] = True
 
         # apply mask
         ElevMasked = ma.masked_where(Mask, self.Elevation)
