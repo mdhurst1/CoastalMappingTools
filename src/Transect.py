@@ -1820,11 +1820,8 @@ class Transect:
                                 * np.tan(np.radians(Angle)))
 
             # mask values beyond the peak
-            #Mask = ElevMasked.mask.copy()              # Problem: this returns boolean value (not array) of False when no masked elements
-            Mask = ma.getmaskarray(ElevMasked)          # Return the mask of a masked array, or full boolean array of False.
-            
-            if FirstInd > 0:
-                Mask[0:FirstInd] = True
+            Mask = ElevMasked.mask.copy()              # Problem: this returns boolean value (not array) of False when no masked elements
+            Mask[0:FirstInd] = True
             if self.FrontTopInd < LastInd:          ## NH ADD: Catch when highest elevation is the last node (self.FrontTopInd=MaxInd=LastInd). Prevents corrupt indexing.
                 Mask[self.FrontTopInd+1:] = True
             ElevDetrend = ma.masked_where(Mask, ElevDetrend)
@@ -1883,8 +1880,7 @@ class Transect:
              + (DistanceMasked[FirstInd] - DistanceMasked) * np.tan(np.radians(Angle)))
 
             # mask values beyond the barrier front top
-            #Mask = ElevMasked.mask.copy()               # Problem: this returns boolean value (not array) of False when no masked elements
-            Mask = ma.getmaskarray(ElevMasked)          # Return the mask of a masked array, or full boolean array of False.
+            Mask = ElevMasked.mask.copy()              
             #Mask[:self.FrontToeInd] = True
             if self.FrontToeInd < LastInd:            ## NH ADD: Catch when highest elevation is the last node (self.FrontTopInd=MaxInd=LastInd). Prevents corrupt indexing.
                 Mask[self.FrontToeInd+1:] = True
@@ -1945,8 +1941,7 @@ class Transect:
         
         # default back barrier positions
         self.BackTopInd = self.FrontTopInd
-        #Mask = ElevMasked.mask.copy()                      # Problem: this returns boolean value (not array) of False when no masked elements
-        Mask = ma.getmaskarray(ElevMasked)                  # Return the mask of a masked array, or full boolean array of False.
+        Mask = ElevMasked.mask.copy()                      
         Mask[0:self.FrontTopInd] = True
         ElevMasked = ma.masked_where(Mask,ElevMasked)
 
@@ -1980,8 +1975,7 @@ class Transect:
                             * np.tan(np.radians(Angle)))
 
             # mask values seaward of the barrier front top
-            #Mask = ElevMasked.mask.copy()              # Problem: this returns boolean value (not array) of False when no masked elements
-            Mask = ma.getmaskarray(ElevMasked)          # Return the mask of a masked array, or full boolean array of False.
+            Mask = ElevMasked.mask.copy()              
             Mask[0:self.BackTopInd] = True
             Mask[MinInd+1:] = True
             ElevDetrend = ma.masked_where(Mask, ElevDetrend)
@@ -2006,8 +2000,7 @@ class Transect:
                             * np.tan(np.radians(Angle)))
 
             # mask values up to the peak
-            #Mask = ElevMasked.mask.copy()              # Problem: this returns boolean value (not array) of False when no masked elements
-            Mask = ma.getmaskarray(ElevMasked)          # Return the mask of a masked array, or full boolean array of False.
+            Mask = ElevMasked.mask.copy()
             Mask[0:self.FrontTopInd] = True
             Mask[self.BackToeInd+1:] = True
             ElevDetrend = ma.masked_where(Mask,ElevDetrend)
