@@ -1063,23 +1063,23 @@ class Coast:
         ['Hist_Rate','N', 5, 2],
         ['Slope_Int','N', 5, 3],
         ['H_Hs','N', 5, 2],['H_Tp','N', 5, 2], ['H_Diss','B', 7, 0], ['H_R2','N', 5, 2], ['H_setup','N', 5, 2], 
-        ['H_ESL','N', 5, 2], ['H_TWL','N', 5, 2], ['H_TWL_su','N', 5, 2], 
+        ['H_ESL_c3','N', 5, 2], ['H_TWL','N', 5, 2], ['H_TWL_su','N', 5, 2], 
         ['H_Toe','N', 5, 2],['H_Crest','N', 5, 2],
         ['H_SIS', 'C', 10, 0],
         ['M45_Hs','N', 5, 2],['M45_Tp','N', 5, 2], ['M45_Diss','B', 7, 0], ['M45_R2','N', 5, 2], ['M45_setup','N', 5, 2], 
-        ['M45_ESL','N', 5, 2], ['M45_TWL','N', 5, 2], ['M45_TWL_su','N', 5, 2], 
+        ['M45_ESL_c3','N', 5, 2], ['M45_TWL','N', 5, 2], ['M45_TWL_su','N', 5, 2], 
         ['M45_Toe','N', 5, 2],['M45_Crest','N', 5, 2],
         ['M45_SIS', 'C', 10, 0],
         ['E45_Hs','N', 5, 2],['E45_Tp','N', 5, 2], ['E45_Diss','B', 7, 0], ['E45_R2','N', 5, 2], ['E45_setup','N', 5, 2], 
-        ['E45_ESL','N', 5, 2], ['E45_TWL','N', 5, 2], ['E45_TWL_su','N', 5, 2], 
+        ['E45_ESL_c3','N', 5, 2], ['E45_TWL','N', 5, 2], ['E45_TWL_su','N', 5, 2], 
         ['E45_Toe','N', 5, 2],['E45_Crest','N', 5, 2],
         ['E45_SIS', 'C', 10, 0],
         ['M85_Hs','N', 5, 2],['M85_Tp','N', 5, 2], ['M85_Diss','B', 7, 0], ['M85_R2','N', 5, 2], ['M85_setup','N', 5, 2], 
-        ['M85_ESL','N', 5, 2], ['M85_TWL','N', 5, 2], ['M85_TWL_su','N', 5, 2], 
+        ['M85_ESL_c3','N', 5, 2], ['M85_TWL','N', 5, 2], ['M85_TWL_su','N', 5, 2], 
         ['M85_Toe','N', 5, 2],['M85_Crest','N', 5, 2],
         ['M85_SIS', 'C', 10, 0],
         ['E85_Hs','N', 5, 2],['E85_Tp','N', 5, 2], ['E85_Diss','B', 7, 0], ['E85_R2','N', 5, 2], ['E85_setup','N', 5, 2], 
-        ['E85_ESL','N', 5, 2], ['E85_TWL','N', 5, 2], ['E85_TWL_su','N', 5, 2], 
+        ['E85_ESL_c3','N', 5, 2], ['E85_TWL','N', 5, 2], ['E85_TWL_su','N', 5, 2], 
         ['E85_Toe','N', 5, 2],['E85_Crest','N', 5, 2],
         ['E85_SIS', 'C', 10, 0]
         ]
@@ -1478,7 +1478,7 @@ class Coast:
         
         # write headers
         f.write("LineID" + delimiter + "TransectID" + delimiter + "IntertidalSlope" + delimiter +\
-                "MHWS" + delimiter + "H_ESL" + delimiter + "H_R2" + delimiter + "H_TWL" + delimiter + "H_TWL_setup" + delimiter +\
+                "MHWS" + delimiter + "H_ESL_c3" + delimiter + "H_R2" + delimiter + "H_TWL" + delimiter + "H_TWL_setup" + delimiter +\
                 "FrontToeElev" + delimiter + "BackToeElev" + delimiter + "FrontTopElev" + delimiter + "BackTopElev" + delimiter + "CrestElev" + delimiter +\
                 "FrontToeDist" + delimiter + "BackToeDist" + delimiter + "FrontTopDist" + delimiter + "BackTopDist" + delimiter + "CrestDist" + delimiter +\
                 "StormRegime" + "\n")
@@ -1490,7 +1490,7 @@ class Coast:
                 f.write(str(Transect.IntertidalSlope) + delimiter)      # slope between MHWSIntersect and MLWSIntersect
                 #f.write(str(Transect.ForeshoreSlope) + delimiter)       # slope between 0 m and MHWS (interpolated elevations)
                 f.write(str(Transect.MHWS) + delimiter)
-                f.write(str(Transect.H_ESL) + delimiter)
+                f.write(str(Transect.H_ESL_c3) + delimiter)
                 f.write(str(Transect.H_R2) + delimiter)
                 f.write(str(Transect.H_TWL) + delimiter)
                 f.write(str(Transect.H_TWL_setup) + delimiter)
