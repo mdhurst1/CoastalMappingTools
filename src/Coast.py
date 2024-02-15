@@ -1059,7 +1059,7 @@ class Coast:
         
         # Create Fields
         Fields = [('DeletionFlag','C',1,0), 
-        ['LineID', 'C', 3, 0], ['TransectID', 'C', 5, 0], 
+        ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], 
         ['Hist_Rate','N', 5, 2],
         ['Slope_Int','N', 5, 3],
         ['H_Hs','N', 5, 2],['H_Tp','N', 5, 2], ['H_Diss','B', 7, 0], ['H_R2','N', 5, 2], ['H_setup','N', 5, 2], 
