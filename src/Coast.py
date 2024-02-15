@@ -1065,23 +1065,23 @@ class Coast:
         ['H_Hs','N', 5, 2],['H_Tp','N', 5, 2], ['H_Diss','B', 7, 0], ['H_R2','N', 5, 2], ['H_setup','N', 5, 2], 
         ['H_ESL_c3','N', 5, 2], ['H_TWL','N', 5, 2], ['H_TWL_su','N', 5, 2], 
         ['H_Toe','N', 5, 2],['H_Crest','N', 5, 2],
-        ['H_SIS', 'C', 10, 0],
+        ['H_SIS', 'C', 10, 0],['H_HRoom','N', 5, 2],
         ['M45_Hs','N', 5, 2],['M45_Tp','N', 5, 2], ['M45_Diss','B', 7, 0], ['M45_R2','N', 5, 2], ['M45_setup','N', 5, 2], 
         ['M45_ESL_c3','N', 5, 2], ['M45_TWL','N', 5, 2], ['M45_TWL_su','N', 5, 2], 
         ['M45_Toe','N', 5, 2],['M45_Crest','N', 5, 2],
-        ['M45_SIS', 'C', 10, 0],
+        ['M45_SIS', 'C', 10, 0],['M45_HRoom','N', 5, 2],
         ['E45_Hs','N', 5, 2],['E45_Tp','N', 5, 2], ['E45_Diss','B', 7, 0], ['E45_R2','N', 5, 2], ['E45_setup','N', 5, 2], 
         ['E45_ESL_c3','N', 5, 2], ['E45_TWL','N', 5, 2], ['E45_TWL_su','N', 5, 2], 
         ['E45_Toe','N', 5, 2],['E45_Crest','N', 5, 2],
-        ['E45_SIS', 'C', 10, 0],
+        ['E45_SIS', 'C', 10, 0],['E45_HRoom','N', 5, 2],
         ['M85_Hs','N', 5, 2],['M85_Tp','N', 5, 2], ['M85_Diss','B', 7, 0], ['M85_R2','N', 5, 2], ['M85_setup','N', 5, 2], 
         ['M85_ESL_c3','N', 5, 2], ['M85_TWL','N', 5, 2], ['M85_TWL_su','N', 5, 2], 
         ['M85_Toe','N', 5, 2],['M85_Crest','N', 5, 2],
-        ['M85_SIS', 'C', 10, 0],
+        ['M85_SIS', 'C', 10, 0],['M85_HRoom','N', 5, 2],
         ['E85_Hs','N', 5, 2],['E85_Tp','N', 5, 2], ['E85_Diss','B', 7, 0], ['E85_R2','N', 5, 2], ['E85_setup','N', 5, 2], 
         ['E85_ESL_c3','N', 5, 2], ['E85_TWL','N', 5, 2], ['E85_TWL_su','N', 5, 2], 
         ['E85_Toe','N', 5, 2],['E85_Crest','N', 5, 2],
-        ['E85_SIS', 'C', 10, 0]
+        ['E85_SIS', 'C', 10, 0],['E85_HRoom','N', 5, 2]
         ]
         
         WL.fields = Fields[1:]
@@ -1102,23 +1102,23 @@ class Coast:
                                 Transect.H_Hs_p99, Transect.H_Tp_p99, Transect.H_Dissipative, Transect.H_R2, Transect.H_setup, 
                                 Transect.H_ESL_c3, Transect.H_TWL, Transect.H_TWL_setup,
                                 Transect.H_FrontToe, Transect.H_Crest,
-                                Transect.H_StormImpactScale,
+                                Transect.H_StormImpactScale, Transect.H_Headroom,
                                 Transect.M45_Hs_p99, Transect.M45_Tp_p99, Transect.M45_Dissipative, Transect.M45_R2, Transect.M45_setup, 
                                 Transect.M45_ESL_c3, Transect.M45_TWL, Transect.M45_TWL_setup,
                                 Transect.M45_FrontToe, Transect.M45_Crest,
-                                Transect.M45_StormImpactScale,
+                                Transect.M45_StormImpactScale, Transect.M45_Headroom,
                                 Transect.E45_Hs_p99, Transect.E45_Tp_p99, Transect.E45_Dissipative, Transect.E45_R2, Transect.E45_setup, 
                                 Transect.E45_ESL_c3, Transect.E45_TWL, Transect.E45_TWL_setup,
                                 Transect.E45_FrontToe, Transect.E45_Crest,
-                                Transect.E45_StormImpactScale,
+                                Transect.E45_StormImpactScale, Transect.E45_Headroom,
                                 Transect.M85_Hs_p99, Transect.M85_Tp_p99, Transect.M85_Dissipative, Transect.M85_R2, Transect.M85_setup, 
                                 Transect.M85_ESL_c3, Transect.M85_TWL, Transect.M85_TWL_setup,
                                 Transect.M85_FrontToe, Transect.M85_Crest,
-                                Transect.M85_StormImpactScale,
+                                Transect.M85_StormImpactScale, Transect.M85_Headroom,
                                 Transect.E85_Hs_p99, Transect.E85_Tp_p99, Transect.E85_Dissipative, Transect.E85_R2, Transect.E85_setup, 
                                 Transect.E85_ESL_c3, Transect.E85_TWL, Transect.E85_TWL_setup,
                                 Transect.E85_FrontToe, Transect.E85_Crest,
-                                Transect.E85_StormImpactScale]
+                                Transect.E85_StormImpactScale, Transect.E85_Headroom]
                 else:
                     Record = [str(Line.ID), str(Transect.ID),
                                 Transect.Hist_Rate,                
@@ -1126,23 +1126,23 @@ class Coast:
                                 Transect.H_Hs_p99, Transect.H_Tp_p99, Transect.H_Dissipative, Transect.H_R2, Transect.H_setup, 
                                 Transect.H_ESL_c3, Transect.H_TWL, Transect.H_TWL_setup,
                                 "", "",
-                                "",
+                                "", "",
                                 Transect.M45_Hs_p99, Transect.M45_Tp_p99, Transect.M45_Dissipative, Transect.M45_R2, Transect.M45_setup, 
                                 Transect.M45_ESL_c3, Transect.M45_TWL, Transect.M45_TWL_setup,
                                 "", "",
-                                "",
+                                "", "",
                                 Transect.E45_Hs_p99, Transect.E45_Tp_p99, Transect.E45_Dissipative, Transect.E45_R2, Transect.E45_setup, 
                                 Transect.E45_ESL_c3, Transect.E45_TWL, Transect.E45_TWL_setup,
                                 "", "",
-                                "",
+                                "", "",
                                 Transect.M85_Hs_p99, Transect.M85_Tp_p99, Transect.M85_Dissipative, Transect.M85_R2, Transect.M85_setup, 
                                 Transect.M85_ESL_c3, Transect.M85_TWL, Transect.M85_TWL_setup,
                                 "", "",
-                                "",
+                                "", "",
                                 Transect.E85_Hs_p99, Transect.E85_Tp_p99, Transect.E85_Dissipative, Transect.E85_R2, Transect.E85_setup, 
                                 Transect.E85_ESL_c3, Transect.E85_TWL, Transect.E85_TWL_setup,
                                 "", "",
-                                ""]
+                                "", ""]
 
                 # write transect and record
                 WL.line(WriteTransect)
@@ -4762,6 +4762,30 @@ class Coast:
                 else:
                     print(f"\t{Transect.LineID}_{Transect.ID}: Not a barrier")
                     
+    def CalculateHeadroom(self):
+        
+        """
+        Calcualte the difference between the dune crest and estimated total water level
+        for each climate scenario
+        
+        NH, Feb 2024
+        
+        """
+        
+        print("Coast.CalcualteHeadroom: Finding the difference between total water level and dune crest")
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                if Transect.Barrier:
+                    Transect.H_Headroom = Transect.H_Crest - Transect.H_TWL
+                    Transect.M45_Headroom = Transect.M45_Crest - Transect.M45_TWL
+                    Transect.M85_Headroom = Transect.M85_Crest - Transect.M85_TWL
+                    Transect.E45_Headroom = Transect.E45_Crest - Transect.E45_TWL
+                    Transect.E85_Headroom = Transect.E85_Crest - Transect.E85_TWL
+                else:
+                    print(f"\t{Transect.LineID}_{Transect.ID}: Not a barrier")
+    
+    
     def FindNearestIndex(self, Shapefile=None):
     
         """

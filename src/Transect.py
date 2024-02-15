@@ -265,6 +265,12 @@ class Transect:
         self.M85_Crest = None
         self.E45_Crest = None
         self.E85_Crest = None
+        # Esimated headroom: difference between dune crest elev and total water level
+        self.H_Headroom = None
+        self.M45_Headroom = None
+        self.M85_Headroom = None
+        self.E45_Headroom = None
+        self.E85_Headroom = None
     
     def __str__(self):
         String = "Transect Object:\nID: %s\n" % (str(self.ID))
