@@ -72,6 +72,8 @@ class Transect:
         self.ChangeRates = []
         self.ChangeRateErrors = []
         self.ChangeRate = None      # value used in calibration
+        self.MinChangeRate = None
+        self.MaxChangeRate = None
         self.DeleteFlag = False
 
         # rock head info
@@ -618,14 +620,36 @@ class Transect:
             
             # otherwise do the shorter period
             else:
-                dEta = self.HistoricShorelinesDistance[i] - self.HistoricShorelinesDistance[i-1]
-                ErrorSum = self.HistoricShorelinesErrors[i] + self.HistoricShorelinesErrors[i-1]
-                dT = self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[i-1]
+                j = 1
+                while True:
+                    dT = self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[i-j]
+                    if (i-j == 0):
+                        dEta = self.HistoricShorelinesDistance[i] - self.HistoricShorelinesDistance[i-j]
+                        ErrorSum = self.HistoricShorelinesErrors[i] + self.HistoricShorelinesErrors[i-j]
+                        break
+                    elif dT < 4:
+                        j += 1
+                        continue
+                    else:
+                        dEta = self.HistoricShorelinesDistance[i] - self.HistoricShorelinesDistance[i-j]
+                        ErrorSum = self.HistoricShorelinesErrors[i] + self.HistoricShorelinesErrors[i-j]
+                        break
                 
             self.ChangeRates.append(-dEta/dT)
             self.ChangeRateErrors.append(ErrorSum/dT)
         
         self.HistoricFlag = True
+
+        # add logic here to get best change rate and min/max?
+        # get min 
+        TempIndex = np.argmin(np.array(self.ChangeRates)[np.array(self.HistoricShorelinesYears) > 2000])
+        IndexMin = np.where(np.array(self.HistoricShorelinesYears) > 2000)[0][TempIndex]
+        self.MinChangeRate = self.ChangeRates[IndexMin]
+
+        # and max rates
+        TempIndex = np.argmax(np.array(self.ChangeRates)[np.array(self.HistoricShorelinesYears) > 2000])
+        IndexMax = np.where(np.array(self.HistoricShorelinesYears) > 2000)[0][TempIndex]
+        self.MaxChangeRate = self.ChangeRates[IndexMax]
 
     def CalculateIntertidalSlope(self):
         
@@ -801,7 +825,7 @@ class Transect:
             else:
                 continue
     
-    def PredictFutureShorelines(self, MaxRockHeadErosionDistance=25.):
+    def PredictFutureShorelines(self, MaxRockHeadErosionDistance=25., MinMaxFlag=None):
 
         """
         Function to predict the future position of the shoreline based on
@@ -809,7 +833,7 @@ class Transect:
         and future rates of sea level change following a calibrated Bruun Rule
         type approach.
 
-        This function requires several funcions with the Coast object to have been run
+        This function requires several functions with the Coast object to have been run
         first but the Coast wrapper should/could check for this.
 
         MDH, September 2019
@@ -840,7 +864,7 @@ class Transect:
                 self.HistoricShorelinesYears.pop(-2)
 
         # check if the two most recent positions are closer than 4 years together
-        if (self.HistoricShorelinesYears[-1] - self.HistoricShorelinesYears[-2] < 4):
+        while (self.HistoricShorelinesYears[-1] - self.HistoricShorelinesYears[-2] < 4):
             self.HistoricShorelinesSources.pop(-2)
             self.HistoricShorelinesDistances.pop(-2)
             self.HistoricShorelinesPositions.pop(-2)
@@ -913,12 +937,35 @@ class Transect:
         else:
             Interp = (self.FutureSeaLevelYears[1]-self.HistoricShorelinesYears[-1])/(self.FutureSeaLevelYears[1]-self.FutureSeaLevelYears[0])
             self.LatestRSL = self.FutureSeaLevels[1]-Interp*(self.FutureSeaLevels[1]-self.FutureSeaLevels[0])
+
+        # print(MinMaxFlag)
         
         # set index for calibration
         if self.LongTermOnly:
             CalibrationRate = self.VolumetricCalibrationRates[0]
             self.ChangeRate = self.ChangeRates[0]
+            self.MinChangeRate = self.ChangeRate
+            self.MaxChangeRate = self.ChangeRate
             self.CalibrationYear = self.HistoricShorelinesYears[0]
+
+        # get min 
+        TempIndex = np.argmin(self.VolumetricCalibrationRates[np.array(self.HistoricShorelinesYears) > 2000])
+        IndexMin = np.where(np.array(self.HistoricShorelinesYears) > 2000)[0][TempIndex]
+        
+        # and max rates
+        TempIndex = np.argmax(self.VolumetricCalibrationRates[np.array(self.HistoricShorelinesYears) > 2000])
+        IndexMax = np.where(np.array(self.HistoricShorelinesYears) > 2000)[0][TempIndex]
+
+        if ((MinMaxFlag == "Min") or (MinMaxFlag == "min")):
+            CalibrationRate = self.VolumetricCalibrationRates[IndexMin]
+            self.ChangeRate = self.ChangeRates[IndexMin]
+            self.CalibrationYear = self.HistoricShorelinesYears[IndexMin]
+
+        elif ((MinMaxFlag == "Max") or (MinMaxFlag == "max")):
+            CalibrationRate = self.VolumetricCalibrationRates[IndexMax]
+            self.ChangeRate = self.ChangeRates[IndexMax]
+            self.CalibrationYear = self.HistoricShorelinesYears[IndexMax]
+
         else:
             CalibrationRate = self.VolumetricCalibrationRates[-1]
             self.ChangeRate = self.ChangeRates[-1]
@@ -936,7 +983,7 @@ class Transect:
 
                 self.FutureShorelinesPositions.append(Node(X1,Y1))
                 self.FutureShorelinesRates.append(self.ChangeRates[-1])
-                self.FutureShorelinesDistances.append(self.HistoricShorelinesDistances[-1])
+                self.FutureShorelinesDistances.append(self.HistoricShorelinesDistances[-1][0])
 
                 continue
             
@@ -3110,7 +3157,7 @@ class Transect:
 
             # add a check in here if Year1 < Latest Shoreline
             if Year1 == self.HistoricShorelinesYears[-1]:
-                Distance1 = self.HistoricShorelinesDistances[-1]
+                Distance1 = self.HistoricShorelinesDistances[-1][0]
 
             else:
                 # find year index

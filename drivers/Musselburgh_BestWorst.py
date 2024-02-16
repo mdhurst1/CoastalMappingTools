@@ -22,7 +22,7 @@ sys.path.append("../src/")
 from Coast import *
 
 # define file names for analysis
-WorkingPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/Supersites/Musselburgh_2023/CMT")
+WorkingPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/Supersites/Musselburgh_2023")
 NationalDEMPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2Final/99_NationalData/OSTerrain5")
 
 # set sea level scenario
@@ -30,12 +30,8 @@ NationalDEMPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shar
 Scenarios = [2,4,8]
 Percentiles = [50,50,95]
 
-# Decades for writing
-Decades = [2020, 2030, 2040, 2050, 2060, 2070, 2080, 2090, 2100]
-
 # set up output folders
 GeometryPath = WorkingPath/("Geometry")
-
        
 if not GeometryPath.exists(): # checks if geometry folder exists, if not create
     GeometryPath.mkdir(parents=True, exist_ok=True)
@@ -72,7 +68,7 @@ for CellSub in CellList:
     # get soft coast position as most recent
     ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Open_Baseline.shp") # extent???
     SoftPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp") # set, clipped to MB
-    LiDARPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR_M1SfM.shp") # set, new lines added, clipped to MB
+    LiDARPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR.shp") # set, new lines added, clipped to MB
     MLWSPath = WorkingPath / "MLWS_Lines" / (RowName + "_MLWS.shp") # set, simplify edits???
     BathyPath = WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp") # set, no change
     OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp") # set, clipped to MB
@@ -95,13 +91,9 @@ for CellSub in CellList:
     for Scenario, Percentile in zip(Scenarios, Percentiles): # main loop starting
         
         OutputPath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_OpenCoast")
-        PolygonsPath = OutputPath/("Polygons")
         
         if not OutputPath.exists():
             OutputPath.mkdir(parents=True, exist_ok=True)
-        
-        if not PolygonsPath.exists():
-            PolygonsPath.mkdir(parents=True, exist_ok=True)
         
         # # this checks to see whether coast object already exists
         Filename2SaveAll = OutputPath / (RowName+"_OpenChange.pydata")
@@ -183,9 +175,7 @@ for CellSub in CellList:
             CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
             
             # Sample coastal defences
-            #CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp")), 25.)
-            #CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_CurrentDefences.shp")), 25.)
-            CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_ProposedDefences.shp")), 25.)
+            CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp")))
             
             CellCoast.GotHistoricShorelines = True
             
@@ -217,7 +207,7 @@ for CellSub in CellList:
         if not CellCoast.PredictedFutureShorelines:    
             
             # Sample coastal defences
-            #CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp")), 25.)
+            CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp")), 25.)
             
             CellCoast.Method = "Open"
             
@@ -234,65 +224,25 @@ for CellSub in CellList:
             with open(str(Filename2SaveAll), 'wb') as PFile:
                 pickle.dump(CellCoast, PFile)
         
-        # write future shorelines
-        SmoothOutput = True # smooth coastlines (true) or not (false)
-        
-        # write coast/bathy to file
-        CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
-        CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future.shp")),SmoothOutput)
-
-        #Loop through decades
-        for i, Decade in enumerate(Decades):
-
-            #skip 2020
-            if i == 0:
-                continue
-
-            CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_" + str(Decade) + ".shp")), Year=Decade)
-            CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
-            CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Influence_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
-            CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Vicinity_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
-        
-
-        # note min and max reversed due to sign convention on volumetric calibration terms
         CellCoast.PredictFutureShorelines(MinMaxFlag="Min")
-        CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future_Max.shp")),SmoothOutput)
-
-        #Loop through decades
-        for i, Decade in enumerate(Decades):
-
-            #skip 2020
-            if i == 0:
-                continue
-
-            CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_Max" + str(Decade) + ".shp")), Year=Decade)
-            CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_Max" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
-            CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Influence_Max" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
-            CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Vicinity_Max" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
-        
+        CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future_Min.shp")),SmoothOutput)
+        OpenCoast.WriteErodedAreaShp(str(OpenPath / (RowName + "_ErodedArea_" + str(Decade) + ".shp")), Year=Decade)
+                OpenCoast.WriteErodedAreaShp(str(OpenPath / (RowName + "_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
+                OpenCoast.WriteErosionProximityShp(str(OpenPath / (RowName + "_Influence_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
+                OpenCoast.WriteErosionProximityShp(str(OpenPath / (RowName + "_Vicinity_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
+                
 
         CellCoast.PredictFutureShorelines(MinMaxFlag="Max")
-        CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future_Min.shp")),SmoothOutput)
+        CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future_Max.shp")),SmoothOutput)
 
-        #Loop through decades
-        for i, Decade in enumerate(Decades):
-
-            #skip 2020
-            if i == 0:
-                continue
-
-            CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_Min" + str(Decade) + ".shp")), Year=Decade)
-            CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_Min" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
-            CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Influence_Min" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
-            CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Vicinity_Min" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
-        
-        # reset
-        CellCoast.PredictFutureShorelines()
-
+        # write future shorelines
         # write coast/bathy to file
+        SmoothOutput = False
         CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
         CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future.shp")),SmoothOutput)
         
+
+
         CellCoast.TruncateTransects()
         CellCoast.WriteFutureTransectsShp(str(OutputPath / (RowName + "_Transects.shp")))
         
