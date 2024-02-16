@@ -4433,6 +4433,9 @@ class Coast:
                 # Save dune toe and crest elevations
                 Transect.SaveBarrierElevations()
                 
+                # Extract the mean elevation of the hinterland
+                Transect.ExtractHinterlandMeanElevation()
+                
                 # update transect progress no
                 CurrentTransect += 1
         

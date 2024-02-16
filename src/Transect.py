@@ -271,6 +271,7 @@ class Transect:
         self.M85_Headroom = None
         self.E45_Headroom = None
         self.E85_Headroom = None
+        self.ElevHinterland = None
     
     def __str__(self):
         String = "Transect Object:\nID: %s\n" % (str(self.ID))
@@ -2074,6 +2075,36 @@ class Transect:
             self.H_BackToe = self.Elevation[self.BackToeInd]
             self.H_BackTop = self.Elevation[self.BackTopInd]
             self.H_Crest = self.Elevation[self.CrestInd]
+    
+    def ExtractHinterlandMeanElevation(self):
+    
+        """
+        Extract mean elevation of hinterland landward of 
+        back barrier toe
+        
+        NH, Feb 2024
+        
+        """
+        
+        if not self.Barrier:
+            return
+        
+        # If barrier, create new unmasked Elevation array 
+        data = self.Elevation
+        x = np.ma.array(data, mask = False)             # This still has original mask as applied in FindBarrier2. self.Elevation is still masked!
+        x.mask = False                                  # force mask reset. unmasked Elevation data now in x.data
+        #print(x.data)
+        
+        # Create new mask: all seaward of BackToe is masked
+        Mask = ma.getmask(x)
+        Mask[0:self.BackToeInd] = True
+        ElevHinterland = np.ma.array(x, mask=Mask) 
+        #print(ElevHinterland)
+        
+        #Calcualte mean
+        self.ElevHinterland = np.mean(ElevHinterland)
+        #print(" ",self.ElevHinterland)
+        
     
     def ExtractBarrierWidthVolume(self,Elevation=None):
 
