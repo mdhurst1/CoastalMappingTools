@@ -1061,7 +1061,7 @@ class Coast:
         Fields = [('DeletionFlag','C',1,0), 
         ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], 
         ['Hist_Rate','N', 5, 2],
-        ['Slope_Int','N', 5, 3],
+        ['Slope_Int','N', 5, 3], ['Bar_Vol','N', 5, 2], ['Hint_Elev','N', 5, 2],
         ['H_Hs','N', 5, 2],['H_Tp','N', 5, 2], ['H_Diss','B', 7, 0], ['H_R2','N', 5, 2], ['H_setup','N', 5, 2], 
         ['H_ESL_c3','N', 5, 2], ['H_TWL','N', 5, 2], ['H_TWL_su','N', 5, 2], 
         ['H_Toe','N', 5, 2],['H_Crest','N', 5, 2],
@@ -1098,7 +1098,7 @@ class Coast:
                 if Transect.Barrier:
                     Record = [str(Line.ID), str(Transect.ID),
                                 Transect.Hist_Rate,                
-                                Transect.IntertidalSlope,
+                                Transect.IntertidalSlope, Transect.BarrierVolume, Transect.ElevHinterland,
                                 Transect.H_Hs_p99, Transect.H_Tp_p99, Transect.H_Dissipative, Transect.H_R2, Transect.H_setup, 
                                 Transect.H_ESL_c3, Transect.H_TWL, Transect.H_TWL_setup,
                                 Transect.H_FrontToe, Transect.H_Crest,
@@ -1122,7 +1122,7 @@ class Coast:
                 else:
                     Record = [str(Line.ID), str(Transect.ID),
                                 Transect.Hist_Rate,                
-                                Transect.IntertidalSlope,
+                                Transect.IntertidalSlope, "", "",
                                 Transect.H_Hs_p99, Transect.H_Tp_p99, Transect.H_Dissipative, Transect.H_R2, Transect.H_setup, 
                                 Transect.H_ESL_c3, Transect.H_TWL, Transect.H_TWL_setup,
                                 "", "",
