@@ -1949,7 +1949,7 @@ class Transect:
             #print(f"b)FirstInd={FirstInd}, LastInd={LastInd}, MaxInd={MaxInd}, NewInd={NewInd}") 
             
             # Find Minimum detrended elevation, must be negative to be considered a low 
-            if ((NewInd < self.FrontToeInd) and (ElevDetrend[NewInd] < -0.001) and (MHWSFlag == False)):       # don't keep searching below current toe elevation if previous toe was < MHWS elevation
+            if ((NewInd < self.FrontToeInd) and (ElevDetrend[NewInd] < -0.2) and (MHWSFlag == False)):       # don't keep searching below current toe elevation if previous toe was < MHWS elevation
                 self.FrontToeInd = NewInd
                 BarrierPositionChangeFlag = True
                 #print("*")                         # NH DEBUG
