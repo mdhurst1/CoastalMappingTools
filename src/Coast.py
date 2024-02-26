@@ -1060,6 +1060,7 @@ class Coast:
         # Create Fields
         Fields = [('DeletionFlag','C',1,0), 
         ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], 
+        ['Shingle', 'B', 7, 0],
         ['Hist_Rate','N', 5, 2],
         ['Slope_Int','N', 5, 3], 
         ['H_Hs','N', 5, 2],['H_Tp','N', 5, 2], ['H_Diss','B', 7, 0], ['H_R2','N', 5, 2], ['H_setup','N', 5, 2], 
@@ -1097,6 +1098,7 @@ class Coast:
                 # Create the record this could become a function in transect object...
                 if Transect.Barrier:
                     Record = [str(Line.ID), str(Transect.ID),
+                                Transect.Shingle,
                                 Transect.Hist_Rate,                
                                 Transect.IntertidalSlope, 
                                 Transect.H_Hs_p99, Transect.H_Tp_p99, Transect.H_Dissipative, Transect.H_R2, Transect.H_setup, 
@@ -1121,6 +1123,7 @@ class Coast:
                                 Transect.E85_StormImpactScale, Transect.E85_Headroom]
                 else:
                     Record = [str(Line.ID), str(Transect.ID),
+                                Transect.Shingle,
                                 Transect.Hist_Rate,                
                                 Transect.IntertidalSlope, "", "",
                                 Transect.H_Hs_p99, Transect.H_Tp_p99, Transect.H_Dissipative, Transect.H_R2, Transect.H_setup, 
