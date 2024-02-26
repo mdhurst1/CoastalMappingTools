@@ -2783,6 +2783,56 @@ class Coast:
                     #ThisNode = getattr(Transect, NodeToSave) 
                     #print(Transect.LineID, Transect.ID, "\t", NodeToSave, Intersection, ThisNode)            
        
+    def IntersectShingle(self, Baseline, Shingle):
+        """
+        Find if transect intersects shingle habitat
+        Buffer baseline by 50m. Intersect with Shingle shapefile, save
+        Find if trnasect intersects this 
+        If so, set Shingle flag, to be used in extreme runup calc.
+        
+        NH, Feb 2024
+        
+        """
+        
+        print("Coast.IntersectShingle: Finding if intersection between transect and", Shingle) 
+        
+        buffer_dist = 50.0
+        
+        # Read in shapefiles as geodataframes using geopandas
+        coastline = gp.read_file(Baseline)
+        shingle = gp.read_file(Shingle)
+        
+        #print("Coastline", coastline)
+        
+        # Buffer baseline by 50 m. This way retains it as a geodataframe
+        coastline['geometry'] = coastline.geometry.buffer(buffer_dist)
+        #print("Coastline_buffered",coastline)
+        #coastline.to_file("coastline_buffered.shp")            # works
+        
+        # Intersect with Habmos B2 shingle polygon. Both inputs must be geodataframes
+        coastal_shingle = gp.overlay(coastline, shingle, how="intersection")
+        #print("Coastal shingle=",coastal_shingle['geometry'])
+        #coastal_shingle.to_file("coastal_shingle.shp")         # works
+        
+        # If transect intersects coastal shingle, set flag
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                TransectLS = LineString([(Transect.StartNode.X,Transect.StartNode.Y), (Transect.EndNode.X,Transect.EndNode.Y)])
+                # turn into geodataframe to use in gp.overlay
+                d = {'geometry':[TransectLS]}
+                #print(d)
+                transect_gdf = gp.GeoDataFrame(d, crs="EPSG:27700")
+                #print(transect_gdf)
+                intersect = gp.overlay(coastal_shingle, transect_gdf, how="intersection", keep_geom_type=False) # if keep_geom_type=True, return only geometries of the same geometry type the GeoDataFrame has, if False, return all resulting geometries
+                #print(Line.ID,"_",Transect.ID, intersect)
+                if intersect.empty:
+                    Transect.Shingle = False
+                else:
+                    Transect.Shingle = True
+                    #print("Shingle!", Line.ID,"_",Transect.ID)
+        
+        
+    
     def ExtractContours(self,ContourShp):
 
         """
