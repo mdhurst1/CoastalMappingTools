@@ -274,6 +274,8 @@ class Transect:
         self.E45_Headroom = None
         self.E85_Headroom = None
         self.ElevHinterland = None
+        # shingle habitat intersected
+        self.Shingle = None
     
     def __str__(self):
         String = "Transect Object:\nID: %s\n" % (str(self.ID))
