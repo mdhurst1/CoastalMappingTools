@@ -1125,11 +1125,11 @@ class Coast:
                     Record = [str(Line.ID), str(Transect.ID),
                                 Transect.Shingle,
                                 Transect.Hist_Rate,                
-                                Transect.IntertidalSlope, "", "",
+                                Transect.IntertidalSlope,
                                 Transect.H_Hs_p99, Transect.H_Tp_p99, Transect.H_Dissipative, Transect.H_R2, Transect.H_setup, 
                                 Transect.H_ESL_c3, Transect.H_TWL, Transect.H_TWL_setup,
                                 "", "",
-                                "", "",
+                                "", "", "", "",
                                 Transect.M45_Hs_p99, Transect.M45_Tp_p99, Transect.M45_Dissipative, Transect.M45_R2, Transect.M45_setup, 
                                 Transect.M45_ESL_c3, Transect.M45_TWL, Transect.M45_TWL_setup,
                                 "", "",
@@ -4544,27 +4544,39 @@ class Coast:
             print("\tInvalid Scenario:", Scenario)
             sys.exit()
         
-        g = 9.81                                                                        # gravitational constant in m/s2
+        g = 9.81                                                                            # gravitational constant in m/s2
+        Cp = 0.33                                                                           # Constant in Poate (2016) eq(12)
         
         for Line in self.CoastLines:
             for Transect in Line.Transects:
-                Bf = Transect.IntertidalSlope #ForeshoreSlope
+                Bf = Transect.IntertidalSlope 
                 
                 if Scenario == "Hist":
-                    H0 = Transect.H_Hs_p99
-                    L0 = g*Transect.H_Tp_p99**2/(2*np.pi)                               # Stockdon eq(1)
-                    Iribarren = Bf/np.sqrt(H0/L0)                                       # Stockdon eq(2)
-                    if Iribarren < 0.3:                                                 # extremely dissipative beach
-                        Transect.H_R2 = 0.043*np.sqrt(H0*L0)                            # Stockdon eq(18): Extreme wave runup
-                        Transect.H_setup = 0.016*np.sqrt(H0*L0)                         # Stockdon eq(16) 
-                        Transect.H_Dissipative = True                                   # set flag for extremely dissipative beach
-                    else:
-                        Transect.H_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
-                                        np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)         # Stockdon eq(19): Extreme wave runup (all other sandy beaches)
-                        Transect.H_setup = 0.35*Bf*np.sqrt(H0*L0)                       # Stockdon eq(10)
-                        Transect.H_Dissipative = False
+                    Tp = Transect.H_Tp_p99                                                  # Offshore peak wave period
+                    H0 = Transect.H_Hs_p99                                                  # Offshore significant wave height
+                    L0 = g*Transect.H_Tp_p99**2/(2*np.pi)                                   # Stockdon eq(1)
+                    Iribarren = Bf/np.sqrt(H0/L0)                                           # Stockdon eq(2)
+                    
+                    if Transect.Shingle:
+                        Transect.H_R2 = Cp*np.sqrt(Bf)*H0*Tp                                # Poate eq(12), modified by Blenkinsopp (2022) to use intertidal slope, to accommodate composite sand/gravel beaches
+                        if Iribarren < 0.3:                                                 # extremely dissipative beach
+                            Transect.H_setup = 0.016*np.sqrt(H0*L0)                         # Stockdon eq(16) 
+                            Transect.H_Dissipative = True                                   # set flag for extremely dissipative beach
+                        else:
+                            Transect.H_setup = 0.35*Bf*np.sqrt(H0*L0)                       # Stockdon eq(10)
+                            Transect.H_Dissipative = False
+                    else:    
+                        if Iribarren < 0.3:                                                 # extremely dissipative beach
+                            Transect.H_R2 = 0.043*np.sqrt(H0*L0)                            # Stockdon eq(18): Extreme wave runup
+                            Transect.H_setup = 0.016*np.sqrt(H0*L0)                         # Stockdon eq(16) 
+                            Transect.H_Dissipative = True                                   # set flag for extremely dissipative beach
+                        else:
+                            Transect.H_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
+                                            np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)         # Stockdon eq(19): Extreme wave runup (all other sandy beaches)
+                            Transect.H_setup = 0.35*Bf*np.sqrt(H0*L0)                       # Stockdon eq(10)
+                            Transect.H_Dissipative = False
                                         
-                elif Scenario == "M45":                                                 # repeat for each climate scenario
+                elif Scenario == "M45":                                                     # repeat for each climate scenario
                     H0 = Transect.M45_Hs_p99
                     L0 = g*Transect.M45_Tp_p99**2/(2*np.pi)                                              
                     Iribarren = Bf/np.sqrt(H0/L0)
