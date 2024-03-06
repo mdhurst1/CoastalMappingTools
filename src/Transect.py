@@ -1776,7 +1776,7 @@ class Transect:
         # switch flag to indicate a barrier has been found
         self.Barrier = True
     
-    def FindBarrier2(self):
+    def FindBarrier2(self, SeawardMask=None, LandwardMask=None, FrontToeMin=None):
         
         """
         Description goes here
@@ -1784,6 +1784,11 @@ class Transect:
         
         Toe detection revised
         NH Dec 2023
+        
+        SeawardMask: Distance from the start of the transect up to which to mask (not look for barrier)
+        LandwardMask: Distance from the start of the transect beyond which NOT to search for coastal barrier
+        FrontToeMin: Minimum negative detrended elevation for new front toe
+        
         """
         
         # Check if rocky and dont look for barrier on rocky coast
@@ -1804,6 +1809,19 @@ class Transect:
         
         # Bodge: set first (most seaward) element's mask to avoid compile error when no mask is set
         Mask[0] = True
+        
+        # Mask seaward and landward, if passed. To accommodate long transects and low coastal barriers that are hard to detect
+        if (SeawardMask > 0):
+            Mask[self.Distance < SeawardMask] = True
+        if (LandwardMask > 0):
+            Mask[self.Distance > LandwardMask] = True
+            
+        # Minimum negative detrended elevation for new FrontToe. Default is -0.001 m. 
+        # Larger values (-0.2) work better for dunes with clear inflections. Smaller values (-0.001) better for flat berms.
+        if (FrontToeMin < 0):
+            Tmin = FrontToeMin
+        else:
+            Tmin = -0.001
 
         # apply mask
         ElevMasked = ma.masked_where(Mask, self.Elevation)
@@ -1951,7 +1969,7 @@ class Transect:
             #print(f"b)FirstInd={FirstInd}, LastInd={LastInd}, MaxInd={MaxInd}, NewInd={NewInd}") 
             
             # Find Minimum detrended elevation, must be negative to be considered a low 
-            if ((NewInd < self.FrontToeInd) and (ElevDetrend[NewInd] < -0.2) and (MHWSFlag == False)):       # don't keep searching below current toe elevation if previous toe was < MHWS elevation
+            if ((NewInd < self.FrontToeInd) and (ElevDetrend[NewInd] < Tmin) and (MHWSFlag == False)):       # don't keep searching below current toe elevation if previous toe was < MHWS elevation
                 self.FrontToeInd = NewInd
                 BarrierPositionChangeFlag = True
                 #print("*")                         # NH DEBUG

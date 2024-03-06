@@ -4469,13 +4469,18 @@ class Coast:
                 
         print("")
     
-    def AnalyseTransectMorphology(self):
+    def AnalyseTransectMorphology(self, SeawardMask=None, LandwardMask=None, FrontToeMin=None):
 
         """
 
         Barrier focus for now
 
         MDH, June 2019
+        
+        NH edit: Add 
+        SeawardMask: Distance from the start of the transect up to which to mask (not look for barrier)
+        LandwardMask: Distance from the start of the transect beyond which NOT to search for coastal barrier
+        FrontToeMin: Minimum negative detrended elevation for new front toe
 
         """
 
@@ -4496,7 +4501,7 @@ class Coast:
                 # Transect.FindCliff()
                 
                 # NH: Revised toe detection (MDH original code in FindBarrier)
-                Transect.FindBarrier2()
+                Transect.FindBarrier2(SeawardMask=SeawardMask, LandwardMask=LandwardMask, FrontToeMin=FrontToeMin)
 
                 # Save dune toe and crest elevations
                 Transect.SaveBarrierElevations()
