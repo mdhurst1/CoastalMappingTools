@@ -4582,60 +4582,108 @@ class Coast:
                             Transect.H_Dissipative = False
                                         
                 elif Scenario == "M45":                                                     # repeat for each climate scenario
+                    Tp = Transect.M45_Tp_p99
                     H0 = Transect.M45_Hs_p99
                     L0 = g*Transect.M45_Tp_p99**2/(2*np.pi)                                              
                     Iribarren = Bf/np.sqrt(H0/L0)
-                    if Iribarren < 0.3:                                                
-                        Transect.M45_R2 = 0.043*np.sqrt(H0*L0)    
-                        Transect.M45_setup = 0.016*np.sqrt(H0*L0)                                   
-                        Transect.M45_Dissipative = True
+                    
+                    if Transect.Shingle:
+                        Transect.M45_R2 = Cp*np.sqrt(Bf)*H0*Tp                                
+                        if Iribarren < 0.3:                                                 
+                            Transect.M45_setup = 0.016*np.sqrt(H0*L0)                         
+                            Transect.M45_Dissipative = True                                   
+                        else:
+                            Transect.M45_setup = 0.35*Bf*np.sqrt(H0*L0)                      
+                            Transect.M45_Dissipative = False
+                    
                     else:
-                        Transect.M45_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
-                                        np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) 
-                        Transect.M45_setup = 0.35*Bf*np.sqrt(H0*L0)                         
-                        Transect.M45_Dissipative = False                                        
+                        if Iribarren < 0.3:                                                
+                            Transect.M45_R2 = 0.043*np.sqrt(H0*L0)    
+                            Transect.M45_setup = 0.016*np.sqrt(H0*L0)                                   
+                            Transect.M45_Dissipative = True
+                        else:
+                            Transect.M45_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
+                                            np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) 
+                            Transect.M45_setup = 0.35*Bf*np.sqrt(H0*L0)                         
+                            Transect.M45_Dissipative = False                                        
                 
                 elif Scenario == "M85":
+                    Tp = Transect.M85_Tp_p99
                     H0 = Transect.M85_Hs_p99
                     L0 = g*Transect.M85_Tp_p99**2/(2*np.pi)                                              
                     Iribarren = Bf/np.sqrt(H0/L0)
-                    if Iribarren < 0.3:                                                
-                        Transect.M85_R2 = 0.043*np.sqrt(H0*L0) 
-                        Transect.M85_setup = 0.016*np.sqrt(H0*L0)                                
-                        Transect.M85_Dissipative = True
+                    
+                    if Transect.Shingle:
+                        Transect.M85_R2 = Cp*np.sqrt(Bf)*H0*Tp                                
+                        if Iribarren < 0.3:                                                 
+                            Transect.M85_setup = 0.016*np.sqrt(H0*L0)                         
+                            Transect.M85_Dissipative = True                                   
+                        else:
+                            Transect.M85_setup = 0.35*Bf*np.sqrt(H0*L0)                      
+                            Transect.M85_Dissipative = False
+                    
                     else:
-                        Transect.M85_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
-                                        np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) 
-                        Transect.M85_setup = 0.35*Bf*np.sqrt(H0*L0)                     
-                        Transect.M85_Dissipative = False 
+                        if Iribarren < 0.3:                                                
+                            Transect.M85_R2 = 0.043*np.sqrt(H0*L0) 
+                            Transect.M85_setup = 0.016*np.sqrt(H0*L0)                                
+                            Transect.M85_Dissipative = True
+                        else:
+                            Transect.M85_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
+                                            np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) 
+                            Transect.M85_setup = 0.35*Bf*np.sqrt(H0*L0)                     
+                            Transect.M85_Dissipative = False 
                                         
                 elif Scenario == "E45":
+                    Tp = Transect.E45_Tp_p99
                     H0 = Transect.E45_Hs_p99
                     L0 = g*Transect.E45_Tp_p99**2/(2*np.pi)                                              
                     Iribarren = Bf/np.sqrt(H0/L0)
-                    if Iribarren < 0.3:                                                
-                        Transect.E45_R2 = 0.043*np.sqrt(H0*L0)   
-                        Transect.E45_setup = 0.016*np.sqrt(H0*L0)                                  
-                        Transect.E45_Dissipative = True                        
+                    
+                    if Transect.Shingle:
+                        Transect.E45_R2 = Cp*np.sqrt(Bf)*H0*Tp                                
+                        if Iribarren < 0.3:                                                 
+                            Transect.E45_setup = 0.016*np.sqrt(H0*L0)                         
+                            Transect.E45_Dissipative = True                                   
+                        else:
+                            Transect.E45_setup = 0.35*Bf*np.sqrt(H0*L0)                      
+                            Transect.E45_Dissipative = False
+                            
                     else:
-                        Transect.E45_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
-                                        np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)
-                        Transect.E45_setup = 0.35*Bf*np.sqrt(H0*L0)                       
-                        Transect.E45_Dissipative = False
+                        if Iribarren < 0.3:                                                
+                            Transect.E45_R2 = 0.043*np.sqrt(H0*L0)   
+                            Transect.E45_setup = 0.016*np.sqrt(H0*L0)                                  
+                            Transect.E45_Dissipative = True                        
+                        else:
+                            Transect.E45_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
+                                            np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)
+                            Transect.E45_setup = 0.35*Bf*np.sqrt(H0*L0)                       
+                            Transect.E45_Dissipative = False
                                         
                 elif Scenario == "E85":
+                    Tp = Transect.E85_Tp_p99
                     H0 = Transect.E85_Hs_p99
                     L0 = g*Transect.E85_Tp_p99**2/(2*np.pi)                                              
                     Iribarren = Bf/np.sqrt(H0/L0)
-                    if Iribarren < 0.3:                                                
-                        Transect.E85_R2 = 0.043*np.sqrt(H0*L0)  
-                        Transect.E85_setup = 0.016*np.sqrt(H0*L0)                                
-                        Transect.E85_Dissipative = True  
+                    
+                    if Transect.Shingle:
+                        Transect.E85_R2 = Cp*np.sqrt(Bf)*H0*Tp                                
+                        if Iribarren < 0.3:                                                 
+                            Transect.E85_setup = 0.016*np.sqrt(H0*L0)                         
+                            Transect.E85_Dissipative = True                                   
+                        else:
+                            Transect.E85_setup = 0.35*Bf*np.sqrt(H0*L0)                      
+                            Transect.E85_Dissipative = False
+                    
                     else:
-                        Transect.E85_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
-                                        np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) 
-                        Transect.E85_setup = 0.35*Bf*np.sqrt(H0*L0)                       
-                        Transect.E85_Dissipative = False
+                        if Iribarren < 0.3:                                                
+                            Transect.E85_R2 = 0.043*np.sqrt(H0*L0)  
+                            Transect.E85_setup = 0.016*np.sqrt(H0*L0)                                
+                            Transect.E85_Dissipative = True  
+                        else:
+                            Transect.E85_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
+                                            np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) 
+                            Transect.E85_setup = 0.35*Bf*np.sqrt(H0*L0)                       
+                            Transect.E85_Dissipative = False
                                         
                 else:
                     print(f"\t{Transect.LineID}_{Transect.ID}:Invalid scenario {Scenario}") # should not ever get this
