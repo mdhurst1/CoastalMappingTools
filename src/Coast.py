@@ -2834,7 +2834,38 @@ class Coast:
                     Transect.Shingle = True
                     #print("Shingle!", Line.ID,"_",Transect.ID)
         
+    def CalculateDistanceToFirstAsset(self):
+        """
+        Funcion to calculate the distance between the CoastNode and first 
+        road / rail asset that intersects the transect.
         
+        Save distance as Transect.DistanceToFirstAsset
+        
+        Uses Transect.RoadsIntersect and Transect.RailIntersect
+        which are (0,0) for no intersect.
+        Thus if no intersect, Transect.DistanceToFirstAsset very large (>900,000).
+        
+        NH, Mar 2024
+        
+        """
+        print("Coast.CalculateDistanceToFirstAsset: Finding distance from coastline to first road/rail asset", )
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                
+                # Turn Nodes into Points
+                CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                RoadPoint = Point(Transect.RoadsIntersect.X, Transect.RoadsIntersect.Y)
+                RailPoint = Point(Transect.RailIntersect.X, Transect.RailIntersect.Y)
+                
+                # Use Geopandas distance
+                dist_road = CoastPoint.distance(RoadPoint) 
+                dist_rail = CoastPoint.distance(RailPoint)
+                
+                # Pick smaller distance
+                dist_asset = min(dist_road, dist_rail)
+                
+                #print(Line.ID, Transect.ID, "dist_asset=", dist_asset)
     
     def ExtractContours(self,ContourShp):
 
