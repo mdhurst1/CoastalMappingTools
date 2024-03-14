@@ -2864,8 +2864,10 @@ class Coast:
                 
                 # Pick smaller distance
                 dist_asset = min(dist_road, dist_rail)
+                Transect.NearestAsset = dist_asset
                 
-                #print(Line.ID, Transect.ID, "dist_asset=", dist_asset)
+                #print(Line.ID, Transect.ID, "dist_asset=", Transect.NearestAsset)
+   
     
     def ExtractContours(self,ContourShp):
 

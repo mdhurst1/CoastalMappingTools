@@ -276,6 +276,10 @@ class Transect:
         self.ElevHinterland = None
         # shingle habitat intersected
         self.Shingle = None
+        # Asset location
+        self.RoadsIntersect = None
+        self.RailIntersect = None
+        self.NearestAsset = None
     
     def __str__(self):
         String = "Transect Object:\nID: %s\n" % (str(self.ID))
