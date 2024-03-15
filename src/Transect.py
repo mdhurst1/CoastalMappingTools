@@ -280,6 +280,9 @@ class Transect:
         self.RoadsIntersect = None
         self.RailIntersect = None
         self.NearestAsset = None
+        # Barrier search window
+        self.SeawardMask = None
+        self.LandwardMask = None
     
     def __str__(self):
         String = "Transect Object:\nID: %s\n" % (str(self.ID))
@@ -1780,7 +1783,7 @@ class Transect:
         # switch flag to indicate a barrier has been found
         self.Barrier = True
     
-    def FindBarrier2(self, SeawardMask=None, LandwardMask=None, FrontToeMin=None):
+    def FindBarrier2(self, FrontToeMin=None): #(self, SeawardMask=None, LandwardMask=None, FrontToeMin=None):
         
         """
         Description goes here
@@ -1814,11 +1817,11 @@ class Transect:
         # Bodge: set first (most seaward) element's mask to avoid compile error when no mask is set
         Mask[0] = True
         
-        # Mask seaward and landward, if passed. To accommodate long transects and low coastal barriers that are hard to detect
-        if (SeawardMask > 0):
-            Mask[self.Distance < SeawardMask] = True
-        if (LandwardMask > 0):
-            Mask[self.Distance > LandwardMask] = True
+        # Mask seaward and landward, if set. To accommodate long transects and low coastal barriers that are hard to detect
+        if (self.SeawardMask > 0):
+            Mask[self.Distance < self.SeawardMask] = True
+        if (self.LandwardMask > 0):
+            Mask[self.Distance > self.LandwardMask] = True
             
         # Minimum negative detrended elevation for new FrontToe. Default is -0.001 m. 
         # Larger values (-0.2) work better for dunes with clear inflections. Smaller values (-0.001) better for flat berms.
@@ -1919,7 +1922,7 @@ class Transect:
             # Find Maximum detrended elevation. Original: If at end of transect then not a barrier
             # NH edit: rather than discard transect, keep as potential barrier and set flag that hinterland is higher than barrier crest.
             if (NewInd == LastInd):
-                print("\n\tNot a barrier 5")
+                print("LastInt highest") #("\n\tNot a barrier 5")
                 
                 #print(self.LineID, self.ID)         # NH DEBUG
                 #print(f"FirstInd={FirstInd}, LastInd={LastInd}, MaxInd={MaxInd}, NewInd={NewInd}")

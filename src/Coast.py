@@ -1482,6 +1482,7 @@ class Coast:
         # write headers
         f.write("LineID" + delimiter + "TransectID" + delimiter + "IntertidalSlope" + delimiter +\
                 "MHWS" + delimiter + "H_ESL_c3" + delimiter + "H_R2" + delimiter + "H_TWL" + delimiter + "H_TWL_setup" + delimiter +\
+                "SeawardMask" + delimiter + "LandwardMask" + delimiter +\
                 "FrontToeElev" + delimiter + "BackToeElev" + delimiter + "FrontTopElev" + delimiter + "BackTopElev" + delimiter + "CrestElev" + delimiter +\
                 "FrontToeDist" + delimiter + "BackToeDist" + delimiter + "FrontTopDist" + delimiter + "BackTopDist" + delimiter + "CrestDist" + delimiter +\
                 "StormRegime" + "\n")
@@ -1497,6 +1498,8 @@ class Coast:
                 f.write(str(Transect.H_R2) + delimiter)
                 f.write(str(Transect.H_TWL) + delimiter)
                 f.write(str(Transect.H_TWL_setup) + delimiter)
+                f.write(str(Transect.SeawardMask) + delimiter)
+                f.write(str(Transect.LandwardMask) + delimiter)
                 if Transect.Barrier:
                     f.write(str(Transect.H_FrontToe) + delimiter)
                     f.write(str(Transect.H_BackToe) + delimiter)
@@ -2867,7 +2870,47 @@ class Coast:
                 Transect.NearestAsset = dist_asset
                 
                 #print(Line.ID, Transect.ID, "dist_asset=", Transect.NearestAsset)
-   
+    
+    def SetBarrierSearchWindow(self, TransectLen):
+        """
+        Function to set the window within which to search for coastal barrier.
+        NOTE: Requires transect min length of 200 m.
+        
+        Uses the nearest coastal asset location to find LandwardMask: 
+        - if assets within 200 m of coast, use the asset location as the landward edge of the 
+        barrier search window (to only look for barriers seaward of assets, e.g. Golspie)
+        - else if no assets within 200 m of coast, use min elevation between 50 m and 200 m landward
+        as the landward edge of the barrier search window (to find wider barriers).
+        
+        Set SeawardMask to -50 m for now. 
+        
+        Save to Transect.LandwardMask and Transect.SeawardMask
+        
+        Inputs
+        - TransectLen: Length in meters of the transect (e.g. 1000)
+        
+        NH, Mar 2024
+        
+        """
+        print("Coast.SetBarrierSearchWindow: Setting search window for coastal barriers")
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                # Set seaward edge of search 50 m seaward of coastline
+                Transect.SeawardMask = TransectLen - 50
+                
+                # Landward window: If assets present inside potential barrier region, look only seaward of asset
+                if (Transect.NearestAsset < 200):
+                    Transect.LandwardMask = round(TransectLen + Transect.NearestAsset)
+                    #print(Line.ID, Transect.ID, "*1", Transect.LandwardMask)
+                else:
+                    # find min elevation between 50 m and 200 m landward
+                    idx = np.where((Transect.Distance > TransectLen+50) & (Transect.Distance < TransectLen+200))
+                    idx = idx[0]                                                                                # take first element of tuple, which is the array of indexes
+                    idx_min_elev = np.argmin(Transect.Elevation[idx]) + idx[0]
+                    Transect.LandwardMask = Transect.Distance[idx_min_elev]
+                    #print(f"{Line.ID}, {Transect.ID}, *2, idx={idx}, idx_min_elev={idx_min_elev}, LWW={Transect.LandwardMask}")
+        
     
     def ExtractContours(self,ContourShp):
 
@@ -4502,7 +4545,7 @@ class Coast:
                 
         print("")
     
-    def AnalyseTransectMorphology(self, SeawardMask=None, LandwardMask=None, FrontToeMin=None):
+    def AnalyseTransectMorphology(self, FrontToeMin=None): #(self, SeawardMask=None, LandwardMask=None, FrontToeMin=None):
 
         """
 
@@ -4534,7 +4577,7 @@ class Coast:
                 # Transect.FindCliff()
                 
                 # NH: Revised toe detection (MDH original code in FindBarrier)
-                Transect.FindBarrier2(SeawardMask=SeawardMask, LandwardMask=LandwardMask, FrontToeMin=FrontToeMin)
+                Transect.FindBarrier2(FrontToeMin=FrontToeMin) #(SeawardMask=SeawardMask, LandwardMask=LandwardMask, FrontToeMin=FrontToeMin)
 
                 # Save dune toe and crest elevations
                 Transect.SaveBarrierElevations()
