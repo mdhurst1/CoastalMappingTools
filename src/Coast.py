@@ -1439,7 +1439,8 @@ class Coast:
         # write headers
         f.write("LineID" + delimiter + "TransectID" + delimiter + "IntertidalSlope" + delimiter +\
                 "FrontToeElev" + delimiter + "BackToeElev" + delimiter + "FrontTopElev" + delimiter + "BackTopElev" + delimiter + "CrestElev" + delimiter +\
-                "FrontToeDist" + delimiter + "BackToeDist" + delimiter + "FrontTopDist" + delimiter + "BackTopDist" + delimiter + "CrestDist" + "\n")
+                "FrontToeDist" + delimiter + "BackToeDist" + delimiter + "FrontTopDist" + delimiter + "BackTopDist" + delimiter + "CrestDist" + delimiter +\
+                "CliffToeDist" + delimiter + "CliffTopDist" + "\n")
                 
         for Line in self.CoastLines:
             for Transect in Line.Transects:
@@ -1457,10 +1458,16 @@ class Coast:
                     f.write(str(Transect.Distance[Transect.BackToeInd]) + delimiter)
                     f.write(str(Transect.Distance[Transect.FrontTopInd]) + delimiter)
                     f.write(str(Transect.Distance[Transect.BackTopInd]) + delimiter)
-                    f.write(str(Transect.Distance[Transect.CrestInd]) + "\n")
+                    f.write(str(Transect.Distance[Transect.CrestInd]) + delimiter) # "\n")
                 else:
                     f.write("NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + \
-                            "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + "\n")
+                            "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter) #"\n")
+                            
+                if Transect.Cliff:
+                    f.write(str(Transect.Distance[Transect.CliffToeInd]) + delimiter)
+                    f.write(str(Transect.Distance[Transect.CliffTopInd]) + "\n")
+                else:
+                    f.write("NaN" + delimiter + "NaN" + "\n")
                     
         f.close()
         
@@ -1485,7 +1492,7 @@ class Coast:
                 "SeawardMask" + delimiter + "LandwardMask" + delimiter +\
                 "FrontToeElev" + delimiter + "BackToeElev" + delimiter + "FrontTopElev" + delimiter + "BackTopElev" + delimiter + "CrestElev" + delimiter +\
                 "FrontToeDist" + delimiter + "BackToeDist" + delimiter + "FrontTopDist" + delimiter + "BackTopDist" + delimiter + "CrestDist" + delimiter +\
-                "StormRegime" + "\n")
+                "StormRegime" + delimiter + "CliffToeDist" + delimiter + "CliffTopDist" + "\n")
                 
         for Line in self.CoastLines:
             for Transect in Line.Transects:
@@ -1500,6 +1507,7 @@ class Coast:
                 f.write(str(Transect.H_TWL_setup) + delimiter)
                 f.write(str(Transect.SeawardMask) + delimiter)
                 f.write(str(Transect.LandwardMask) + delimiter)
+                
                 if Transect.Barrier:
                     f.write(str(Transect.H_FrontToe) + delimiter)
                     f.write(str(Transect.H_BackToe) + delimiter)
@@ -1511,10 +1519,16 @@ class Coast:
                     f.write(str(Transect.Distance[Transect.FrontTopInd]) + delimiter)
                     f.write(str(Transect.Distance[Transect.BackTopInd]) + delimiter)
                     f.write(str(Transect.Distance[Transect.CrestInd]) + delimiter)
-                    f.write(str(Transect.H_StormImpactScale) + "\n")
+                    f.write(str(Transect.H_StormImpactScale) + delimiter)
                 else:
                     f.write("NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + \
-                            "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + "\n")
+                            "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter)
+                
+                if Transect.Cliff:
+                    f.write(str(Transect.Distance[Transect.CliffToeInd]) + delimiter)
+                    f.write(str(Transect.Distance[Transect.CliffTopInd]) + "\n")
+                else:
+                    f.write("NaN" + delimiter + "NaN" + "\n")
                     
         f.close()
     
@@ -4573,8 +4587,9 @@ class Coast:
                 print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
                 
                 # # Call analyses
-                #if Transect.ID == "13":
-                # Transect.FindCliff()
+                #if Transect.LineID == "8":
+                # NH: Revised cliff detection. (MDH original code in FindCliff)
+                Transect.FindCliff2()
                 
                 # NH: Revised toe detection (MDH original code in FindBarrier)
                 Transect.FindBarrier2(FrontToeMin=FrontToeMin) #(SeawardMask=SeawardMask, LandwardMask=LandwardMask, FrontToeMin=FrontToeMin)
