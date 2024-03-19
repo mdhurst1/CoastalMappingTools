@@ -1413,9 +1413,140 @@ class Transect:
 
         elif (self.CliffSlope > 0.6) or (self.CliffHeight > 15.):
             self.Cliff = True
+            #print(" ", self.LineID, self.ID, "Cliff:", self.Distance[self.CliffToeInd], self.Distance[self.CliffTopInd])
                     
         else:
             self.Cliff = False
+            
+    def FindCliff2(self):
+
+        """
+
+        Function to identify whether the coastal transect has a cliff
+        and find the position of a cliff on a coastal transect
+        records the position of the cliff top and cliff toe
+
+        MDH, June 2019
+        NH modified, Mar 2024
+
+        """
+        
+        # Find the last point on the Transect
+        LastInd = np.transpose(self.Elevation.nonzero())[-1][0]
+        self.CliffTopInd = LastInd
+            
+        # NH: Find first real elevation location in masked array (without creating new mask) KEEP THIS
+        idx = np.where(self.Elevation > 0)
+        idx = idx[0]                        # np.where returns tuple of array + datatype; Choose array.
+        FirstInd = idx[0]
+        #print(" ", self.LineID, self.ID, "idx=", idx, "FirstInd=", FirstInd)
+        #FirstInd = np.transpose(self.Elevation.nonzero())[0][0] # old
+
+        # Find the minumum and maximum elevation in the masked array
+        MaxInd = np.argmax(self.Elevation)
+        MinInd = FirstInd # old: np.argmin(self.Elevation) change this as all sea elevations below 0m - messes up detrending angle
+        self.CliffToeInd = MinInd
+        
+        # mask distances and elevations seaward of minimum and landward of last real value
+        Mask = self.Elevation.mask.copy()
+        Mask[0:MinInd] = True
+        if LastInd < len(self.Elevation):
+            Mask[LastInd+1:] = True
+        self.Elevation = ma.masked_where(Mask, self.Elevation)
+        self.Distance = ma.masked_where(Mask, self.Distance)
+
+        # cliffed coast will have elevations > 10 m
+        # this threshold could be flexible in future
+        if np.max(self.Elevation) < 10.:
+            self.Cliff = False
+            print("Not a cliff 1")
+            return
+
+        # flag for changing position
+        CliffPositionChangeFlag = True
+
+        while CliffPositionChangeFlag:
+
+            # reset flag
+            CliffPositionChangeFlag = False
+
+            # FIRST CLIFF TOP
+
+            # Get Angle to detrend towards the coast
+            # catch divide by zero
+            if self.Distance[self.CliffToeInd] == self.Distance[LastInd]:
+                print(self.ID)
+                print("Divide by zero!")
+                sys.exit()
+
+            Angle = np.degrees(np.arctan((self.Elevation[LastInd]-self.Elevation[self.CliffToeInd]) 
+                                        / (self.Distance[LastInd]-self.Distance[self.CliffToeInd])))
+            
+            # Get detrended elevation
+            ElevDetrend = ((self.Elevation-self.Elevation[self.CliffToeInd])+(self.Distance[self.CliffToeInd]-self.Distance) \
+                            * np.tan(np.radians(Angle)))
+
+            # mask values beyond the peak elevation and seaward of the toe
+            Mask = self.Elevation.mask.copy()
+            Mask[0:self.CliffToeInd] = True
+            Mask[LastInd:] = True
+            ElevDetrend = ma.masked_where(Mask,ElevDetrend)
+            
+            # Find Maximum detrended elevation. Must be positive to be considered a change in cliff top position
+            if ((np.argmax(ElevDetrend) < self.CliffTopInd) and (ElevDetrend[np.argmax(ElevDetrend)] > 0.001)):
+                self.CliffTopInd = np.argmax(ElevDetrend)
+                CliffPositionChangeFlag = True
+             
+            # THEN CLIFF TOE
+
+            # Get Angle to detrend towards the coast
+            # catch divide by zero
+            if self.Distance[self.CliffTopInd] == self.Distance[MinInd]:
+                print(self.ID)
+                print("Divide by zero getting toe!")
+                sys.exit()
+
+            Angle = np.degrees(np.arctan((self.Elevation[self.CliffTopInd]-self.Elevation[MinInd]) 
+                                        / (self.Distance[self.CliffTopInd]-self.Distance[MinInd])))
+            
+            # Get detrended elevation
+            ElevDetrend = ((self.Elevation-self.Elevation[MinInd]) + (self.Distance[MinInd] - self.Distance) \
+                            * np.tan(np.radians(Angle)))
+
+            # mask values beyond the cliff top
+            Mask = self.Elevation.mask.copy()
+            Mask[self.CliffTopInd:] = True
+            ElevDetrend = ma.masked_where(Mask, ElevDetrend)
+                            
+            # Find Minimum detrended elevation, must be negative to be considered a low (probably never a worry)
+            if ((np.argmin(ElevDetrend) > self.CliffToeInd) and (ElevDetrend[np.argmin(ElevDetrend)] < -0.001)):
+                #print("Cliff Toe change from", self.Distance[self.CliffToeInd],"to", self.Distance[np.argmin(ElevDetrend)])
+                self.CliffToeInd = np.argmin(ElevDetrend)
+                CliffPositionChangeFlag = True
+
+        # Check if found a cliff
+        self.CliffHeight = self.Elevation[self.CliffTopInd]-self.Elevation[self.CliffToeInd]
+        self.CliffSlope = self.CliffHeight/(self.Distance[self.CliffTopInd]-self.Distance[self.CliffToeInd])
+        
+        #plt.plot(self.Distance[self.CliffTopInd],self.Elevation[self.CliffTopInd],'go')
+        #plt.plot(self.Distance[self.CliffToeInd],self.Elevation[self.CliffToeInd],'go')
+
+        # if cliff top is highest point, not a cliff, likely a barrier
+        if self.CliffTopInd == MaxInd:
+            self.Cliff = False
+            print(" Not a cliff 2:", self.Distance[self.CliffTopInd])
+
+        elif np.abs(self.Distance[self.CliffTopInd]-self.Distance[MaxInd]) < 10.:
+            self.Cliff = False
+            print(" Not a cliff 3:", self.Distance[self.CliffTopInd])
+
+        elif (self.CliffSlope > 0.6) or (self.CliffHeight > 15.):
+            self.Cliff = True
+            print(" ", self.LineID, self.ID, "Cliff:", self.Distance[self.CliffToeInd], self.Distance[self.CliffTopInd])
+                    
+        else:
+            self.Cliff = False
+            print(" Not a cliff 4")
 
     def AnalyseRoughness(self, Elev):
 
