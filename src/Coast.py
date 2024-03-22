@@ -2720,7 +2720,7 @@ class Coast:
         Parameters
         ----------
         Shp : string
-            Filename for polyline shapefile containing contour
+            Filename for shapefile to intersect with transects
         NodeToSave : string
             Name of transect node in which to save intersect point
         MostSeaward : boolean
@@ -2741,28 +2741,30 @@ class Coast:
         # read shapefile using geopandas
         GDF = gp.read_file(Shp)
         
-        # get lines geometry
-        Lines = GDF['geometry']
+        # get GeoDataFrame geometry (GeoSeries)
+        Vector = GDF['geometry']
+        #print("v1=",Vector)
+        #print(Vector.geom_type[0])
+        #return
         
-        # catch situation where only one line
+        # if polygon, use GeoSeries.boundary to get LineString vector of the polygon outline
+        if Vector.geom_type[0] == "Polygon":
+            Vector = Vector.boundary
+            #print("v2=",Vector)
+        
         MultiLines = []
-
-        if len(Lines) == 1:
-            MultiLines = Lines[0]
         
-        # deal with invalid geometries on the fly? This is messy!
-        else:
-            for ThisLine in Lines:
-                if not ThisLine:
-                    continue
-                elif ThisLine.geom_type == "LineString":
-                    MultiLines.append(ThisLine)
-                elif ThisLine.geom_type == "MultiLineString":
-                    for SubLine in ThisLine.geoms:
-                        if SubLine.geom_type == "LineString":
-                            MultiLines.append(SubLine)
-        
-            MultiLines = MultiLineString(MultiLines) 
+        for v in Vector:
+            if not v:
+                continue
+            elif v.geom_type == "LineString":
+                MultiLines.append(v)
+            elif v.geom_type == "MultiLineString":
+                for SubLine in v.geoms:
+                    if SubLine.geom_type == "LineString":
+                        MultiLines.append(SubLine)
+    
+        MultiLines = MultiLineString(MultiLines) 
 
         # Find coordinates of intersection between transect and contour. If no intersection (0,0). Save as Transect."NodeToSave"
         for ThisLine in self.CoastLines:
@@ -2790,12 +2792,6 @@ class Coast:
                         
                 else:
                     Intersection = Point(0,0)
-                
-                # check if Transect contains the passed nodename as attribute 
-                #if not hasattr(Transect, NodeToSave):
-                    #if __debug__:
-                        #print(Transect.LineID, Transect.ID, "\t Transect has no attribute", NodeToSave)
-                        #print("Creating", NodeToSave)
                     
                 setattr(Transect, NodeToSave, Node(Intersection.x, Intersection.y))
                 
@@ -2891,7 +2887,7 @@ class Coast:
         NOTE: Requires transect min length of 200 m.
         
         Uses the nearest coastal asset location to find LandwardMask: 
-        - if assets within 200 m of coast, use the asset location as the landward edge of the 
+        - if assets within 200 m of coast, use the most seaward asset location as the landward edge of the 
         barrier search window (to only look for barriers seaward of assets, e.g. Golspie)
         - else if no assets within 200 m of coast, use min elevation between 50 m and 200 m landward
         as the landward edge of the barrier search window (to find wider barriers).
@@ -2901,7 +2897,7 @@ class Coast:
         Save to Transect.LandwardMask and Transect.SeawardMask
         
         Inputs
-        - TransectLen: Length in meters of the transect (e.g. 1000)
+        - TransectLen: Length in meters of the transect, from baseline (e.g. 1000 for 2km total tr len)
         
         NH, Mar 2024
         
