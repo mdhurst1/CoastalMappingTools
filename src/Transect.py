@@ -1826,6 +1826,13 @@ class Transect:
             
             # reset flag
             BarrierPositionChangeFlag = False
+            
+            # catch divide by zero
+            if DistanceMasked[self.FrontTopInd] == DistanceMasked[MinInd]:
+                print(self.LineID, self.ID)
+                print(DistanceMasked[self.FrontTopInd], DistanceMasked[MinInd], self.FrontTopInd, MinInd, LastInd)
+                print("Divide by zero getting back toe!")
+                sys.exit()
 
             # Get Angle to detrend towards the coast
             Angle = np.degrees(np.arctan((ElevMasked[MinInd]-ElevMasked[self.FrontTopInd]) 
@@ -1851,8 +1858,14 @@ class Transect:
 
             # THEN Back Top
             
-            # Get Angle to detrend towards away from the coast
+            # catch divide by zero
+            if DistanceMasked[self.FrontTopInd] == DistanceMasked[self.BackToeInd]:
+                print(self.LineID, self.ID)
+                print(DistanceMasked[self.FrontTopInd], DistanceMasked[self.BackToeInd], self.FrontTopInd, self.BackToeInd, LastInd)
+                print("Divide by zero getting back top!")
+                sys.exit()
             
+            # Get Angle to detrend towards away from the coast
             Angle = np.degrees(np.arctan((ElevMasked[self.BackToeInd]-ElevMasked[self.FrontTopInd])
                                         / (DistanceMasked[self.BackToeInd]-DistanceMasked[self.FrontTopInd])))
             
