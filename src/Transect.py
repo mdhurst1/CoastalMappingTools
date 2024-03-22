@@ -1426,7 +1426,7 @@ class Transect:
         and find the position of a cliff on a coastal transect
         records the position of the cliff top and cliff toe
 
-        MDH, June 2019
+        MDH, June 2019 (original)
         NH modified, Mar 2024
 
         """
@@ -1526,27 +1526,24 @@ class Transect:
 
         # Check if found a cliff
         self.CliffHeight = self.Elevation[self.CliffTopInd]-self.Elevation[self.CliffToeInd]
-        self.CliffSlope = self.CliffHeight/(self.Distance[self.CliffTopInd]-self.Distance[self.CliffToeInd])
+        self.CliffSlope = self.CliffHeight/(self.Distance[self.CliffTopInd]-self.Distance[self.CliffToeInd]) 
         
-        #plt.plot(self.Distance[self.CliffTopInd],self.Elevation[self.CliffTopInd],'go')
-        #plt.plot(self.Distance[self.CliffToeInd],self.Elevation[self.CliffToeInd],'go')
-
         # if cliff top is highest point, not a cliff, likely a barrier
         if self.CliffTopInd == MaxInd:
             self.Cliff = False
-            print(" Not a cliff 2:", self.Distance[self.CliffTopInd])
+            print(" ", self.LineID, self.ID, "Not a cliff 2:", self.Distance[self.CliffTopInd])
 
         elif np.abs(self.Distance[self.CliffTopInd]-self.Distance[MaxInd]) < 10.:
             self.Cliff = False
-            print(" Not a cliff 3:", self.Distance[self.CliffTopInd])
-
+            print(" ", self.LineID, self.ID, "Not a cliff 3:", self.Distance[self.CliffTopInd])
+        
         elif (self.CliffSlope > 0.6) or (self.CliffHeight > 15.):
             self.Cliff = True
-            print(" ", self.LineID, self.ID, "Cliff:", self.Distance[self.CliffToeInd], self.Distance[self.CliffTopInd])
+            print(" ", self.LineID, self.ID, "CLIFF:", self.Distance[self.CliffToeInd], self.Distance[self.CliffTopInd])
                     
         else:
             self.Cliff = False
-            print(" Not a cliff 4")
+            print(" ", self.LineID, self.ID, "Not a cliff 4")
 
     def AnalyseRoughness(self, Elev):
 
@@ -2160,16 +2157,11 @@ class Transect:
         Mask[0:self.FrontTopInd] = True
         ElevMasked = ma.masked_where(Mask,ElevMasked)
 
-        # MIN IND OR LAST IND HERE?
-        MinInd = np.argmin(np.abs(self.Distance-(self.Distance[self.FrontTopInd]+300))) # this sets MinInd to 300m past FrontTopInd... Setting to argmin(ElevMasked) doesn't work, backtoes worse
-        if MinInd > LastInd:
-            MinInd = LastInd-1          # NH -1 as masking from MinInd+1 below
+        # NH: Back barrier detection: Choose MinInd=LastInd (most landward unmasked data, thus within 200 m of coast)
+        MinInd = LastInd
         self.BackToeInd = MinInd
-        #plt.plot(DistanceMasked[MinInd],ElevMasked[MinInd],'k+',ms=20)
-
-        # catch where Minimum Elevation coincides with "barrier" front
-        if MinInd == self.FrontTopInd:
-            self.BackToeInd = LastInd
+            
+        
         
         # flag for changing position
         BarrierPositionChangeFlag = True
@@ -2180,8 +2172,15 @@ class Transect:
             
             # reset flag
             BarrierPositionChangeFlag = False
+            
+            # catch divide by zero
+            if DistanceMasked[self.FrontTopInd] == DistanceMasked[MinInd]:
+                print(self.LineID, self.ID)
+                print(DistanceMasked[self.FrontTopInd], DistanceMasked[MinInd], self.FrontTopInd, MinInd, LastInd)
+                print("Divide by zero getting back toe!")
+                sys.exit()
 
-            # Get Angle to detrend towards the coast
+            # Get Angle to detrend towards the coast - NH: This will only execute once as FrontTopInd and MinInd don't change. If same as FindCliff, this should be between MinInd and BackTopInd
             Angle = np.degrees(np.arctan((ElevMasked[MinInd]-ElevMasked[self.FrontTopInd]) 
                                         / (DistanceMasked[MinInd]-DistanceMasked[self.FrontTopInd])))
             
@@ -2205,8 +2204,14 @@ class Transect:
 
             # THEN Back Top
             
-            # Get Angle to detrend towards away from the coast
+            # catch divide by zero
+            if DistanceMasked[self.FrontTopInd] == DistanceMasked[self.BackToeInd]:
+                print(self.LineID, self.ID)
+                print(DistanceMasked[self.FrontTopInd], DistanceMasked[self.BackToeInd], self.FrontTopInd, self.BackToeInd, LastInd)
+                print("Divide by zero getting back top!")
+                sys.exit()
             
+            # Get Angle to detrend towards away from the coast
             Angle = np.degrees(np.arctan((ElevMasked[self.BackToeInd]-ElevMasked[self.FrontTopInd])
                                         / (DistanceMasked[self.BackToeInd]-DistanceMasked[self.FrontTopInd])))
             
