@@ -2850,18 +2850,18 @@ class Coast:
     def CalculateDistanceToFirstAsset(self):
         """
         Funcion to calculate the distance between the CoastNode and first 
-        road / rail asset that intersects the transect.
+        road / rail / property asset that intersects the transect.
         
         Save distance as Transect.DistanceToFirstAsset
         
-        Uses Transect.RoadsIntersect and Transect.RailIntersect
+        Uses Transect.RoadsIntersect, Transect.RailIntersect and Transect.PropertyIntersect
         which are (0,0) for no intersect.
         Thus if no intersect, Transect.DistanceToFirstAsset very large (>900,000).
         
         NH, Mar 2024
         
         """
-        print("Coast.CalculateDistanceToFirstAsset: Finding distance from coastline to first road/rail asset", )
+        print("Coast.CalculateDistanceToFirstAsset: Finding distance from coastline to first road/rail/property")
         
         for Line in self.CoastLines:
             for Transect in Line.Transects:
@@ -2870,16 +2870,18 @@ class Coast:
                 CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
                 RoadPoint = Point(Transect.RoadsIntersect.X, Transect.RoadsIntersect.Y)
                 RailPoint = Point(Transect.RailIntersect.X, Transect.RailIntersect.Y)
+                PropertyPoint = Point(Transect.PropertyIntersect.X, Transect.PropertyIntersect.Y)
                 
                 # Use Geopandas distance
                 dist_road = CoastPoint.distance(RoadPoint) 
                 dist_rail = CoastPoint.distance(RailPoint)
+                dist_prop = CoastPoint.distance(PropertyPoint)
                 
                 # Pick smaller distance
-                dist_asset = min(dist_road, dist_rail)
+                dist_asset = min(dist_road, dist_rail, dist_prop)
                 Transect.NearestAsset = dist_asset
                 
-                #print(Line.ID, Transect.ID, "dist_asset=", Transect.NearestAsset)
+                print(Line.ID, Transect.ID, "dist_nearest_asset=", Transect.NearestAsset)
     
     def SetBarrierSearchWindow(self, TransectLen):
         """
