@@ -2850,13 +2850,14 @@ class Coast:
     def CalculateDistanceToFirstAsset(self):
         """
         Funcion to calculate the distance between the CoastNode and first 
-        road / rail / property asset that intersects the transect.
-        
-        Save distance as Transect.DistanceToFirstAsset
+        road / rail / property asset that intersects the transect
         
         Uses Transect.RoadsIntersect, Transect.RailIntersect and Transect.PropertyIntersect
         which are (0,0) for no intersect.
-        Thus if no intersect, Transect.DistanceToFirstAsset very large (>900,000).
+        If no intersect, dist_xxx very large (>900,000), so check before saving.
+        
+        Save distance as Transect.NearestAssetDist. None if dist > transect length/2.
+        Also save individual asset distances.
         
         NH, Mar 2024
         
@@ -2877,13 +2878,25 @@ class Coast:
                 dist_rail = CoastPoint.distance(RailPoint)
                 dist_prop = CoastPoint.distance(PropertyPoint)
                 
-                # Pick smaller distance
+                # Pick smaller distance, only if on landward part of transect
                 dist_asset = min(dist_road, dist_rail, dist_prop)
-                Transect.NearestAsset = dist_asset
+                Transect.NearestAssetDist = (dist_asset if (dist_asset < Transect.Length/2) else None)
                 
-                #print(Line.ID, Transect.ID, "dist_nearest_asset=", Transect.NearestAsset)
+                # set flag
+                if Transect.NearestAssetDist:
+                    Transect.AssetPresent = True
+                else:
+                    Transect.AssetPresent = False
+                
+                # Save all asset distances
+                Transect.FirstRoadDist = (dist_road if (dist_road < Transect.Length) else None)
+                Transect.FirstRailDist = (dist_rail if (dist_rail < Transect.Length) else None)
+                Transect.FirstPropertyDist = (dist_prop if (dist_prop < Transect.Length) else None)
+                
+                #print(Line.ID, Transect.ID, "NearestAsset=", Transect.NearestAssetDist, "flag=", Transect.AssetPresent)
+                #print("FirstRoadDist", Transect.FirstRoadDist, "FirstRailDist", Transect.FirstRailDist, "FirstPropertyDist", Transect.FirstPropertyDist)
     
-    def SetBarrierSearchWindow(self, TransectLen):
+    def SetBarrierSearchWindow(self):
         """
         Function to set the window within which to search for coastal barrier.
         NOTE: Requires transect min length of 200 m.
@@ -2898,9 +2911,6 @@ class Coast:
         
         Save to Transect.LandwardMask and Transect.SeawardMask
         
-        Inputs
-        - TransectLen: Length in meters of the transect, from baseline (e.g. 1000 for 2km total tr len)
-        
         NH, Mar 2024
         
         """
@@ -2908,20 +2918,24 @@ class Coast:
         
         for Line in self.CoastLines:
             for Transect in Line.Transects:
+                # Landward transect length. Assumes symmetrical transect
+                TransectLen = Transect.Length / 2
+                
                 # Set seaward edge of search 50 m seaward of coastline
                 Transect.SeawardMask = TransectLen - 50
                 
                 # Landward window: If assets present inside potential barrier region, look only seaward of asset
-                if (Transect.NearestAsset < 200):
-                    Transect.LandwardMask = round(TransectLen + Transect.NearestAsset)
-                    #print(Line.ID, Transect.ID, "*1", Transect.LandwardMask)
+                if (Transect.AssetPresent and Transect.NearestAssetDist < 200):
+                        Transect.LandwardMask = round(TransectLen + Transect.NearestAssetDist)
+                        #print(Line.ID, Transect.ID, "*1", Transect.LandwardMask)
                 else:
                     # find min elevation between 50 m and 200 m landward
                     idx = np.where((Transect.Distance > TransectLen+50) & (Transect.Distance < TransectLen+200))
                     idx = idx[0]                                                                                # take first element of tuple, which is the array of indexes
                     idx_min_elev = np.argmin(Transect.Elevation[idx]) + idx[0]
                     Transect.LandwardMask = Transect.Distance[idx_min_elev]
-                    #print(f"{Line.ID}, {Transect.ID}, *2, idx={idx}, idx_min_elev={idx_min_elev}, LWW={Transect.LandwardMask}")
+                    #print(f"{Line.ID}, {Transect.ID}, *2, idx={idx}, idx_min_elev={idx_min_elev}")
+                    #print(Line.ID, Transect.ID, "*2", Transect.LandwardMask)
         
     
     def ExtractContours(self,ContourShp):
