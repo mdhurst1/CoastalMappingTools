@@ -2881,7 +2881,7 @@ class Coast:
                 dist_asset = min(dist_road, dist_rail, dist_prop)
                 Transect.NearestAsset = dist_asset
                 
-                print(Line.ID, Transect.ID, "dist_nearest_asset=", Transect.NearestAsset)
+                #print(Line.ID, Transect.ID, "dist_nearest_asset=", Transect.NearestAsset)
     
     def SetBarrierSearchWindow(self, TransectLen):
         """
@@ -4557,7 +4557,7 @@ class Coast:
                 
         print("")
     
-    def AnalyseTransectMorphology(self, FrontToeMin=None): #(self, SeawardMask=None, LandwardMask=None, FrontToeMin=None):
+    def AnalyseTransectMorphology(self, FrontToeMin=-0.001):
 
         """
 
@@ -4565,10 +4565,10 @@ class Coast:
 
         MDH, June 2019
         
-        NH edit: Add 
-        SeawardMask: Distance from the start of the transect up to which to mask (not look for barrier)
-        LandwardMask: Distance from the start of the transect beyond which NOT to search for coastal barrier
-        FrontToeMin: Minimum negative detrended elevation for new front toe
+        NH edit: 
+        Add ability to set FrontToeMin when calling FindBarrier2: 
+        FrontToeMin defined as minimum negative detrended elevation for new front toe. 
+        Default is -0.001 (1mm) as per MDH original code, so this is backwards compatible.
 
         """
 
@@ -4590,7 +4590,7 @@ class Coast:
                 Transect.FindCliff2()
                 
                 # NH: Revised toe detection (MDH original code in FindBarrier)
-                Transect.FindBarrier2(FrontToeMin=FrontToeMin) #(SeawardMask=SeawardMask, LandwardMask=LandwardMask, FrontToeMin=FrontToeMin)
+                Transect.FindBarrier2(FrontToeMin=FrontToeMin)
 
                 # Save dune toe and crest elevations
                 Transect.SaveBarrierElevations()
