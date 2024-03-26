@@ -2856,7 +2856,7 @@ class Coast:
         which are (0,0) for no intersect.
         If no intersect, dist_xxx very large (>900,000), so check before saving.
         
-        Save distance as Transect.NearestAssetDist. None if dist > transect length/2.
+        Save distance as Transect.FirstAssetDist. None if dist > transect length/2.
         Also save individual asset distances.
         
         NH, Mar 2024
@@ -2880,21 +2880,69 @@ class Coast:
                 
                 # Pick smaller distance, only if on landward part of transect
                 dist_asset = min(dist_road, dist_rail, dist_prop)
-                Transect.NearestAssetDist = (dist_asset if (dist_asset < Transect.Length/2) else None)
+                Transect.FirstAssetDist = (dist_asset if (dist_asset < Transect.Length/2) else None)
                 
                 # set flag
-                if Transect.NearestAssetDist:
+                if Transect.FirstAssetDist:
                     Transect.AssetPresent = True
                 else:
                     Transect.AssetPresent = False
                 
                 # Save all asset distances
-                Transect.FirstRoadDist = (dist_road if (dist_road < Transect.Length) else None)
-                Transect.FirstRailDist = (dist_rail if (dist_rail < Transect.Length) else None)
-                Transect.FirstPropertyDist = (dist_prop if (dist_prop < Transect.Length) else None)
+                Transect.FirstRoadDist = (dist_road if (dist_road < Transect.Length/2) else None)
+                Transect.FirstRailDist = (dist_rail if (dist_rail < Transect.Length/2) else None)
+                Transect.FirstPropertyDist = (dist_prop if (dist_prop < Transect.Length/2) else None)
                 
-                #print(Line.ID, Transect.ID, "NearestAsset=", Transect.NearestAssetDist, "flag=", Transect.AssetPresent)
+                #print(Line.ID, Transect.ID, "NearestAsset=", Transect.FirstAssetDist, "flag=", Transect.AssetPresent)
                 #print("FirstRoadDist", Transect.FirstRoadDist, "FirstRailDist", Transect.FirstRailDist, "FirstPropertyDist", Transect.FirstPropertyDist)
+    
+    def my_round(x, base=5.0):
+        return base * round(x/base)
+    
+    def FindAssetElevations(self):
+        """
+        Use asset distances to find asset elevations.
+        First round decimal (exact) distance to nearest 5 m to match Transect.Distance
+        Then get index and corresponding sampled interpolated elevation from Transect.Elevtion. 
+       
+        NH, Mar 2024
+       
+        """
+        
+        print("Coast.FindAssetElevations: Finding elevations of first road/rail/property")
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                # Landward/seaward transect length. Assumes symmetrical transect, Round to remove any decimals
+                TransectLen = round(Transect.Length / 2)
+                
+                # round to nearest 5m of transect distance vector. As FirstAssetDist is from CoastPoint, add Tlen/2 for distance from transect StartPoint
+                if Transect.AssetPresent:
+                    dist_asset = Coast.my_round(Transect.FirstAssetDist) + TransectLen
+                    idx = (np.where(Transect.Distance == dist_asset))[0]                                    # tuple, with array of matching indices in first element
+                    Transect.FirstAssetElev = Transect.Elevation[idx[0]]                                    # first element of matching indexes (should only be one)
+                    #print(Line.ID, Transect.ID, "\tdist_asset=", dist_asset, "\telev_asset=", Transect.FirstAssetElev)
+                    
+                # repeat for individual assets
+                if Transect.FirstRoadDist:
+                    dist_road = Coast.my_round(Transect.FirstRoadDist) + TransectLen
+                    idx = (np.where(Transect.Distance == dist_road))[0] 
+                    Transect.FirstRoadElev = Transect.Elevation[idx[0]] 
+                    #print("\tdist_road=", dist_road, "\telev_road=", Transect.FirstRoadElev)
+                
+                if Transect.FirstRailDist:
+                    dist_rail = Coast.my_round(Transect.FirstRailDist) + TransectLen
+                    idx = (np.where(Transect.Distance == dist_rail))[0] 
+                    Transect.FirstRailElev = Transect.Elevation[idx[0]] 
+                    #print("\tdist_rail=", dist_rail, "\telev_rail=", Transect.FirstRailElev)
+                    
+                if Transect.FirstPropertyDist:
+                    dist_prop = Coast.my_round(Transect.FirstPropertyDist) + TransectLen
+                    idx = (np.where(Transect.Distance == dist_prop))[0] 
+                    Transect.FirstPropertyElev = Transect.Elevation[idx[0]] 
+                    #print("\tdist_prop=", dist_prop, "\telev_prop=", Transect.FirstPropertyElev)
+                
+                
     
     def SetBarrierSearchWindow(self):
         """
@@ -2925,9 +2973,9 @@ class Coast:
                 Transect.SeawardMask = TransectLen - 50
                 
                 # Landward window: If assets present inside potential barrier region, look only seaward of asset
-                if (Transect.AssetPresent and Transect.NearestAssetDist < 200):
-                        Transect.LandwardMask = round(TransectLen + Transect.NearestAssetDist)
-                        #print(Line.ID, Transect.ID, "*1", Transect.LandwardMask)
+                if (Transect.AssetPresent and Transect.FirstAssetDist < 200):
+                    Transect.LandwardMask = round(TransectLen + Transect.FirstAssetDist)
+                    #print(Line.ID, Transect.ID, "*1", Transect.LandwardMask)
                 else:
                     # find min elevation between 50 m and 200 m landward
                     idx = np.where((Transect.Distance > TransectLen+50) & (Transect.Distance < TransectLen+200))

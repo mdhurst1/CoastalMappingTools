@@ -279,10 +279,11 @@ class Transect:
         # Asset location
         self.RoadsIntersect = None
         self.RailIntersect = None
-        self.NearestAssetDist = None
+        self.FirstAssetDist = None
         self.FirstRoadDist = None
         self.FirstRailDist = None
         self.FirstPropertyDist = None
+        self.FirstAssetElev = None
         self.FirstRoadElev = None
         self.FirstRailElev = None
         self.FirstPropertyElev = None
