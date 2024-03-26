@@ -1066,23 +1066,23 @@ class Coast:
         ['H_Hs','N', 5, 2],['H_Tp','N', 5, 2], ['H_Diss','B', 7, 0], ['H_R2','N', 5, 2], ['H_setup','N', 5, 2], 
         ['H_ESL_c3','N', 5, 2], ['H_TWL','N', 5, 2], ['H_TWL_su','N', 5, 2], 
         ['H_Toe','N', 5, 2],['H_Crest','N', 5, 2],
-        ['H_SIS', 'C', 10, 0],['H_HRoom','N', 5, 2], ['Barr_Vol','N', 5, 2], ['Hint_Elev','N', 5, 2],
+        ['H_SIS', 'C', 14, 0],['H_HRoom','N', 5, 2], ['Barr_Vol','N', 5, 2], ['Hint_Elev','N', 5, 2],
         ['M45_Hs','N', 5, 2],['M45_Tp','N', 5, 2], ['M45_Diss','B', 7, 0], ['M45_R2','N', 5, 2], ['M45_setup','N', 5, 2], 
         ['M45_ESL_c3','N', 5, 2], ['M45_TWL','N', 5, 2], ['M45_TWL_su','N', 5, 2], 
         ['M45_Toe','N', 5, 2],['M45_Crest','N', 5, 2],
-        ['M45_SIS', 'C', 10, 0],['M45_HRoom','N', 5, 2],
+        ['M45_SIS', 'C', 14, 0],['M45_HRoom','N', 5, 2],
         ['E45_Hs','N', 5, 2],['E45_Tp','N', 5, 2], ['E45_Diss','B', 7, 0], ['E45_R2','N', 5, 2], ['E45_setup','N', 5, 2], 
         ['E45_ESL_c3','N', 5, 2], ['E45_TWL','N', 5, 2], ['E45_TWL_su','N', 5, 2], 
         ['E45_Toe','N', 5, 2],['E45_Crest','N', 5, 2],
-        ['E45_SIS', 'C', 10, 0],['E45_HRoom','N', 5, 2],
+        ['E45_SIS', 'C', 14, 0],['E45_HRoom','N', 5, 2],
         ['M85_Hs','N', 5, 2],['M85_Tp','N', 5, 2], ['M85_Diss','B', 7, 0], ['M85_R2','N', 5, 2], ['M85_setup','N', 5, 2], 
         ['M85_ESL_c3','N', 5, 2], ['M85_TWL','N', 5, 2], ['M85_TWL_su','N', 5, 2], 
         ['M85_Toe','N', 5, 2],['M85_Crest','N', 5, 2],
-        ['M85_SIS', 'C', 10, 0],['M85_HRoom','N', 5, 2],
+        ['M85_SIS', 'C', 14, 0],['M85_HRoom','N', 5, 2],
         ['E85_Hs','N', 5, 2],['E85_Tp','N', 5, 2], ['E85_Diss','B', 7, 0], ['E85_R2','N', 5, 2], ['E85_setup','N', 5, 2], 
         ['E85_ESL_c3','N', 5, 2], ['E85_TWL','N', 5, 2], ['E85_TWL_su','N', 5, 2], 
         ['E85_Toe','N', 5, 2],['E85_Crest','N', 5, 2],
-        ['E85_SIS', 'C', 10, 0],['E85_HRoom','N', 5, 2]
+        ['E85_SIS', 'C', 14, 0],['E85_HRoom','N', 5, 2]
         ]
         
         WL.fields = Fields[1:]
@@ -1129,7 +1129,7 @@ class Coast:
                                 Transect.H_Hs_p99, Transect.H_Tp_p99, Transect.H_Dissipative, Transect.H_R2, Transect.H_setup, 
                                 Transect.H_ESL_c3, Transect.H_TWL, Transect.H_TWL_setup,
                                 "", "",
-                                "", "", "", "",
+                                Transect.H_StormImpactScale, "", "", "",
                                 Transect.M45_Hs_p99, Transect.M45_Tp_p99, Transect.M45_Dissipative, Transect.M45_R2, Transect.M45_setup, 
                                 Transect.M45_ESL_c3, Transect.M45_TWL, Transect.M45_TWL_setup,
                                 "", "",
@@ -2967,7 +2967,7 @@ class Coast:
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 # Landward transect length. Assumes symmetrical transect
-                TransectLen = Transect.Length / 2
+                TransectLen = round(Transect.Length / 2)
                 
                 # Set seaward edge of search 50 m seaward of coastline
                 Transect.SeawardMask = TransectLen - 50
@@ -5047,7 +5047,19 @@ class Coast:
                     else:
                         print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for EndC RCP8.5 scenario!")
                 else:
-                    print(f"\t{Transect.LineID}_{Transect.ID}: Not a barrier")
+                    #print(f"\t{Transect.LineID}_{Transect.ID}: Not a barrier")
+                    if (Transect.AssetPresent and Transect.FirstAssetDist < 200):
+                        if Transect.H_TWL > Transect.FirstAssetElev:
+                            if Transect.H_TWL_setup > Transect.FirstAssetElev:
+                                Transect.H_StormImpactScale = "NB_Inundation"
+                            else:
+                                Transect.H_StormImpactScale = "NB_Overwash"
+                        elif Transect.FirstAssetElev - Transect.H_TWL > 5.0:
+                            Transect.H_StormImpactScale = "NB_Swash"
+                        else:
+                            Transect.H_StormImpactScale = "NB_Collision"
+                    else:
+                        Transect.H_StormImpactScale = ""
                     
     def CalculateHeadroom(self):
         
@@ -5069,8 +5081,8 @@ class Coast:
                     Transect.M85_Headroom = Transect.M85_Crest - Transect.M85_TWL
                     Transect.E45_Headroom = Transect.E45_Crest - Transect.E45_TWL
                     Transect.E85_Headroom = Transect.E85_Crest - Transect.E85_TWL
-                else:
-                    print(f"\t{Transect.LineID}_{Transect.ID}: Not a barrier")
+                #else:
+                    #print(f"\t{Transect.LineID}_{Transect.ID}: Not a barrier")
     
     
     def FindNearestIndex(self, Shapefile=None):
