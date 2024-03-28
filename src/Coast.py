@@ -1066,7 +1066,7 @@ class Coast:
         ['H_Hs','N', 5, 2],['H_Tp','N', 5, 2], ['H_Diss','B', 7, 0], ['H_R2','N', 5, 2], ['H_setup','N', 5, 2], 
         ['H_ESL_c3','N', 5, 2], ['H_TWL','N', 5, 2], ['H_TWL_su','N', 5, 2], 
         ['H_Toe','N', 5, 2],['H_Crest','N', 5, 2],
-        ['H_SIS', 'C', 14, 0],['H_HRoom','N', 5, 2], ['Barr_Vol','N', 5, 2], ['Hint_Elev','N', 5, 2],
+        ['H_SIS', 'C', 14, 0],['H_HRoom','N', 5, 2], ['Barr_Vol','N', 5, 2], ['Hint_Elev','N', 5, 2], ['Hint_Slope','N', 5, 2],
         ['M45_Hs','N', 5, 2],['M45_Tp','N', 5, 2], ['M45_Diss','B', 7, 0], ['M45_R2','N', 5, 2], ['M45_setup','N', 5, 2], 
         ['M45_ESL_c3','N', 5, 2], ['M45_TWL','N', 5, 2], ['M45_TWL_su','N', 5, 2], 
         ['M45_Toe','N', 5, 2],['M45_Crest','N', 5, 2],
@@ -1104,7 +1104,7 @@ class Coast:
                                 Transect.H_Hs_p99, Transect.H_Tp_p99, Transect.H_Dissipative, Transect.H_R2, Transect.H_setup, 
                                 Transect.H_ESL_c3, Transect.H_TWL, Transect.H_TWL_setup,
                                 Transect.H_FrontToe, Transect.H_Crest,
-                                Transect.H_StormImpactScale, Transect.H_Headroom, Transect.BarrierVolume, Transect.ElevHinterland,
+                                Transect.H_StormImpactScale, Transect.H_Headroom, Transect.BarrierVolume, Transect.HinterlandElev, Transect.HinterlandSlope,
                                 Transect.M45_Hs_p99, Transect.M45_Tp_p99, Transect.M45_Dissipative, Transect.M45_R2, Transect.M45_setup, 
                                 Transect.M45_ESL_c3, Transect.M45_TWL, Transect.M45_TWL_setup,
                                 Transect.M45_FrontToe, Transect.M45_Crest,
@@ -1129,7 +1129,7 @@ class Coast:
                                 Transect.H_Hs_p99, Transect.H_Tp_p99, Transect.H_Dissipative, Transect.H_R2, Transect.H_setup, 
                                 Transect.H_ESL_c3, Transect.H_TWL, Transect.H_TWL_setup,
                                 "", "",
-                                Transect.H_StormImpactScale, "", "", "",
+                                Transect.H_StormImpactScale, "", "", "", "",
                                 Transect.M45_Hs_p99, Transect.M45_Tp_p99, Transect.M45_Dissipative, Transect.M45_R2, Transect.M45_setup, 
                                 Transect.M45_ESL_c3, Transect.M45_TWL, Transect.M45_TWL_setup,
                                 "", "",
@@ -4657,8 +4657,8 @@ class Coast:
                 # Save dune toe and crest elevations
                 Transect.SaveBarrierElevations()
                 
-                # Extract the mean elevation of the hinterland
-                Transect.ExtractHinterlandMeanElevation()
+                # Extract hinterland characteristics
+                Transect.ExtractHinterlandElevSlope()
                 
                 # update transect progress no
                 CurrentTransect += 1

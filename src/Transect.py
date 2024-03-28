@@ -273,7 +273,7 @@ class Transect:
         self.M85_Headroom = None
         self.E45_Headroom = None
         self.E85_Headroom = None
-        self.ElevHinterland = None
+        self.HinterlandElev = None
         # shingle habitat intersected
         self.Shingle = None
         # Asset location
@@ -2306,7 +2306,7 @@ class Transect:
             self.H_BackTop = self.Elevation[self.BackTopInd]
             self.H_Crest = self.Elevation[self.CrestInd]
     
-    def ExtractHinterlandMeanElevation(self):
+    def ExtractHinterlandElevSlope(self):
     
         """
         Extract mean elevation of hinterland landward of 
@@ -2328,13 +2328,24 @@ class Transect:
         # Create new mask: all seaward of BackToe is masked
         Mask = ma.getmask(x)
         Mask[0:self.BackToeInd] = True
-        ElevHinterland = np.ma.array(x, mask=Mask) 
-        #print(ElevHinterland)
+        HinterlandElev = np.ma.array(x, mask=Mask) 
+        #print(HinterlandElev)
         
-        #Calcualte mean
-        self.ElevHinterland = np.mean(ElevHinterland)
-        #print(" ",self.ElevHinterland)
+        # Calcualte mean
+        self.HinterlandElev = np.mean(HinterlandElev)
+        #print(" ",self.HinterlandElev)
         
+        # Create new unmasked Distance array
+        data = self.Distance
+        x = np.ma.array(data, mask = False)             # This still has original mask as applied in FindBarrier2. self.Elevation is still masked!
+        x.mask = False 
+        
+        # Use above mask to mask all points seaward of back toe
+        HinterlandDist = np.ma.array(x, mask=Mask) 
+        
+        # Calculate slope
+        self.HinterlandSlope = (HinterlandElev[-1] - HinterlandElev[self.BackToeInd+1])/(HinterlandDist[-1] - HinterlandDist[self.BackToeInd+1])
+        #print(" ", self.HinterlandSlope)
     
     def ExtractBarrierWidthVolume(self,Elevation=None):
 
