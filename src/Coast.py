@@ -2943,8 +2943,9 @@ class Coast:
                     dist_asset = Coast.my_round(Transect.FirstAssetDist) + TransectLen
                     idx = (np.where(Transect.Distance == dist_asset))[0]                                    # tuple, with array of matching indices in first element
                     Transect.FirstAssetElev = Transect.Elevation[idx[0]]                                    # first element of matching indexes (should only be one)
+                    #print(Line.ID, Transect.ID, "\tL1=", Transect.Length, "\tL2=",TransectLen, "\tdist_asset=", dist_asset, "\tidx=", idx)
                     #print(Line.ID, Transect.ID, "\tdist_asset=", dist_asset, "\telev_asset=", Transect.FirstAssetElev)
-                    
+                   
                 # repeat for individual assets
                 if Transect.FirstRoadDist:
                     dist_road = Coast.my_round(Transect.FirstRoadDist) + TransectLen
@@ -4571,7 +4572,7 @@ class Coast:
                 # Create a line for interpolating to
                 LineLength = np.sqrt((X2-X1)**2 + (Y2-Y1)**2)
                 
-                NoPoints = (int)(LineLength/DistanceSpacing)+1
+                NoPoints = round(LineLength/DistanceSpacing)+1
                 if NoPoints < 1:
                     raise SystemExit("LineLength/DistanceSpacing leads to zero elevation points")
                     
