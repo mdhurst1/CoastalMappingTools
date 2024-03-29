@@ -1137,8 +1137,8 @@ class Coast:
                                 "", "",
                                 Transect.H_StormImpactScale, "", "", 
                                 "", "",
-                                "", "", "", "",
-                                "", "", "", "",
+                                Transect.FirstAssetDist, Transect.FirstAssetElev, Transect.FirstRoadDist, Transect.FirstRoadElev,
+                                Transect.FirstRailDist, Transect.FirstRailElev, Transect.FirstPropertyDist, Transect.FirstPropertyElev,
                                 Transect.M45_Hs_p99, Transect.M45_Tp_p99, Transect.M45_Dissipative, Transect.M45_R2, Transect.M45_setup, 
                                 Transect.M45_ESL_c3, Transect.M45_TWL, Transect.M45_TWL_setup,
                                 "", "",
@@ -5063,10 +5063,10 @@ class Coast:
                                 Transect.H_StormImpactScale = "NB_Inundation"
                             else:
                                 Transect.H_StormImpactScale = "NB_Overwash"
-                        elif Transect.FirstAssetElev - Transect.H_TWL > 5.0:
+                        elif Transect.FirstAssetElev - Transect.H_TWL > 5.0:        # This 5 m breakpoint is arbitrary. Arguing that if no barrier present and assets > 5m higher than severe storm runuop, not of immediate concern. 
                             Transect.H_StormImpactScale = "NB_Swash"
                         else:
-                            Transect.H_StormImpactScale = "NB_Collision"
+                            Transect.H_StormImpactScale = "NB_Collision"            # No brrier and assets < 5m above severe storm runup
                     else:
                         Transect.H_StormImpactScale = ""
                     
