@@ -2698,7 +2698,7 @@ class Coast:
                 elif ThisLine.geom_type == "LineString":
                     MultiLines.append(ThisLine)
                 elif ThisLine.geom_type == "MultiLineString":
-                    for SubLine in ThisLine:
+                    for SubLine in ThisLine.geoms:                  # NH: fix compile error "MultiLineString object is not iterable"
                         if SubLine.geom_type == "LineString":
                             MultiLines.append(SubLine)
         
@@ -2723,6 +2723,7 @@ class Coast:
         
         """
         Function to find the intersection between each transect and the given contour.
+        If no intersect or no input file, NodeToSave set to (0,0)
 
         NH September 2023
 
@@ -2746,6 +2747,18 @@ class Coast:
         """
         
         print("Coast.ExtractIntersection: Finding intersection between each transect and", Shp) 
+        
+        # Check if file exists. If not, set intersect to (0,0) and return
+        shapefile_path = Path(Shp)
+        if not shapefile_path.is_file():
+            print("\t NO FILE:", Shp, "Setting intersect to (0,0)")
+            
+            for Line in self.CoastLines:
+                for Transect in Line.Transects:
+                    Intersection = Point(0,0) 
+                    setattr(Transect, NodeToSave, Node(Intersection.x, Intersection.y))
+                    
+            return
         
         # read shapefile using geopandas
         GDF = gp.read_file(Shp)
@@ -2776,8 +2789,8 @@ class Coast:
         MultiLines = MultiLineString(MultiLines) 
 
         # Find coordinates of intersection between transect and contour. If no intersection (0,0). Save as Transect."NodeToSave"
-        for ThisLine in self.CoastLines:
-            for Transect in ThisLine.Transects:
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
         
                 # construct linestring and find intersection
                 TransectLS = LineString([(Transect.StartNode.X,Transect.StartNode.Y), (Transect.EndNode.X,Transect.EndNode.Y)])
