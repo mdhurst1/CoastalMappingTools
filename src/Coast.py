@@ -3000,8 +3000,11 @@ class Coast:
                     Transect.LandwardMask = round(TransectLen + Transect.FirstAssetDist)
                     #print(Line.ID, Transect.ID, "*1", Transect.LandwardMask)
                 else:
-                    # find min elevation between 50 m and 200 m landward
-                    idx = np.where((Transect.Distance > TransectLen+50) & (Transect.Distance < TransectLen+200))
+                    # If no assets, look seaward of min elevation between 50 m and 200 m (shingle) or 100 m and 200 m landward (sand). 
+                    # This copes with wide/narrow/high/low barriers
+                    # Sand barriers tend to be wider, and shingle narrower and closer to MHWS
+                    dstart = 50 if Transect.Shingle else 100
+                    idx = np.where((Transect.Distance > TransectLen+dstart) & (Transect.Distance < TransectLen+200))
                     idx = idx[0]                                                                                # take first element of tuple, which is the array of indexes
                     idx_min_elev = np.argmin(Transect.Elevation[idx]) + idx[0]
                     Transect.LandwardMask = Transect.Distance[idx_min_elev]
