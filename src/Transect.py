@@ -1455,7 +1455,8 @@ class Transect:
         self.CliffToeInd = MinInd
         
         # mask distances and elevations seaward of minimum and landward of last real value
-        Mask = self.Elevation.mask.copy()
+        #Mask = self.Elevation.mask.copy()              # old bug of returning single boolean, and not array if completely unmasked
+        Mask = ma.getmaskarray(self.Elevation)          # return array of False if no mask
         Mask[0:MinInd] = True
         if LastInd < len(self.Elevation):
             Mask[LastInd+1:] = True
