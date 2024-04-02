@@ -1434,12 +1434,16 @@ class Transect:
         records the position of the cliff top and cliff toe
 
         MDH, June 2019 (original)
-        NH modified, Mar 2024
+        NH modified, Mar 2024: Search landward of 0 m; Seaward of 200 m 
 
         """
         
         # Find the last point on the Transect
-        LastInd = np.transpose(self.Elevation.nonzero())[-1][0]
+        # LastInd = np.transpose(self.Elevation.nonzero())[-1][0]
+        dist_inland = 200                   # distance landward of coastline within which to search for cliff
+        
+        LastInd = np.argmin(abs(self.Distance - (round(self.Length/2) + dist_inland)))
+        print(" ", self.LineID, self.ID, "LastInd=", LastInd)
         self.CliffTopInd = LastInd
             
         # NH: Find first real elevation location in masked array (without creating new mask) KEEP THIS
@@ -1449,19 +1453,21 @@ class Transect:
         #print(" ", self.LineID, self.ID, "idx=", idx, "FirstInd=", FirstInd)
         #FirstInd = np.transpose(self.Elevation.nonzero())[0][0] # old
 
-        # Find the minumum and maximum elevation in the masked array
-        MaxInd = np.argmax(self.Elevation)
-        MinInd = FirstInd # old: np.argmin(self.Elevation) change this as all sea elevations below 0m - messes up detrending angle
-        self.CliffToeInd = MinInd
+        
         
         # mask distances and elevations seaward of minimum and landward of last real value
         #Mask = self.Elevation.mask.copy()              # old bug of returning single boolean, and not array if completely unmasked
         Mask = ma.getmaskarray(self.Elevation)          # return array of False if no mask
-        Mask[0:MinInd] = True
+        Mask[0:FirstInd] = True
         if LastInd < len(self.Elevation):
             Mask[LastInd+1:] = True
         self.Elevation = ma.masked_where(Mask, self.Elevation)
         self.Distance = ma.masked_where(Mask, self.Distance)
+        
+        # Find the minumum and maximum elevation in the masked array
+        MaxInd = np.argmax(self.Elevation)
+        MinInd = np.argmin(self.Elevation) # FirstInd
+        self.CliffToeInd = MinInd
 
         # cliffed coast will have elevations > 10 m
         # this threshold could be flexible in future
