@@ -1443,7 +1443,7 @@ class Transect:
         dist_inland = 200                   # distance landward of coastline within which to search for cliff
         
         LastInd = np.argmin(abs(self.Distance - (round(self.Length/2) + dist_inland)))
-        print(" ", self.LineID, self.ID, "LastInd=", LastInd)
+        #print(" ", self.LineID, self.ID, "LastInd=", LastInd)
         self.CliffTopInd = LastInd
             
         # NH: Find first real elevation location in masked array (without creating new mask) KEEP THIS
@@ -1451,9 +1451,6 @@ class Transect:
         idx = idx[0]                        # np.where returns tuple of array + datatype; Choose array.
         FirstInd = idx[0]
         #print(" ", self.LineID, self.ID, "idx=", idx, "FirstInd=", FirstInd)
-        #FirstInd = np.transpose(self.Elevation.nonzero())[0][0] # old
-
-        
         
         # mask distances and elevations seaward of minimum and landward of last real value
         #Mask = self.Elevation.mask.copy()              # old bug of returning single boolean, and not array if completely unmasked
@@ -1466,7 +1463,7 @@ class Transect:
         
         # Find the minumum and maximum elevation in the masked array
         MaxInd = np.argmax(self.Elevation)
-        MinInd = np.argmin(self.Elevation) # FirstInd
+        MinInd = np.argmin(self.Elevation)
         self.CliffToeInd = MinInd
 
         # cliffed coast will have elevations > 10 m
