@@ -1142,19 +1142,19 @@ class Coast:
                                 Transect.M45_Hs_p99, Transect.M45_Tp_p99, Transect.M45_Dissipative, Transect.M45_R2, Transect.M45_setup, 
                                 Transect.M45_ESL_c3, Transect.M45_TWL, Transect.M45_TWL_setup,
                                 "", "",
-                                "", "",
+                                Transect.M45_StormImpactScale, "",
                                 Transect.E45_Hs_p99, Transect.E45_Tp_p99, Transect.E45_Dissipative, Transect.E45_R2, Transect.E45_setup, 
                                 Transect.E45_ESL_c3, Transect.E45_TWL, Transect.E45_TWL_setup,
                                 "", "",
-                                "", "",
+                                Transect.E45_StormImpactScale, "",
                                 Transect.M85_Hs_p99, Transect.M85_Tp_p99, Transect.M85_Dissipative, Transect.M85_R2, Transect.M85_setup, 
                                 Transect.M85_ESL_c3, Transect.M85_TWL, Transect.M85_TWL_setup,
                                 "", "",
-                                "", "",
+                                Transect.M85_StormImpactScale, "",
                                 Transect.E85_Hs_p99, Transect.E85_Tp_p99, Transect.E85_Dissipative, Transect.E85_R2, Transect.E85_setup, 
                                 Transect.E85_ESL_c3, Transect.E85_TWL, Transect.E85_TWL_setup,
                                 "", "",
-                                "", ""]
+                                Transect.E85_StormImpactScale, ""]
 
                 # write transect and record
                 WL.line(WriteTransect)
@@ -5074,7 +5074,7 @@ class Coast:
                         print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for EndC RCP8.5 scenario!")
                 else:
                     #print(f"\t{Transect.LineID}_{Transect.ID}: Not a barrier")
-                    if (Transect.AssetPresent and Transect.FirstAssetDist < 200):
+                    if (Transect.AssetPresent and Transect.FirstAssetDist < 200):   # If assets present near coast, apply Sallenger classfication to asset elevations
                         if Transect.H_TWL > Transect.FirstAssetElev:
                             if Transect.H_TWL_setup > Transect.FirstAssetElev:
                                 Transect.H_StormImpactScale = "NB_Inundation"
@@ -5084,8 +5084,54 @@ class Coast:
                             Transect.H_StormImpactScale = "NB_Swash"
                         else:
                             Transect.H_StormImpactScale = "NB_Collision"            # No brrier and assets < 5m above severe storm runup
+                            
+                        if Transect.M45_TWL > Transect.FirstAssetElev:
+                            if Transect.M45_TWL_setup > Transect.FirstAssetElev:
+                                Transect.M45_StormImpactScale = "NB_Inundation"
+                            else:
+                                Transect.M45_StormImpactScale = "NB_Overwash"
+                        elif Transect.FirstAssetElev - Transect.M45_TWL > 5.0:       
+                            Transect.M45_StormImpactScale = "NB_Swash"
+                        else:
+                            Transect.M45_StormImpactScale = "NB_Collision"  
+                            
+                        if Transect.M85_TWL > Transect.FirstAssetElev:
+                            if Transect.M85_TWL_setup > Transect.FirstAssetElev:
+                                Transect.M85_StormImpactScale = "NB_Inundation"
+                            else:
+                                Transect.M85_StormImpactScale = "NB_Overwash"
+                        elif Transect.FirstAssetElev - Transect.M85_TWL > 5.0:       
+                            Transect.M85_StormImpactScale = "NB_Swash"
+                        else:
+                            Transect.M85_StormImpactScale = "NB_Collision" 
+                        
+                        if Transect.E45_TWL > Transect.FirstAssetElev:
+                            if Transect.E45_TWL_setup > Transect.FirstAssetElev:
+                                Transect.E45_StormImpactScale = "NB_Inundation"
+                            else:
+                                Transect.E45_StormImpactScale = "NB_Overwash"
+                        elif Transect.FirstAssetElev - Transect.E45_TWL > 5.0:       
+                            Transect.E45_StormImpactScale = "NB_Swash"
+                        else:
+                            Transect.E45_StormImpactScale = "NB_Collision"
+                            
+                        if Transect.E85_TWL > Transect.FirstAssetElev:
+                            if Transect.E85_TWL_setup > Transect.FirstAssetElev:
+                                Transect.E85_StormImpactScale = "NB_Inundation"
+                            else:
+                                Transect.E85_StormImpactScale = "NB_Overwash"
+                        elif Transect.FirstAssetElev - Transect.E85_TWL > 5.0:       
+                            Transect.E85_StormImpactScale = "NB_Swash"
+                        else:
+                            Transect.E85_StormImpactScale = "NB_Collision"
+                            
                     else:
                         Transect.H_StormImpactScale = ""
+                        Transect.M45_StormImpactScale = ""
+                        Transect.M85_StormImpactScale = ""
+                        Transect.E45_StormImpactScale = ""
+                        Transect.E85_StormImpactScale = ""
+                    
                     
     def CalculateHeadroom(self):
         
