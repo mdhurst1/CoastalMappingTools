@@ -19,6 +19,7 @@ import shapefile
 import itertools
 import rasterio
 import geopandas as gp
+import pandas as pd
 from shapely.geometry import Point, Polygon, LineString, MultiLineString, MultiPoint
 from shapely.ops import nearest_points, linemerge
 
@@ -2869,6 +2870,65 @@ class Coast:
                     Transect.Shingle = True
                     #print("Shingle!", Line.ID,"_",Transect.ID)
         
+    def ExtractCoastalAssets(self, Baseline, AssetShp, BufferDist, OutputPath):
+        """
+        
+        Create coastal buffer and intersect with given shapefile.
+        
+        Input Parameters:
+        Baseline: MHWS contour shapefile 
+        AssetPath: national / regional asset shapefile 
+        BufferDist: Distance in meters for the coastal buffer
+        
+        Output:
+        Coastal asset shapefile saved to OutputPath
+        
+        NH, April 2024
+        
+        """
+        
+        print("Coast.ExtractCoastalAssets: Buffering coastline by", BufferDist, "m and extracting intersection with", AssetShp)
+        
+        # Read in shapefiles as geodataframes using geopandas
+        coastline = gp.read_file(Baseline)
+        assets = gp.read_file(AssetShp)
+        
+        # Buffer baseline. This way retains it as a geodataframe
+        coastline['geometry'] = coastline.geometry.buffer(BufferDist)
+        dissolved = coastline.dissolve()            # returns MultiPolygon with one row. Advantage to this is that is loses the coastline attributes.
+        #print("dissolved=",dissolved)
+        d = dissolved.geometry                      # turn back into gdf
+        #print("d=",d)
+        buffer_gdf = gp.GeoDataFrame(d, crs="EPSG:27700") #buffer = dissolved.geometry[0]
+        #print("buffer_gdf=",buffer_gdf)
+        
+        # Find assets that intersect buffer. Both inputs must be geodataframes. 
+        coastal_assets = gp.overlay(assets, buffer_gdf, how="intersection") # assets[assets.within(buffer)] This misses roads that intersect but are not fully within buffer.
+        #print("Coastal assets=",coastal_assets['geometry'])
+        
+        # Save as coastal asset shapefile
+        if coastal_assets.empty:
+            print("No coastal assets for", AssetShp)  
+        else:
+            coastal_assets.to_file(OutputPath)
+    
+    def MergeGeoDataFrames(self, Input1, Input2, Output):
+        """
+        Merge two input geodataframes and save to output
+        
+        NH, April 2024
+        
+        """
+        print("Coast.MergeGeoDataFrames:", Input1, Input2, "Save as:", Output)
+        
+        # Read in shapefiles as geodataframes using geopandas
+        gdf1 = gp.read_file(Input1)
+        gdf2 = gp.read_file(Input2)
+        
+        # Merge using pandas concat(). Geopandas append() has been deprecated
+        merged = pd.concat([gdf1, gdf2])
+        merged.to_file(Output)
+    
     def CalculateDistanceToFirstAsset(self):
         """
         Funcion to calculate the distance between the CoastNode and first 
