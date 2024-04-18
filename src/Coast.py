@@ -1512,14 +1512,13 @@ class Coast:
                 "SeawardMask" + delimiter + "LandwardMask" + delimiter +\
                 "FrontToeElev" + delimiter + "BackToeElev" + delimiter + "FrontTopElev" + delimiter + "BackTopElev" + delimiter + "CrestElev" + delimiter +\
                 "FrontToeDist" + delimiter + "BackToeDist" + delimiter + "FrontTopDist" + delimiter + "BackTopDist" + delimiter + "CrestDist" + delimiter +\
-                "StormRegime" + delimiter + "CliffToeDist" + delimiter + "CliffTopDist" + "\n")
+                "StormRegime" + delimiter + "CliffToeDist" + delimiter + "CliffTopDist" + delimiter + "Asset1Dist" + delimiter + "Asset1Elev" + "\n")
                 
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 f.write(str(Line.ID) + delimiter)
                 f.write(str(Transect.ID) + delimiter)
                 f.write(str(Transect.IntertidalSlope) + delimiter)      # slope between MHWSIntersect and MLWSIntersect
-                #f.write(str(Transect.ForeshoreSlope) + delimiter)       # slope between 0 m and MHWS (interpolated elevations)
                 f.write(str(Transect.MHWS) + delimiter)
                 f.write(str(Transect.H_ESL_c3) + delimiter)
                 f.write(str(Transect.H_R2) + delimiter)
@@ -1547,7 +1546,13 @@ class Coast:
                 
                 if Transect.Cliff:
                     f.write(str(Transect.Distance[Transect.CliffToeInd]) + delimiter)
-                    f.write(str(Transect.Distance[Transect.CliffTopInd]) + "\n")
+                    f.write(str(Transect.Distance[Transect.CliffTopInd]) + delimiter)
+                else:
+                    f.write("NaN" + delimiter + "NaN" + delimiter)
+                    
+                if Transect.AssetPresent:
+                    f.write(str(Transect.FirstAssetDist) + delimiter)
+                    f.write(str(Transect.FirstAssetElev) + "\n")
                 else:
                     f.write("NaN" + delimiter + "NaN" + "\n")
                     
