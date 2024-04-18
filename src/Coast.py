@@ -1539,10 +1539,11 @@ class Coast:
                     f.write(str(Transect.Distance[Transect.FrontTopInd]) + delimiter)
                     f.write(str(Transect.Distance[Transect.BackTopInd]) + delimiter)
                     f.write(str(Transect.Distance[Transect.CrestInd]) + delimiter)
-                    f.write(str(Transect.H_StormImpactScale) + delimiter)
                 else:
                     f.write("NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + \
-                            "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter)
+                            "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter)
+                
+                f.write(str(Transect.H_StormImpactScale) + delimiter)
                 
                 if Transect.Cliff:
                     f.write(str(Transect.Distance[Transect.CliffToeInd]) + delimiter)
@@ -5196,11 +5197,11 @@ class Coast:
                             Transect.E85_StormImpactScale = "NB_Collision"
                             
                     else:
-                        Transect.H_StormImpactScale = ""
-                        Transect.M45_StormImpactScale = ""
-                        Transect.M85_StormImpactScale = ""
-                        Transect.E45_StormImpactScale = ""
-                        Transect.E85_StormImpactScale = ""
+                        Transect.H_StormImpactScale = "NB_NoAsset"
+                        Transect.M45_StormImpactScale = "NB_NoAsset"
+                        Transect.M85_StormImpactScale = "NB_NoAsset"
+                        Transect.E45_StormImpactScale = "NB_NoAsset"
+                        Transect.E85_StormImpactScale = "NB_NoAsset"
                     
                     
     def CalculateHeadroom(self):
