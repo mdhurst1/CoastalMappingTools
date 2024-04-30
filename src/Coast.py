@@ -2924,9 +2924,10 @@ class Coast:
         
         # Save as coastal asset shapefile
         if coastal_assets.empty:
-            print("No coastal assets for", AssetShp)  
-        else:
-            coastal_assets.to_file(OutputPath)
+            print("\tNo coastal assets for", AssetShp)  
+        #else:
+        print("\tSaving", OutputPath)
+        coastal_assets.to_file(OutputPath)              # save, even if empty shapefile
     
     def MergeGeoDataFrames(self, Input1, Input2, Output):
         """
