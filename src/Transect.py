@@ -1487,8 +1487,10 @@ class Transect:
             # catch divide by zero
             if self.Distance[self.CliffToeInd] == self.Distance[LastInd]:
                 print(self.ID)
-                print("Divide by zero!")
-                sys.exit()
+                print("Divide by zero getting cliff top!")
+                self.Cliff = False                              # NH change: dont exit analysis, just set to false and continue. Case where hinterland is lowlying
+                return
+                #sys.exit()
 
             Angle = np.degrees(np.arctan((self.Elevation[LastInd]-self.Elevation[self.CliffToeInd]) 
                                         / (self.Distance[LastInd]-self.Distance[self.CliffToeInd])))
@@ -1514,7 +1516,7 @@ class Transect:
             # catch divide by zero
             if self.Distance[self.CliffTopInd] == self.Distance[MinInd]:
                 print(self.ID)
-                print("Divide by zero getting toe!")
+                print("Divide by zero getting cliff toe!")
                 sys.exit()
 
             Angle = np.degrees(np.arctan((self.Elevation[self.CliffTopInd]-self.Elevation[MinInd]) 
