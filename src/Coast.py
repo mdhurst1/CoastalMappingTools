@@ -2841,8 +2841,8 @@ class Coast:
     def IntersectShingle(self, Baseline, Shingle):
         """
         Find if transect intersects shingle habitat
-        Buffer baseline by 50m. Intersect with Shingle shapefile, save
-        Find if trnasect intersects this 
+        Buffer baseline by 75m. Intersect with Shingle shapefile, save
+        Find if transect intersects this 
         If so, set Shingle flag, to be used in extreme runup calc.
         
         NH, Feb 2024
@@ -2851,7 +2851,7 @@ class Coast:
         
         print("Coast.IntersectShingle: Finding if intersection between transect and", Shingle) 
         
-        buffer_dist = 50.0
+        buffer_dist = 75.0
         
         # Read in shapefiles as geodataframes using geopandas
         coastline = gp.read_file(Baseline)
