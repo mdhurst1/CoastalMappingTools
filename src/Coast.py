@@ -4722,7 +4722,7 @@ class Coast:
                 
         print("")
     
-    def AnalyseTransectMorphology(self, FrontToeMin=-0.001):
+    def AnalyseTransectMorphology(self, StormImpactAnalysis=None, FrontToeMin=-0.001):
 
         """
 
@@ -4730,10 +4730,13 @@ class Coast:
 
         MDH, June 2019
         
-        NH edit: 
-        Add ability to set FrontToeMin when calling FindBarrier2: 
-        FrontToeMin defined as minimum negative detrended elevation for new front toe. 
-        Default is -0.001 (1mm) as per MDH original code, so this is backwards compatible.
+        NH edits: 
+            Add StormImpactAnalysis selection to call revised FindBarrier2 and FindCliff2 functions.
+            If not set, will call MDH original FindCliff and FindBarrier functions. 
+        
+            Add ability to set FrontToeMin when calling FindBarrier2: 
+            FrontToeMin defined as minimum negative detrended elevation for new front toe. 
+            Default is -0.001 (1mm) as per MDH original code.
 
         """
 
@@ -4750,18 +4753,22 @@ class Coast:
                 print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
                 
                 # # Call analyses
-                #if Transect.LineID == "8":
-                # NH: Revised cliff detection. (MDH original code in FindCliff)
-                Transect.FindCliff2()
-                
-                # NH: Revised toe detection (MDH original code in FindBarrier)
-                Transect.FindBarrier2(FrontToeMin=FrontToeMin)
+                if StormImpactAnalysis == True:
+                    # NH: Revised cliff detection: mask elevations < 0m
+                    Transect.FindCliff2()
+                    
+                    # NH: Revised front toe detection
+                    Transect.FindBarrier2(FrontToeMin=FrontToeMin)
 
-                # Save dune toe and crest elevations
-                Transect.SaveBarrierElevations()
-                
-                # Extract hinterland characteristics
-                Transect.ExtractHinterlandElevSlope()
+                    # Save dune toe and crest elevations
+                    Transect.SaveBarrierElevations()
+                    
+                    # Extract hinterland characteristics
+                    Transect.ExtractHinterlandElevSlope()
+                    
+                else:
+                    Transect.FindCliff()
+                    Transect.FindBarrier()
                 
                 # update transect progress no
                 CurrentTransect += 1
