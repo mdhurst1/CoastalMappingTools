@@ -2889,7 +2889,7 @@ class Coast:
     def ExtractCoastalAssets(self, Baseline, AssetShp, BufferDist, OutputPath):
         """
         
-        Create coastal buffer and intersect with given shapefile.
+        Create coastal buffer and intersect with given asset shapefile 
         
         Input Parameters:
         Baseline: MHWS contour shapefile 
@@ -5267,9 +5267,9 @@ class Coast:
             print(f"\tNo geometries in {Shapefile}!")
             return
             
-        if __debug__:
-            print(f"\tNumber of geometries = {len(TransectsGeom)}")
-            print(TransectsGeom[0:5])
+        #if __debug__:
+        #    print(f"\tNumber of geometries = {len(TransectsGeom)}")
+        #    print(TransectsGeom[0:5])
         
         for Line in self.CoastLines:
             for Transect in Line.Transects: 
