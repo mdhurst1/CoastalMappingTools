@@ -5004,7 +5004,7 @@ class Coast:
                 
                 CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
                 
-                # extract nearest ESL index within 2.5 km of CoastNode
+                # extract nearest ESL index within 4 km of CoastNode
                 nearest_idx_array = DataPoints.sindex.nearest(CoastPoint, max_distance=MaxDist) 
                 nearest_idx = nearest_idx_array[1]
                      
@@ -5410,7 +5410,7 @@ class Coast:
             print(f"\tNo Points in {Shapefile}!")
             return
         
-        # Extract data: future projected SLR for different CC scenearios and years. 95th percentile
+        # Extract data: future projected SLR for different CC scenearios and years. c3=95th percentile
         SLR_M45_geoser = GDF["SLR_M45_c3"]
         SLR_E45_geoser = GDF["SLR_E45_c3"]
         SLR_M85_geoser = GDF["SLR_M85_c3"]
@@ -5422,8 +5422,8 @@ class Coast:
                 
                 CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
                 
-                # extract nearest SLR vector index within 12 km of CoastNode
-                nearest_idx_array = VectorPoints.sindex.nearest(CoastPoint, max_distance=12000) 
+                # extract nearest SLR vector index within 12.5 km of CoastNode
+                nearest_idx_array = VectorPoints.sindex.nearest(CoastPoint, max_distance=12500) 
                 nearest_idx = nearest_idx_array[1]
                 
                 if len(nearest_idx) > 0:
