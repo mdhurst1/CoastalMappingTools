@@ -685,29 +685,29 @@ class Coast:
 
         # open new shapefile        
         WL = shapefile.Writer(CoastShp,shapeType=shapefile.POLYLINE)
-        #print("a")
+        print("a")
        
         # Create Fields
         self.Fields = [('DeletionFlag','C',1,0),['Line_ID', 'C', 3, 0],['Method', 'C', 5, 0]]
         WL.fields = self.Fields[1:] 
-        #print("b")
-        #i=0
+        print("b")
+        i=0
 
         for Line in self.__dict__[DictionaryKey]:
             
-            #print(i)
-            #i = i+1
-            #print(Line)
+            print(i)
+            i = i+1
+            print(Line)
             
             if Smooth:
                 Line.SmoothLine(WindowSize=11)
-            #print("\tc")
+            print("\tc")
             # Find Loops
             Line.MakeSimple()
-            #print("\td")   
+            print("\td")   
             # get line node positions
             X, Y = Line.get_XY()
-            #print("\te")
+            print("\te")
             if Smooth and len(X) > 5:
 
                 XSmooth = X[1:-1]
@@ -728,27 +728,27 @@ class Coast:
                 YSmooth = np.insert(YSmooth,0,Y[0])
                 X = np.append(XSmooth,X[-1])
                 Y = np.append(YSmooth,Y[-1])
-            #print("\tf")
+            print("\tf")
             # get line node positions
             WriteLine = [np.column_stack([X,Y]).tolist()]
-            #print("\tg")
+            print("\tg")
             # generate record
             Record = [str(Line.ID),str(self.Method)]
-            #print("\th")
+            print("\th")
             # write line and record
             WL.line(WriteLine)
             WL.record(*Record) ####### ISSUE WITH RECORDS NEEDS FIXING ########
-            #print("\ti")
+            print("\ti")
         # close the shapefiles and clean up
         WL.close()
-        #print("j")  
+        print("j")  
         # create the projection file    
         f = open(CoastShp.rstrip("shp")+"prj","w")
-        #print("k")
+        print("k")
         f.write(self.Projection)
-        #print("l")
+        print("l")
         f.close()
-        #print("m")
+        print("m")
     
     def WritePatchesShp(self, DictionaryKey1, DictionaryKey2, PatchShp, Smooth=False):
 
@@ -2779,6 +2779,17 @@ class Coast:
         
         # read shapefile using geopandas
         GDF = gp.read_file(Shp)
+        
+        # check for empty geometry - case when e.g. no rail within subcell and empty file was saved
+        if GDF.empty:
+            print("\t NO GEOMETRY:", Shp, "Setting intersect to (0,0)")
+            
+            for Line in self.CoastLines:
+                for Transect in Line.Transects:
+                    Intersection = Point(0,0) 
+                    setattr(Transect, NodeToSave, Node(Intersection.x, Intersection.y))
+                    
+            return
         
         # get GeoDataFrame geometry (GeoSeries)
         Vector = GDF['geometry']
