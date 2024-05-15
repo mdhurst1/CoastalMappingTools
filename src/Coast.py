@@ -2920,26 +2920,22 @@ class Coast:
         coastline = gp.read_file(Baseline)
         assets = gp.read_file(AssetShp)
         
-        # Buffer baseline. This way retains it as a geodataframe
+        # Buffer and dissolve baseline
         coastline['geometry'] = coastline.geometry.buffer(BufferDist)
-        dissolved = coastline.dissolve()            # returns MultiPolygon with one row. Advantage to this is that is loses the coastline attributes.
-        #print("dissolved=",dissolved)
-        d = dissolved.geometry                      # turn back into gdf
-        #print("d=",d)
-        buffer_gdf = gp.GeoDataFrame(d, crs="EPSG:27700") #buffer = dissolved.geometry[0]
-        #print("buffer_gdf=",buffer_gdf)
+        dissolved = coastline.dissolve()
+        #print("dissolved=",dissolved)        
         
-        # Find assets that intersect buffer. Both inputs must be geodataframes. 
-        coastal_assets = gp.overlay(assets, buffer_gdf, how="intersection") # assets[assets.within(buffer)] This misses roads that intersect but are not fully within buffer.
-        #print("Coastal assets=",coastal_assets['geometry'])
+        # Clip assets to buffer
+        coastal_assets = gp.clip(assets, dissolved)
+        #print("Coastal assets=",coastal_assets)
         
         # Save as coastal asset shapefile
         if coastal_assets.empty:
             print("\tNo coastal assets for", AssetShp)  
-        #else:
+        
         print("\tSaving", OutputPath)
         coastal_assets.to_file(OutputPath)              # save, even if empty shapefile
-    
+        
     def MergeGeoDataFrames(self, Input1, Input2, Output):
         """
         Merge two input geodataframes and save to output
