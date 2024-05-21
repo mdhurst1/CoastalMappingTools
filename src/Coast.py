@@ -5429,8 +5429,8 @@ class Coast:
                 
                 CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
                 
-                # extract nearest SLR vector index within 12.5 km of CoastNode
-                nearest_idx_array = VectorPoints.sindex.nearest(CoastPoint, max_distance=12500) 
+                # extract nearest SLR vector index within 13 km of CoastNode
+                nearest_idx_array = VectorPoints.sindex.nearest(CoastPoint, max_distance=13000) 
                 nearest_idx = nearest_idx_array[1]
                 
                 if len(nearest_idx) > 0:
