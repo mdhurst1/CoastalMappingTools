@@ -4961,7 +4961,7 @@ class Coast:
         """
         Input data is SLR uplifted CFB2018 extreme still water levels, provided as
         dataproduct by UKCP18.
-        Find nearest input data point within 4 km of transect.
+        Find nearest input data point within 4.5 km of transect.
         Extract 25-yr return level and its likely range for each point.
         Likely range: c1 = 5th percentile, c3 = 95th percentile of projected SLR
         
@@ -4984,7 +4984,7 @@ class Coast:
         
         print("Coast.ExtractExtremeSeaLevel: Extracting extreme still water level, uplifted according to climate change scenario")
         
-        MaxDist = 4000
+        MaxDist = 4500
         
         # check input parameters
         if not (Scenario == "Hist" or Scenario == "M45" or Scenario == "M85" or \
@@ -5409,6 +5409,9 @@ class Coast:
         
         print("Coast.ExtractSeaLevelRise: Extracting UKCP18 SLR projections")
         
+        # buffer radius (m) around SLR datapoints
+        MaxDist = 15000
+        
         # read shapefile using geopandas
         GDF = gp.read_file(Shapefile)
         VectorPoints = GDF['geometry']
@@ -5429,8 +5432,8 @@ class Coast:
                 
                 CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
                 
-                # extract nearest SLR vector index within 13 km of CoastNode
-                nearest_idx_array = VectorPoints.sindex.nearest(CoastPoint, max_distance=13000) 
+                # extract nearest SLR vector index within MAX_DIST of CoastNode
+                nearest_idx_array = VectorPoints.sindex.nearest(CoastPoint, max_distance=MaxDist) 
                 nearest_idx = nearest_idx_array[1]
                 
                 if len(nearest_idx) > 0:
