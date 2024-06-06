@@ -4961,7 +4961,7 @@ class Coast:
         """
         Input data is SLR uplifted CFB2018 extreme still water levels, provided as
         dataproduct by UKCP18.
-        Find nearest input data point within 4.5 km of transect.
+        Find nearest input data point within MaxDist (m) of transect.
         Extract 25-yr return level and its likely range for each point.
         Likely range: c1 = 5th percentile, c3 = 95th percentile of projected SLR
         
@@ -4984,7 +4984,9 @@ class Coast:
         
         print("Coast.ExtractExtremeSeaLevel: Extracting extreme still water level, uplifted according to climate change scenario")
         
-        MaxDist = 4500
+        # based on the vector points spacing, set this to 4500 m for mainland and inner Hebrides.
+        # Outer hebrides (Cell_8a-f and Cell_9a-f) set to 10500 m to catch all beaches
+        MaxDist = 10500         # 4500
         
         # check input parameters
         if not (Scenario == "Hist" or Scenario == "M45" or Scenario == "M85" or \
@@ -5409,8 +5411,8 @@ class Coast:
         
         print("Coast.ExtractSeaLevelRise: Extracting UKCP18 SLR projections")
         
-        # buffer radius (m) around SLR datapoints
-        MaxDist = 15000
+        # buffer radius (m) around SLR datapoints. 15km for mainland and inner Hebrides; 16.5km for outer Hebrides
+        MaxDist = 16500     # 15000
         
         # read shapefile using geopandas
         GDF = gp.read_file(Shapefile)
