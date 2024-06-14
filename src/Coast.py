@@ -4986,7 +4986,8 @@ class Coast:
         
         # based on the vector points spacing, set this to 4500 m for mainland and inner Hebrides.
         # Outer hebrides (Cell_8a-f and Cell_9a-f) set to 10500 m to catch all beaches
-        MaxDist = 10500         # 4500
+        # Orkney (Cell 10) set to 5 km; Shetland (Cell 11) set to 11 km
+        MaxDist = 11000         # 4500
         
         # check input parameters
         if not (Scenario == "Hist" or Scenario == "M45" or Scenario == "M85" or \
@@ -5411,8 +5412,9 @@ class Coast:
         
         print("Coast.ExtractSeaLevelRise: Extracting UKCP18 SLR projections")
         
-        # buffer radius (m) around SLR datapoints. 15km for mainland and inner Hebrides; 16.5km for outer Hebrides
-        MaxDist = 16500     # 15000
+        # buffer radius (m) around SLR datapoints. 15 km for mainland and inner Hebrides; 
+        # 16.5 km for outer Hebrides; 40 km for Orkney (Cell 10); 15 km for Shetland (Cell 11)
+        MaxDist = 15000
         
         # read shapefile using geopandas
         GDF = gp.read_file(Shapefile)
