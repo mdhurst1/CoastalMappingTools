@@ -3027,6 +3027,8 @@ class Coast:
                     dist_asset = Coast.my_round(Transect.FirstAssetDist) + TransectLen
                     idx = (np.where(Transect.Distance == dist_asset))[0]                                    # tuple, with array of matching indices in first element
                     Transect.FirstAssetElev = Transect.Elevation[idx[0]]                                    # first element of matching indexes (should only be one)
+                    #print("D=", Transect.Distance)
+                    #print("E=", Transect.Elevation)
                     #print(Line.ID, Transect.ID, "\tL1=", Transect.Length, "\tL2=",TransectLen, "\tdist_asset=", dist_asset, "\tidx=", idx)
                     #print(Line.ID, Transect.ID, "\tdist_asset=", dist_asset, "\telev_asset=", Transect.FirstAssetElev)
                    
@@ -4773,6 +4775,9 @@ class Coast:
                     # Extract hinterland characteristics
                     Transect.ExtractHinterlandElevSlope()
                     
+                    # Clear masks applied to Transect.Distance and Transect.Elevation
+                    Transect.ClearTopographyMasks()
+                    
                 else:
                     Transect.FindCliff()
                     Transect.FindBarrier()
@@ -5227,6 +5232,210 @@ class Coast:
                         Transect.E85_StormImpactScale = "NB_NoAsset"
                     
                     
+    def CountStormImpacts(self, subcell, OutputFilename, delimiter):
+        
+        """
+        Function to count to total number of transects in the given subcell,
+        and the total number predicted of each storm regime, for each climate scenario.
+       
+        Write out to .csv file
+        
+        """
+        
+        # initialise all counts
+        H_SwashCount = 0
+        H_CollisionCount = 0
+        H_OverwashCount = 0
+        H_InundationCount = 0
+        H_NB_SwashCount = 0
+        H_NB_CollisionCount = 0
+        H_NB_OverwashCount = 0
+        H_NB_InundationCount = 0
+        H_NB_NoAssetCount = 0
+        
+        M45_SwashCount = 0
+        M45_CollisionCount = 0
+        M45_OverwashCount = 0
+        M45_InundationCount = 0
+        M45_NB_SwashCount = 0
+        M45_NB_CollisionCount = 0
+        M45_NB_OverwashCount = 0
+        M45_NB_InundationCount = 0
+        M45_NB_NoAssetCount = 0
+        
+        M85_SwashCount = 0
+        M85_CollisionCount = 0
+        M85_OverwashCount = 0
+        M85_InundationCount = 0
+        M85_NB_SwashCount = 0
+        M85_NB_CollisionCount = 0
+        M85_NB_OverwashCount = 0
+        M85_NB_InundationCount = 0
+        M85_NB_NoAssetCount = 0
+        
+        E45_SwashCount = 0
+        E45_CollisionCount = 0
+        E45_OverwashCount = 0
+        E45_InundationCount = 0
+        E45_NB_SwashCount = 0
+        E45_NB_CollisionCount = 0
+        E45_NB_OverwashCount = 0
+        E45_NB_InundationCount = 0
+        E45_NB_NoAssetCount = 0
+        
+        E85_SwashCount = 0
+        E85_CollisionCount = 0
+        E85_OverwashCount = 0
+        E85_InundationCount = 0
+        E85_NB_SwashCount = 0
+        E85_NB_CollisionCount = 0
+        E85_NB_OverwashCount = 0
+        E85_NB_InundationCount = 0
+        E85_NB_NoAssetCount = 0
+        
+        NoTransects = np.sum([Line.NoTransects for Line in self.CoastLines])
+        print("NoTransects =", NoTransects)
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                #print(Transect.LineID, Transect.ID)
+                match Transect.H_StormImpactScale:              # works
+                    case "Swash":
+                        H_SwashCount += 1
+                    case "Collision":
+                        H_CollisionCount += 1
+                    case "Overwash":
+                        H_OverwashCount += 1
+                    case "Inundation":
+                        H_InundationCount += 1
+                    case "NB_Swash":
+                        H_NB_SwashCount += 1
+                    case "NB_Collision":
+                        H_NB_CollisionCount += 1
+                    case "NB_Overwash":
+                        H_NB_OverwashCount += 1
+                    case "NB_Inundation":
+                        H_NB_InundationCount += 1
+                    case "NB_NoAsset":
+                        H_NB_NoAssetCount += 1
+                    case _:
+                        sys.exit("No assigned historical storm regime!")
+                        
+                match Transect.M45_StormImpactScale:            
+                    case "Swash":
+                        M45_SwashCount += 1
+                    case "Collision":
+                        M45_CollisionCount += 1
+                    case "Overwash":
+                        M45_OverwashCount += 1
+                    case "Inundation":
+                        M45_InundationCount += 1
+                    case "NB_Swash":
+                        M45_NB_SwashCount += 1
+                    case "NB_Collision":
+                        M45_NB_CollisionCount += 1
+                    case "NB_Overwash":
+                        M45_NB_OverwashCount += 1
+                    case "NB_Inundation":
+                        M45_NB_InundationCount += 1
+                    case "NB_NoAsset":
+                        M45_NB_NoAssetCount += 1
+                    case _:
+                        sys.exit("No assigned M45 storm regime!")
+                        
+                match Transect.M85_StormImpactScale:            
+                    case "Swash":
+                        M85_SwashCount += 1
+                    case "Collision":
+                        M85_CollisionCount += 1
+                    case "Overwash":
+                        M85_OverwashCount += 1
+                    case "Inundation":
+                        M85_InundationCount += 1
+                    case "NB_Swash":
+                        M85_NB_SwashCount += 1
+                    case "NB_Collision":
+                        M85_NB_CollisionCount += 1
+                    case "NB_Overwash":
+                        M85_NB_OverwashCount += 1
+                    case "NB_Inundation":
+                        M85_NB_InundationCount += 1
+                    case "NB_NoAsset":
+                        M85_NB_NoAssetCount += 1
+                    case _:
+                        sys.exit("No assigned M85 storm regime!")
+                        
+                match Transect.E45_StormImpactScale:            
+                    case "Swash":
+                        E45_SwashCount += 1
+                    case "Collision":
+                        E45_CollisionCount += 1
+                    case "Overwash":
+                        E45_OverwashCount += 1
+                    case "Inundation":
+                        E45_InundationCount += 1
+                    case "NB_Swash":
+                        E45_NB_SwashCount += 1
+                    case "NB_Collision":
+                        E45_NB_CollisionCount += 1
+                    case "NB_Overwash":
+                        E45_NB_OverwashCount += 1
+                    case "NB_Inundation":
+                        E45_NB_InundationCount += 1
+                    case "NB_NoAsset":
+                        E45_NB_NoAssetCount += 1
+                    case _:
+                        sys.exit("No assigned E45 storm regime!")
+                        
+                match Transect.E85_StormImpactScale:            
+                    case "Swash":
+                        E85_SwashCount += 1
+                    case "Collision":
+                        E85_CollisionCount += 1
+                    case "Overwash":
+                        E85_OverwashCount += 1
+                    case "Inundation":
+                        E85_InundationCount += 1
+                    case "NB_Swash":
+                        E85_NB_SwashCount += 1
+                    case "NB_Collision":
+                        E85_NB_CollisionCount += 1
+                    case "NB_Overwash":
+                        E85_NB_OverwashCount += 1
+                    case "NB_Inundation":
+                        E85_NB_InundationCount += 1
+                    case "NB_NoAsset":
+                        E85_NB_NoAssetCount += 1
+                    case _:
+                        sys.exit("No assigned E85 storm regime!")
+        
+        """        
+        print("Sw=", H_SwashCount)
+        print("Col=", H_CollisionCount)
+        print("Ov=", H_OverwashCount)
+        print("In=", H_InundationCount)
+        print("NSw=", H_NB_SwashCount)
+        print("NCol=", H_NB_CollisionCount)
+        print("NOv=", H_NB_OverwashCount)
+        print("NIn=", H_NB_InundationCount)
+        print("NNA=", H_NB_NoAssetCount)
+        """
+        
+        # open csv fle in appand mode, save counts for current subcell. works
+        f = open(OutputFilename,'a')
+        f.write(subcell + delimiter + str(NoTransects) + delimiter +\
+                str(H_SwashCount) + delimiter + str(H_CollisionCount) + delimiter + str(H_OverwashCount) + delimiter + str(H_InundationCount) + delimiter +\
+                str(H_NB_SwashCount) + delimiter + str(H_NB_CollisionCount) + delimiter + str(H_NB_OverwashCount) + delimiter + str(H_NB_InundationCount) + delimiter + str(H_NB_NoAssetCount) + delimiter +\
+                str(M45_SwashCount) + delimiter + str(M45_CollisionCount) + delimiter + str(M45_OverwashCount) + delimiter + str(M45_InundationCount) + delimiter +\
+                str(M45_NB_SwashCount) + delimiter + str(M45_NB_CollisionCount) + delimiter + str(M45_NB_OverwashCount) + delimiter + str(M45_NB_InundationCount) + delimiter + str(M45_NB_NoAssetCount) + delimiter +\
+                str(M85_SwashCount) + delimiter + str(M85_CollisionCount) + delimiter + str(M85_OverwashCount) + delimiter + str(M85_InundationCount) + delimiter +\
+                str(M85_NB_SwashCount) + delimiter + str(M85_NB_CollisionCount) + delimiter + str(M85_NB_OverwashCount) + delimiter + str(M85_NB_InundationCount) + delimiter + str(M85_NB_NoAssetCount) + delimiter +\
+                str(E45_SwashCount) + delimiter + str(E45_CollisionCount) + delimiter + str(E45_OverwashCount) + delimiter + str(E45_InundationCount) + delimiter +\
+                str(E45_NB_SwashCount) + delimiter + str(E45_NB_CollisionCount) + delimiter + str(E45_NB_OverwashCount) + delimiter + str(E45_NB_InundationCount) + delimiter + str(E45_NB_NoAssetCount) + delimiter +\
+                str(E85_SwashCount) + delimiter + str(E85_CollisionCount) + delimiter + str(E85_OverwashCount) + delimiter + str(E85_InundationCount) + delimiter +\
+                str(E85_NB_SwashCount) + delimiter + str(E85_NB_CollisionCount) + delimiter + str(E85_NB_OverwashCount) + delimiter + str(E85_NB_InundationCount) + delimiter + str(E85_NB_NoAssetCount) + "\n")
+        f.close()
+    
     def CalculateHeadroom(self):
         
         """
