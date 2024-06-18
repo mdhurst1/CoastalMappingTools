@@ -5319,7 +5319,7 @@ class Coast:
                     case "NB_NoAsset":
                         H_NB_NoAssetCount += 1
                     case _:
-                        sys.exit("No assigned historical storm regime!")
+                        print(Transect.LineID, Transect.ID, "No assigned historical storm regime!")
                         
                 match Transect.M45_StormImpactScale:            
                     case "Swash":
@@ -5341,7 +5341,7 @@ class Coast:
                     case "NB_NoAsset":
                         M45_NB_NoAssetCount += 1
                     case _:
-                        sys.exit("No assigned M45 storm regime!")
+                        print(Transect.LineID, Transect.ID, "No assigned M45 storm regime!")
                         
                 match Transect.M85_StormImpactScale:            
                     case "Swash":
@@ -5363,7 +5363,7 @@ class Coast:
                     case "NB_NoAsset":
                         M85_NB_NoAssetCount += 1
                     case _:
-                        sys.exit("No assigned M85 storm regime!")
+                        print(Transect.LineID, Transect.ID, "No assigned M85 storm regime!")
                         
                 match Transect.E45_StormImpactScale:            
                     case "Swash":
@@ -5385,7 +5385,7 @@ class Coast:
                     case "NB_NoAsset":
                         E45_NB_NoAssetCount += 1
                     case _:
-                        sys.exit("No assigned E45 storm regime!")
+                        print(Transect.LineID, Transect.ID, "No assigned E45 storm regime!")
                         
                 match Transect.E85_StormImpactScale:            
                     case "Swash":
@@ -5407,7 +5407,7 @@ class Coast:
                     case "NB_NoAsset":
                         E85_NB_NoAssetCount += 1
                     case _:
-                        sys.exit("No assigned E85 storm regime!")
+                        print(Transect.LineID, Transect.ID, "No assigned E85 storm regime!")
         
         """        
         print("Sw=", H_SwashCount)
