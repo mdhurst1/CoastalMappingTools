@@ -2353,6 +2353,30 @@ class Transect:
         self.HinterlandSlope = (HinterlandElev[-1] - HinterlandElev[self.BackToeInd+1])/(HinterlandDist[-1] - HinterlandDist[self.BackToeInd+1])
         #print(" ", self.HinterlandSlope)
     
+    def ClearTopographyMasks(self):
+        
+        """
+        Clear Transect.Distance and Transect.Elevation masks set during FindCliff2 and FindBarrier2
+        NH, June 2024
+        
+        """
+        
+        # Create new unmasked Elevation array
+        data = self.Elevation
+        x = np.ma.array(data, mask = False)       
+        x.mask = False                                  # force mask reset. unmasked Elevation data now in x.data
+        self.Elevation = x.data
+        
+        # Create new unmasked Distance array
+        data = self.Distance
+        x = np.ma.array(data, mask = False)             
+        x.mask = False 
+        self.Distance = x.data
+        
+        #print("E=", self.Elevation)                    # works
+        #print("D=", self.Distance)
+        
+    
     def ExtractBarrierWidthVolume(self,Elevation=None):
 
         """
