@@ -12,13 +12,11 @@ Modified by C. MacDonell, Montrose Project 2024
 
 # add modules
 import sys
-print(sys.path)
 import pickle, pathlib
 import geopandas as gp
 
 # add src path to find custom modules
-#sys.path.append("../src/")
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+sys.path.append("../src/")
 
 #import custom modules
 from Coast import *
@@ -31,6 +29,9 @@ NationalDEMPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shar
 # set up scenarios
 Scenarios = [2,4,8]
 Percentiles = [50,50,95]
+
+# Decades for writing
+Decades = [2020, 2030, 2040, 2050, 2060, 2070, 2080, 2090, 2100]
 
 # set up output folders
 GeometryPath = WorkingPath/("Geometry")
@@ -226,25 +227,38 @@ for CellSub in CellList:
             with open(str(Filename2SaveAll), 'wb') as PFile:
                 pickle.dump(CellCoast, PFile)
         
-        CellCoast.PredictFutureShorelines(MinMaxFlag="Min")
-        CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future_Min.shp")),SmoothOutput)
-        OpenCoast.WriteErodedAreaShp(str(OpenPath / (RowName + "_ErodedArea_" + str(Decade) + ".shp")), Year=Decade)
-        OpenCoast.WriteErodedAreaShp(str(OpenPath / (RowName + "_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
-        OpenCoast.WriteErosionProximityShp(str(OpenPath / (RowName + "_Influence_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
-        OpenCoast.WriteErosionProximityShp(str(OpenPath / (RowName + "_Vicinity_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
-                
-
-        CellCoast.PredictFutureShorelines(MinMaxFlag="Max")
-        CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future_Max.shp")),SmoothOutput)
-
         # write future shorelines
+        SmoothOutput = True # smooth coastlines (true) or not (false)
+        
         # write coast/bathy to file
-        SmoothOutput = False
         CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
         CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future.shp")),SmoothOutput)
+
+        #Loop through decades
+        for i, Decade in enumerate(Decades):
+
+            #skip 2020
+            if i == 0:
+                continue
+
+            CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_" + str(Decade) + ".shp")), Year=Decade)
+            CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
+            CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Influence_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
+            CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Vicinity_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
         
 
+        # note min and max reversed due to sign convention on volumetric calibration terms
+        CellCoast.PredictFutureShorelines(MinMaxFlag="Min")
+        CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future_Max.shp")),SmoothOutput)
 
-        CellCoast.TruncateTransects()
-        CellCoast.WriteFutureTransectsShp(str(OutputPath / (RowName + "_Transects.shp")))
-        
+        #Loop through decades
+        for i, Decade in enumerate(Decades):
+
+            #skip 2020
+            if i == 0:
+                continue
+
+            CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_Max" + str(Decade) + ".shp")), Year=Decade)
+            CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_Max" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
+            CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Influence_Max" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
+            CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Vicinity_Max" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
