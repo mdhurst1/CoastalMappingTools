@@ -527,11 +527,6 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             Name of a shapefile wit hthe second line/contour to look for when
             drawing transects. This should be the offshore line.
         """
-
-        #print("\tChecking Geometry, Line", self.ID)
-        #if self.ID == "3":
-        #    import pdb
-        #    pdb.set_trace()
             
         # load the contour shapefile
         GDF = gp.read_file(ShorelineShp)
@@ -543,7 +538,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             if not LineObj:
                 continue
             elif (LineObj.geom_type == "MultiLineString"):
-                for ThisLine in LineObj:
+                for ThisLine in LineObj.geoms:
                     LineList.append(ThisLine)
             elif (LineObj.geom_type == "LineString"):
                 LineList.append(LineObj)
@@ -566,7 +561,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             if not LineObj:
                 continue
             elif (LineObj.geom_type == "MultiLineString"):
-                for ThisLine in LineObj:
+                for ThisLine in LineObj.geoms:
                     LineList.append(ThisLine)
             elif (LineObj.geom_type == "LineString"):
                 LineList.append(LineObj)
