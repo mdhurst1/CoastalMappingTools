@@ -6,17 +6,19 @@ Martin Hurst
 University of Glasgow
 Dynamic Coast 2 Project
 
-Modified by C. MacDonell, Musselburgh project 2023
+Modified by C. MacDonell, Montrose Project 2024
 
 """
 
 # add modules
 import sys
+print(sys.path)
 import pickle, pathlib
 import geopandas as gp
 
 # add src path to find custom modules
-sys.path.append("../src/")
+#sys.path.append("../src/")
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
 #import custom modules
 from Coast import *
@@ -227,9 +229,9 @@ for CellSub in CellList:
         CellCoast.PredictFutureShorelines(MinMaxFlag="Min")
         CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future_Min.shp")),SmoothOutput)
         OpenCoast.WriteErodedAreaShp(str(OpenPath / (RowName + "_ErodedArea_" + str(Decade) + ".shp")), Year=Decade)
-                OpenCoast.WriteErodedAreaShp(str(OpenPath / (RowName + "_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
-                OpenCoast.WriteErosionProximityShp(str(OpenPath / (RowName + "_Influence_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
-                OpenCoast.WriteErosionProximityShp(str(OpenPath / (RowName + "_Vicinity_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
+        OpenCoast.WriteErodedAreaShp(str(OpenPath / (RowName + "_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
+        OpenCoast.WriteErosionProximityShp(str(OpenPath / (RowName + "_Influence_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
+        OpenCoast.WriteErosionProximityShp(str(OpenPath / (RowName + "_Vicinity_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
                 
 
         CellCoast.PredictFutureShorelines(MinMaxFlag="Max")
