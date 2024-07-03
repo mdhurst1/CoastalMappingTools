@@ -22,7 +22,7 @@ sys.path.append("../src/")
 from Coast import *
 
 # define file names for analysis
-WorkingPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/Supersites/Musselburgh_2023")
+WorkingPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/Supersites/Montrose_2024/CMT")
 NationalDEMPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2Final/99_NationalData/OSTerrain5")
 
 # set sea level scenario
@@ -66,13 +66,13 @@ for CellSub in CellList:
         continue
 
     # get soft coast position as most recent
-    ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Open_Baseline.shp") # extent???
-    SoftPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp") # set, clipped to MB
-    LiDARPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR.shp") # set, new lines added, clipped to MB
-    MLWSPath = WorkingPath / "MLWS_Lines" / (RowName + "_MLWS.shp") # set, simplify edits???
-    BathyPath = WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp") # set, no change
-    OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp") # set, clipped to MB
-    QuiteOldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp") # set, clipped to MB
+    ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Open_Baseline.shp") # Montrose Defences???
+    SoftPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp") 
+    LiDARPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR.shp") # new lines added
+    MLWSPath = WorkingPath / "MLWS_Lines" / (RowName + "_MLWS.shp") 
+    BathyPath = WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp") 
+    OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp") 
+    QuiteOldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp") 
     
     DC1Path = WorkingPath / "DC1_Results" / (RowName +"_DC1_Results.shp")
     
@@ -175,7 +175,7 @@ for CellSub in CellList:
             CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
             
             # Sample coastal defences
-            CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp")))
+            CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp"))) # DIFFERENT DEFENCE VERSIONS
             
             CellCoast.GotHistoricShorelines = True
             
