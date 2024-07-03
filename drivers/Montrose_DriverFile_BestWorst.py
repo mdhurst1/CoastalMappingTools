@@ -48,7 +48,7 @@ NoSmooths = 100 # do not change
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # Cell list
-CellList = ["1b"] # Musselburgh in Cell 1b
+CellList = ["2b"] # Montrose in Cell 2b
 
 # loop through each cell
 #for index, Row in Cells.iterrows():
@@ -66,7 +66,7 @@ for CellSub in CellList:
         continue
 
     # get soft coast position as most recent
-    ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Open_Baseline.shp") # Montrose Defences???
+    ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Open_Baseline_revised.shp") # revised, further revision for Montrose Defences???
     SoftPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp") 
     LiDARPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR.shp") # new lines added
     MLWSPath = WorkingPath / "MLWS_Lines" / (RowName + "_MLWS.shp") 
