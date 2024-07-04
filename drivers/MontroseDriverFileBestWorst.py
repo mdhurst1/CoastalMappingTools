@@ -31,7 +31,7 @@ Scenarios = [2,4,8]
 Percentiles = [50,50,95]
 
 # Decades for writing
-Decades = [2020, 2030, 2040, 2050, 2060, 2070, 2080, 2090, 2100]
+Decades = [2030, 2040, 2050, 2060, 2070, 2080, 2090, 2100] # exclude 2020 since now in 2024
 
 # set up output folders
 GeometryPath = WorkingPath/("Geometry")
@@ -228,7 +228,7 @@ for CellSub in CellList:
                 pickle.dump(CellCoast, PFile)
         
         # write future shorelines
-        SmoothOutput = True # smooth coastlines (true) or not (false)
+        SmoothOutput = False # smooth coastlines (true) or not (false)
         
         # write coast/bathy to file
         CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
@@ -236,10 +236,6 @@ for CellSub in CellList:
 
         #Loop through decades
         for i, Decade in enumerate(Decades):
-
-            #skip 2020
-            if i == 0:
-                continue
 
             CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_" + str(Decade) + ".shp")), Year=Decade)
             CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
@@ -253,10 +249,6 @@ for CellSub in CellList:
 
         #Loop through decades
         for i, Decade in enumerate(Decades):
-
-            #skip 2020
-            if i == 0:
-                continue
 
             CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_Max" + str(Decade) + ".shp")), Year=Decade)
             CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_Max" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
