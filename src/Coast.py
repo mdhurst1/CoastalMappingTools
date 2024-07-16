@@ -977,7 +977,7 @@ class Coast:
         ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], ['Min_Rate','N', 6, 4], ['Max_Rate','N', 6, 4], ['Hist_Rate','N', 6, 4], 
         ['CalibYr','N', 4, 0], ['BaseLYr','N', 4, 0], ['BaseLSrc','C', 50, 0], 
         ['Extrap2050','N', 6, 4], ['Extrap2100','N', 6, 4], ['FirstEYr','N',4, 4],
-        ['Dist_2030', 'N', 6, 4], ['Rate_2030', 'N', 6, 4], 
+        #['Dist_2030', 'N', 6, 4], ['Rate_2030', 'N', 6, 4], 
         ['Dist_2040', 'N', 6, 4], ['Rate_2040', 'N', 6, 4], 
         ['Dist_2050', 'N', 6, 4], ['Rate_2050', 'N', 6, 4], 
         ['Dist_2060', 'N', 6, 4], ['Rate_2060', 'N', 6, 4], 
@@ -1016,7 +1016,7 @@ class Coast:
                                 Transect.MinChangeRate, Transect.MaxChangeRate, Transect.ChangeRate, 
                                 Transect.CalibrationYear, Transect.HistoricShorelinesYears[-1], Transect.HistoricShorelinesSources[-1], 
                                 Transect.get_ExtrapDistance(2050), Transect.get_ExtrapDistance(2100), Transect.get_FirstFutureErosionYear(),
-                                Transect.get_FuturePositionChange(2020, 2030), Transect.get_FutureRate(2020, 2030), # should we be doing 2020 to 2030?
+                                #Transect.get_FuturePositionChange(2020, 2030), Transect.get_FutureRate(2020, 2030), # should we be doing 2020 to 2030?
                                 Transect.get_FuturePositionChange(2030, 2040), Transect.get_FutureRate(2030, 2040),
                                 Transect.get_FuturePositionChange(2040, 2050), Transect.get_FutureRate(2040, 2050),
                                 Transect.get_FuturePositionChange(2050, 2060), Transect.get_FutureRate(2050, 2060),
