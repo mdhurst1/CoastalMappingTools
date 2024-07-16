@@ -14,6 +14,8 @@ Modified by C. MacDonell, Montrose Project 2024
 import sys
 import pickle, pathlib
 import geopandas as gp
+import matplotlib.pyplot as plt
+%matplotlib qt5
 
 # add src path to find custom modules
 sys.path.append("../src/")
@@ -69,9 +71,9 @@ for CellSub in CellList:
         continue
 
     # get soft coast position as most recent
-    ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Open_Baseline_revised.shp") # revised, further revision for Montrose Defences???
+    ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Open_Baseline_revised_v2.shp") # revised, further revision for Montrose Defences???
     SoftPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp") 
-    LiDARPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR.shp") # new lines added
+    LiDARPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR_ESGSNHexclude.shp") # new lines added
     MLWSPath = WorkingPath / "MLWS_Lines" / (RowName + "_MLWS.shp") 
     BathyPath = WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp") 
     OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp") 
@@ -97,6 +99,11 @@ for CellSub in CellList:
         
         if not OutputPath.exists():
             OutputPath.mkdir(parents=True, exist_ok=True)
+            
+        PolygonsPath = OutputPath/("Erosion_Polygons")
+        
+        if not PolygonsPath.exists():
+            PolygonsPath.mkdir(parents=True, exist_ok=True)
         
         # # this checks to see whether coast object already exists
         Filename2SaveAll = OutputPath / (RowName+"_OpenChange.pydata")
@@ -195,8 +202,6 @@ for CellSub in CellList:
             # Extend transects landward by a fixed distance and sample DEMs
             HinterlandDistance = 200
             CellCoast.ExtendTransects2Hinterland(HinterlandDistance)
-            #CellCoast.CheckTransectTopology()
-            #CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects.shp")))
             CellCoast.FindDEM(str(NationalDEMPath / "OSTerrain5_fullcoastindex.shp"))
             CellCoast.ExtractTransectTopography()
             
@@ -228,7 +233,7 @@ for CellSub in CellList:
                 pickle.dump(CellCoast, PFile)
         
         # write future shorelines
-        SmoothOutput = False # smooth coastlines (true) or not (false)
+        SmoothOutput = True # smooth coastlines (true) or not (false)
         
         # write coast/bathy to file
         CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
@@ -239,6 +244,7 @@ for CellSub in CellList:
 
             CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_" + str(Decade) + ".shp")), Year=Decade)
             CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
+            
             CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Influence_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
             CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Vicinity_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
         
@@ -252,5 +258,6 @@ for CellSub in CellList:
 
             CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_Max" + str(Decade) + ".shp")), Year=Decade)
             CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_Max" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
+            
             CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Influence_Max" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
             CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Vicinity_Max" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)

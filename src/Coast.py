@@ -255,7 +255,7 @@ class Coast:
             # launch polygon patches shapefile writer
             self.WritePatchesShp("ExtFrontLines_"+Level, "ExtBackLines_"+Level, ExtPatchesShp)
     
-    def WriteErodedAreaShp(self, ErosionShp, StartYear=2030, Year=2100,Smooth=True):
+    def WriteErodedAreaShp(self, ErosionShp, StartYear=2030, Year=2100,Smooth=True,tempWrite=False):
         
         """
         Writes future shorelines to polygon patches
@@ -281,11 +281,12 @@ class Coast:
         ErosionBackShp = ErosionShp.split(".")[0]+"_temp2.shp"
 
         # write lines then patches
-        self.WriteLinesShp("WriteFutureLines", ErosionBackShp, Smooth)
-        self.WriteLinesShp("WriteRecentLines", ErosionFrontShp, Smooth)
+        if tempWrite:
+            self.WriteLinesShp("WriteFutureLines", ErosionBackShp, Smooth)
+            self.WriteLinesShp("WriteRecentLines", ErosionFrontShp, Smooth)
         self.WritePatchesShp("WriteFutureLines", "WriteRecentLines", ErosionShp, Smooth)
 
-    def WriteErosionProximityShp(self, ProximityShp, BufferDistance=10., Year=2100, Smooth=True):
+    def WriteErosionProximityShp(self, ProximityShp, BufferDistance=10., Year=2100, Smooth=True, tempWrite=False):
 
         """
         Writes Erosion Proximity polygon patches for a given decade
@@ -309,8 +310,9 @@ class Coast:
         ErosionBufferShp = ProximityShp.split(".")[0]+"_temp2.shp"
 
         # write lines then patches
-        self.WriteLinesShp("WriteFutureLines", ErosionFutureShp, Smooth)
-        self.WriteLinesShp("WriteBufferLines", ErosionBufferShp, Smooth)
+        if tempWrite:
+            self.WriteLinesShp("WriteFutureLines", ErosionFutureShp, Smooth)
+            self.WriteLinesShp("WriteBufferLines", ErosionBufferShp, Smooth)
         self.WritePatchesShp("WriteFutureLines", "WriteBufferLines", ProximityShp, Smooth)
     
     
