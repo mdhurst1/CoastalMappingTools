@@ -17,8 +17,11 @@ from Node import *
 from Transect import *
 
 import geopandas as gp
-from shapely.geometry import Point, LineString, MultiLineString, Polygon, MultiPolygon
-from shapely.ops import nearest_points, linemerge
+from shapely.geometry import Point, LineString, MultiLineString, Polygon, MultiPolygon, GeometryCollection
+from shapely.ops import nearest_points, linemerge, unary_union
+from shapely.validation import explain_validity
+
+from collections import defaultdict
 
 import pdb
 
@@ -204,50 +207,107 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         self.GenerateNodes(XSmooth,YSmooth)
         self.CalculateGeometry()
     
+# =============================================================================
+#     def MakeSimple(self):
+# 
+#         """
+# 
+#         Function to find and remove complexities (loops) in a line"
+# 
+#         MDH, Jan, 20201
+# 
+#         """
+# 
+#         # Get X and Y vectors from Nodes and write LineString object
+#         X, Y = self.get_XY()
+#         LS = LineString(zip(X,Y))
+# 
+#         while not LS.is_simple:
+#             
+#             #"Union" method will split self-intersection linestring.
+#             Result = LS.union(Point(X[0],Y[0]))
+#             
+#             # use result to get list of self intersections somehow
+#             
+#             # isolate non-looping line segments
+#             try:
+#                 Lines2Merge = [L for L in Result if not Point(L.coords[0]).distance(Point(L.coords[-1])) < 1]
+#                 LS = linemerge(Lines2Merge)
+#             
+#             except:
+#                 LS = Result
+#                 
+#             # merge lines that do not loop
+#             while LS.geom_type == "MultilineString":
+#                 Lines2Merge = [L for L in LS if L.is_simple]
+#                 LS = linemerge(Lines2Merge)
+#                 
+#             
+#         # Write new X and Y vectors to Nodes
+#         #X, Y = LS.coords.xy
+# 
+#         try:
+#             X, Y = LS.coords.xy
+#             self.GenerateNodes(X,Y)
+#             self.CalculateGeometry()
+#         except:
+#             return
+# ============================================================================= 
+
     def MakeSimple(self):
-
         """
-
-        Function to find and remove complexities (loops) in a line"
-
+        Function to find and remove complexities (loops) in a line
         MDH, Jan, 20201
-
+        
+        Modified for shapely 2.0+ 
+        CM, July 2024
         """
-
+    
         # Get X and Y vectors from Nodes and write LineString object
         X, Y = self.get_XY()
-        LS = LineString(zip(X,Y))
+        LS = LineString(zip(X, Y))
 
         while not LS.is_simple:
-            
-            #"Union" method will split self-intersection linestring.
-            Result = LS.union(Point(X[0],Y[0]))
-            
-            # use result to get list of self intersections somehow
-            
-            # isolate non-looping line segments
-            try:
-                Lines2Merge = [L for L in Result if not Point(L.coords[0]).distance(Point(L.coords[-1])) < 1]
-                LS = linemerge(Lines2Merge)
-            
-            except:
-                LS = Result
+            validity_explanation = explain_validity(LS)
+            print("LineString is not simple...", validity_explanation)
                 
-            # merge lines that do not loop
-            while LS.geom_type == "MultilineString":
-                Lines2Merge = [L for L in LS if L.is_simple]
-                LS = linemerge(Lines2Merge)
-                
+            # Get the unary union to find all intersections
+            Result = unary_union(LS)
             
-        # Write new X and Y vectors to Nodes
-        #X, Y = LS.coords.xy
+# =============================================================================
+#             plt.clf()
+#             for L in Result.geoms:
+#                 plt.plot(L.xy[0],L.xy[1])
+# =============================================================================
 
+            # Isolate non-looping line segments
+            try:
+                if isinstance(Result, (MultiLineString, GeometryCollection)):
+                    lines = [geom for geom in Result.geoms if isinstance(geom, LineString)]
+                else:
+                    lines = [Result]
+                
+                Lines2Merge = [L for L in lines if not Point(L.coords[0]).distance(Point(L.coords[-1])) < 1] 
+                LS = linemerge(Lines2Merge) 
+
+            except Exception as e:
+                print("Error in processing Result:", e)
+                LS = Result
+    
+            # Merge lines that do not loop
+            while LS.geom_type == "MultiLineString":
+                Lines2Merge = [L for L in LS.geoms if L.is_simple]
+                LS = linemerge(Lines2Merge)
+    
+        # Write new X and Y vectors to Nodes
         try:
             X, Y = LS.coords.xy
-            self.GenerateNodes(X,Y)
+            self.GenerateNodes(X, Y)
             self.CalculateGeometry()
-        except:
+        except Exception as e:
+            print("Error in generating nodes or calculating geometry:", e)
             return
+
                 
     def SplineLine(self):
 
