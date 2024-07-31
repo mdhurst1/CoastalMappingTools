@@ -5605,7 +5605,7 @@ class Coast:
         
                 #print(f"\t{Transect.LineID}_{Transect.ID}:\tHistRate:{Transect.Hist_Rate}")
                 
-    def ExtractSeaLevelRise(self, Shapefile=None):
+    def ExtractSeaLevelRise(self, Shapefile=None, MaxDist=None):
     
         """
         Extract UKCP18 sea level rise projections from nearest point in shapefile
@@ -5622,16 +5622,22 @@ class Coast:
                                "SLR_M85_c1" "SLR_M85_c2" "SLR_M85_c3" 
                                "SLR_E85_c1" "SLR_E85_c2" "SLR_E85_c3" 
             - c1 = 5th percentile, c2 = 50th percentile, c3 = 95th percentile of model simulations
+            
+        MaxDist - integer
+            - Search radius in meters from CoastNode to SLR data
+            - must be positive and less than 50 km
         
         NH, November 2023
+        Revised July 2024 to pass in MaxDist
         
         """
         
         print("Coast.ExtractSeaLevelRise: Extracting UKCP18 SLR projections")
         
-        # buffer radius (m) around SLR datapoints. 15 km for mainland and inner Hebrides; 
-        # 16.5 km for outer Hebrides; 40 km for Orkney (Cell 10); 15 km for Shetland (Cell 11)
-        MaxDist = 15000
+        # check input parameters
+        if not (MaxDist > 0 and MaxDist < 50000):
+            print("\tInvalid search radius:", MaxDist)
+            sys.exit()
         
         # read shapefile using geopandas
         GDF = gp.read_file(Shapefile)
@@ -5639,7 +5645,7 @@ class Coast:
         
         if len(VectorPoints) == 0:
             print(f"\tNo Points in {Shapefile}!")
-            return
+            sys.exit()
         
         # Extract data: future projected SLR for different CC scenearios and years. c3=95th percentile
         SLR_M45_geoser = GDF["SLR_M45_c3"]
