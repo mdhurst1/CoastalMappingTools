@@ -5665,8 +5665,8 @@ class Coast:
                 Transect.M85_SLR = SLR_M85
                 Transect.E85_SLR = SLR_E85
                 
-                print(f"\t{Transect.LineID}_{Transect.ID}:")
-                print(f"\t\tM45_SLR:{Transect.M45_SLR} \tE45_SLR:{Transect.E45_SLR} \tM85_SLR:{Transect.M85_SLR} \tE85_SLR:{Transect.E85_SLR}")
+                #print(f"\t{Transect.LineID}_{Transect.ID}:")
+                #print(f"\t\tM45_SLR:{Transect.M45_SLR} \tE45_SLR:{Transect.E45_SLR} \tM85_SLR:{Transect.M85_SLR} \tE85_SLR:{Transect.E85_SLR}")
     
     def AdjustFutureDuneElevations(self):
     
