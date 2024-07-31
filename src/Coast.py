@@ -4966,7 +4966,7 @@ class Coast:
                 else:
                     print(f"\t{Transect.LineID}_{Transect.ID}:Invalid scenario {Scenario}") # should not ever get this
 
-    def ExtractExtremeSeaLevel(self, Shapefile=None, Scenario=None):
+    def ExtractExtremeSeaLevel(self, Shapefile=None, Scenario=None, MaxDist=None):
         
         """
         Input data is SLR uplifted CFB2018 extreme still water levels, provided as
@@ -4987,22 +4987,25 @@ class Coast:
                 - "M85" = Mid-century RCP8.8
                 - "E45" = End-century RCP4.5
                 - "E85" = End-century RCP8.5
+        MaxDist : integer
+            - Search radius in meters from CoastNode to ESL datapoint
+            - Must be positive and less than 50 km
                 
         NH, November 2023
+        Revised July 2024 to pass MaxDist as parameter
         
         """
         
         print("Coast.ExtractExtremeSeaLevel: Extracting extreme still water level, uplifted according to climate change scenario")
         
-        # based on the vector points spacing, set this to 4500 m for mainland and inner Hebrides.
-        # Outer hebrides (Cell_8a-f and Cell_9a-f) set to 10500 m to catch all beaches
-        # Orkney (Cell 10) set to 5 km; Shetland (Cell 11) set to 11 km
-        MaxDist = 11000         # 4500
-        
         # check input parameters
         if not (Scenario == "Hist" or Scenario == "M45" or Scenario == "M85" or \
                 Scenario == "E45" or Scenario == "E85"):
             print("\tInvalid Scenario:", Scenario)
+            sys.exit()
+            
+        if not (MaxDist > 0 and MaxDist < 50000):
+            print("\tInvalid search radius:", MaxDist)
             sys.exit()
             
         # read shapefile using geopandas
