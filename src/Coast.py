@@ -5665,8 +5665,8 @@ class Coast:
                 Transect.M85_SLR = SLR_M85
                 Transect.E85_SLR = SLR_E85
                 
-                #print(f"\t{Transect.LineID}_{Transect.ID}:")
-                #print(f"\t\tM45_SLR:{Transect.M45_SLR} \tE45_SLR:{Transect.E45_SLR} \tM85_SLR:{Transect.M85_SLR} \tE85_SLR:{Transect.E85_SLR}")
+                print(f"\t{Transect.LineID}_{Transect.ID}:")
+                print(f"\t\tM45_SLR:{Transect.M45_SLR} \tE45_SLR:{Transect.E45_SLR} \tM85_SLR:{Transect.M85_SLR} \tE85_SLR:{Transect.E85_SLR}")
     
     def AdjustFutureDuneElevations(self):
     
@@ -5675,12 +5675,18 @@ class Coast:
         front toe and crest elevations for future storm impact analysis. 
         
         Conceptual model of dune evolution:
-        For historically stable or eroding coastlines, assume that increase in 
-        extreme water level impact hours per year will not allow dunes to keep 
-        pace with SLR. For historiclaly accreting coastlines, assume that dunes will 
-        keep pace with SLR until 2050. After that, coastline accretion is likely to
-        change to stability/erosion due to accelearting SLR, and dune elevations may 
-        not keep pace with SLR. Thus after 2050 keep dune elevations at 2050 levels. 
+        For a future of accelerating SLR and increased annual extreme water level events predicted by UKCP18, 
+        and our understanding of the processes that control foredune evolution, the conceptual model for 
+        dune toe and crest elevation proposed for this study is:
+        a.	On the assumption that sediment remains in the system, foredune toe elevation will keep pace 
+            with SLR until 2050 and 2100, regardless of sediment budget.
+        b.	Foredune crests of historically stable or accreting beaches will keep pace with SLR until 2050. 
+            After 2050 when SLR is expected to accelerate dramatically, accretion could turn into stability or erosion, 
+            and foredune crests will no longer increase at the same rate as SLR. 
+            For 2100 model scenarios of historically stable or accreting beaches, dune crest elevations are thus maintained at 2050 levels.
+        c.	Foredune crests of historically eroding beaches do not keep pace with SLR and remain at present day elevations for both 2050 and 2100.
+        d.	In the event of future foredune/berm toe elevations exceeding future crest elevations, due to toes keeping pace with SLR and crests not, 
+            future crest elevations are set to equal future toe elevations, to make sense from a morphological perspective.
         
         Need to know future SLR from Coast.ExtractSeaLevelRise.
         
@@ -5688,16 +5694,65 @@ class Coast:
     
         """
         
-        print(f"Coast.AdjustFutureDuneElevations: Adjust future dune toe and crest elevations for storm impact analysis")
+        print(f"Coast.AdjustFutureDuneElevations: Adjusting future dune toe and crest elevations for storm impact analysis")
         
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 
                 # Only adjust elevations if transect contains a barrier
                 if Transect.Barrier:
+                    
+                    # Increase barrier TOE elevations to keep pace with SLR, regardless of sediment budget
+                    Transect.M45_FrontToe = Transect.H_FrontToe + Transect.M45_SLR
+                    Transect.E45_FrontToe = Transect.H_FrontToe + Transect.E45_SLR
+                    Transect.M85_FrontToe = Transect.H_FrontToe + Transect.M85_SLR
+                    Transect.E85_FrontToe = Transect.H_FrontToe + Transect.E85_SLR
                 
-                    # Hist_Rate = None if NearestDC2Index was not found by FindNearestIndex i.e. no DC2 transect within 200m of my transect:
-                    # Dune toe and crest elevations maintained at present-day levels for 2050 and 2100 (i.e. cannot keep pace with SLR). Precautionary
+                    # If no nearby DC2 transect found, historic sediment budget is not known. Treat as if barrier is eroding (percautionary):
+                    # Barrier CREST elevations maintained at present-day levels for 2050 and 2100
+                    if Transect.Hist_Rate == None:
+                        Transect.M45_Crest = Transect.H_Crest
+                        Transect.E45_Crest = Transect.H_Crest
+                        Transect.M85_Crest = Transect.H_Crest
+                        Transect.E85_Crest = Transect.H_Crest
+                        
+                    else:
+                        # Historic trend of erosion (negative sediment budget): Barrier crest elevations maintained at present-day levels for 2050 and 2100
+                        if Transect.Hist_Rate < 0.:
+                            Transect.M45_Crest = Transect.H_Crest
+                            Transect.E45_Crest = Transect.H_Crest
+                            Transect.M85_Crest = Transect.H_Crest
+                            Transect.E85_Crest = Transect.H_Crest
+                        
+                        # Historically stable or accreting (positive sediment budget): Barrier crest elevations keep pace with SLR until 2050
+                        else:
+                            Transect.M45_Crest = Transect.H_Crest + Transect.M45_SLR
+                            Transect.E45_Crest = Transect.M45_Crest
+                            Transect.M85_Crest = Transect.H_Crest + Transect.M85_SLR
+                            Transect.E85_Crest = Transect.M85_Crest
+                    
+                    # Check if future toe elevation exceeds future crest elevation: set to equal and set flag
+                    if Transect.M45_FrontToe > Transect.M45_Crest:
+                        print(f"\t{Transect.LineID}_{Transect.ID}: M45 toe>crest!")
+                        Transect.M45_Crest = Transect.M45_FrontToe
+                        Transect.M45_BarrierDrowning = True
+                        
+                    if Transect.E45_FrontToe > Transect.E45_Crest:
+                        print(f"\t{Transect.LineID}_{Transect.ID}: E45 toe>crest!")
+                        Transect.E45_Crest = Transect.E45_FrontToe
+                        Transect.E45_BarrierDrowning = True
+                        
+                    if Transect.M85_FrontToe > Transect.M85_Crest:
+                        print(f"\t{Transect.LineID}_{Transect.ID}: M85 toe>crest!")
+                        Transect.M85_Crest = Transect.M85_FrontToe
+                        Transect.M85_BarrierDrowning = True
+                        
+                    if Transect.E85_FrontToe > Transect.E85_Crest:
+                        print(f"\t{Transect.LineID}_{Transect.ID}: E85 toe>crest!")
+                        Transect.E85_Crest = Transect.E85_FrontToe
+                        Transect.E85_BarrierDrowning = True
+                    
+                    """
                     if Transect.Hist_Rate == None:
                         Transect.M45_FrontToe = Transect.H_FrontToe
                         Transect.E45_FrontToe = Transect.H_FrontToe
@@ -5734,7 +5789,7 @@ class Coast:
                             Transect.E45_Crest = Transect.M45_Crest
                             Transect.M85_Crest = Transect.H_Crest + Transect.M85_SLR
                             Transect.E85_Crest = Transect.M85_Crest
-                    
+                    """
                 #if Transect.ID == '36':
                     #print(f"\t{Transect.LineID}_{Transect.ID}: HistRate:{Transect.Hist_Rate} \tToe:{Transect.H_FrontToe}\tCrest:{Transect.H_Crest}")
                     #print(f"\t\tM45_SLR:{Transect.M45_SLR},\tM45Toe:{Transect.M45_FrontToe}, E45Toe:{Transect.E45_FrontToe} \tM85_SLR:{Transect.M85_SLR} M85Toe:{Transect.M85_FrontToe} E85Toe:{Transect.E85_FrontToe}")
