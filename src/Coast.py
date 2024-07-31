@@ -1491,13 +1491,16 @@ class Coast:
                     
         f.close()
         
-    def WriteSlopesDuneParSISTextfile(self, Filename, delimiter=","):
+    def WriteSlopesDuneParSISTextfile(self, Filename, Cell, delimiter=","):
         
         """
         Writes all transect slopes and dune parameters to .csv file
         Water levels and storm impacts for Historical (present day) scenario
         
+        Input parameters: Filename = output filename; Cell = coastal cell name
+        
         NH, Novembeer 2023
+        Revised July 2024
         
         """
         
@@ -1507,7 +1510,7 @@ class Coast:
         f = open(Filename,'w')
         
         # write headers
-        f.write("LineID" + delimiter + "TransectID" + delimiter + "IntertidalSlope" + delimiter +\
+        f.write("Cell" + delimiter + "LineID" + delimiter + "TransectID" + delimiter + "IntertidalSlope" + delimiter + "Shingle" + delimiter +\
                 "MHWS" + delimiter + "H_ESL_c3" + delimiter + "H_R2" + delimiter + "H_TWL" + delimiter + "H_TWL_setup" + delimiter +\
                 "SeawardMask" + delimiter + "LandwardMask" + delimiter +\
                 "FrontToeElev" + delimiter + "BackToeElev" + delimiter + "FrontTopElev" + delimiter + "BackTopElev" + delimiter + "CrestElev" + delimiter +\
@@ -1516,9 +1519,11 @@ class Coast:
                 
         for Line in self.CoastLines:
             for Transect in Line.Transects:
+                f.write(str(Cell) + delimiter)
                 f.write(str(Line.ID) + delimiter)
                 f.write(str(Transect.ID) + delimiter)
                 f.write(str(Transect.IntertidalSlope) + delimiter)      # slope between MHWSIntersect and MLWSIntersect
+                f.write(str(Transect.Shingle) + delimiter)
                 f.write(str(Transect.MHWS) + delimiter)
                 f.write(str(Transect.H_ESL_c3) + delimiter)
                 f.write(str(Transect.H_R2) + delimiter)
