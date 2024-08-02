@@ -194,6 +194,28 @@ class Transect:
         
         # storm impact analysis
         # H=historic, M=mid-century, E=end-century, 45=RCP4.5, 85=RCP8.5
+        # wave parameters: peak wave period Tp, significant wave height Hs
+        self.H_Tp_p99 = None
+        self.M45_Tp_p99 = None
+        self.E45_Tp_p99 = None
+        self.M85_Tp_p99 = None
+        self.E85_Tp_p99 = None
+        self.H_Hs_p99 = None
+        self.M45_Hs_p99 = None
+        self.E45_Hs_p99 = None
+        self.M85_Hs_p99 = None
+        self.E85_Hs_p99 = None
+        # derived wave parameters
+        self.H_WaveSteepness = None
+        self.M45_WaveSteepness = None
+        self.E45_WaveSteepness = None
+        self.M85_WaveSteepness = None
+        self.E85_WaveSteepness = None
+        self.H_Iribarren = None
+        self.M45_Iribarren = None
+        self.E45_Iribarren = None
+        self.M85_Iribarren = None
+        self.E85_Iribarren = None
         # extreme wave runup
         self.H_R2 = None
         self.M45_R2 = None

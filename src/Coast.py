@@ -1512,6 +1512,7 @@ class Coast:
         # write headers
         f.write("Cell" + delimiter + "LineID" + delimiter + "TransectID" + delimiter + "IntertidalSlope" + delimiter + "Shingle" + delimiter +\
                 "MHWS" + delimiter + "H_ESL_c3" + delimiter + "H_R2" + delimiter + "H_TWL" + delimiter + "H_TWL_setup" + delimiter +\
+                "H_Hs" + delimiter + "H_Tp" + delimiter + "H_Steepness" + delimiter + "H_Iribarren" + delimiter +\
                 "SeawardMask" + delimiter + "LandwardMask" + delimiter +\
                 "FrontToeElev" + delimiter + "BackToeElev" + delimiter + "FrontTopElev" + delimiter + "BackTopElev" + delimiter + "CrestElev" + delimiter +\
                 "FrontToeDist" + delimiter + "BackToeDist" + delimiter + "FrontTopDist" + delimiter + "BackTopDist" + delimiter + "CrestDist" + delimiter +\
@@ -1529,6 +1530,10 @@ class Coast:
                 f.write(str(Transect.H_R2) + delimiter)
                 f.write(str(Transect.H_TWL) + delimiter)
                 f.write(str(Transect.H_TWL_setup) + delimiter)
+                f.write(str(Transect.H_Hs_p99) + delimiter)
+                f.write(str(Transect.H_Tp_p99) + delimiter)
+                f.write(str(Transect.H_WaveSteepness) + delimiter)
+                f.write(str(Transect.H_Iribarren) + delimiter)
                 f.write(str(Transect.SeawardMask) + delimiter)
                 f.write(str(Transect.LandwardMask) + delimiter)
                 
@@ -4858,7 +4863,11 @@ class Coast:
                                             np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)         # Stockdon eq(19): Extreme wave runup (all other sandy beaches)
                             Transect.H_setup = 0.35*Bf*np.sqrt(H0*L0)                       # Stockdon eq(10)
                             Transect.H_Dissipative = False
-                                        
+                    
+                    # save parameters 
+                    Transect.H_WaveSteepness = H0/L0
+                    Transect.H_Iribarren = Iribarren
+                    
                 elif Scenario == "M45":                                                     # repeat for each climate scenario
                     Tp = Transect.M45_Tp_p99
                     H0 = Transect.M45_Hs_p99
@@ -4883,7 +4892,11 @@ class Coast:
                             Transect.M45_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
                                             np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) 
                             Transect.M45_setup = 0.35*Bf*np.sqrt(H0*L0)                         
-                            Transect.M45_Dissipative = False                                        
+                            Transect.M45_Dissipative = False 
+                    
+                    # save parameters 
+                    Transect.M45_WaveSteepness = H0/L0
+                    Transect.M45_Iribarren = Iribarren
                 
                 elif Scenario == "M85":
                     Tp = Transect.M85_Tp_p99
@@ -4910,6 +4923,10 @@ class Coast:
                                             np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) 
                             Transect.M85_setup = 0.35*Bf*np.sqrt(H0*L0)                     
                             Transect.M85_Dissipative = False 
+                            
+                    # save parameters 
+                    Transect.M85_WaveSteepness = H0/L0
+                    Transect.M85_Iribarren = Iribarren
                                         
                 elif Scenario == "E45":
                     Tp = Transect.E45_Tp_p99
@@ -4936,6 +4953,10 @@ class Coast:
                                             np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)
                             Transect.E45_setup = 0.35*Bf*np.sqrt(H0*L0)                       
                             Transect.E45_Dissipative = False
+                            
+                    # save parameters 
+                    Transect.E45_WaveSteepness = H0/L0
+                    Transect.E45_Iribarren = Iribarren
                                         
                 elif Scenario == "E85":
                     Tp = Transect.E85_Tp_p99
@@ -4962,6 +4983,10 @@ class Coast:
                                             np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) 
                             Transect.E85_setup = 0.35*Bf*np.sqrt(H0*L0)                       
                             Transect.E85_Dissipative = False
+                            
+                    # save parameters 
+                    Transect.E85_WaveSteepness = H0/L0
+                    Transect.E85_Iribarren = Iribarren
                                         
                 else:
                     print(f"\t{Transect.LineID}_{Transect.ID}:Invalid scenario {Scenario}") # should not ever get this
