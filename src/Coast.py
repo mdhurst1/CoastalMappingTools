@@ -1083,19 +1083,19 @@ class Coast:
         ['Rail1_Dist','N', 5, 2], ['Rail1_Elev','N', 5, 2], ['Prop1_Dist','N', 5, 2], ['Prop1_Elev','N', 5, 2],
         ['M45_Hs','N', 5, 2],['M45_Tp','N', 5, 2], ['M45_Diss','B', 7, 0], ['M45_R2','N', 5, 2], ['M45_setup','N', 5, 2], 
         ['M45_ESL_c3','N', 5, 2], ['M45_TWL','N', 5, 2], ['M45_TWL_su','N', 5, 2], 
-        ['M45_Toe','N', 5, 2],['M45_Crest','N', 5, 2],
+        ['M45_Toe','N', 5, 2],['M45_Crest','N', 5, 2],['M45_Drown','B', 7, 0],
         ['M45_SIS', 'C', 14, 0],['M45_HRoom','N', 5, 2],
         ['E45_Hs','N', 5, 2],['E45_Tp','N', 5, 2], ['E45_Diss','B', 7, 0], ['E45_R2','N', 5, 2], ['E45_setup','N', 5, 2], 
         ['E45_ESL_c3','N', 5, 2], ['E45_TWL','N', 5, 2], ['E45_TWL_su','N', 5, 2], 
-        ['E45_Toe','N', 5, 2],['E45_Crest','N', 5, 2],
+        ['E45_Toe','N', 5, 2],['E45_Crest','N', 5, 2],['E45_Drown','B', 7, 0],
         ['E45_SIS', 'C', 14, 0],['E45_HRoom','N', 5, 2],
         ['M85_Hs','N', 5, 2],['M85_Tp','N', 5, 2], ['M85_Diss','B', 7, 0], ['M85_R2','N', 5, 2], ['M85_setup','N', 5, 2], 
         ['M85_ESL_c3','N', 5, 2], ['M85_TWL','N', 5, 2], ['M85_TWL_su','N', 5, 2], 
-        ['M85_Toe','N', 5, 2],['M85_Crest','N', 5, 2],
+        ['M85_Toe','N', 5, 2],['M85_Crest','N', 5, 2],['M85_Drown','B', 7, 0],
         ['M85_SIS', 'C', 14, 0],['M85_HRoom','N', 5, 2],
         ['E85_Hs','N', 5, 2],['E85_Tp','N', 5, 2], ['E85_Diss','B', 7, 0], ['E85_R2','N', 5, 2], ['E85_setup','N', 5, 2], 
         ['E85_ESL_c3','N', 5, 2], ['E85_TWL','N', 5, 2], ['E85_TWL_su','N', 5, 2], 
-        ['E85_Toe','N', 5, 2],['E85_Crest','N', 5, 2],
+        ['E85_Toe','N', 5, 2],['E85_Crest','N', 5, 2],['E85_Drown','B', 7, 0],
         ['E85_SIS', 'C', 14, 0],['E85_HRoom','N', 5, 2]
         ]
         
@@ -1124,19 +1124,19 @@ class Coast:
                                 Transect.FirstRailDist, Transect.FirstRailElev, Transect.FirstPropertyDist, Transect.FirstPropertyElev,
                                 Transect.M45_Hs_p99, Transect.M45_Tp_p99, Transect.M45_Dissipative, Transect.M45_R2, Transect.M45_setup, 
                                 Transect.M45_ESL_c3, Transect.M45_TWL, Transect.M45_TWL_setup,
-                                Transect.M45_FrontToe, Transect.M45_Crest,
+                                Transect.M45_FrontToe, Transect.M45_Crest, Transect.M45_BarrierDrowning,
                                 Transect.M45_StormImpactScale, Transect.M45_Headroom,
                                 Transect.E45_Hs_p99, Transect.E45_Tp_p99, Transect.E45_Dissipative, Transect.E45_R2, Transect.E45_setup, 
                                 Transect.E45_ESL_c3, Transect.E45_TWL, Transect.E45_TWL_setup,
-                                Transect.E45_FrontToe, Transect.E45_Crest,
+                                Transect.E45_FrontToe, Transect.E45_Crest, Transect.E45_BarrierDrowning, 
                                 Transect.E45_StormImpactScale, Transect.E45_Headroom,
                                 Transect.M85_Hs_p99, Transect.M85_Tp_p99, Transect.M85_Dissipative, Transect.M85_R2, Transect.M85_setup, 
                                 Transect.M85_ESL_c3, Transect.M85_TWL, Transect.M85_TWL_setup,
-                                Transect.M85_FrontToe, Transect.M85_Crest,
+                                Transect.M85_FrontToe, Transect.M85_Crest, Transect.M85_BarrierDrowning, 
                                 Transect.M85_StormImpactScale, Transect.M85_Headroom,
                                 Transect.E85_Hs_p99, Transect.E85_Tp_p99, Transect.E85_Dissipative, Transect.E85_R2, Transect.E85_setup, 
                                 Transect.E85_ESL_c3, Transect.E85_TWL, Transect.E85_TWL_setup,
-                                Transect.E85_FrontToe, Transect.E85_Crest,
+                                Transect.E85_FrontToe, Transect.E85_Crest, Transect.E85_BarrierDrowning, 
                                 Transect.E85_StormImpactScale, Transect.E85_Headroom]
                 else:
                     Record = [str(Line.ID), str(Transect.ID),
@@ -1152,19 +1152,19 @@ class Coast:
                                 Transect.FirstRailDist, Transect.FirstRailElev, Transect.FirstPropertyDist, Transect.FirstPropertyElev,
                                 Transect.M45_Hs_p99, Transect.M45_Tp_p99, Transect.M45_Dissipative, Transect.M45_R2, Transect.M45_setup, 
                                 Transect.M45_ESL_c3, Transect.M45_TWL, Transect.M45_TWL_setup,
-                                "", "",
+                                "", "",  "",
                                 Transect.M45_StormImpactScale, "",
                                 Transect.E45_Hs_p99, Transect.E45_Tp_p99, Transect.E45_Dissipative, Transect.E45_R2, Transect.E45_setup, 
                                 Transect.E45_ESL_c3, Transect.E45_TWL, Transect.E45_TWL_setup,
-                                "", "",
-                                Transect.E45_StormImpactScale, "",
+                                "", "", "",
+                                Transect.E45_StormImpactScale, "", 
                                 Transect.M85_Hs_p99, Transect.M85_Tp_p99, Transect.M85_Dissipative, Transect.M85_R2, Transect.M85_setup, 
                                 Transect.M85_ESL_c3, Transect.M85_TWL, Transect.M85_TWL_setup,
-                                "", "",
-                                Transect.M85_StormImpactScale, "",
+                                "", "", "",
+                                Transect.M85_StormImpactScale, "", 
                                 Transect.E85_Hs_p99, Transect.E85_Tp_p99, Transect.E85_Dissipative, Transect.E85_R2, Transect.E85_setup, 
                                 Transect.E85_ESL_c3, Transect.E85_TWL, Transect.E85_TWL_setup,
-                                "", "",
+                                "", "", "", 
                                 Transect.E85_StormImpactScale, ""]
 
                 # write transect and record
@@ -5775,21 +5775,29 @@ class Coast:
                         print(f"\t{Transect.LineID}_{Transect.ID}: M45 toe>crest!")
                         Transect.M45_Crest = Transect.M45_FrontToe
                         Transect.M45_BarrierDrowning = True
+                    else:
+                        Transect.M45_BarrierDrowning = False
                         
                     if Transect.E45_FrontToe > Transect.E45_Crest:
                         print(f"\t{Transect.LineID}_{Transect.ID}: E45 toe>crest!")
                         Transect.E45_Crest = Transect.E45_FrontToe
                         Transect.E45_BarrierDrowning = True
+                    else:
+                        Transect.E45_BarrierDrowning = False
                         
                     if Transect.M85_FrontToe > Transect.M85_Crest:
                         print(f"\t{Transect.LineID}_{Transect.ID}: M85 toe>crest!")
                         Transect.M85_Crest = Transect.M85_FrontToe
                         Transect.M85_BarrierDrowning = True
+                    else:
+                        Transect.M85_BarrierDrowning = False
                         
                     if Transect.E85_FrontToe > Transect.E85_Crest:
                         print(f"\t{Transect.LineID}_{Transect.ID}: E85 toe>crest!")
                         Transect.E85_Crest = Transect.E85_FrontToe
                         Transect.E85_BarrierDrowning = True
+                    else:
+                        Transect.E85_BarrierDrowning = False
                     
                     """
                     if Transect.Hist_Rate == None:
