@@ -274,6 +274,11 @@ class Transect:
         self.E45_Headroom = None
         self.E85_Headroom = None
         self.HinterlandElev = None
+        # Barrier drowned if future toe exceeds future crest elevation
+        self.M45_BarrierDrowning = None
+        self.E45_BarrierDrowning = None
+        self.M85_BarrierDrowning = None
+        self.E85_BarrierDrowning = None
         # shingle habitat intersected
         self.Shingle = None
         # Asset location
