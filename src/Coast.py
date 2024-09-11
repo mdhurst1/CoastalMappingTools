@@ -1510,7 +1510,7 @@ class Coast:
         f = open(Filename,'w')
         
         # write headers
-        f.write("Cell" + delimiter + "LineID" + delimiter + "TransectID" + delimiter + "IntertidalSlope" + delimiter + "Shingle" + delimiter +\
+        f.write("Cell" + delimiter + "LineID" + delimiter + "TransectID" + delimiter + "ID" + delimiter + "IntertidalSlope" + delimiter + "Shingle" + delimiter +\
                 "MHWS" + delimiter + "H_ESL_c3" + delimiter + "H_R2" + delimiter + "H_TWL" + delimiter + "H_TWL_setup" + delimiter +\
                 "H_Hs" + delimiter + "H_Tp" + delimiter + "H_Steepness" + delimiter + "H_Iribarren" + delimiter +\
                 "SeawardMask" + delimiter + "LandwardMask" + delimiter +\
@@ -1523,6 +1523,7 @@ class Coast:
                 f.write(str(Cell) + delimiter)
                 f.write(str(Line.ID) + delimiter)
                 f.write(str(Transect.ID) + delimiter)
+                f.write(str(Cell) + "_" + str(Line.ID) + "_" + str(Transect.ID) + delimiter)
                 f.write(str(Transect.IntertidalSlope) + delimiter)      # slope between MHWSIntersect and MLWSIntersect
                 f.write(str(Transect.Shingle) + delimiter)
                 f.write(str(Transect.MHWS) + delimiter)
