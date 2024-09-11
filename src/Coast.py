@@ -4844,7 +4844,7 @@ class Coast:
                     H0 = Transect.H_Hs_p99                                                  # Offshore significant wave height
                     L0 = g*Transect.H_Tp_p99**2/(2*np.pi)                                   # Stockdon eq(1)
                     Iribarren = Bf/np.sqrt(H0/L0)                                           # Stockdon eq(2)
-                    
+                    """
                     if Transect.Shingle:
                         Transect.H_R2 = Cp*np.sqrt(Bf)*H0*Tp                                # Poate eq(12), modified by Blenkinsopp (2022) to use intertidal slope, to accommodate composite sand/gravel beaches
                         if Iribarren < 0.3:                                                 # extremely dissipative beach
@@ -4853,16 +4853,17 @@ class Coast:
                         else:
                             Transect.H_setup = 0.35*Bf*np.sqrt(H0*L0)                       # Stockdon eq(10)
                             Transect.H_Dissipative = False
-                    else:    
-                        if Iribarren < 0.3:                                                 # extremely dissipative beach
-                            Transect.H_R2 = 0.043*np.sqrt(H0*L0)                            # Stockdon eq(18): Extreme wave runup
-                            Transect.H_setup = 0.016*np.sqrt(H0*L0)                         # Stockdon eq(16) 
-                            Transect.H_Dissipative = True                                   # set flag for extremely dissipative beach
-                        else:
-                            Transect.H_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
-                                            np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)         # Stockdon eq(19): Extreme wave runup (all other sandy beaches)
-                            Transect.H_setup = 0.35*Bf*np.sqrt(H0*L0)                       # Stockdon eq(10)
-                            Transect.H_Dissipative = False
+                    else: 
+                    """                    
+                    if Iribarren < 0.3:                                                 # extremely dissipative beach
+                        Transect.H_R2 = 0.043*np.sqrt(H0*L0)                            # Stockdon eq(18): Extreme wave runup
+                        Transect.H_setup = 0.016*np.sqrt(H0*L0)                         # Stockdon eq(16) 
+                        Transect.H_Dissipative = True                                   # set flag for extremely dissipative beach
+                    else:
+                        Transect.H_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
+                                        np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)         # Stockdon eq(19): Extreme wave runup (all other sandy beaches)
+                        Transect.H_setup = 0.35*Bf*np.sqrt(H0*L0)                       # Stockdon eq(10)
+                        Transect.H_Dissipative = False
                     
                     # save parameters 
                     Transect.H_WaveSteepness = H0/L0
@@ -4873,7 +4874,7 @@ class Coast:
                     H0 = Transect.M45_Hs_p99
                     L0 = g*Transect.M45_Tp_p99**2/(2*np.pi)                                              
                     Iribarren = Bf/np.sqrt(H0/L0)
-                    
+                    """
                     if Transect.Shingle:
                         Transect.M45_R2 = Cp*np.sqrt(Bf)*H0*Tp                                
                         if Iribarren < 0.3:                                                 
@@ -4884,15 +4885,16 @@ class Coast:
                             Transect.M45_Dissipative = False
                     
                     else:
-                        if Iribarren < 0.3:                                                
-                            Transect.M45_R2 = 0.043*np.sqrt(H0*L0)    
-                            Transect.M45_setup = 0.016*np.sqrt(H0*L0)                                   
-                            Transect.M45_Dissipative = True
-                        else:
-                            Transect.M45_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
-                                            np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) 
-                            Transect.M45_setup = 0.35*Bf*np.sqrt(H0*L0)                         
-                            Transect.M45_Dissipative = False 
+                    """
+                    if Iribarren < 0.3:                                                
+                        Transect.M45_R2 = 0.043*np.sqrt(H0*L0)    
+                        Transect.M45_setup = 0.016*np.sqrt(H0*L0)                                   
+                        Transect.M45_Dissipative = True
+                    else:
+                        Transect.M45_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
+                                        np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) 
+                        Transect.M45_setup = 0.35*Bf*np.sqrt(H0*L0)                         
+                        Transect.M45_Dissipative = False 
                     
                     # save parameters 
                     Transect.M45_WaveSteepness = H0/L0
@@ -4903,7 +4905,7 @@ class Coast:
                     H0 = Transect.M85_Hs_p99
                     L0 = g*Transect.M85_Tp_p99**2/(2*np.pi)                                              
                     Iribarren = Bf/np.sqrt(H0/L0)
-                    
+                    """
                     if Transect.Shingle:
                         Transect.M85_R2 = Cp*np.sqrt(Bf)*H0*Tp                                
                         if Iribarren < 0.3:                                                 
@@ -4914,15 +4916,16 @@ class Coast:
                             Transect.M85_Dissipative = False
                     
                     else:
-                        if Iribarren < 0.3:                                                
-                            Transect.M85_R2 = 0.043*np.sqrt(H0*L0) 
-                            Transect.M85_setup = 0.016*np.sqrt(H0*L0)                                
-                            Transect.M85_Dissipative = True
-                        else:
-                            Transect.M85_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
-                                            np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) 
-                            Transect.M85_setup = 0.35*Bf*np.sqrt(H0*L0)                     
-                            Transect.M85_Dissipative = False 
+                    """
+                    if Iribarren < 0.3:                                                
+                        Transect.M85_R2 = 0.043*np.sqrt(H0*L0) 
+                        Transect.M85_setup = 0.016*np.sqrt(H0*L0)                                
+                        Transect.M85_Dissipative = True
+                    else:
+                        Transect.M85_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
+                                        np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) 
+                        Transect.M85_setup = 0.35*Bf*np.sqrt(H0*L0)                     
+                        Transect.M85_Dissipative = False 
                             
                     # save parameters 
                     Transect.M85_WaveSteepness = H0/L0
@@ -4933,7 +4936,7 @@ class Coast:
                     H0 = Transect.E45_Hs_p99
                     L0 = g*Transect.E45_Tp_p99**2/(2*np.pi)                                              
                     Iribarren = Bf/np.sqrt(H0/L0)
-                    
+                    """
                     if Transect.Shingle:
                         Transect.E45_R2 = Cp*np.sqrt(Bf)*H0*Tp                                
                         if Iribarren < 0.3:                                                 
@@ -4944,15 +4947,16 @@ class Coast:
                             Transect.E45_Dissipative = False
                             
                     else:
-                        if Iribarren < 0.3:                                                
-                            Transect.E45_R2 = 0.043*np.sqrt(H0*L0)   
-                            Transect.E45_setup = 0.016*np.sqrt(H0*L0)                                  
-                            Transect.E45_Dissipative = True                        
-                        else:
-                            Transect.E45_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
-                                            np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)
-                            Transect.E45_setup = 0.35*Bf*np.sqrt(H0*L0)                       
-                            Transect.E45_Dissipative = False
+                    """
+                    if Iribarren < 0.3:                                                
+                        Transect.E45_R2 = 0.043*np.sqrt(H0*L0)   
+                        Transect.E45_setup = 0.016*np.sqrt(H0*L0)                                  
+                        Transect.E45_Dissipative = True                        
+                    else:
+                        Transect.E45_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
+                                        np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)
+                        Transect.E45_setup = 0.35*Bf*np.sqrt(H0*L0)                       
+                        Transect.E45_Dissipative = False
                             
                     # save parameters 
                     Transect.E45_WaveSteepness = H0/L0
@@ -4963,7 +4967,7 @@ class Coast:
                     H0 = Transect.E85_Hs_p99
                     L0 = g*Transect.E85_Tp_p99**2/(2*np.pi)                                              
                     Iribarren = Bf/np.sqrt(H0/L0)
-                    
+                    """
                     if Transect.Shingle:
                         Transect.E85_R2 = Cp*np.sqrt(Bf)*H0*Tp                                
                         if Iribarren < 0.3:                                                 
@@ -4974,15 +4978,16 @@ class Coast:
                             Transect.E85_Dissipative = False
                     
                     else:
-                        if Iribarren < 0.3:                                                
-                            Transect.E85_R2 = 0.043*np.sqrt(H0*L0)  
-                            Transect.E85_setup = 0.016*np.sqrt(H0*L0)                                
-                            Transect.E85_Dissipative = True  
-                        else:
-                            Transect.E85_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
-                                            np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) 
-                            Transect.E85_setup = 0.35*Bf*np.sqrt(H0*L0)                       
-                            Transect.E85_Dissipative = False
+                    """
+                    if Iribarren < 0.3:                                                
+                        Transect.E85_R2 = 0.043*np.sqrt(H0*L0)  
+                        Transect.E85_setup = 0.016*np.sqrt(H0*L0)                                
+                        Transect.E85_Dissipative = True  
+                    else:
+                        Transect.E85_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
+                                        np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2) 
+                        Transect.E85_setup = 0.35*Bf*np.sqrt(H0*L0)                       
+                        Transect.E85_Dissipative = False
                             
                     # save parameters 
                     Transect.E85_WaveSteepness = H0/L0
