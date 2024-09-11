@@ -1054,7 +1054,7 @@ class Coast:
         f.write(self.Projection)
         f.close()
 
-    def WriteStormImpactTransectsShp(self, TransectsShp):
+    def WriteStormImpactTransectsShp(self, TransectsShp, Cell):
         
         """
         Write Tranects with storm impact scale data to shapefile
@@ -1063,14 +1063,14 @@ class Coast:
         
         """
         
-        print("Coast.WriteStormImpactTransectsShp: Writing coastal transects and storm impact data to shapefile")
+        print("Coast.WriteStormImpactTransectsShp: Writing coastal transects and storm impact data to shapefile for Cell", Cell)
         
         # open new shapefile        
         WL = shapefile.Writer(TransectsShp,shapeType=shapefile.POLYLINE)
         
         # Create Fields
         Fields = [('DeletionFlag','C',1,0), 
-        ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], 
+        ['Cell', 'C', 4, 0], ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], ['ID', 'C', 12, 0],
         ['Shingle', 'B', 7, 0],
         ['Hist_Rate','N', 5, 2],
         ['Slope_Int','N', 5, 3], 
@@ -1111,7 +1111,7 @@ class Coast:
 
                 # Create the record this could become a function in transect object...
                 if Transect.Barrier:
-                    Record = [str(Line.ID), str(Transect.ID),
+                    Record = [str(Cell), str(Line.ID), str(Transect.ID), str(Cell) + "_" + str(Line.ID) + "_" + str(Transect.ID),
                                 Transect.Shingle,
                                 Transect.Hist_Rate,                
                                 Transect.IntertidalSlope, 
@@ -1139,7 +1139,7 @@ class Coast:
                                 Transect.E85_FrontToe, Transect.E85_Crest, Transect.E85_BarrierDrowning, 
                                 Transect.E85_StormImpactScale, Transect.E85_Headroom]
                 else:
-                    Record = [str(Line.ID), str(Transect.ID),
+                    Record = [str(Cell), str(Line.ID), str(Transect.ID), str(Cell) + "_" + str(Line.ID) + "_" + str(Transect.ID),
                                 Transect.Shingle,
                                 Transect.Hist_Rate,                
                                 Transect.IntertidalSlope,
