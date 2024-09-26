@@ -5013,7 +5013,7 @@ class Coast:
         Scenario : string
             - String describing the scenario of interest
             - Options: 
-                - "Hist" = Historic 
+                - "Hist" = Historic, 2020 RCP8.5 
                 - "M45" = Mid-century RCP4.5
                 - "M85" = Mid-century RCP8.8
                 - "E45" = End-century RCP4.5
@@ -5647,7 +5647,8 @@ class Coast:
         ----------
         Shapefile - string    
             - location of shapefile with SLR data
-            - 14 column names: "lon" "lat" 
+            - 17 column names: "lon" "lat" 
+                               "SLR_H85_c1" "SLR_H85_c2" "SLR_H85_c3" 
                                "SLR_M45_c1" "SLR_M45_c2" "SLR_M45_c3" 
                                "SLR_E45_c1" "SLR_E45_c2" "SLR_E45_c3"
                                "SLR_M85_c1" "SLR_M85_c2" "SLR_M85_c3" 
@@ -5679,6 +5680,7 @@ class Coast:
             sys.exit()
         
         # Extract data: future projected SLR for different CC scenearios and years. c3=95th percentile
+        SLR_H85_geoser = GDF["SLR_H85_c3"]
         SLR_M45_geoser = GDF["SLR_M45_c3"]
         SLR_E45_geoser = GDF["SLR_E45_c3"]
         SLR_M85_geoser = GDF["SLR_M85_c3"]
@@ -5695,6 +5697,7 @@ class Coast:
                 nearest_idx = nearest_idx_array[1]
                 
                 if len(nearest_idx) > 0:
+                    SLR_H85 = SLR_H85_geoser[nearest_idx].values[0]
                     SLR_M45 = SLR_M45_geoser[nearest_idx].values[0]                   # returns geoseries of index,value pair. get value only
                     SLR_E45 = SLR_E45_geoser[nearest_idx].values[0]   
                     SLR_M85 = SLR_M85_geoser[nearest_idx].values[0]      
@@ -5704,11 +5707,15 @@ class Coast:
                     print(f"\t{Transect.LineID}_{Transect.ID}: No nearby points")
                     continue
                     
-                # save extracted ESL values to the given scenario                
-                Transect.M45_SLR = SLR_M45
-                Transect.E45_SLR = SLR_E45
-                Transect.M85_SLR = SLR_M85
-                Transect.E85_SLR = SLR_E85
+                # save extracted ESL values to the given scenario. 
+                # BUG FIX: Use diference with present-day SLR_H85, i.e. baseline = 2020.
+                # else dune elevations are adjusted w.r.t 1981-2000 baseline sea level that SLR is reported against,
+                # not 2020 (historic) sea levels.
+                # This would lead to dune uplift exceeding still water level uplift in 2050 and 2100. 
+                Transect.M45_SLR = SLR_M45 - SLR_H85
+                Transect.E45_SLR = SLR_E45 - SLR_H85
+                Transect.M85_SLR = SLR_M85 - SLR_H85
+                Transect.E85_SLR = SLR_E85 - SLR_H85
                 
                 #print(f"\t{Transect.LineID}_{Transect.ID}:")
                 #print(f"\t\tM45_SLR:{Transect.M45_SLR} \tE45_SLR:{Transect.E45_SLR} \tM85_SLR:{Transect.M85_SLR} \tE85_SLR:{Transect.E85_SLR}")
