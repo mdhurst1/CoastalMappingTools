@@ -492,7 +492,36 @@ class Transect:
             Y1 = self.StartNode.Y - 0.5*Difference * np.cos( np.radians( self.Orientation ) )
             self.StartNode = Node(X1,Y1)
 
+    def Truncate2Coast(self, D_start, D_end):
         
+        """
+        Function to truncate transects between specified
+        start and end distances either side of CoastNode.
+        Can also extend transects.
+        
+        D_start: distance (m) seaward of CoastNode
+        D_end: distance (m) landward of CoastNode
+        
+        NH, September 2024
+        
+        """
+        
+        # error check input params. Limit upper values to the current entire transect length
+        if (D_start < 0 or D_start > self.Length):
+            sys.exit("Transect.Truncate2Coast: Invalid start distance")
+        if (D_end < 0 or D_end > self.Length):
+            sys.exit("Transect.Truncate2Coast: Invalid end distance")
+        
+        # find new start position
+        X1 = self.CoastNode.X - D_start * np.sin( np.radians( self.Orientation ) )
+        Y1 = self.CoastNode.Y - D_start * np.cos( np.radians( self.Orientation ) )
+        self.StartNode = Node(X1,Y1)
+        
+        # find new end position
+        X1 = self.CoastNode.X + D_end * np.sin( np.radians( self.Orientation ) )
+        Y1 = self.CoastNode.Y + D_end * np.cos( np.radians( self.Orientation ) )
+        self.EndNode = Node(X1,Y1)
+    
     def GenerateSampleNodes(self,Spacing=None):
 
         """ 

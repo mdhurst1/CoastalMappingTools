@@ -3801,6 +3801,27 @@ class Coast:
             for Transect in Line.Transects:
                 Transect.Truncate()
                             
+    def TruncateTransects2Coast(self, D_start=200., D_end=200.):
+        
+        """
+        Function to truncate transects between specified
+        start and end distances either side of CoastNode.
+        Can also extend transects.
+        
+        D_start: distance (m) seaward of CoastNode
+        D_end: distance (m) landward of CoastNode
+        default = 200 m
+        
+        NH, Sep 2024
+        
+        """
+        print("Coast.TruncateTransects2Coast: change transect lengths to specified window around CoastNode")
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                Transect.Truncate2Coast(D_start, D_end)
+        
+    
     def FindDEM(self, DEMIndexFileShp):
 
         """
