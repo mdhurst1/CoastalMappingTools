@@ -4819,6 +4819,35 @@ class Coast:
         
         print("")
         
+    def AdjustTp(self, subcell=None):
+    
+        """
+        Downscale Tp by 33% for the very sheltered coasts of Cell 6f and Cell 7.
+        Looking at the hindcast wave climate time series for 1976 - 2005,
+        P99 Hs-Tp does not occur in the time series, but downscaling Tp by 30% brings
+        the wave climate back into the point cloud.
+        
+        NH, October 2024
+        """
+        
+        # check input parameters
+        if not (subcell):
+            print("Coast.AdjustTp: Invalid subcell!", str(subcell))
+            sys.exit()
+        
+        if (subcell == "6f" or subcell == "7"):
+            print("Coast.AdjustTp: Downscaling Tp for very sheltered coasts - Cell ", str(subcell))
+            
+            for Line in self.CoastLines:
+                for Transect in Line.Transects:
+                    Transect.H_Tp_p99 = Transect.H_Tp_p99*0.67
+                    Transect.M45_Tp_p99 = Transect.M45_Tp_p99*0.67
+                    Transect.M85_Tp_p99 = Transect.M85_Tp_p99*0.67
+                    Transect.E45_Tp_p99 = Transect.E45_Tp_p99*0.67
+                    Transect.E85_Tp_p99 = Transect.E85_Tp_p99*0.67
+                    
+            print("Done")
+    
     def CalculateExtremeRunup(self, Scenario=None):
         
         """
