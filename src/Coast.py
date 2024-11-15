@@ -2234,8 +2234,6 @@ class Coast:
                     else:
                         sys.exit("Couldnt find survey year for MHWS historic shoreline position")
                 
-                    print(IntersectionYears)
-                
                 # delete intersections for years that already exist?
                 if len(IntersectionYears) == 1:
                     if IntersectionYears[0] in Transect.HistoricShorelinesYears:
@@ -2367,8 +2365,7 @@ class Coast:
                                 # add to transect
                                 Transect.HistoricShorelinesPositions[Index].append(Position)
                                 Transect.HistoricShorelinesDistances[Index].append(Distance)
-                                
-                print(IntersectionYears)
+
 
     def ExtractMLWS(self, MLWSShp, NearestNode=0):
 
