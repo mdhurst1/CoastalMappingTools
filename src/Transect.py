@@ -744,7 +744,7 @@ class Transect:
             return
         
         # some logic here to check if its sensible to make predictions
-        # do not make predicitions if there are multiple lines in a single year
+        # do not make predicitions if there are multiple lines on a single day (prev. single year)
         for i in range(0,len(self.HistoricShorelinesYears)):
             self.HistoricShorelinesDistance.append(self.HistoricShorelinesDistances[i][0])
             self.HistoricShorelinesPosition.append(self.HistoricShorelinesPositions[i][0])
@@ -768,22 +768,48 @@ class Transect:
         for i in range(0,len(self.HistoricShorelinesYears)):
             if i == 0:
                 base_date = self.HistoricShorelinesYears[0]
-                decYrs = float(((self.HistoricShorelinesYears[-1] - self.HistoricShorelinesYears[0]).days)/365.2425)
+                decYrs = 0.5*float(((self.HistoricShorelinesYears[-1] - self.HistoricShorelinesYears[0]).days)/365.2425)
                 
+                full_years = int(decYrs)
+                fractional_years = decYrs - full_years
+
+                # Add full years first
+                new_date = base_date + relativedelta(years=full_years)
+                # Convert fractional years into days (accounting for leap years)
+                additional_days = int(round(fractional_years * 365.2425))
+                # Add the fractional days
+                new_date = new_date + relativedelta(days=additional_days)
                 
-                
-                
-                
-                
-                
-                
-                
-                
-                InterpolationYears.append(self.HistoricShorelinesYears[0]+0.5*(self.HistoricShorelinesYears[-1]-self.HistoricShorelinesYears[0]))
+                InterpolationYears.append(new_date)
             else:
-                InterpolationYears.append((self.HistoricShorelinesYears[0]+self.HistoricShorelinesYears[i-1]-self.HistoricShorelinesYears[0])+0.5*(self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[i-1]))
-            
-        InterpFractions = (np.array(InterpolationYears)-self.HistoricShorelinesYears[0])/(self.FutureSeaLevelYears[0]-self.HistoricShorelinesYears[0])
+                base_date = self.HistoricShorelinesYears[i-1]
+                decYrs = 0.5*float(((self.HistoricShorelinesYears[i] - self.HistoricShorelinesYears[i-1]).days)/365.2425)
+                
+                full_years = int(decYrs)
+                fractional_years = decYrs - full_years
+
+                # Add full years first
+                new_date = base_date + relativedelta(years=full_years)
+                # Convert fractional years into days (accounting for leap years)
+                additional_days = int(round(fractional_years * 365.2425))
+                # Add the fractional days
+                new_date = new_date + relativedelta(days=additional_days)
+                
+                InterpolationYears.append(new_date)
+                
+# =============================================================================
+#                 InterpolationYears.append((self.HistoricShorelinesYears[0]+self.HistoricShorelinesYears[i-1]-self.HistoricShorelinesYears[0])+
+#                                           0.5*(self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[i-1]))
+# =============================================================================
+         
+        FutSLY0 = datetime(self.FutureSeaLevelYears[0],1,1) # closest future sea level prediction year - convert to datetime
+        
+        InterpFractions = []
+        for interp_year in InterpolationYears:
+            i1 = interp_year - self.HistoricShorelinesYears[0]
+            i2 = FutSLY0 - self.HistoricShorelinesYears[0]
+            InterpFractions.append(i1 / i2)
+        
         self.InterpolatedRSLR = self.HistoricalRSLR/1000.+RSLRDiff*InterpFractions
         
         # get slope from intertidal zoneif we dont already have it
