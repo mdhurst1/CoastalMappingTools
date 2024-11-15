@@ -2133,8 +2133,6 @@ class Coast:
         
         if len(Lines) == 0:
             print("No Lines")
-            import pdb
-            pdb.set_trace()
             return
         
         # catch situation where only one line
@@ -2227,24 +2225,30 @@ class Coast:
                     NearestLine = GDF.iloc[Distances.idxmin()]
                     
                     # check it hasnt already been read
-                    if "FULLSHP_YR" in NearestLine:
-                        IntersectionYears.append(int(NearestLine.FULLSHP_YR))
+                    
+                    
+                    if "Date" in NearestLine: # updated with datetime update, all input files must have 'Date' field in attributes in format yyyy-mm-dd
+                        IntersectionYears.append(int(NearestLine.Date))
+                    
+                    elif "FULLSHP_YR" in NearestLine:
+                        sys.exit('Since update of code to datetime formatting, please ensure that file (likely ModernSoft) has Date field in attributes in format yyyy-mm-dd to replace FULLSHP_YR')
                     elif "Surv_EndYr" in NearestLine:
-                        IntersectionYears.append(int(NearestLine.Surv_EndYr))
+                        sys.exit('Since update of code to datetime formatting, please ensure that file has Date field in attributes in format yyyy-mm-dd to replace Surv_EndYr')
                     elif "Surv_End_A" in NearestLine:
-                        IntersectionYears.append(int(NearestLine.Surv_End_A))
+                        sys.exit('Since update of code to datetime formatting, please ensure that file (likely 1890s) has Date field in attributes in format yyyy-mm-dd to replace Surv_End_A')
                     elif "Surv_End_B" in NearestLine:
-                        IntersectionYears.append(int(NearestLine.Surv_End_B))
+                        sys.exit('Since update of code to datetime formatting, please ensure that file (likely 1970s) has Date field in attributes in format yyyy-mm-dd to replace Surv_End_B')
                     elif "Surv_End_C" in NearestLine:
-                        IntersectionYears.append(int(NearestLine.Surv_End_C))
+                        sys.exit('Since update of code to datetime formatting, please ensure that file has Date field in attributes in format yyyy-mm-dd to replace Surv_End_C')
                     elif "Surv_End_D" in NearestLine:
-                        IntersectionYears.append(int(NearestLine.Surv_End_D))
+                        sys.exit('Since update of code to datetime formatting, please ensure that file has Date field in attributes in format yyyy-mm-dd to replace Surv_End_D')
                     elif "versiondat" in NearestLine:
-                        IntersectionYears.append(int(NearestLine.versiondat[0:4]))
+                        sys.exit('Since update of code to datetime formatting, please ensure that file has Date field in attributes in format yyyy-mm-dd to replace versiondat')
                     elif "Year" in NearestLine:
-                        IntersectionYears.append(int(NearestLine.Year))
+                        sys.exit('Since update of code to datetime formatting, please ensure that file has Date field in attributes in format yyyy-mm-dd to replace Year')
                     elif "YEAR" in NearestLine:
-                        IntersectionYears.append(int(NearestLine.YEAR))
+                        sys.exit('Since update of code to datetime formatting, please ensure that file has Date field in attributes in format yyyy-mm-dd to replace YEAR')
+                    
                     else:
                         sys.exit("Couldnt find survey year for MHWS historic shoreline position")
                 

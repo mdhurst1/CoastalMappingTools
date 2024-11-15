@@ -131,7 +131,7 @@ for CellSub in CellList:
             # may need to think carefully about how much to smooth
             CellCoast.SmoothCoastLines(WindowSize=SmoothingWindowSize,NoSmooths=NoSmooths)
             
-            # make sure each line is correctly orientated with sea on left as you look down the line
+            # make sure each baseline is correctly orientated with sea on left as you look down the line
             CellCoast.CheckOrientation(str(SoftPath),str(MLWSPath))
             
             # write smoothed coast/bathy to file
