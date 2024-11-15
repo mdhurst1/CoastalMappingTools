@@ -13,6 +13,7 @@ from pathlib import Path
 import numpy as np
 from scipy.interpolate import splprep, splev
 import numpy.ma as ma
+from datetime import datetime
 from sklearn.cluster import KMeans
 
 import shapefile
@@ -2182,22 +2183,6 @@ class Coast:
                     continue
 
                 # check there arent multiple intersections
-                """
-                # store multiple intersections if so
-                if Intersections.geom_type is "MultiPoint":
-                    StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
-                    Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections]
-                    Index = Distances.index(min(Distances))
-                    Indices = np.argsort(np.array(Distances))
-                    Distances = np.array(Distances)[Indices]
-                    IntersectionsList = [Intersections[i] for i in Indices]
-                    
-                else:
-                    # check if this is a new endnode by intersecting with line from startnode to endnode
-                    Distance = Transect.LineString.distance(Intersections)
-                    Intersection = Intersections
-                    IntersectionsList = [Intersection,]
-                """
 
                 # store multiple intersections if so
                 if Intersections.geom_type == "MultiPoint":
@@ -2224,11 +2209,8 @@ class Coast:
                     Distances = Lines.distance(Intersection)
                     NearestLine = GDF.iloc[Distances.idxmin()]
                     
-                    # check it hasnt already been read
-                    
-                    
                     if "Date" in NearestLine: # updated with datetime update, all input files must have 'Date' field in attributes in format yyyy-mm-dd
-                        IntersectionYears.append(int(NearestLine.Date))
+                        IntersectionYears.append(datetime.strptime(NearestLine.Date,"%Y-%m-%d"))
                     
                     elif "FULLSHP_YR" in NearestLine:
                         sys.exit('Since update of code to datetime formatting, please ensure that file (likely ModernSoft) has Date field in attributes in format yyyy-mm-dd to replace FULLSHP_YR')
@@ -2251,6 +2233,8 @@ class Coast:
                     
                     else:
                         sys.exit("Couldnt find survey year for MHWS historic shoreline position")
+                
+                    print(IntersectionYears)
                 
                 # delete intersections for years that already exist?
                 if len(IntersectionYears) == 1:
@@ -2292,9 +2276,9 @@ class Coast:
                         Transect.HistoricShorelinesSources.insert(Index, Path(HistoricalShorelinesShp).name)
                         
                         # retrieve positional error
-                        if Year < 1970:
+                        if Year < datetime.strptime('1970-01-01',"%Y-%m-%d"):
                             Error = 5.
-                        elif Year < 2000:
+                        elif Year < datetime.strptime('2000-01-01',"%Y-%m-%d"):
                             Error = 2.
                         else:
                             Error = 1.
@@ -2328,9 +2312,9 @@ class Coast:
                     for Year in UniqueYears:
     
                         # retrieve positional error
-                        if Year < 1970:
+                        if Year < datetime.strptime('1970-01-01',"%Y-%m-%d"):
                             Error = 5.
-                        elif Year < 2000:
+                        elif Year < datetime.strptime('2000-01-01',"%Y-%m-%d"):
                             Error = 2.
                         else:
                             Error = 1.
@@ -2383,54 +2367,8 @@ class Coast:
                                 # add to transect
                                 Transect.HistoricShorelinesPositions[Index].append(Position)
                                 Transect.HistoricShorelinesDistances[Index].append(Distance)
-
-                """
-                for i, Intersection in enumerate(IntersectionsList):
-                    
-                    # retrieve year
-                    Year = IntersectionYears[i]
-                    
-                    if Year not in Transect.HistoricShorelinesYears:
-                       
-                        # add year to transect
-                        Index = bisect.bisect(Transect.HistoricShorelinesYears, Year)
-                        Transect.HistoricShorelinesYears.insert(Index, Year)
-                        
-                        # add shoreline position
-                        Position = Node(Intersection.x,Intersection.y)
-                        Positions = [Position,]
-                        Transect.HistoricShorelinesPositions.insert(Index, Positions)
-                        
-                        # add distance
-                        Distances = [Transect.StartNode.get_Distance(Position),]
-                        Transect.HistoricShorelinesDistances.insert(Index, Distances)
-                        
-                        # add source info
-                        Transect.HistoricShorelinesSources.insert(Index, Path(HistoricalShorelinesShp).name)
-                        
-                        # add error
-                        Transect.HistoricShorelinesErrors.insert(Index, Error)
-                        
-                    else:
-                        
-                        # find and either add or replace depending on proximity
-                        Index = Transect.HistoricShorelinesYears.index(Year)
-                        Position = Node(Intersection.x,Intersection.y)
-                        
-                        MinDistance = 1000.
-                        
-                        for OldPosition in Transect.HistoricShorelinesPositions[Index]:
-                            Distance = OldPosition.get_Distance(Position)
-                            if Distance < MinDistance:
-                                MinDistance = Distance
-                        
-                        if MinDistance > 1.:
-                        
-                            # add to transect
-                            Transect.HistoricShorelinesPositions[Index].append(Position)
-                            Transect.HistoricShorelinesDistances[Index].append(Distance)
-                """
-
+                                
+                print(IntersectionYears)
 
     def ExtractMLWS(self, MLWSShp, NearestNode=0):
 
