@@ -34,7 +34,14 @@ Scenarios = [2,4,8]
 Percentiles = [50,50,95]
 
 # Decades for writing
-Decades = [2030, 2040, 2050, 2060, 2070, 2080, 2090, 2100] # exclude 2020 since now in 2024
+Decades = ['2030-01-01', 
+           '2040-01-01', 
+           '2050-01-01', 
+           '2060-01-01', 
+           '2070-01-01', 
+           '2080-01-01', 
+           '2090-01-01', 
+           '2100-01-01'] # exclude 2020 since now in 2024
 
 # set up output folders
 GeometryPath = WorkingPath/("Geometry")
@@ -72,9 +79,9 @@ for CellSub in CellList:
         continue
 
     # get soft coast position as most recent
-    ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Open_Baseline_revised_v2.shp") # revised, further revision for Montrose Defences???
+    ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Open_Baseline_revised_v2.shp") 
     SoftPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp") 
-    LiDARPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR_ESGSNHexclude.shp") # new lines added
+    LiDARPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR_ESGSNHexclude.shp")
     MLWSPath = WorkingPath / "MLWS_Lines" / (RowName + "_MLWS.shp") 
     BathyPath = WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp") 
     OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp") 
