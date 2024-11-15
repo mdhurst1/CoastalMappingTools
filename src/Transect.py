@@ -19,6 +19,8 @@ from matplotlib import rcParams, cm
 
 import rasterio
 import geopandas as gp
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 from shapely.geometry import Point, Polygon, LineString, MultiLineString, MultiPoint
 
 # import other custom classes
@@ -533,13 +535,14 @@ class Transect:
             if i == 0:
                 dEta = (self.HistoricShorelinesDistance[-1] - self.HistoricShorelinesDistance[0])
                 ErrorSum = self.HistoricShorelinesErrors[-1] + self.HistoricShorelinesErrors[0]
-                dT = self.HistoricShorelinesYears[-1]-self.HistoricShorelinesYears[0]
+                dT = float(((self.HistoricShorelinesYears[-1] - self.HistoricShorelinesYears[0]).days)/365.2425)
+                
             
             # otherwise do the shorter period
             else:
                 j = 1
                 while True:
-                    dT = self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[i-j]
+                    dT = float(((self.HistoricShorelinesYears[i] - self.HistoricShorelinesYears[i-j]).days)/365.2425)
                     if (i-j == 0):
                         dEta = self.HistoricShorelinesDistance[i] - self.HistoricShorelinesDistance[i-j]
                         ErrorSum = self.HistoricShorelinesErrors[i] + self.HistoricShorelinesErrors[i-j]
@@ -559,13 +562,16 @@ class Transect:
 
         # add logic here to get best change rate and min/max?
         # get min 
-        TempIndex = np.argmin(np.array(self.ChangeRates)[np.array(self.HistoricShorelinesYears) > 2000])
-        IndexMin = np.where(np.array(self.HistoricShorelinesYears) > 2000)[0][TempIndex]
+        
+        min_max_date = '2000-01-01'
+        
+        TempIndex = np.argmin(np.array(self.ChangeRates)[np.array(self.HistoricShorelinesYears) > (datetime.strptime(min_max_date, "%Y-%m-%d"))])
+        IndexMin = np.where(np.array(self.HistoricShorelinesYears) > (datetime.strptime(min_max_date, "%Y-%m-%d")))[0][TempIndex]
         self.MinChangeRate = self.ChangeRates[IndexMin]
 
         # and max rates
-        TempIndex = np.argmax(np.array(self.ChangeRates)[np.array(self.HistoricShorelinesYears) > 2000])
-        IndexMax = np.where(np.array(self.HistoricShorelinesYears) > 2000)[0][TempIndex]
+        TempIndex = np.argmax(np.array(self.ChangeRates)[np.array(self.HistoricShorelinesYears) > (datetime.strptime(min_max_date, "%Y-%m-%d"))])
+        IndexMax = np.where(np.array(self.HistoricShorelinesYears) > (datetime.strptime(min_max_date, "%Y-%m-%d")))[0][TempIndex]
         self.MaxChangeRate = self.ChangeRates[IndexMax]
 
     def CalculateIntertidalSlope(self):
@@ -761,6 +767,18 @@ class Transect:
         InterpolationYears = []
         for i in range(0,len(self.HistoricShorelinesYears)):
             if i == 0:
+                base_date = self.HistoricShorelinesYears[0]
+                decYrs = float(((self.HistoricShorelinesYears[-1] - self.HistoricShorelinesYears[0]).days)/365.2425)
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
                 InterpolationYears.append(self.HistoricShorelinesYears[0]+0.5*(self.HistoricShorelinesYears[-1]-self.HistoricShorelinesYears[0]))
             else:
                 InterpolationYears.append((self.HistoricShorelinesYears[0]+self.HistoricShorelinesYears[i-1]-self.HistoricShorelinesYears[0])+0.5*(self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[i-1]))
