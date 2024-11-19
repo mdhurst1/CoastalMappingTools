@@ -232,6 +232,7 @@ class Transect:
         self.M85_Dissipative = None
         self.E45_Dissipative = None
         self.E85_Dissipative = None
+        self.PureGravel = None
         # extreme still water level
         self.H_ESL = None
         self.H_ESL_c1 = None
