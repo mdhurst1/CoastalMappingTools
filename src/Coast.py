@@ -2747,9 +2747,11 @@ class Coast:
             print("\tFuture sea levels already sampled")
             return
 
-        self.FutureShoreLinesYears = Years
+        #self.FutureShoreLinesYears = Years
+        self.FutureShoreLinesYears = [datetime.strptime(Date, '%Y-%m-%d') for Date in Years]
 
-        for Year in Years:
+        for Date in self.FutureShoreLinesYears:
+            Year = Date.year
             FutureRSLRaster = FutureRSLFolder + "/RCP" + str(RCP) + "_" + str(Percentile) + "th_" + str(Year) + "_filled.tif"
 
             # open the raster dataset to work on
@@ -2761,11 +2763,11 @@ class Coast:
                         if Location:
                             for val in RSLDataset.sample([(Location.X,Location.Y)]):
                                 Transect.FutureSeaLevels.append(val[0])
-                                Transect.FutureSeaLevelYears.append(Year)
+                                Transect.FutureSeaLevelYears.append(Date)
                         else:
                             for val in RSLDataset.sample([(Transect.CoastNode.X,Transect.CoastNode.Y)]):
                                 Transect.FutureSeaLevels.append(val[0])
-                                Transect.FutureSeaLevelYears.append(Year)
+                                Transect.FutureSeaLevelYears.append(Date)
 
     def SampleRockHeadPosition(self, UPSMRaster, MaxRockHeadErosionDistance=25.):
 

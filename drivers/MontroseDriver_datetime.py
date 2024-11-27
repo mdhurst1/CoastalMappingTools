@@ -228,7 +228,7 @@ for CellSub in CellList:
             CellCoast.Method = "Open"
             
             ### get future relative sea level time series
-            CellCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL" / ("RCP"+str(Scenario))), RCP=Scenario, Percentile=Percentile)
+            CellCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL" / ("RCP"+str(Scenario))), RCP=Scenario, Percentile=Percentile,Years=Decades)
             
             ## predict future shorelines
             CellCoast.GetShorefaceSlopes(str(BathyPath))

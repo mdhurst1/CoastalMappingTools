@@ -761,7 +761,8 @@ class Transect:
             self.CalculateHistoricalRates()
         
         # interpolate to get average RSLR in each time stamp between 1870s and 2020
-        FutureSeaLevelRate = (self.FutureSeaLevels[1] - self.FutureSeaLevels[0])/(self.FutureSeaLevelYears[1] - self.FutureSeaLevelYears[0])
+        FutureSeaLevelYears_diff = (self.FutureSeaLevelYears[1] - self.FutureSeaLevelYears[0]).days / 365.2425
+        FutureSeaLevelRate = (self.FutureSeaLevels[1] - self.FutureSeaLevels[0])/(FutureSeaLevelYears_diff)
         RSLRDiff= FutureSeaLevelRate-self.HistoricalRSLR/1000.
         
         InterpolationYears = []
@@ -801,14 +802,11 @@ class Transect:
 #                 InterpolationYears.append((self.HistoricShorelinesYears[0]+self.HistoricShorelinesYears[i-1]-self.HistoricShorelinesYears[0])+
 #                                           0.5*(self.HistoricShorelinesYears[i]-self.HistoricShorelinesYears[i-1]))
 # =============================================================================
-         
-        FutSLY0 = datetime(self.FutureSeaLevelYears[0],1,1) # closest future sea level prediction year - convert to datetime
-        
-        InterpFractions = []
-        for interp_year in InterpolationYears:
-            i1 = interp_year - self.HistoricShorelinesYears[0]
-            i2 = FutSLY0 - self.HistoricShorelinesYears[0]
-            InterpFractions.append(i1 / i2)
+
+        InterpFractions = np.array([
+            (interp_year - self.HistoricShorelinesYears[0]) / (self.FutureSeaLevelYears[0] - self.HistoricShorelinesYears[0])
+            for interp_year in InterpolationYears
+        ], dtype=float)
         
         self.InterpolatedRSLR = self.HistoricalRSLR/1000.+RSLRDiff*InterpFractions
         
@@ -854,28 +852,35 @@ class Transect:
             self.MaxChangeRate = self.ChangeRate
             self.CalibrationYear = self.HistoricShorelinesYears[0]
 
-        # get min 
-        TempIndex = np.argmin(self.VolumetricCalibrationRates[np.array(self.HistoricShorelinesYears) > 2000])
-        IndexMin = np.where(np.array(self.HistoricShorelinesYears) > 2000)[0][TempIndex]
+# =============================================================================
+### EXCLUDE BEST/WORST CALCULATIONS INITIALLY WITH DATETIME UPGRADES - SEPARATE UPGRADE WORK ALONG WITH WEIGHTED REGRESSION
+#         # get min 
+#         TempIndex = np.argmin(self.VolumetricCalibrationRates[np.array(self.HistoricShorelinesYears) > 2000])
+#         IndexMin = np.where(np.array(self.HistoricShorelinesYears) > 2000)[0][TempIndex]
+#         
+#         # and max rates
+#         TempIndex = np.argmax(self.VolumetricCalibrationRates[np.array(self.HistoricShorelinesYears) > 2000])
+#         IndexMax = np.where(np.array(self.HistoricShorelinesYears) > 2000)[0][TempIndex]
+# 
+#         if ((MinMaxFlag == "Min") or (MinMaxFlag == "min")):
+#             CalibrationRate = self.VolumetricCalibrationRates[IndexMin]
+#             self.ChangeRate = self.ChangeRates[IndexMin]
+#             self.CalibrationYear = self.HistoricShorelinesYears[IndexMin]
+# 
+#         elif ((MinMaxFlag == "Max") or (MinMaxFlag == "max")):
+#             CalibrationRate = self.VolumetricCalibrationRates[IndexMax]
+#             self.ChangeRate = self.ChangeRates[IndexMax]
+#             self.CalibrationYear = self.HistoricShorelinesYears[IndexMax]
+# 
+#         else:
+#             CalibrationRate = self.VolumetricCalibrationRates[-1]
+#             self.ChangeRate = self.ChangeRates[-1]
+#             self.CalibrationYear = self.HistoricShorelinesYears[-2]
+# =============================================================================
         
-        # and max rates
-        TempIndex = np.argmax(self.VolumetricCalibrationRates[np.array(self.HistoricShorelinesYears) > 2000])
-        IndexMax = np.where(np.array(self.HistoricShorelinesYears) > 2000)[0][TempIndex]
-
-        if ((MinMaxFlag == "Min") or (MinMaxFlag == "min")):
-            CalibrationRate = self.VolumetricCalibrationRates[IndexMin]
-            self.ChangeRate = self.ChangeRates[IndexMin]
-            self.CalibrationYear = self.HistoricShorelinesYears[IndexMin]
-
-        elif ((MinMaxFlag == "Max") or (MinMaxFlag == "max")):
-            CalibrationRate = self.VolumetricCalibrationRates[IndexMax]
-            self.ChangeRate = self.ChangeRates[IndexMax]
-            self.CalibrationYear = self.HistoricShorelinesYears[IndexMax]
-
-        else:
-            CalibrationRate = self.VolumetricCalibrationRates[-1]
-            self.ChangeRate = self.ChangeRates[-1]
-            self.CalibrationYear = self.HistoricShorelinesYears[-2]
+        CalibrationRate = self.VolumetricCalibrationRates[-1]
+        self.ChangeRate = self.ChangeRates[-1]
+        self.CalibrationYear = self.HistoricShorelinesYears[-2]
 
         # Future shoreline positions
         for i in range(0, len(self.FutureSeaLevelYears)):
