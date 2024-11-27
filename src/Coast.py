@@ -350,7 +350,7 @@ class Coast:
                 Line.SmoothLine(WindowSize=11)
 
             # Find Loops
-            Line.MakeSimple()
+            Line.MakeSimple() #LineString is not simple... Valid Geometry
                 
             # get line node positions
             # why are we not just recalling Line.SmoothLine here? What is different?

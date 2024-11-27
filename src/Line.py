@@ -274,11 +274,9 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             # Get the unary union to find all intersections
             Result = unary_union(LS)
             
-# =============================================================================
-#             plt.clf()
-#             for L in Result.geoms:
-#                 plt.plot(L.xy[0],L.xy[1])
-# =============================================================================
+            plt.clf()
+            for L in Result.geoms:
+                plt.plot(L.xy[0],L.xy[1])
 
             # Isolate non-looping line segments
             try:

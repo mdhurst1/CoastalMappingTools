@@ -885,7 +885,7 @@ class Transect:
         # Future shoreline positions
         for i in range(0, len(self.FutureSeaLevelYears)):
 
-            dT = self.FutureSeaLevelYears[i]-self.HistoricShorelinesYears[-1]
+            dT = (self.FutureSeaLevelYears[i]-self.HistoricShorelinesYears[-1]).days
 
             # catch the condition where observed shorelines are more recent than those we're trying to make predictions for
             if dT <= 0:
