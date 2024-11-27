@@ -2677,7 +2677,23 @@ class Transect:
 
         # check there are predictions for this transect
         if self.Future:
-
+            
+            # Check and if required, change the type of Year1 to datetime
+            if isinstance(Year1, datetime):
+                pass  # Do nothing if Year1 is already a datetime
+            elif isinstance(Year1, int):  # If it's an integer year, convert to datetime
+                Year1 = datetime(Year1, 1, 1)
+            else:
+                raise ValueError(f"Unsupported type: {type(Year1)}. Expected datetime or int.")
+            
+            # Check and if required, change the type of Year2 to datetime
+            if isinstance(Year2, datetime):
+                pass  # Do nothing if Year2 is already a datetime
+            elif isinstance(Year2, int):  # If it's an integer year, convert to datetime
+                Year2 = datetime(Year2, 1, 1)
+            else:
+                raise ValueError(f"Unsupported type: {type(Year2)}. Expected datetime or int.")
+            
             # add a check in here if Year1 < Latest Shoreline
             if Year1 == self.HistoricShorelinesYears[-1]:
                 Distance1 = self.HistoricShorelinesDistances[-1][0]
@@ -2721,7 +2737,8 @@ class Transect:
         if self.Future:
 
             # extrapolate future position on transect
-            Distance = self.ChangeRates[-1]*(Year-self.HistoricShorelinesYears[-1])
+            extrapPeriodYrs = (datetime(Year,1,1) - self.HistoricShorelinesYears[-1]).days / 365.2425
+            Distance = self.ChangeRates[-1]*extrapPeriodYrs
             return Distance
 
         else:
@@ -2742,6 +2759,22 @@ class Transect:
         # check there are predictions for this transect
         if self.Future:
             
+            # Check and if required, change the type of Year1 to datetime
+            if isinstance(Year1, datetime):
+                pass  # Do nothing if Year1 is already a datetime
+            elif isinstance(Year1, int):  # If it's an integer year, convert to datetime
+                Year1 = datetime(Year1, 1, 1)
+            else:
+                raise ValueError(f"Unsupported type: {type(Year1)}. Expected datetime or int.")
+            
+            # Check and if required, change the type of Year2 to datetime
+            if isinstance(Year2, datetime):
+                pass  # Do nothing if Year2 is already a datetime
+            elif isinstance(Year2, int):  # If it's an integer year, convert to datetime
+                Year2 = datetime(Year2, 1, 1)
+            else:
+                raise ValueError(f"Unsupported type: {type(Year2)}. Expected datetime or int.")
+            
             # check year1 isnt less than an historic shoreline
             if Year1 < self.HistoricShorelinesYears[-1]:
                 Year1 = self.HistoricShorelinesYears[-1]
@@ -2750,7 +2783,8 @@ class Transect:
             Distance = self.get_FuturePositionChange(Year1, Year2)
 
             # calculate average rate
-            Rate = Distance/(Year2-Year1)
+            YrDiff = (Year2-Year1).days / 365.2425
+            Rate = Distance/YrDiff
             return Rate
 
         else:

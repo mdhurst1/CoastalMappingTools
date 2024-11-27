@@ -142,10 +142,6 @@ for CellSub in CellList:
             
             CellCoast.BuiltTransects = True
             
-            # write transect during debugging for GIS interface interogation
-            #print('Writing transects to',str(OutputPath / (RowName + "_Transects.shp")))
-            #CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_Transects.shp")))
-            
             # SAVE ENTIRE COAST OBJECT
             with open(str(Filename2SaveCoast), 'wb') as PFile:
                 pickle.dump(CellCoast, PFile)
@@ -239,6 +235,10 @@ for CellSub in CellList:
             print("\tSaving Coast Object as ", Filename2SaveAll)
             with open(str(Filename2SaveAll), 'wb') as PFile:
                 pickle.dump(CellCoast, PFile)
+                
+        # write transect during debugging for GIS interface interogation
+        print('Writing transects to',str(OutputPath / (RowName + "_Transects.shp")))
+        CellCoast.WriteFutureTransectsShp(str(OutputPath / (RowName + "_Transects.shp")))
         
         # write future shorelines
         SmoothOutput = True # smooth coastlines (true) or not (false)

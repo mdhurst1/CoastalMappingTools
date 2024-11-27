@@ -343,8 +343,12 @@ class Coast:
         # Create Fields
         self.Fields = [('DeletionFlag','C',1,0),['Cell','C', 2, 0], ['SubCell','C', 2, 0], ['Line_ID', 'C', 20, 0],['Year','N', 4, 0],['Method','C', 5, 0]]
         WL.fields = self.Fields[1:] 
-
+        
+        Lcounter = 0
+        
         for Line in self.FutureShoreLines:
+            
+            print(Lcounter)
             
             if Smooth:
                 Line.SmoothLine(WindowSize=11)
@@ -391,6 +395,8 @@ class Coast:
             # write line and record
             WL.line(WriteLine)
             WL.record(*Record) ####### ISSUE WITH RECORDS NEEDS FIXING ########
+            
+            Lcounter = Lcounter + 1
         
         # close the shapefiles and clean up
         WL.close()
