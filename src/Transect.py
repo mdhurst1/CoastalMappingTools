@@ -885,7 +885,7 @@ class Transect:
         # Future shoreline positions
         for i in range(0, len(self.FutureSeaLevelYears)):
 
-            dT = (self.FutureSeaLevelYears[i]-self.HistoricShorelinesYears[-1]).days
+            dT = (self.FutureSeaLevelYears[i]-self.HistoricShorelinesYears[-1]).days / 365.2425
 
             # catch the condition where observed shorelines are more recent than those we're trying to make predictions for
             if dT <= 0:
@@ -2695,7 +2695,7 @@ class Transect:
                 raise ValueError(f"Unsupported type: {type(Year2)}. Expected datetime or int.")
             
             # add a check in here if Year1 < Latest Shoreline
-            if Year1 == self.HistoricShorelinesYears[-1]:
+            if Year1 < self.HistoricShorelinesYears[-1]:
                 Distance1 = self.HistoricShorelinesDistances[-1][0]
 
             else:

@@ -341,14 +341,10 @@ class Coast:
         WL = shapefile.Writer(FutureShoreLinesShp,shapeType=shapefile.POLYLINE)
        
         # Create Fields
-        self.Fields = [('DeletionFlag','C',1,0),['Cell','C', 2, 0], ['SubCell','C', 2, 0], ['Line_ID', 'C', 20, 0],['Year','N', 4, 0],['Method','C', 5, 0]]
+        self.Fields = [('DeletionFlag','C',1,0),['Cell','C', 2, 0], ['SubCell','C', 2, 0], ['Line_ID', 'C', 20, 0],['Year','C', 10, 0],['Method','C', 5, 0]]
         WL.fields = self.Fields[1:] 
         
-        Lcounter = 0
-        
         for Line in self.FutureShoreLines:
-            
-            print(Lcounter)
             
             if Smooth:
                 Line.SmoothLine(WindowSize=11)
@@ -389,14 +385,13 @@ class Coast:
             if self.Method == None:
                 import pdb
                 pdb.set_trace()
-             
-            Record = [str(Line.Cell), str(Line.SubCell),str(Line.ID),str(Line.Year), str(self.Method)]
+            
+            LineYr_str = Line.Year.strftime('%Y-%m-%d') if isinstance(Line.Year, datetime) else str(Line.Year)
+            Record = [str(Line.Cell), str(Line.SubCell),str(Line.ID),str(LineYr_str), str(self.Method)]
 
             # write line and record
             WL.line(WriteLine)
             WL.record(*Record) ####### ISSUE WITH RECORDS NEEDS FIXING ########
-            
-            Lcounter = Lcounter + 1
         
         # close the shapefiles and clean up
         WL.close()

@@ -266,6 +266,32 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         # Get X and Y vectors from Nodes and write LineString object
         X, Y = self.get_XY()
         LS = LineString(zip(X, Y))
+        
+# =============================================================================
+#         # Export LS as shapefile for GIS debugging
+#         try:
+#             # If LS is a MultiLineString, convert it to a list of LineStrings
+#             if LS.geom_type == "MultiLineString":
+#                 lines = [line for line in LS.geoms]
+#             else:
+#                 lines = [LS]
+#             
+#             # Create GeoDataFrame
+#             gdf = gp.GeoDataFrame({'geometry': lines})
+#             
+#             # Optionally, set CRS (Coordinate Reference System)
+#             gdf.set_crs('EPSG:27700', allow_override=True, inplace=True)  # Change to your CRS if needed
+#             
+#             # Write to shapefile
+#             gdf.to_file('/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/Supersites/Montrose_2024/CMT/loopFutureShorelineDebug/output_LS.shp')
+#             print("Shapefile exported successfully.")
+#             
+#         except Exception as e:
+#              print("Error exporting shapefile:", e)
+#              
+#              
+#         sys.exit('exported LS for GIS')
+# =============================================================================
 
         while not LS.is_simple:
             validity_explanation = explain_validity(LS)
