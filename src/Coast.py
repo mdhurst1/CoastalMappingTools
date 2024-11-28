@@ -983,8 +983,9 @@ class Coast:
         # Create Fields
         Fields = [('DeletionFlag','C',1,0), 
         ['Cell', 'C', 3, 0], ['SubCell', 'C', 3, 0], ['CMU','C', 20, 0],
-        ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], ['Min_Rate','N', 6, 4], ['Max_Rate','N', 6, 4], ['Hist_Rate','N', 6, 4], 
-        ['CalibYr','N', 4, 0], ['BaseLYr','N', 4, 0], ['BaseLSrc','C', 50, 0], 
+        ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], 
+        ['Min_Rate','N', 6, 4], ['Max_Rate','N', 6, 4], ['Hist_Rate','N', 6, 4], 
+        ['CalibYr', 'C', 10, 0], ['BaseLYr', 'C', 10, 0], ['BaseLSrc','C', 50, 0], 
         ['Extrap2050','N', 6, 4], ['Extrap2100','N', 6, 4], ['FirstEYr','N',4, 4],
         #['Dist_2030', 'N', 6, 4], ['Rate_2030', 'N', 6, 4], 
         ['Dist_2040', 'N', 6, 4], ['Rate_2040', 'N', 6, 4], 
@@ -997,7 +998,7 @@ class Coast:
         ['RCP85_2100', 'N', 4, 3],
         ['DC1_SvEn_B','N', 4, 0], ['DC1_SvEn_C','N', 4, 0], 
         ['DC1_DistV','N', 6, 4], ['DC1_RateBC','N', 6, 4],
-        ['OS_2020_Yr','N',4,0], ['Method','C', 5, 0]
+        ['OS_2020_Yr','C',10,0], ['Method','C', 5, 0]
         ]
         
         WL.fields = Fields[1:]
@@ -1019,11 +1020,17 @@ class Coast:
                             Transect.DC1[3] = Transect.DC1[2]/(Transect.DC1[1]-Transect.DC1[0])
                         except:
                             Transect.DC1 = ["","","",""]
+                            
+                    # Convert dates to strings in 'yyyy-mm-dd' format
+                    CalibYr_str = Transect.CalibrationYear.strftime('%Y-%m-%d') if isinstance(Transect.CalibrationYear, datetime) else str(Transect.CalibrationYear)
+                    BaseLYr_str = Transect.HistoricShorelinesYears[-1].strftime('%Y-%m-%d') if isinstance(Transect.HistoricShorelinesYears[-1], datetime) else str(Transect.HistoricShorelinesYears[-1])
+                    OSYr_str = Transect.OSYear.strftime('%Y-%m-%d') if isinstance(Transect.OSYear, datetime) else str(Transect.OSYear)
+
                     
                     # Create the record this could become a function in transect object...
                     Record = [str(self.Cell), str(self.SubCell), str(self.CMU), str(Line.ID), str(Transect.ID),
                                 Transect.MinChangeRate, Transect.MaxChangeRate, Transect.ChangeRate, 
-                                Transect.CalibrationYear, Transect.HistoricShorelinesYears[-1], Transect.HistoricShorelinesSources[-1], 
+                                CalibYr_str, BaseLYr_str, Transect.HistoricShorelinesSources[-1], 
                                 Transect.get_ExtrapDistance(2050), Transect.get_ExtrapDistance(2100), Transect.get_FirstFutureErosionYear(),
                                 #Transect.get_FuturePositionChange(2020, 2030), Transect.get_FutureRate(2020, 2030), # should we be doing 2020 to 2030?
                                 Transect.get_FuturePositionChange(2030, 2040), Transect.get_FutureRate(2030, 2040),
@@ -1036,7 +1043,7 @@ class Coast:
                                 Transect.FutureSeaLevels[-1],
                                 
                                 Transect.DC1[0], Transect.DC1[1], Transect.DC1[2], Transect.DC1[3],
-                                Transect.OSYear, self.Method]
+                                OSYr_str, self.Method]
                     
                                 
     

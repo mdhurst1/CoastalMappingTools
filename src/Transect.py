@@ -2822,7 +2822,7 @@ class Transect:
             Change = self.get_FuturePositionChange(self.FutureSeaLevelYears[i-1], self.FutureSeaLevelYears[i])
             
             if Change < 0:
-                return self.FutureSeaLevelYears[i-1]
+                return self.FutureSeaLevelYears[i-1].year
         
         return
 
