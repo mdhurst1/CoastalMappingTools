@@ -271,6 +271,19 @@ class Coast:
         # retrieve future shorelines
         self.GetFutureShoreLines()
 
+        # check date formatting for indices if statement
+        if isinstance(Year,str):
+            Year = datetime.strptime(Year,'%Y-%m-%d')
+        else:
+            sys.exit('Coast.WriteErodedAreaShp - input Year not in string format for conversion to datetime')
+            
+        if isinstance(StartYear,int):
+            Year = datetime(StartYear,1,1)
+        elif isinstance(StartYear, str):
+            Year = datetime.strptime(StartYear,'%Y-%m-%d')
+        else:
+            sys.exit('Coast.WriteErodedAreaShp - input StartYear not in integer or string format for conversion to datetime')
+        
         # get lists of lines for year of prediction and most recent shoreline position
         Indices = [i for i, Line in enumerate(self.FutureShoreLines) if Line.Year == Year]
         self.WriteFutureLines = [self.FutureShoreLines[i] for i in Indices]
@@ -299,6 +312,12 @@ class Coast:
         # retrieve future shorelines
         self.GetFutureShoreLines()
         Lines = self.GetFutureShoreLinesProximity(BufferDistance)
+        
+        # check date formatting for indices if statement
+        if isinstance(Year,str):
+            Year = datetime.strptime(Year,'%Y-%m-%d')
+        else:
+            sys.exit('Coast.ErosionProximityShp - input Year not in string format for conversion to datetime')
 
         # get lists of lines for year of prediction and most recent shoreline position
         Indices = [i for i, Line in enumerate(self.FutureShoreLines) if Line.Year == Year]
@@ -756,7 +775,7 @@ class Coast:
         """
 
         # print action to screen
-        #print("Coast.WritePatchesShp: Writing patch between two lines to a polygon shapefile")
+        print("Coast.WritePatchesShp: Writing patch between two lines to a polygon shapefile")
 
         if len(self.__dict__[DictionaryKey1]) == 0:
             print("Coast.WritePatchesShp (Error): Trying to write from empty list of lines", DictionaryKey1, DictionaryKey2)
