@@ -528,6 +528,49 @@ class Transect:
         self.ChangeRates = []
         self.ChangeRateErrors = []
         
+        
+ ### TESTING REGRESSION RATE CALCULATIONS ###       
+        
+        # Convert dates to numerical values for regression
+        dates_numeric = np.array([date.toordinal() for date in self.HistoricShorelinesYears])
+        
+
+        # Perform linear regression
+        slope1, intercept1 = np.polyfit(dates_numeric, self.HistoricShorelinesDistance, 1)  # 1 = degree of the polynomial
+        regression_line1 = slope1 * np.array(dates_numeric) + intercept1
+
+        # Assign weights: more recent dates get higher weights
+        # Using a linear increase in weights as an example
+        weights = np.linspace(1, 10, len(self.HistoricShorelinesYears))  # Adjust the range if needed
+        
+        # Perform weighted linear regression
+        coefficients = np.polyfit(dates_numeric, self.HistoricShorelinesDistance, 1, w=weights)  # 1 = degree of the polynomial
+        slope2, intercept2 = coefficients
+        regression_line2 = slope2 * dates_numeric + intercept2
+        
+        
+        plt.clf()
+        plt.plot(self.HistoricShorelinesYears, self.HistoricShorelinesDistance, marker='o', linestyle='-', color='b', label='Shoreline Positions')
+        # Plot the regression lines
+        plt.plot(self.HistoricShorelinesYears, regression_line1, color='r', linestyle='--', label='Linear Regression')
+        plt.plot(self.HistoricShorelinesYears, regression_line2, color='g', linestyle='--', label='Basic Time-Weighted Regression')
+        
+        slope_text1 = f"Slope: {slope1:.5f} m/day"
+        slope_text2 = f"Slope: {slope2:.5f} m/day"
+        plt.text(self.HistoricShorelinesYears[-1], self.HistoricShorelinesDistance[-1] + 5, slope_text1, color='r', fontsize=10, ha='right')
+        plt.text(self.HistoricShorelinesYears[-1], self.HistoricShorelinesDistance[-1] + 10, slope_text2, color='g', fontsize=10, ha='right')
+        
+        # Add labels and title
+        plt.xlabel('Dates')
+        plt.ylabel('Relative Distance along transect (m)')
+        
+        # Rotate the x-axis labels for better visibility
+        plt.xticks(rotation=45)
+        
+        # Add legend
+        plt.legend()
+        
+        
         # historic shoreline positions and change rates
         for i in range(0,len(self.HistoricShorelinesYears)):
             
@@ -557,7 +600,8 @@ class Transect:
                 
             self.ChangeRates.append(-dEta/dT)
             self.ChangeRateErrors.append(ErrorSum/dT)
-        
+            
+
         self.HistoricFlag = True
 
         # add logic here to get best change rate and min/max?
