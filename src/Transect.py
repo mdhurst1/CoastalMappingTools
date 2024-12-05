@@ -555,12 +555,27 @@ class Transect:
         plt.plot(self.HistoricShorelinesYears, regression_line1, color='r', linestyle='--', label='Linear Regression')
         plt.plot(self.HistoricShorelinesYears, regression_line2, color='g', linestyle='--', label='Basic Time-Weighted Regression')
         
-        slope_text1 = f"Slope: {slope1:.5f} m/day"
-        slope_text2 = f"Slope: {slope2:.5f} m/day"
-        plt.text(self.HistoricShorelinesYears[-1], self.HistoricShorelinesDistance[-1] + 5, slope_text1, color='r', fontsize=10, ha='right')
-        plt.text(self.HistoricShorelinesYears[-1], self.HistoricShorelinesDistance[-1] + 10, slope_text2, color='g', fontsize=10, ha='right')
+        slope1_yr = slope1*365.2425
+        slope2_yr = slope2*365.2425
+        
+        slope_text1 = f"Slope: {slope1_yr:.2f} m/yr"
+        slope_text2 = f"Slope: {slope2_yr:.2f} m/yr"
+        
+        y_min, y_max = plt.gca().get_ylim()
+        y_ave = y_min + ((y_max - y_min)/2)
+        
+        plt.text(self.HistoricShorelinesYears[0], y_ave, slope_text1, color='r', fontsize=10, ha='left')
+        plt.text(self.HistoricShorelinesYears[-1], y_ave, slope_text2, color='g', fontsize=10, ha='right')
+        
+        if self.LineID == '1':
+            loc = 'St Cyrus'
+        elif self.LineID == '0':
+            loc = 'Montrose'
+        else:
+            loc = 'Unknown location (check Transect.LineID)'
         
         # Add labels and title
+        plt.title(loc + ': Transect ' + str(self.ID))
         plt.xlabel('Dates')
         plt.ylabel('Relative Distance along transect (m)')
         
@@ -570,6 +585,8 @@ class Transect:
         # Add legend
         plt.legend()
         
+        fig_fn = '/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/Supersites/Montrose_2024/CMT/regressionFigures/' + loc + '_Transect_' + str(self.ID) + '.png'
+        plt.savefig(fig_fn, dpi=300)
         
         # historic shoreline positions and change rates
         for i in range(0,len(self.HistoricShorelinesYears)):
@@ -599,7 +616,10 @@ class Transect:
                         break
                 
             self.ChangeRates.append(-dEta/dT)
+            #print(self.ChangeRates)
             self.ChangeRateErrors.append(ErrorSum/dT)
+            
+        # self.ChangeRates.append(slope2_yr)
             
 
         self.HistoricFlag = True
