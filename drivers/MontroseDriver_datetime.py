@@ -246,6 +246,8 @@ for CellSub in CellList:
         # write coast/bathy to file
         CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
         CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future.shp")),SmoothOutput)
+        
+        #sys.exit(-1)
 
 # =============================================================================
 #         #Loop through decades
