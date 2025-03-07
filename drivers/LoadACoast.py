@@ -42,42 +42,47 @@ Ln = [Ln for Ln in Lns if Ln.ID == LineID][0]
 Trs = Ln.Transects
 Tr = [Tr for Tr in Trs if Tr.ID == TransectID][0]
 
-#Cst.GetFutureShoreLines()
-print("Transect ID =", Tr.ID,"\n")
-print("Transect Shoreline Years:\n",Tr.HistoricShorelinesYears,"\n")
-print("Transect Hist. Shoreline Dists:\n", Tr.HistoricShorelinesDistances,"\n")
+Tr.CalculateHistoricalRegression_testing()
 
-printout = []
-if len(Tr.HistoricShorelinesYears) == len(Tr.HistoricShorelinesDistances):
-    for i in range(len(Tr.HistoricShorelinesYears)-1):
-        SLineList = []
-        SLineList.append(Tr.HistoricShorelinesYears[i])
-        SLineList.append(Tr.HistoricShorelinesDistances[i][0])
-        SLineList.append(Tr.HistoricShorelinesSources[i])
-        printout.append(SLineList)
-        
-        crList = []
-        crYears = str(Tr.HistoricShorelinesYears[i]) + "-" + str(Tr.HistoricShorelinesYears[i+1])
-        crList.append(crYears)
-        crYearsCalc = Tr.HistoricShorelinesYears[i+1] - Tr.HistoricShorelinesYears[i]
-        crDist = round((Tr.HistoricShorelinesDistances[i+1][0] - Tr.HistoricShorelinesDistances[i][0])*-1,3) # *-1 is for directionality
-        crList.append(crDist)
-        cRate = round(crDist / crYearsCalc,3)
-        crList.append(cRate)
-        printout.append(crList)
-        
-    SLineList = []
-    SLineList.append(Tr.HistoricShorelinesYears[-1])
-    SLineList.append(Tr.HistoricShorelinesDistances[-1][0])
-    SLineList.append(Tr.HistoricShorelinesSources[-1])
-    printout.append(SLineList)
-    
-print(printout)
-        
-PlotsPath = WorkingPath / "Plots"
 
-if not PlotsPath.exists():
-    PlotsPath.mkdir(parents=True, exist_ok=True)
-
-Tr.PlotFuturePositions(PlotsPath)
-Tr.PlotShorelineDistances(PlotsPath)
+# =============================================================================
+# #Cst.GetFutureShoreLines()
+# print("Transect ID =", Tr.ID,"\n")
+# print("Transect Shoreline Years:\n",Tr.HistoricShorelinesYears,"\n")
+# print("Transect Hist. Shoreline Dists:\n", Tr.HistoricShorelinesDistances,"\n")
+# 
+# printout = []
+# if len(Tr.HistoricShorelinesYears) == len(Tr.HistoricShorelinesDistances):
+#     for i in range(len(Tr.HistoricShorelinesYears)-1):
+#         SLineList = []
+#         SLineList.append(Tr.HistoricShorelinesYears[i])
+#         SLineList.append(Tr.HistoricShorelinesDistances[i][0])
+#         SLineList.append(Tr.HistoricShorelinesSources[i])
+#         printout.append(SLineList)
+#         
+#         crList = []
+#         crYears = str(Tr.HistoricShorelinesYears[i]) + "-" + str(Tr.HistoricShorelinesYears[i+1])
+#         crList.append(crYears)
+#         crYearsCalc = Tr.HistoricShorelinesYears[i+1] - Tr.HistoricShorelinesYears[i]
+#         crDist = round((Tr.HistoricShorelinesDistances[i+1][0] - Tr.HistoricShorelinesDistances[i][0])*-1,3) # *-1 is for directionality
+#         crList.append(crDist)
+#         cRate = round(crDist / crYearsCalc,3)
+#         crList.append(cRate)
+#         printout.append(crList)
+#         
+#     SLineList = []
+#     SLineList.append(Tr.HistoricShorelinesYears[-1])
+#     SLineList.append(Tr.HistoricShorelinesDistances[-1][0])
+#     SLineList.append(Tr.HistoricShorelinesSources[-1])
+#     printout.append(SLineList)
+#     
+# print(printout)
+#         
+# PlotsPath = WorkingPath / "Plots"
+# 
+# if not PlotsPath.exists():
+#     PlotsPath.mkdir(parents=True, exist_ok=True)
+# 
+# Tr.PlotFuturePositions(PlotsPath)
+# Tr.PlotShorelineDistances(PlotsPath)
+# =============================================================================

@@ -2745,7 +2745,7 @@ class Coast:
                         ThisNode.Z = Elevation
                     
     
-    def SampleFutureRSL(self, FutureRSLFolder, RCP=8, Percentile=95, Years=[2030,2040,2050,2060,2070,2080,2090,2100], Location=None):
+    def SampleFutureRSL(self, FutureRSLFolder, RCP=8, Percentile=95, Years=['2030-01-01','2040-01-01','2050-01-01','2060-01-01','2070-01-01','2080-01-01','2090-01-01','2100-01-01'], Location=None):
 
         """ 
         

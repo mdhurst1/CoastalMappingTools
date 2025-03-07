@@ -623,7 +623,7 @@ class Transect:
         ordinal_value = current_date.toordinal()
         
         max_date = max(dates_numeric)
-        scale_factor = 365.2425 * 15  # variable to smooth or strengthen recent-time weighting
+        scale_factor = 365.2425 * 10  # variable to smooth or strengthen recent-time weighting
     
         # Calculate weights using the smoother function
         weights = np.exp(-(max_date - dates_numeric) / scale_factor)
@@ -695,6 +695,17 @@ class Transect:
     
         CM, January 2025
     
+        """
+        
+        """Type here
+        result_ratess = []
+        resuts_errors = []
+        for timeweighting in timeweightings:
+            do regression and get rate and error
+            add to list of results and errors
+            
+        plt.plot(timeweightings, results,'ko--')
+        
         """
 
         # cant make calculations without some historical shorelines
@@ -768,200 +779,158 @@ class Transect:
         r_sq1 = round(1 - (ss_res1 / ss_tot1),3)
         
         # Recency Proportional Weights
-        # Get the current date
-        current_date = datetime.now().date()
-        # Convert the date to ordinal
-        ordinal_value = current_date.toordinal()
+        result_rates = []
+        result_errors = []
+        result_weights = []
         
         max_date3 = max(dates_numeric)
-        scale_factor = 365.2425 * 15  # variable to smooth or strengthen recent-time weighting
-    
-        # Calculate weights using the smoother function
-        weights3 = np.exp(-(max_date3 - dates_numeric) / scale_factor)
-        # Normalize weights
-        weights3 /= np.sum(weights3)
-        
-# =============================================================================
-#         # Calculate recency weights
-#         recency_weights = np.exp(-(max_date3 - dates_numeric) / scale_factor)
-#         recency_weights /= np.sum(recency_weights)  # Normalize weights
-#         
-#         # Incorporate shoreline errors as weights
-#         error_weights = 1 / (np.array(self.HistoricShorelinesErrors) ** 2)
-#         combined_weights = recency_weights * error_weights
-#         combined_weights /= np.sum(combined_weights)  # Normalize weights
-# =============================================================================
-        
-# RPW testing
 
-        sf5 = 365.2425 * 5  
-        sf10 = 365.2425 * 10
-        sf15 = 365.2425 * 15
-        sf20 = 365.2425 * 20  
-        
-        weights3a = np.exp(-(max_date3 - dates_numeric) / sf5)
-        weights3b = np.exp(-(max_date3 - dates_numeric) / sf10)
-        weights3c = np.exp(-(max_date3 - dates_numeric) / sf15)
-        weights3d = np.exp(-(max_date3 - dates_numeric) / sf20)
-        
-        weights3a /= np.sum(weights3a)
-        weights3b /= np.sum(weights3b)
-        weights3c /= np.sum(weights3c)
-        weights3d /= np.sum(weights3d)
-        
-        print('Printing weightings',self.LineID, self.ID)
-        print(weights3a)
-        print(weights3b)
-        print(weights3c)
-        print(weights3d)
-        
-        coefficients3a = np.polyfit(dates_numeric, self.HistoricShorelinesDistance, 1, w=weights3a)
-        slope3a, intercept3a = coefficients3a
-        
-        # Calculate the regression line
-        regression_line3a = slope3a * dates_numeric + intercept3a
-        
-        # Calculate R-squared
-        residuals3a = self.HistoricShorelinesDistance - regression_line3a
-        ss_res3a = np.sum(residuals3a ** 2)
-        ss_tot3a = np.sum((self.HistoricShorelinesDistance - np.mean(self.HistoricShorelinesDistance)) ** 2)
-        r_sq3a = round(1 - (ss_res3a / ss_tot3a), 3)
-        
-        # Calculate R-squared for data after 2000 only
-        residuals3aa = distList2000 - regression_line3a[index2000:]
-        ss_res3aa = np.sum(residuals3aa ** 2)
-        ss_tot3aa = np.sum((distList2000 - np.mean(distList2000)) ** 2)
-        r_sq3aa = round(1 - (ss_res3aa / ss_tot3aa),3)
-        
-        # Perform weighted regression
-        coefficients3b = np.polyfit(dates_numeric, self.HistoricShorelinesDistance, 1, w=weights3b)
-        slope3b, intercept3b = coefficients3b
-        
-        # Calculate the regression line
-        regression_line3b = slope3b * dates_numeric + intercept3b
-        
-        # Calculate R-squared
-        residuals3b = self.HistoricShorelinesDistance - regression_line3b
-        ss_res3b = np.sum(residuals3b ** 2)
-        ss_tot3b = np.sum((self.HistoricShorelinesDistance - np.mean(self.HistoricShorelinesDistance)) ** 2)
-        r_sq3b = round(1 - (ss_res3b / ss_tot3b), 3)
-        
-        # Calculate R-squared for data after 2000 only
-        residuals3bb = distList2000 - regression_line3b[index2000:]
-        ss_res3bb = np.sum(residuals3bb ** 2)
-        ss_tot3bb = np.sum((distList2000 - np.mean(distList2000)) ** 2)
-        r_sq3bb = round(1 - (ss_res3bb / ss_tot3bb),3)
-        
-        # Perform weighted regression
-        coefficients3c = np.polyfit(dates_numeric, self.HistoricShorelinesDistance, 1, w=weights3c)
-        slope3c, intercept3c = coefficients3c
-        
-        # Calculate the regression line
-        regression_line3c = slope3c * dates_numeric + intercept3c
-        
-        # Calculate R-squared
-        residuals3c = self.HistoricShorelinesDistance - regression_line3c
-        ss_res3c = np.sum(residuals3c ** 2)
-        ss_tot3c = np.sum((self.HistoricShorelinesDistance - np.mean(self.HistoricShorelinesDistance)) ** 2)
-        r_sq3c = round(1 - (ss_res3c / ss_tot3c), 3)
-        
-        # Calculate R-squared for data after 2000 only
-        residuals3cc = distList2000 - regression_line3c[index2000:]
-        ss_res3cc = np.sum(residuals3cc ** 2)
-        ss_tot3cc = np.sum((distList2000 - np.mean(distList2000)) ** 2)
-        r_sq3cc = round(1 - (ss_res3cc / ss_tot3cc),3)
-        
-        # Perform weighted regression
-        coefficients3d = np.polyfit(dates_numeric, self.HistoricShorelinesDistance, 1, w=weights3d)
-        slope3d, intercept3d = coefficients3d
-        
-        # Calculate the regression line
-        regression_line3d = slope3d * dates_numeric + intercept3d
-        
-        # Calculate R-squared
-        residuals3d = self.HistoricShorelinesDistance - regression_line3d
-        ss_res3d = np.sum(residuals3d ** 2)
-        ss_tot3d = np.sum((self.HistoricShorelinesDistance - np.mean(self.HistoricShorelinesDistance)) ** 2)
-        r_sq3d = round(1 - (ss_res3d / ss_tot3d), 3)
-        
-        # Calculate R-squared for data after 2000 only
-        residuals3dd = distList2000 - regression_line3d[index2000:]
-        ss_res3dd = np.sum(residuals3dd ** 2)
-        ss_tot3dd = np.sum((distList2000 - np.mean(distList2000)) ** 2)
-        r_sq3dd = round(1 - (ss_res3dd / ss_tot3dd),3)
-        
-        
-# Plot transect plots to test regression
-
-        plt.clf()
-        plt.errorbar(
-            self.HistoricShorelinesYears, 
-            self.HistoricShorelinesDistance, 
-            yerr=self.HistoricShorelinesErrors,  # Use the errors directly
-            fmt='o',  # Marker for the data points
-            ecolor='gray',  # Color of the error bars
-            elinewidth=1,  # Line width of the error bars
-            capsize=3,  # Caps at the end of error bars
-            label='Shoreline Positions with Errors'
-        )
-        plt.plot(self.HistoricShorelinesYears, self.HistoricShorelinesDistance, marker='o', linestyle='-', color='b', label='Shoreline Positions')
-        
-        # Plot the regression lines
-        plt.plot(self.HistoricShorelinesYears, regression_line0, color='r', linestyle='--', label='Linear Regression')
-        
-        plt.fill_between(
-            self.HistoricShorelinesYears,
-            regression_line3 - conf_interval,
-            regression_line3 + conf_interval,
-            color='gray',
-            alpha=0.3,
-            label='95% Confidence Interval'
-        )
-        plt.plot(self.HistoricShorelinesYears, regression_line3, color='m', linestyle='--', label='Recency Proportional Weights')
-        
-        plt.plot(self.HistoricShorelinesYears, regression_line3a, color='m', linestyle='--', label='RPW 5yrs')
-        plt.plot(self.HistoricShorelinesYears, regression_line3b, color='g', linestyle='--', label='RPW 10yrs')
-        plt.plot(self.HistoricShorelinesYears, regression_line3c, color='k', linestyle='--', label='RPW 15yrs')
-        plt.plot(self.HistoricShorelinesYears, regression_line3d, color='y', linestyle='--', label='RPW 20yrs')
-        
-        plt.plot(date2000,dist2000,marker='+',color='r',label='First shoreline after 2000')
-        
-        plt.plot([self.HistoricShorelinesYears[0], self.HistoricShorelinesYears[-1]],[self.HistoricShorelinesDistance[0], self.HistoricShorelinesDistance[-1]],linestyle=':', color='g',label='Overall Rate')
-        plt.plot([date2000, self.HistoricShorelinesYears[-1]],[dist2000, self.HistoricShorelinesDistance[-1]],linestyle=':', color='r',label='Rate since 2000')
-        
-        slope0_yr = round(slope0*365.2425,3)*-1
-                
-        slope_text = (
-                    "Overall Rate: " + str(rate0) + " m/yr\n"
-                    "Rate since 2000: " + str(rate1) + " m/yr\n"
-                    f"Slope 0 (LR): {slope0_yr:.3f} m/yr ($R^2 = {r_sq0:.3f}$)\n"
-                    f"Slope 3 (RPW 5yrs): {(-1*slope3a*365.2425):.3f} m/yr ($R^2 = {r_sq3a:.3f}$) ($R^2 (2000) = {r_sq3aa:.3f}$)\n"
-                    f"Slope 3 (RPW 10yrs): {(-1*slope3b*365.2425):.3f} m/yr ($R^2 = {r_sq3b:.3f}$) ($R^2 (2000) = {r_sq3bb:.3f}$)\n"
-                    f"Slope 3 (RPW 15yrs): {(-1*slope3c*365.2425):.3f} m/yr ($R^2 = {r_sq3c:.3f}$) ($R^2 (2000) = {r_sq3cc:.3f}$)\n"
-                    f"Slope 3 (RPW 20yrs): {(-1*slope3d*365.2425):.3f} m/yr ($R^2 = {r_sq3d:.3f}$) ($R^2 (2000) = {r_sq3dd:.3f}$)\n"
-                    )
+        timeweightings = np.arange(2,20,1)
             
-        y_min, y_max = plt.gca().get_ylim()
-        y_ave = y_min + ((y_max - y_min)/2)
+        for tw in timeweightings:
+            sf = 365.2425*tw
+            weights3t = np.exp(-(max_date3 - dates_numeric) / sf)
+            weights3t /= np.sum(weights3t)
         
-        plt.text(max(self.HistoricShorelinesYears) + timedelta(days=2500), y_ave, slope_text, color='r', fontsize=10, ha='left', va='center')
+            incErrors_weighting = 0        
+            if incErrors_weighting == 1:
+                # Calculate recency weights
+                recency_weights = np.exp(-(max_date3 - dates_numeric) / sf)
+                recency_weights /= np.sum(recency_weights)  # Normalize weights
+                
+                # Incorporate shoreline errors as weights
+                error_weights = 1 / (np.array(self.HistoricShorelinesErrors) ** 2)
+                combined_weights = recency_weights * error_weights
+                combined_weights /= np.sum(combined_weights)  # Normalize weights
+                weights3t = combined_weights
+                
+            result_weights.append(weights3t)
+ 
+            coefficients3t = np.polyfit(dates_numeric, self.HistoricShorelinesDistance, 1, w=weights3t)
+            slope3t, intercept3t = coefficients3t
+            slope3t_yr = round(slope3t*365.2425,3)*-1
+            
+            # Calculate the regression line
+            regression_line3t = slope3t * dates_numeric + intercept3t
+            
+            # Calculate R-squared
+            residuals3t = self.HistoricShorelinesDistance - regression_line3t
+            ss_res3t = np.sum(residuals3t ** 2)
+            ss_tot3t = np.sum((self.HistoricShorelinesDistance - np.mean(self.HistoricShorelinesDistance)) ** 2)
+            r_sq3t = round(1 - (ss_res3t / ss_tot3t), 3)
+            
+            # Calculate R-squared for data after 2000 only
+            residuals3tt = distList2000 - regression_line3t[index2000:]
+            ss_res3tt = np.sum(residuals3tt ** 2)
+            ss_tot3tt = np.sum((distList2000 - np.mean(distList2000)) ** 2)
+            r_sq3tt = round(1 - (ss_res3tt / ss_tot3tt),3)
+            
+            # Calculate confidence intervals
+            n = len(dates_numeric)
+            mean_x = np.mean(dates_numeric)
+            alpha = 0.05
+            t_value = t.ppf(1 - alpha / 2, n - 2)  # 95% confidence interval
+            
+            # Weighted residual standard error
+            weighted_residuals3t = residuals3t * weights3t
+            rss = np.sum(weighted_residuals3t ** 2)
+            stderr = np.sqrt(rss / (n - 2))
+            
+            # Confidence interval for regression line
+            conf_interval = t_value * stderr * np.sqrt(
+                1 / n + (dates_numeric - mean_x) ** 2 / np.sum((dates_numeric - mean_x) ** 2)
+    )
+            
+            result_rates.append(slope3t_yr)
+            result_errors.append(stderr)
         
-        # Add labels and title
-        plt.title(self.LineID + ': Transect ' + str(self.ID))
-        plt.xlabel('Dates')
-        plt.ylabel('Relative Distance along transect (m)')
-        
-        # Rotate the x-axis labels for better visibility
-        plt.xticks(rotation=45)
-        
-        # invert y-axis to more clearly demonstrate negative rates as erosional (further from offshore baseline)
-        plt.gca().invert_yaxis()
-        
-        # Add legend
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2), ncol=3, fontsize=10)
-        
-        fig_fn = '/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/Supersites/Montrose_2024/CMT/regressionFigures/' + loc + '_Transect_' + str(self.ID) + '.png'
-        plt.savefig(fig_fn, dpi=300, bbox_inches='tight')
+        plotWeightings = 1    
+        if plotWeightings == 1:
+            plt.clf()
+            plt.plot(timeweightings, result_rates,'ko--')
+            #plt.plot(timeweightings, result_errors,'ko--')
+            plt.xlabel('Timeweightings')
+            plt.ylabel('Rates')
+            titleText = "Line:" + str(self.LineID) + "  Transect:" + str(self.ID)
+            plt.title(titleText)
+            
+            
+            plt.savefig("test" + str(self.ID)+ ".png")
+            
+        return
+    
+# Plot transect plots to test regression
+        plotTransect = 0
+        if plotTransect == 1:
+            plt.clf()
+            plt.errorbar(
+                self.HistoricShorelinesYears, 
+                self.HistoricShorelinesDistance, 
+                yerr=self.HistoricShorelinesErrors,  # Use the errors directly
+                fmt='o',  # Marker for the data points
+                ecolor='gray',  # Color of the error bars
+                elinewidth=1,  # Line width of the error bars
+                capsize=3,  # Caps at the end of error bars
+                label='Shoreline Positions with Errors'
+            )
+            plt.plot(self.HistoricShorelinesYears, self.HistoricShorelinesDistance, marker='o', linestyle='-', color='b', label='Shoreline Positions')
+            
+            # Plot the regression lines
+            plt.plot(self.HistoricShorelinesYears, regression_line0, color='r', linestyle='--', label='Linear Regression')
+            
+            plt.fill_between(
+                self.HistoricShorelinesYears,
+                regression_line3 - conf_interval,
+                regression_line3 + conf_interval,
+                color='gray',
+                alpha=0.3,
+                label='95% Confidence Interval'
+            )
+            plt.plot(self.HistoricShorelinesYears, regression_line3, color='m', linestyle='--', label='Recency Proportional Weights')
+            
+            plt.plot(self.HistoricShorelinesYears, regression_line3a, color='m', linestyle='--', label='RPW 5yrs')
+            plt.plot(self.HistoricShorelinesYears, regression_line3b, color='g', linestyle='--', label='RPW 10yrs')
+            plt.plot(self.HistoricShorelinesYears, regression_line3c, color='k', linestyle='--', label='RPW 15yrs')
+            plt.plot(self.HistoricShorelinesYears, regression_line3d, color='y', linestyle='--', label='RPW 20yrs')
+            
+            plt.plot(date2000,dist2000,marker='+',color='r',label='First shoreline after 2000')
+            
+            plt.plot([self.HistoricShorelinesYears[0], self.HistoricShorelinesYears[-1]],[self.HistoricShorelinesDistance[0], self.HistoricShorelinesDistance[-1]],linestyle=':', color='g',label='Overall Rate')
+            plt.plot([date2000, self.HistoricShorelinesYears[-1]],[dist2000, self.HistoricShorelinesDistance[-1]],linestyle=':', color='r',label='Rate since 2000')
+            
+            slope0_yr = round(slope0*365.2425,3)*-1
+                    
+            slope_text = (
+                        "Overall Rate: " + str(rate0) + " m/yr\n"
+                        "Rate since 2000: " + str(rate1) + " m/yr\n"
+                        f"Slope 0 (LR): {slope0_yr:.3f} m/yr ($R^2 = {r_sq0:.3f}$)\n"
+                        f"Slope 3 (RPW 5yrs): {(-1*slope3a*365.2425):.3f} m/yr ($R^2 = {r_sq3a:.3f}$) ($R^2 (2000) = {r_sq3aa:.3f}$)\n"
+                        f"Slope 3 (RPW 10yrs): {(-1*slope3b*365.2425):.3f} m/yr ($R^2 = {r_sq3b:.3f}$) ($R^2 (2000) = {r_sq3bb:.3f}$)\n"
+                        f"Slope 3 (RPW 15yrs): {(-1*slope3c*365.2425):.3f} m/yr ($R^2 = {r_sq3c:.3f}$) ($R^2 (2000) = {r_sq3cc:.3f}$)\n"
+                        f"Slope 3 (RPW 20yrs): {(-1*slope3d*365.2425):.3f} m/yr ($R^2 = {r_sq3d:.3f}$) ($R^2 (2000) = {r_sq3dd:.3f}$)\n"
+                        )
+                
+            y_min, y_max = plt.gca().get_ylim()
+            y_ave = y_min + ((y_max - y_min)/2)
+            
+            plt.text(max(self.HistoricShorelinesYears) + timedelta(days=2500), y_ave, slope_text, color='r', fontsize=10, ha='left', va='center')
+            
+            # Add labels and title
+            plt.title(self.LineID + ': Transect ' + str(self.ID))
+            plt.xlabel('Dates')
+            plt.ylabel('Relative Distance along transect (m)')
+            
+            # Rotate the x-axis labels for better visibility
+            plt.xticks(rotation=45)
+            
+            # invert y-axis to more clearly demonstrate negative rates as erosional (further from offshore baseline)
+            plt.gca().invert_yaxis()
+            
+            # Add legend
+            plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2), ncol=3, fontsize=10)
+            
+            fig_fn = '/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/Supersites/Montrose_2024/CMT/regressionFigures/' + loc + '_Transect_' + str(self.ID) + '.png'
+            plt.savefig(fig_fn, dpi=300, bbox_inches='tight')
 
 # Weighted regression spreadsheet writing (for testing)
         # Path to the existing Excel file
@@ -1042,7 +1011,7 @@ class Transect:
         If no MLWS intersect node, use nearest MLWS node (from ExtractMLWS()). 
         
         NH Spetembeer 2023
-        
+            
         """
         
         # Check if the nodes exist
