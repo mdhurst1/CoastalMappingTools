@@ -6,7 +6,7 @@ Martin Hurst
 University of Glasgow
 Dynamic Coast 2 Project
 
-Modified by C. MacDonell, Montrose Project 2024
+Modified by C. MacDonell, CRSES Project 2025
 
 """
 
@@ -25,16 +25,13 @@ sys.path.append("../src/")
 from Coast import *
 
 # define file names for analysis
-WorkingPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/Supersites/Montrose_2024/CMT")
+WorkingPath = pathlib.Path("/media/14TB_RAID_Array/User_Homes/Craig_MacDonell/CMT_CRSES")
 NationalDEMPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2Final/99_NationalData/OSTerrain5")
 
 # set sea level scenario
 # set up scenarios
-#Scenarios = [2,4,8]
-#Percentiles = [50,50,95]
-
-Scenarios = [8]
-Percentiles = [95]
+Scenarios = [2,4,8]
+Percentiles = [50,50,95]
 
 # Decades for writing
 Decades = ['2020-01-01', # include current decade as script catches and adjusts future predictions for most recent shoreline date
@@ -45,13 +42,15 @@ Decades = ['2020-01-01', # include current decade as script catches and adjusts 
            '2070-01-01',
            '2080-01-01',
            '2090-01-01',
-           '2100-01-01',
-           '2110-01-01',
-           '2120-01-01',
-           '2150-01-01',
-           '2200-01-01',
-           '2250-01-01',
-           '2300-01-01'] 
+           '2100-01-01']
+# =============================================================================
+#            '2110-01-01',
+#            '2120-01-01',
+#            '2150-01-01',
+#            '2200-01-01',
+#            '2250-01-01',
+#            '2300-01-01'] 
+# =============================================================================
 
 # set up output folders
 GeometryPath = WorkingPath/("Geometry")
@@ -71,13 +70,11 @@ NoSmooths = 100 # do not change
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # Cell list
-CellList = ["2b"] # Montrose in Cell 2b
+CellList = ["1a"]
 
 # loop through each cell
-#for index, Row in Cells.iterrows():
 for CellSub in CellList:
     # print cell to screen
-    #CellSub = Row.Cell_sub
     print("\nRUNNING CELL", CellSub)
     RowName = "Cell_"+CellSub
     
@@ -89,14 +86,17 @@ for CellSub in CellList:
         continue
 
     # get soft coast position as most recent
-    ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Open_Baseline_revised_v2.shp") 
-    SoftPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp") 
-    LiDARPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR_Montrose2024_PolTips.shp")
-    #LiDARPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR_Montrose2024_PolTips.shp") # vegetation edge only
-    MLWSPath = WorkingPath / "MLWS_Lines" / (RowName + "_MLWS.shp") 
-    BathyPath = WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp") 
+    ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Open_Baseline.shp") # only doing open?
+    
     OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp") 
     QuiteOldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp") 
+    SoftPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp") 
+    
+    LiDARPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR_CRSESupdate.shp")
+    
+    MLWSPath = WorkingPath / "MLWS_Lines" / (RowName + "_MLWS.shp") 
+    
+    BathyPath = WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp") 
     
     DC1Path = WorkingPath / "DC1_Results" / (RowName +"_DC1_Results.shp")
     
@@ -113,6 +113,9 @@ for CellSub in CellList:
     Filename2SaveCoast = GeometryPath / (RowName+"_OpenGeometry.pydata")
     
     for Scenario, Percentile in zip(Scenarios, Percentiles): # main loop starting
+        print("\n\t Scenario:",str(Scenario))
+        print("\n\t Percentile:",str(Percentile))
+        print("\n")
         
         OutputPath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_OpenCoast")
         
@@ -149,8 +152,10 @@ for CellSub in CellList:
             CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
         
             # create some initial dummy transects
-            CellCoast.GenerateTransects(TransectSpacing, 500, 500, CheckTopology=False) # transect lengths
-            
+            CellCoast.GenerateTransects(TransectSpacing, 200, 200, CheckTopology=False) # transect lengths
+            CellCoast.WriteTransectsShp(str(OutputPath / (RowName + "_RawTransects.shp")))
+            #continue # to quickly build transects only
+            #sys.exit('Finished transects for editing')
             CellCoast.BuiltTransects = True
             
             # SAVE ENTIRE COAST OBJECT
@@ -198,7 +203,7 @@ for CellSub in CellList:
         
             # Sample rock head position
             CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
-            
+                       
             # Sample coastal defences
             CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp"))) # DIFFERENT DEFENCE VERSIONS
             
@@ -252,33 +257,30 @@ for CellSub in CellList:
         CellCoast.WriteFutureTransectsShp(str(OutputPath / (RowName + "_Transects.shp")))
         
         # write future shorelines
-        SmoothOutput = True # smooth coastlines (true) or not (false)
+        SmoothOutput = False # smooth coastlines (true) or not (false)
         
         # write coast/bathy to file
         CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
         CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future.shp")),SmoothOutput)
         
         #sys.exit(-1)
-
-        #Loop through decades
-        for i, Decade in enumerate(Decades):
-
-            CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_" + str(Decade) + ".shp")), Year=Decade)
-            CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
-            
-            CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Influence_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
-            CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Vicinity_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
         
+        # FUTURE POLYGONS
+        print('\n\n\t STARTING POLYGONS:',str(RowName),'Scenario:',Scenario,'Percentile:',Percentile,"\n")
 
-        # note min and max reversed due to sign convention on volumetric calibration terms
-        CellCoast.PredictFutureShorelines(MinMaxFlag="Min")
-        CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future_Max.shp")),SmoothOutput)
-
+        polySmooth = False
+        
         #Loop through decades
         for i, Decade in enumerate(Decades):
-
-            CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_Max" + str(Decade) + ".shp")), Year=Decade)
-            CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_Max" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
+            print("\t Write Eroded Area, Decade:",str(Decade))
+            CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_" + str(Decade) + ".shp")), Year=Decade, Smooth=polySmooth)
+            #if i >= 1:
+                #print("\t Decade:",str(Decades[i-1])+"_"+str(Decade))
+                #CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade,Smooth=polySmooth)
             
-            CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Influence_Max" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
-            CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Vicinity_Max" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
+            print("\t Write Erosion Influence, Decade:",str(Decade))
+            CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Influence_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.,Smooth=polySmooth)
+            print("\t Write Erosion Vicinity, Decade:",str(Decade))
+            CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Vicinity_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.,Smooth=polySmooth)
+
+print('\n \n COMPLETED ALL PROCESSING FOR ',str(RowName))

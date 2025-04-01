@@ -665,7 +665,10 @@ class Transect:
         # Weighted residual standard error
         weighted_residuals = residuals * weights
         rss = np.sum(weighted_residuals ** 2)
-        stderr = np.sqrt(rss / (n - 2))
+        if n <= 2: 
+            stderr = 0
+        else:    
+            stderr = np.sqrt(rss / (n - 2))
         
         # Confidence interval for regression line
         conf_interval = t_value * stderr * np.sqrt(
@@ -791,6 +794,12 @@ class Transect:
             sf = 365.2425*tw
             weights3t = np.exp(-(max_date3 - dates_numeric) / sf)
             weights3t /= np.sum(weights3t)
+            
+            if tw == 10:
+                wTableReport = weights3t
+                print(self.HistoricShorelinesYears)
+                print(wTableReport)
+                sys.exit(-1)
         
             incErrors_weighting = 0        
             if incErrors_weighting == 1:
@@ -812,6 +821,8 @@ class Transect:
             
             # Calculate the regression line
             regression_line3t = slope3t * dates_numeric + intercept3t
+            if tw == 10:
+                regression_line3 = regression_line3t
             
             # Calculate R-squared
             residuals3t = self.HistoricShorelinesDistance - regression_line3t
@@ -847,20 +858,21 @@ class Transect:
         plotWeightings = 1    
         if plotWeightings == 1:
             plt.clf()
-            plt.plot(timeweightings, result_rates,'ko--')
-            #plt.plot(timeweightings, result_errors,'ko--')
-            plt.xlabel('Timeweightings')
-            plt.ylabel('Rates')
-            titleText = "Line:" + str(self.LineID) + "  Transect:" + str(self.ID)
+            plt.plot(timeweightings, result_rates,'ko-')
+            #plt.plot(timeweightings, result_errors,'co--')
+            plt.xlabel('Weighting Scale Factor (yrs)')
+            plt.ylabel('Coastal Change Rates (m/yr)')
+            titleText = "Montrose - Transect: " + str(self.ID)
             plt.title(titleText)
             
             
-            plt.savefig("test" + str(self.ID)+ ".png")
+            plt.savefig("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/Supersites/Montrose_2024/CMT/test" + str(self.ID)+ ".png")
             
-        return
+        #return
+        #sys.exit(-1)
     
 # Plot transect plots to test regression
-        plotTransect = 0
+        plotTransect = 1
         if plotTransect == 1:
             plt.clf()
             plt.errorbar(
@@ -888,35 +900,37 @@ class Transect:
             )
             plt.plot(self.HistoricShorelinesYears, regression_line3, color='m', linestyle='--', label='Recency Proportional Weights')
             
-            plt.plot(self.HistoricShorelinesYears, regression_line3a, color='m', linestyle='--', label='RPW 5yrs')
-            plt.plot(self.HistoricShorelinesYears, regression_line3b, color='g', linestyle='--', label='RPW 10yrs')
-            plt.plot(self.HistoricShorelinesYears, regression_line3c, color='k', linestyle='--', label='RPW 15yrs')
-            plt.plot(self.HistoricShorelinesYears, regression_line3d, color='y', linestyle='--', label='RPW 20yrs')
+            #plt.plot(self.HistoricShorelinesYears, regression_line3a, color='m', linestyle='--', label='RPW 5yrs')
+            #plt.plot(self.HistoricShorelinesYears, regression_line3b, color='g', linestyle='--', label='RPW 10yrs')
+            #plt.plot(self.HistoricShorelinesYears, regression_line3c, color='k', linestyle='--', label='RPW 15yrs')
+            #plt.plot(self.HistoricShorelinesYears, regression_line3d, color='y', linestyle='--', label='RPW 20yrs')
             
-            plt.plot(date2000,dist2000,marker='+',color='r',label='First shoreline after 2000')
+            #plt.plot(date2000,dist2000,marker='+',color='r',label='First shoreline after 2000')
             
             plt.plot([self.HistoricShorelinesYears[0], self.HistoricShorelinesYears[-1]],[self.HistoricShorelinesDistance[0], self.HistoricShorelinesDistance[-1]],linestyle=':', color='g',label='Overall Rate')
-            plt.plot([date2000, self.HistoricShorelinesYears[-1]],[dist2000, self.HistoricShorelinesDistance[-1]],linestyle=':', color='r',label='Rate since 2000')
+            #plt.plot([date2000, self.HistoricShorelinesYears[-1]],[dist2000, self.HistoricShorelinesDistance[-1]],linestyle=':', color='r',label='Rate since 2000')
             
-            slope0_yr = round(slope0*365.2425,3)*-1
-                    
-            slope_text = (
-                        "Overall Rate: " + str(rate0) + " m/yr\n"
-                        "Rate since 2000: " + str(rate1) + " m/yr\n"
-                        f"Slope 0 (LR): {slope0_yr:.3f} m/yr ($R^2 = {r_sq0:.3f}$)\n"
-                        f"Slope 3 (RPW 5yrs): {(-1*slope3a*365.2425):.3f} m/yr ($R^2 = {r_sq3a:.3f}$) ($R^2 (2000) = {r_sq3aa:.3f}$)\n"
-                        f"Slope 3 (RPW 10yrs): {(-1*slope3b*365.2425):.3f} m/yr ($R^2 = {r_sq3b:.3f}$) ($R^2 (2000) = {r_sq3bb:.3f}$)\n"
-                        f"Slope 3 (RPW 15yrs): {(-1*slope3c*365.2425):.3f} m/yr ($R^2 = {r_sq3c:.3f}$) ($R^2 (2000) = {r_sq3cc:.3f}$)\n"
-                        f"Slope 3 (RPW 20yrs): {(-1*slope3d*365.2425):.3f} m/yr ($R^2 = {r_sq3d:.3f}$) ($R^2 (2000) = {r_sq3dd:.3f}$)\n"
-                        )
-                
+# =============================================================================
+#             slope0_yr = round(slope0*365.2425,3)*-1
+#                     
+#             slope_text = (
+#                         "Overall Rate: " + str(rate0) + " m/yr\n"
+#                         "Rate since 2000: " + str(rate1) + " m/yr\n"
+#                         f"Slope 0 (LR): {slope0_yr:.3f} m/yr ($R^2 = {r_sq0:.3f}$)\n"
+#                         f"Slope 3 (RPW 5yrs): {(-1*slope3a*365.2425):.3f} m/yr ($R^2 = {r_sq3a:.3f}$) ($R^2 (2000) = {r_sq3aa:.3f}$)\n"
+#                         f"Slope 3 (RPW 10yrs): {(-1*slope3b*365.2425):.3f} m/yr ($R^2 = {r_sq3b:.3f}$) ($R^2 (2000) = {r_sq3bb:.3f}$)\n"
+#                         f"Slope 3 (RPW 15yrs): {(-1*slope3c*365.2425):.3f} m/yr ($R^2 = {r_sq3c:.3f}$) ($R^2 (2000) = {r_sq3cc:.3f}$)\n"
+#                         f"Slope 3 (RPW 20yrs): {(-1*slope3d*365.2425):.3f} m/yr ($R^2 = {r_sq3d:.3f}$) ($R^2 (2000) = {r_sq3dd:.3f}$)\n"
+#                         )
+#             
+#             plt.text(max(self.HistoricShorelinesYears) + timedelta(days=2500), y_ave, slope_text, color='r', fontsize=10, ha='left', va='center')
+# =============================================================================
+            
             y_min, y_max = plt.gca().get_ylim()
             y_ave = y_min + ((y_max - y_min)/2)
             
-            plt.text(max(self.HistoricShorelinesYears) + timedelta(days=2500), y_ave, slope_text, color='r', fontsize=10, ha='left', va='center')
-            
             # Add labels and title
-            plt.title(self.LineID + ': Transect ' + str(self.ID))
+            plt.title("Montrose - Transect: " + str(self.ID))
             plt.xlabel('Dates')
             plt.ylabel('Relative Distance along transect (m)')
             
@@ -929,8 +943,11 @@ class Transect:
             # Add legend
             plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2), ncol=3, fontsize=10)
             
-            fig_fn = '/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/Supersites/Montrose_2024/CMT/regressionFigures/' + loc + '_Transect_' + str(self.ID) + '.png'
+            fig_fn = '/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/Supersites/Montrose_2024/CMT/regressionFigures/Montrose_Transect_' + str(self.ID) + '.png'
             plt.savefig(fig_fn, dpi=300, bbox_inches='tight')
+            
+        return
+        sys.exit(-1)
 
 # Weighted regression spreadsheet writing (for testing)
         # Path to the existing Excel file
@@ -1303,7 +1320,7 @@ class Transect:
 
             # catch the condition where observed shorelines are more recent than those we're trying to make predictions for
             if dT <= 0:
-                print('Predict Future Shorelines - observed shorelines are more recent than predictions:', str(self.FutureSeaLevelYears[i]), '-', self.HistoricShorelinesYears[-1])
+                #print('Predict Future Shorelines - observed shorelines are more recent than predictions:', str(self.FutureSeaLevelYears[i]), '-', self.HistoricShorelinesYears[-1])
                 X1 = self.HistoricShorelinesPosition[-1].X
                 Y1 = self.HistoricShorelinesPosition[-1].Y
 
@@ -3062,7 +3079,7 @@ class Transect:
             Index = [i for i, x in enumerate(self.FutureSeaLevelYears) if x == Year]
             
             if len(Index) == 0:
-                print("problem1")
+                print("ERROR: Transect.get_FutureDistance - length of Index == 0")
                 sys.exit()
                 return
 
@@ -3108,16 +3125,17 @@ class Transect:
             else:
                 raise ValueError(f"Unsupported type: {type(Year2)}. Expected datetime or int.")
             
-            # add a check in here if Year1 < Latest Shoreline
-            if Year1 < self.HistoricShorelinesYears[-1]:
+            # add a check in here if Year1 <= Latest Shoreline
+            if Year1 <= self.HistoricShorelinesYears[-1]:
                 Distance1 = self.HistoricShorelinesDistances[-1][0]
 
             else:
                 # find year index
                 Index1 = [i for i, x in enumerate(self.FutureSeaLevelYears) if x == Year1]
                 if len(Index1) == 0:
-                    print("problem1")
-                    sys.exit()
+                    print("ERROR: Transect.get_FuturePositionChange - length of Index1 == 0 - Year=" + str(Year1))
+                    import pdb
+                    pdb.set_trace()
                     
                 Distance1 = self.FutureShorelinesDistances[Index1[0]]
             
@@ -3125,7 +3143,7 @@ class Transect:
             Index2 = [i for i, x in enumerate(self.FutureSeaLevelYears) if x == Year2]
             
             if len(Index2) == 0:
-                print("problem2")
+                print("ERROR: Transect.get_FuturePositionChange - length of Index2 == 0 - Year=" + str(Year2))
                 sys.exit()
 
             # add a check in here if Year1 < Latest Shoreline

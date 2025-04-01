@@ -93,7 +93,7 @@ def save_as_raster(output_path, interpolated_grid, grid_x, grid_y, cellsize,crs)
     ) as dst:
         dst.write(interpolated_grid, 1)
 
-    print(f"Raster saved: {output_path}")
+    #print(f"Raster saved: {output_path}")
 
 ### PERFORM INTERPOLATION & RASTER WRITING ###
 
@@ -123,7 +123,10 @@ for scenario in scenarios:
     subset_pts = rslrPts[rslrPts["RCP_Percen"] == scenario]
     decadeCounter = 0
     
-    scenarioPath = pathlib.Path(rastFolder / scenario)
+    rcpLabel = scenario.split('_')[0][:-1].upper()
+    percLabel = scenario.split('_')[-1] + 'th'
+    
+    scenarioPath = pathlib.Path(rastFolder / rcpLabel)
     if not os.path.exists(scenarioPath):
         os.makedirs(scenarioPath)
     
@@ -133,13 +136,13 @@ for scenario in scenarios:
         interpolated_grid = idw_interpolation(subset_pts, field, grid_x, grid_y, power=1, k=12)
         
         # Example: Store results or visualize
-        print(f"Scenario {scenario}, Attribute {field} ({decadeYYYY}) - Interpolation Complete")
+        #print(f"Scenario {scenario}, Attribute {field} ({decadeYYYY}) - Interpolation Complete")
         
         # Define raster output path
-        output_path = pathlib.Path(scenarioPath / f"{scenario}_{decadeYYYY}.tif")
+        output_path = pathlib.Path(scenarioPath / f"{rcpLabel}_{percLabel}_{decadeYYYY}_filled.tif")
         decadeCounter += 1
 
         # Save as GeoTIFF
-        save_as_raster(output_path, interpolated_grid, grid_x, grid_y, cell_size,crs)
+        #save_as_raster(output_path, interpolated_grid, grid_x, grid_y, cell_size,crs)
         
     #sys.exit('One scenario complete')

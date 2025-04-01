@@ -256,7 +256,7 @@ class Coast:
             # launch polygon patches shapefile writer
             self.WritePatchesShp("ExtFrontLines_"+Level, "ExtBackLines_"+Level, ExtPatchesShp)
     
-    def WriteErodedAreaShp(self, ErosionShp, StartYear=2030, Year=2100,Smooth=True,tempWrite=False):
+    def WriteErodedAreaShp(self, ErosionShp, StartYear='2020-01-01', Year='2100-01-01',Smooth=True,tempWrite=False):
         
         """
         Writes future shorelines to polygon patches
@@ -266,7 +266,7 @@ class Coast:
         """
         
         # print action to screen
-        #print("Coast.WriteErodedAreaShp: Writing predicted erosion area to polygon file")
+        print("Coast.WriteErodedAreaShp: Writing predicted erosion area to polygon file")
         
         # retrieve future shorelines
         self.GetFutureShoreLines()
@@ -277,16 +277,15 @@ class Coast:
         else:
             sys.exit('Coast.WriteErodedAreaShp - input Year not in string format for conversion to datetime')
             
-        if isinstance(StartYear,int):
-            Year = datetime(StartYear,1,1)
-        elif isinstance(StartYear, str):
-            Year = datetime.strptime(StartYear,'%Y-%m-%d')
+        if isinstance(StartYear, str):
+            StartYear = datetime.strptime(StartYear,'%Y-%m-%d')
         else:
-            sys.exit('Coast.WriteErodedAreaShp - input StartYear not in integer or string format for conversion to datetime')
+            sys.exit('Coast.WriteErodedAreaShp - input StartYear not in string format for conversion to datetime')
         
         # get lists of lines for year of prediction and most recent shoreline position
         Indices = [i for i, Line in enumerate(self.FutureShoreLines) if Line.Year == Year]
         self.WriteFutureLines = [self.FutureShoreLines[i] for i in Indices]
+        
         Indices = [i for i, Line in enumerate(self.FutureShoreLines) if Line.Year == StartYear]
         self.WriteRecentLines = [self.FutureShoreLines[i] for i in Indices]
         
@@ -298,9 +297,10 @@ class Coast:
         if tempWrite:
             self.WriteLinesShp("WriteFutureLines", ErosionBackShp, Smooth)
             self.WriteLinesShp("WriteRecentLines", ErosionFrontShp, Smooth)
+            
         self.WritePatchesShp("WriteFutureLines", "WriteRecentLines", ErosionShp, Smooth)
 
-    def WriteErosionProximityShp(self, ProximityShp, BufferDistance=10., Year=2100, Smooth=True, tempWrite=False):
+    def WriteErosionProximityShp(self, ProximityShp, BufferDistance=10., Year='2100-01-01', Smooth=True, tempWrite=False):
 
         """
         Writes Erosion Proximity polygon patches for a given decade
@@ -998,25 +998,38 @@ class Coast:
         Fields = [('DeletionFlag','C',1,0), 
         ['Cell', 'C', 3, 0], ['SubCell', 'C', 3, 0], ['CMU','C', 20, 0],
         ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], 
-        ['Min_Rate','N', 6, 4], ['Max_Rate','N', 6, 4], ['Hist_Rate','N', 6, 4], 
+        #['Min_Rate','N', 6, 4], ['Max_Rate','N', 6, 4], 
+        ['Hist_Rate','N', 6, 4], 
         ['CalibYr', 'C', 10, 0], ['BaseLYr', 'C', 10, 0], ['BaseLSrc','C', 50, 0], 
         ['Extrap2050','N', 6, 4], ['Extrap2100','N', 6, 4], ['FirstEYr','N',4, 4],
-        #['Dist_2030', 'N', 6, 4], ['Rate_2030', 'N', 6, 4], 
+        
+        ['pDist_2030', 'N', 6, 4], ['pRate_2030', 'N', 6, 4],
+        
         ['Dist_2040', 'N', 6, 4], ['Rate_2040', 'N', 6, 4], 
         ['Dist_2050', 'N', 6, 4], ['Rate_2050', 'N', 6, 4], 
         ['Dist_2060', 'N', 6, 4], ['Rate_2060', 'N', 6, 4], 
         ['Dist_2070', 'N', 6, 4], ['Rate_2070', 'N', 6, 4], 
         ['Dist_2080', 'N', 6, 4], ['Rate_2080', 'N', 6, 4], 
         ['Dist_2090', 'N', 6, 4], ['Rate_2090', 'N', 6, 4], 
-        ['Dist_2100', 'N', 6, 4], ['Rate_2100', 'N', 6, 4], 
-        ['RCP85_2100', 'N', 4, 3],
+        ['Dist_2100', 'N', 6, 4], ['Rate_2100', 'N', 6, 4],
+        #['Dist_2110', 'N', 6, 4], ['Rate_2110', 'N', 6, 4], 
+        #['Dist_2120', 'N', 6, 4], ['Rate_2120', 'N', 6, 4], 
+        
+        #['Dist_2150', 'N', 6, 4], ['Rate_2150', 'N', 6, 4], 
+        #['Dist_2200', 'N', 6, 4], ['Rate_2200', 'N', 6, 4], 
+        #['Dist_2250', 'N', 6, 4], ['Rate_2250', 'N', 6, 4], 
+        #['Dist_2300', 'N', 6, 4], ['Rate_2300', 'N', 6, 4], 
+        
+        ['RCP85_2050', 'N', 4, 3],['RCP85_2100', 'N', 4, 3],
+        #['RCP85_2150', 'N', 4, 3],['RCP85_2200', 'N', 4, 3],
+        #['RCP85_2250', 'N', 4, 3],['RCP85_2300', 'N', 4, 3],
+        
         ['DC1_SvEn_B','N', 4, 0], ['DC1_SvEn_C','N', 4, 0], 
         ['DC1_DistV','N', 6, 4], ['DC1_RateBC','N', 6, 4],
         ['OS_2020_Yr','C',10,0], ['Method','C', 5, 0]
         ]
         
         WL.fields = Fields[1:]
-
         
         for Line in self.CoastLines:
             for Transect in Line.Transects:
@@ -1043,10 +1056,13 @@ class Coast:
                     
                     # Create the record this could become a function in transect object...
                     Record = [str(self.Cell), str(self.SubCell), str(self.CMU), str(Line.ID), str(Transect.ID),
-                                Transect.MinChangeRate, Transect.MaxChangeRate, Transect.ChangeRate, 
+                                #Transect.MinChangeRate, Transect.MaxChangeRate, 
+                                Transect.ChangeRate, 
                                 CalibYr_str, BaseLYr_str, Transect.HistoricShorelinesSources[-1], 
                                 Transect.get_ExtrapDistance(2050), Transect.get_ExtrapDistance(2100), Transect.get_FirstFutureErosionYear(),
-                                #Transect.get_FuturePositionChange(2020, 2030), Transect.get_FutureRate(2020, 2030), # should we be doing 2020 to 2030?
+                                
+                                Transect.get_FuturePositionChange(2020, 2030), Transect.get_FutureRate(2020, 2030),
+                                
                                 Transect.get_FuturePositionChange(2030, 2040), Transect.get_FutureRate(2030, 2040),
                                 Transect.get_FuturePositionChange(2040, 2050), Transect.get_FutureRate(2040, 2050),
                                 Transect.get_FuturePositionChange(2050, 2060), Transect.get_FutureRate(2050, 2060),
@@ -1054,7 +1070,17 @@ class Coast:
                                 Transect.get_FuturePositionChange(2070, 2080), Transect.get_FutureRate(2070, 2080),
                                 Transect.get_FuturePositionChange(2080, 2090), Transect.get_FutureRate(2080, 2090),
                                 Transect.get_FuturePositionChange(2090, 2100), Transect.get_FutureRate(2090, 2100),
-                                Transect.FutureSeaLevels[-1],
+                                #Transect.get_FuturePositionChange(2100, 2110), Transect.get_FutureRate(2100, 2110),
+                                #Transect.get_FuturePositionChange(2110, 2120), Transect.get_FutureRate(2110, 2120),
+                                
+                                #Transect.get_FuturePositionChange(2120, 2150), Transect.get_FutureRate(2120, 2150),
+                                #Transect.get_FuturePositionChange(2150, 2200), Transect.get_FutureRate(2150, 2200),
+                                #Transect.get_FuturePositionChange(2200, 2250), Transect.get_FutureRate(2200, 2250),
+                                #Transect.get_FuturePositionChange(2250, 2300), Transect.get_FutureRate(2250, 2300),
+                                
+                                Transect.FutureSeaLevels[2],Transect.FutureSeaLevels[7], # 2050, 2100
+                                #Transect.FutureSeaLevels[11],Transect.FutureSeaLevels[12], # 2150, 2200
+                                #Transect.FutureSeaLevels[13],Transect.FutureSeaLevels[-1], # 2250, 2300
                                 
                                 Transect.DC1[0], Transect.DC1[1], Transect.DC1[2], Transect.DC1[3],
                                 OSYr_str, self.Method]
@@ -2433,7 +2459,7 @@ class Coast:
                 elif ThisLine.geom_type == "LineString":
                     MultiLines.append(ThisLine)
                 elif ThisLine.geom_type == "MultiLineString":
-                    for SubLine in ThisLine:
+                    for SubLine in ThisLine.geoms:
                         if SubLine.geom_type == "LineString":
                             MultiLines.append(SubLine)
         
@@ -2828,6 +2854,10 @@ class Coast:
                     #for val in RSLRDataset.sample([(Transect.CoastNode.X,Transect.CoastNode.Y)]):
                     RockHeadVector = np.array([val[0] for val in RockHeadDataset.sample(NodeList)])
                     RockHeadVector[RockHeadVector < 0] = np.nan
+                    
+                    if  Line.ID == '1' and Transect.ID == '145':
+                        import pdb
+                        #pdb.set_trace()
                     
                     # if everything is soft, carry on
                     # ignore errors caused by NaNs
