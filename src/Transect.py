@@ -191,6 +191,133 @@ class Transect:
         self.ExtremeVolumeTotal = None
         self.ExtremeVolumes = ["","",""]
         self.ExtremeTotalVolumes = ["","",""]
+        
+        # storm impact analysis
+        # H=historic, M=mid-century, E=end-century, 45=RCP4.5, 85=RCP8.5
+        # wave parameters: peak wave period Tp, significant wave height Hs
+        self.H_Tp_p99 = None
+        self.M45_Tp_p99 = None
+        self.E45_Tp_p99 = None
+        self.M85_Tp_p99 = None
+        self.E85_Tp_p99 = None
+        self.H_Hs_p99 = None
+        self.M45_Hs_p99 = None
+        self.E45_Hs_p99 = None
+        self.M85_Hs_p99 = None
+        self.E85_Hs_p99 = None
+        # derived wave parameters
+        self.H_WaveSteepness = None
+        self.M45_WaveSteepness = None
+        self.E45_WaveSteepness = None
+        self.M85_WaveSteepness = None
+        self.E85_WaveSteepness = None
+        self.H_Iribarren = None
+        self.M45_Iribarren = None
+        self.E45_Iribarren = None
+        self.M85_Iribarren = None
+        self.E85_Iribarren = None
+        # extreme wave runup
+        self.H_R2 = None
+        self.M45_R2 = None
+        self.M85_R2 = None
+        self.E45_R2 = None
+        self.E85_R2 = None
+        self.H_setup = None
+        self.M45_setup = None
+        self.M85_setup = None
+        self.E45_setup = None
+        self.E85_setup = None
+        self.H_Dissipative = None
+        self.M45_Dissipative = None
+        self.M85_Dissipative = None
+        self.E45_Dissipative = None
+        self.E85_Dissipative = None
+        self.PureGravel = None
+        # extreme still water level
+        self.H_ESL = None
+        self.H_ESL_c1 = None
+        self.H_ESL_c3 = None
+        self.M45_ESL = None
+        self.M45_ESL_c1 = None
+        self.M45_ESL_c3 = None
+        self.M85_ESL = None
+        self.M85_ESL_c1 = None
+        self.M85_ESL_c3 = None
+        self.E45_ESL = None
+        self.E45_ESL_c1 = None
+        self.E45_ESL_c3 = None
+        self.E85_ESL = None
+        self.E85_ESL_c1 = None
+        self.E85_ESL_c3 = None
+        # extreme total water level
+        self.H_TWL = None
+        self.M45_TWL = None
+        self.M85_TWL = None
+        self.E45_TWL = None
+        self.E85_TWL = None
+        self.H_TWL_setup = None
+        self.M45_TWL_setup = None
+        self.M85_TWL_setup = None
+        self.E45_TWL_setup = None
+        self.E85_TWL_setup = None
+        # Storm impact scale
+        self.H_StormImpactScale = None
+        self.M45_StormImpactScale = None
+        self.M85_StormImpactScale = None
+        self.E45_StormImpactScale = None
+        self.E85_StormImpactScale = None
+        self.NearestDC2Idx = None
+        self.M45_Erosion = None
+        self.M85_Erosion = None
+        self.E45_Erosion = None
+        self.E85_Erosion = None
+        self.M45_SLR = None
+        self.M85_SLR = None
+        self.E45_SLR = None
+        self.E85_SLR = None
+        # Present day dune elevations
+        self.H_FrontToe = None
+        self.H_FrontTop = None
+        self.H_BackToe = None
+        self.H_BackTop = None
+        self.H_Crest = None
+        # Estimated future dune front toe and crest elevations
+        self.M45_FrontToe = None
+        self.M85_FrontToe = None
+        self.E45_FrontToe = None
+        self.E85_FrontToe = None
+        self.M45_Crest = None
+        self.M85_Crest = None
+        self.E45_Crest = None
+        self.E85_Crest = None
+        # Esimated headroom: difference between dune crest elev and total water level
+        self.H_Headroom = None
+        self.M45_Headroom = None
+        self.M85_Headroom = None
+        self.E45_Headroom = None
+        self.E85_Headroom = None
+        self.HinterlandElev = None
+        # Barrier drowned if future toe exceeds future crest elevation
+        self.M45_BarrierDrowning = None
+        self.E45_BarrierDrowning = None
+        self.M85_BarrierDrowning = None
+        self.E85_BarrierDrowning = None
+        # shingle habitat intersected
+        self.Shingle = None
+        # Asset location
+        self.RoadsIntersect = None
+        self.RailIntersect = None
+        self.FirstAssetDist = None
+        self.FirstRoadDist = None
+        self.FirstRailDist = None
+        self.FirstPropertyDist = None
+        self.FirstAssetElev = None
+        self.FirstRoadElev = None
+        self.FirstRailElev = None
+        self.FirstPropertyElev = None
+        # Barrier search window
+        self.SeawardMask = None
+        self.LandwardMask = None
     
     def __str__(self):
         String = "Transect Object:\nID: %s\n" % (str(self.ID))
@@ -366,7 +493,36 @@ class Transect:
             Y1 = self.StartNode.Y - 0.5*Difference * np.cos( np.radians( self.Orientation ) )
             self.StartNode = Node(X1,Y1)
 
+    def Truncate2Coast(self, D_start, D_end):
         
+        """
+        Function to truncate transects between specified
+        start and end distances either side of CoastNode.
+        Can also extend transects.
+        
+        D_start: distance (m) seaward of CoastNode
+        D_end: distance (m) landward of CoastNode
+        
+        NH, September 2024
+        
+        """
+        
+        # error check input params. Limit upper values to the current entire transect length
+        if (D_start < 0 or D_start > self.Length):
+            sys.exit("Transect.Truncate2Coast: Invalid start distance")
+        if (D_end < 0 or D_end > self.Length):
+            sys.exit("Transect.Truncate2Coast: Invalid end distance")
+        
+        # find new start position
+        X1 = self.CoastNode.X - D_start * np.sin( np.radians( self.Orientation ) )
+        Y1 = self.CoastNode.Y - D_start * np.cos( np.radians( self.Orientation ) )
+        self.StartNode = Node(X1,Y1)
+        
+        # find new end position
+        X1 = self.CoastNode.X + D_end * np.sin( np.radians( self.Orientation ) )
+        Y1 = self.CoastNode.Y + D_end * np.cos( np.radians( self.Orientation ) )
+        self.EndNode = Node(X1,Y1)
+    
     def GenerateSampleNodes(self,Spacing=None):
 
         """ 
@@ -597,6 +753,8 @@ class Transect:
         
         NH Spetembeer 2023
         
+        (NOW SUPERSEDED BY CalculateIntertidalSlope3())
+        
         """
         
         # Check if the nodes exist
@@ -636,6 +794,59 @@ class Transect:
         # set minimum shoreface slope to 0.001
         if self.IntertidalSlope < 0.001:
             self.IntertidalSlope = 0.001
+    
+    def CalculateIntertidalSlope3(self):
+    
+        """
+        
+        Function to extract transect's slope between MHWS and MLWS contours. 
+        dz = 2*MWHS elevation, assuming sinusoidal tidal elevations
+        dx = distance between MHWS and MLWS contour intersections
+        If no MLWS intersect node, use nearest MLWS node (from ExtractMLWS()). 
+        
+        This code improves v2 of the function, as the elevation data is only really
+        valid landward of MHWS. Seaward elevations do exist in OST5 and LiDAR, but
+        are either the water level elevations (LiDAR) or linear line to a predifined min
+        (OST5), thus not a representation of nearshore bathymetry.
+        
+        NH Jan 2024
+        
+        """
+        
+        # Check if the nodes exist
+        # If MLWS intersections does not exist, use nearest point to MLWS contour
+        if not self.MLWSIntersect.X:
+            print(self.LineID, self.ID, "CalculateIntertidalSlope3: No MLWS intersect data")
+            if not self.MLWS.X:
+                print(self.LineID, self.ID, "CalculateIntertidalSlope3: No MLWS nearest data either!")
+                self.IntertidalSlope = -1
+                sys.exit()
+            else:
+                # Use MLWS data
+                MLWSNode = self.MLWS
+                print("\t\t\t\tUsing nearest MLWS node")
+        else:
+            # use MLWSIntersect data
+            MLWSNode = self.MLWSIntersect
+            
+        if not self.MHWSIntersect.X:
+            print(self.LineID, self.ID, "CalculateIntertidalSlope3: No MHWSIntersect!")
+            self.IntertidalSlope = -1
+            sys.exit()
+
+        # Check if MHWS elevation data exists
+        if not self.MHWS:
+            print(self.LineID, self.ID, "CalculateIntertidalSlope3: No MHWS elevation data!")
+            self.IntertidalSlope = -1
+            sys.exit()
+        
+        self.IntertidalDistance = MLWSNode.get_Distance(self.MHWSIntersect)
+        self.IntertidalDepth = 2*self.MHWS
+        self.IntertidalSlope = self.IntertidalDepth/self.IntertidalDistance
+        
+        # set minimum shoreface slope to 0.001
+        if self.IntertidalSlope < 0.001:
+            self.IntertidalSlope = 0.001
             
             
     def ExtractIndex(self, Elev=None, Landward=True):
@@ -663,7 +874,7 @@ class Transect:
         
         # Check parameters were passed
         if Elev is None:
-            print("Transect.ExtractIndex: Elev not specified!")
+            print("\tTransect.ExtractIndex: Elev not specified!")
             return -1
         
         # Find indexes of transect elevations greater than Elev: boolean array
@@ -671,7 +882,7 @@ class Transect:
         
         # Check anything was found
         if sum(elev_of_interest) == 0:
-            print(f"Transect.ExtractIndex: No Elevation above {Elev} m!")
+            print(f"\tTransect.ExtractIndex: No Elevation above {Elev} m!")
             return -1
         
         # Find the smallest index (most seaward)
@@ -1267,9 +1478,143 @@ class Transect:
 
         elif (self.CliffSlope > 0.6) or (self.CliffHeight > 15.):
             self.Cliff = True
+            #print(" ", self.LineID, self.ID, "Cliff:", self.Distance[self.CliffToeInd], self.Distance[self.CliffTopInd])
                     
         else:
             self.Cliff = False
+            
+    def FindCliff2(self):
+
+        """
+
+        Function to identify whether the coastal transect has a cliff
+        and find the position of a cliff on a coastal transect
+        records the position of the cliff top and cliff toe
+
+        MDH, June 2019 (original)
+        NH modified, Mar 2024: Search landward of 0 m; Seaward of 200 m 
+
+        """
+        
+        # Find the last point on the Transect
+        # LastInd = np.transpose(self.Elevation.nonzero())[-1][0]
+        dist_inland = 200                   # distance landward of coastline within which to search for cliff
+        
+        LastInd = np.argmin(abs(self.Distance - (round(self.Length/2) + dist_inland)))
+        #print(" ", self.LineID, self.ID, "LastInd=", LastInd)
+        self.CliffTopInd = LastInd
+            
+        # NH: Find first real elevation location in masked array (without creating new mask) KEEP THIS
+        idx = np.where(self.Elevation > 0)
+        idx = idx[0]                        # np.where returns tuple of array + datatype; Choose array.
+        FirstInd = idx[0]
+        #print(" ", self.LineID, self.ID, "idx=", idx, "FirstInd=", FirstInd)
+        
+        # mask distances and elevations seaward of minimum and landward of last real value
+        #Mask = self.Elevation.mask.copy()              # old bug of returning single boolean, and not array if completely unmasked
+        Mask = ma.getmaskarray(self.Elevation)          # return array of False if no mask
+        Mask[0:FirstInd] = True
+        if LastInd < len(self.Elevation):
+            Mask[LastInd+1:] = True
+        self.Elevation = ma.masked_where(Mask, self.Elevation)
+        self.Distance = ma.masked_where(Mask, self.Distance)
+        
+        # Find the minumum and maximum elevation in the masked array
+        MaxInd = np.argmax(self.Elevation)
+        MinInd = np.argmin(self.Elevation)
+        self.CliffToeInd = MinInd
+
+        # cliffed coast will have elevations > 10 m
+        # this threshold could be flexible in future
+        if np.max(self.Elevation) < 10.:
+            self.Cliff = False
+            print("Not a cliff 1")
+            return
+
+        # flag for changing position
+        CliffPositionChangeFlag = True
+
+        while CliffPositionChangeFlag:
+
+            # reset flag
+            CliffPositionChangeFlag = False
+
+            # FIRST CLIFF TOP
+
+            # Get Angle to detrend towards the coast
+            # catch divide by zero
+            if self.Distance[self.CliffToeInd] == self.Distance[LastInd]:
+                print(self.ID)
+                print("Divide by zero getting cliff top!")
+                self.Cliff = False                              # NH change: dont exit analysis, just set to false and continue. Case where hinterland is lowlying
+                return
+                #sys.exit()
+
+            Angle = np.degrees(np.arctan((self.Elevation[LastInd]-self.Elevation[self.CliffToeInd]) 
+                                        / (self.Distance[LastInd]-self.Distance[self.CliffToeInd])))
+            
+            # Get detrended elevation
+            ElevDetrend = ((self.Elevation-self.Elevation[self.CliffToeInd])+(self.Distance[self.CliffToeInd]-self.Distance) \
+                            * np.tan(np.radians(Angle)))
+
+            # mask values beyond the peak elevation and seaward of the toe
+            Mask = self.Elevation.mask.copy()
+            Mask[0:self.CliffToeInd] = True
+            Mask[LastInd:] = True
+            ElevDetrend = ma.masked_where(Mask,ElevDetrend)
+            
+            # Find Maximum detrended elevation. Must be positive to be considered a change in cliff top position
+            if ((np.argmax(ElevDetrend) < self.CliffTopInd) and (ElevDetrend[np.argmax(ElevDetrend)] > 0.001)):
+                self.CliffTopInd = np.argmax(ElevDetrend)
+                CliffPositionChangeFlag = True
+             
+            # THEN CLIFF TOE
+
+            # Get Angle to detrend towards the coast
+            # catch divide by zero
+            if self.Distance[self.CliffTopInd] == self.Distance[MinInd]:
+                print(self.ID)
+                print("Divide by zero getting cliff toe!")
+                sys.exit()
+
+            Angle = np.degrees(np.arctan((self.Elevation[self.CliffTopInd]-self.Elevation[MinInd]) 
+                                        / (self.Distance[self.CliffTopInd]-self.Distance[MinInd])))
+            
+            # Get detrended elevation
+            ElevDetrend = ((self.Elevation-self.Elevation[MinInd]) + (self.Distance[MinInd] - self.Distance) \
+                            * np.tan(np.radians(Angle)))
+
+            # mask values beyond the cliff top
+            Mask = self.Elevation.mask.copy()
+            Mask[self.CliffTopInd:] = True
+            ElevDetrend = ma.masked_where(Mask, ElevDetrend)
+                            
+            # Find Minimum detrended elevation, must be negative to be considered a low (probably never a worry)
+            if ((np.argmin(ElevDetrend) > self.CliffToeInd) and (ElevDetrend[np.argmin(ElevDetrend)] < -0.001)):
+                #print("Cliff Toe change from", self.Distance[self.CliffToeInd],"to", self.Distance[np.argmin(ElevDetrend)])
+                self.CliffToeInd = np.argmin(ElevDetrend)
+                CliffPositionChangeFlag = True
+
+        # Check if found a cliff
+        self.CliffHeight = self.Elevation[self.CliffTopInd]-self.Elevation[self.CliffToeInd]
+        self.CliffSlope = self.CliffHeight/(self.Distance[self.CliffTopInd]-self.Distance[self.CliffToeInd]) 
+        
+        # if cliff top is highest point, not a cliff, likely a barrier
+        if self.CliffTopInd == MaxInd:
+            self.Cliff = False
+            print(" ", self.LineID, self.ID, "Not a cliff 2:", self.Distance[self.CliffTopInd])
+
+        elif np.abs(self.Distance[self.CliffTopInd]-self.Distance[MaxInd]) < 10.:
+            self.Cliff = False
+            print(" ", self.LineID, self.ID, "Not a cliff 3:", self.Distance[self.CliffTopInd])
+        
+        elif (self.CliffSlope > 0.6) or (self.CliffHeight > 15.):
+            self.Cliff = True
+            print(" ", self.LineID, self.ID, "CLIFF:", self.Distance[self.CliffToeInd], self.Distance[self.CliffTopInd])
+                    
+        else:
+            self.Cliff = False
+            print(" ", self.LineID, self.ID, "Not a cliff 4")
 
     def AnalyseRoughness(self, Elev):
 
@@ -1421,7 +1766,7 @@ class Transect:
             NewInd = np.argmax(ElevDetrend)
             
             #print(Counter)                         # NH DEBUG
-            #print(f"FirstInd={FirstInd}, LastInd={LastInd}, MaxInd={MaxInd}, NewInd={NewInd}") 
+            #print(f"a)FirstInd={FirstInd}, LastInd={LastInd}, MaxInd={MaxInd}, NewInd={NewInd}") 
             #print(f"FrontTopInd={self.FrontTopInd}, FrontToeInd={self.FrontToeInd}, BackTopInd={self.BackTopInd}")
             
             if (NewInd == FirstInd):
@@ -1480,16 +1825,22 @@ class Transect:
             ElevDetrend = ma.masked_where(Mask, ElevDetrend)
             NewInd = np.argmin(ElevDetrend)
             
+            #print(Counter)                         # NH DEBUG
+            #print(ElevDetrend)
+            #print(f"b)FirstInd={FirstInd}, LastInd={LastInd}, MaxInd={MaxInd}, NewInd={NewInd}") 
+            
             # Find Minimum detrended elevation, must be negative to be considered a low 
             if ((NewInd > self.FrontToeInd) and (ElevDetrend[NewInd] < -0.001)):
                 self.FrontToeInd = NewInd
                 BarrierPositionChangeFlag = True
+                #print("*")                         # NH DEBUG
             
             # Must also be above MHWS 
             # # only check this once   
             if (ElevMasked[self.FrontToeInd] < self.MHWS) and (MHWSFlag == False):
                 
                 MHWSFlag = True
+                #print("%")                         # NH DEBUG
 
                 # find MHWS as minimum point and check index is one node seaward of MHWS mark
                 Mask[:self.FrontToeInd] = True
@@ -1499,7 +1850,11 @@ class Transect:
 
                 self.FrontToeInd = NewInd
                 BarrierPositionChangeFlag = True
-                
+            
+            # NH DEBUG
+            #print(f"c)FirstInd={FirstInd}, LastInd={LastInd}, MaxInd={MaxInd}, NewInd={NewInd}") 
+            #print(f"FrontTopInd={self.FrontTopInd}, FrontToeInd={self.FrontToeInd}, BackTopInd={self.BackTopInd}")  
+            
         # check toe is not inland of barrier due to MHWS     
         if not self.FrontTopInd > self.FrontToeInd:
             print("\n\tNot a barrier 6")
@@ -1542,6 +1897,13 @@ class Transect:
             
             # reset flag
             BarrierPositionChangeFlag = False
+            
+            # catch divide by zero
+            if DistanceMasked[self.FrontTopInd] == DistanceMasked[MinInd]:
+                print(self.LineID, self.ID)
+                print(DistanceMasked[self.FrontTopInd], DistanceMasked[MinInd], self.FrontTopInd, MinInd, LastInd)
+                print("Divide by zero getting back toe!")
+                sys.exit()
 
             # Get Angle to detrend towards the coast
             Angle = np.degrees(np.arctan((ElevMasked[MinInd]-ElevMasked[self.FrontTopInd]) 
@@ -1567,8 +1929,14 @@ class Transect:
 
             # THEN Back Top
             
-            # Get Angle to detrend towards away from the coast
+            # catch divide by zero
+            if DistanceMasked[self.FrontTopInd] == DistanceMasked[self.BackToeInd]:
+                print(self.LineID, self.ID)
+                print(DistanceMasked[self.FrontTopInd], DistanceMasked[self.BackToeInd], self.FrontTopInd, self.BackToeInd, LastInd)
+                print("Divide by zero getting back top!")
+                sys.exit()
             
+            # Get Angle to detrend towards away from the coast
             Angle = np.degrees(np.arctan((ElevMasked[self.BackToeInd]-ElevMasked[self.FrontTopInd])
                                         / (DistanceMasked[self.BackToeInd]-DistanceMasked[self.FrontTopInd])))
             
@@ -1626,6 +1994,446 @@ class Transect:
         
         # switch flag to indicate a barrier has been found
         self.Barrier = True
+    
+    def FindBarrier2(self, FrontToeMin=None): #(self, SeawardMask=None, LandwardMask=None, FrontToeMin=None):
+        
+        """
+        Description goes here
+        MDH, June 2019
+        
+        Toe detection revised
+        NH Dec 2023
+        
+        SeawardMask: Distance from the start of the transect up to which to mask (not look for barrier)
+        LandwardMask: Distance from the start of the transect beyond which NOT to search for coastal barrier
+        FrontToeMin: Minimum negative detrended elevation for new front toe
+        
+        """
+        
+        # Check if rocky and dont look for barrier on rocky coast
+        if self.Rocky:
+            print("\n\tNot a barrier 1")
+            self.Barrier = False
+            return
+
+        # Check if a cliff is present and only analyse topography up to the cliff toe
+        # when looking for a barrier
+        #Mask = self.Elevation.mask.copy()              # Problem: this returns boolean value (not array) of False when no masked elements
+        Mask = ma.getmaskarray(self.Elevation)          # Return the mask of a masked array, or full boolean array of False.
+        if self.Cliff:
+            Mask[self.CliffToeInd+1:] = True
+        
+        # mask below sea level, including tide, in future
+        Mask[self.Elevation < 0] = True
+        
+        # Bodge: set first (most seaward) element's mask to avoid compile error when no mask is set
+        Mask[0] = True
+        
+        # Mask seaward and landward, if set. To accommodate long transects and low coastal barriers that are hard to detect
+        if (self.SeawardMask > 0):
+            Mask[self.Distance < self.SeawardMask] = True
+        if (self.LandwardMask > 0):
+            Mask[self.Distance > self.LandwardMask] = True
+            
+        # Minimum negative detrended elevation for new FrontToe. Default is -0.001 m. 
+        # Larger values (-0.2) work better for dunes with clear inflections. Smaller values (-0.001) better for flat berms.
+        if (FrontToeMin < 0):
+            Tmin = FrontToeMin
+        else:
+            Tmin = -0.001
+
+        # apply mask
+        ElevMasked = ma.masked_where(Mask, self.Elevation)
+        DistanceMasked = ma.masked_where(Mask, self.Distance)
+
+        # check that the whole topography has not been masked
+        # this would indicate there is no barrier
+        if ElevMasked.mask.all():
+            print("\n\tNot a barrier 2")
+            self.Barrier = False
+            return
+
+        # Find the highest point to start from
+        MaxInd = np.argmax(ElevMasked)
+        self.FrontTopInd = MaxInd
+
+        # if highest point is not above MHWS then cant be a barrier
+        if not self.MHWS:
+            print("No MHWS data for " + self.LineID + ", " + self.ID)
+            sys.exit()
+        elif not ElevMasked[MaxInd]:
+            print("No value for ElevMasked[MaxInd]" + self.LineID + ", " + self.ID)
+            sys.exit()
+        if ElevMasked[MaxInd] < self.MHWS:
+            print("\n\tNot a barrier 3")
+            self.Barrier = False
+            return
+
+        # Find first real elevation location in masked array
+        FirstInd = np.transpose(ElevMasked.nonzero())[0][0]
+        self.FrontToeInd = MaxInd ##FirstInd
+        
+        # Find last real elevation location in masked array
+        LastInd = np.transpose(ElevMasked.nonzero())[-1][0]
+
+        # check highest point is not on seaward end
+        if MaxInd == FirstInd:
+            print("\n\tNot a barrier 4")
+            self.Barrier = False
+            return
+
+        # flag for changing position
+        # we'll keep applygin the barrier finder until the 
+        # top and toe positions dont change
+        BarrierPositionChangeFlag = True
+
+        Counter = 0
+        MHWSFlag = False
+
+        while BarrierPositionChangeFlag:
+
+            Counter += 1                            # NH DEBUG
+            
+            # reset flag
+            BarrierPositionChangeFlag = False
+
+            # Get Angle to detrend towards the coast
+            # catch divide by zero
+            if DistanceMasked[self.FrontTopInd] == DistanceMasked[FirstInd]:
+                print("")
+                print(self.ID)
+                print("Divide by zero getting top!")
+                print(DistanceMasked)
+                print(self.FrontTopInd, FirstInd)
+                sys.exit()
+
+            # Get Angle to detrend towards the coast
+            Angle = np.degrees(np.arctan((ElevMasked[self.FrontTopInd]-ElevMasked[FirstInd]) 
+                                        / (DistanceMasked[self.FrontTopInd]-DistanceMasked[FirstInd])))
+        
+            # Get detrended elevation
+            ElevDetrend = ((ElevMasked-ElevMasked[FirstInd])+(DistanceMasked[FirstInd]-DistanceMasked) \
+                                * np.tan(np.radians(Angle)))
+
+            # mask values beyond the peak
+            Mask = ElevMasked.mask.copy()              # Problem: this returns boolean value (not array) of False when no masked elements
+            Mask[0:FirstInd] = True
+            if self.FrontTopInd < LastInd:          ## NH ADD: Catch when highest elevation is the last node (self.FrontTopInd=MaxInd=LastInd). Prevents corrupt indexing.
+                Mask[self.FrontTopInd+1:] = True
+            ElevDetrend = ma.masked_where(Mask, ElevDetrend)
+            NewInd = np.argmax(ElevDetrend)
+            
+            #print(Counter)                         # NH DEBUG
+            #print(f"a)FirstInd={FirstInd}, LastInd={LastInd}, MaxInd={MaxInd}, NewInd={NewInd}") 
+            #print(f"FrontTopInd={self.FrontTopInd}, FrontToeInd={self.FrontToeInd}, BackTopInd={self.BackTopInd}")
+            
+            if (NewInd == FirstInd):
+                #print(f"{Counter}, Setting NewInd = MaxInd")
+                NewInd = MaxInd
+            
+            # Find Maximum detrended elevation. Original: If at end of transect then not a barrier
+            # NH edit: rather than discard transect, keep as potential barrier and set flag that hinterland is higher than barrier crest.
+            if (NewInd == LastInd):
+                print("LastInt highest") #("\n\tNot a barrier 5")
+                
+                #print(self.LineID, self.ID)         # NH DEBUG
+                #print(f"FirstInd={FirstInd}, LastInd={LastInd}, MaxInd={MaxInd}, NewInd={NewInd}")
+                #print(f"FrontTopInd={self.FrontTopInd}, FrontToeInd={self.FrontToeInd}")
+                #plt.plot(self.Distance,ElevMasked,'k-')
+                #plt.plot(self.Distance[self.FrontTopInd],self.Elevation[self.FrontTopInd],'bo')
+                #plt.plot(self.Distance[self.FrontToeInd],self.Elevation[self.FrontToeInd],'bs')
+                #plt.plot(self.Distance[self.BackTopInd],self.Elevation[self.BackTopInd],'ro')
+                #plt.plot(self.Distance[self.BackToeInd],self.Elevation[self.BackToeInd],'rs')
+                #plt.plot(self.Distance,ElevDetrend,'r-')
+                #plt.show()
+                #sys.exit()
+                
+                #self.Barrier = False
+                #return
+                self.HinterlandHigher = True
+
+            # Must be above MHWS to be considered a barrier top
+            # NH edit: Replace elif with if to align with not treating previous if statement as error.
+            if ((NewInd < self.FrontTopInd) and (ElevDetrend[NewInd] > 0.001) and (ElevMasked[NewInd] > self.MHWS)):
+                self.FrontTopInd = np.argmax(ElevDetrend)
+                BarrierPositionChangeFlag = True
+
+            # THEN Barrier TOE
+
+            # Get Angle to detrend towards the coast
+            # catch divide by zero
+            if DistanceMasked[self.FrontToeInd] == DistanceMasked[FirstInd]:
+                print(self.ID)
+                print(DistanceMasked[self.FrontToeInd], DistanceMasked[FirstInd])
+                print("Divide by zero getting toe!")
+                sys.exit()
+
+            Angle = np.degrees(np.arctan((ElevMasked[self.FrontToeInd]-ElevMasked[FirstInd]) 
+                                        / (DistanceMasked[self.FrontToeInd]-DistanceMasked[FirstInd])))
+            
+            # Get detrended elevation
+            ElevDetrend = ((ElevMasked-ElevMasked[FirstInd]) \
+             + (DistanceMasked[FirstInd] - DistanceMasked) * np.tan(np.radians(Angle)))
+
+            # mask values beyond the barrier front top
+            Mask = ElevMasked.mask.copy()              
+            #Mask[:self.FrontToeInd] = True
+            if self.FrontToeInd < LastInd:            ## NH ADD: Catch when highest elevation is the last node (self.FrontTopInd=MaxInd=LastInd). Prevents corrupt indexing.
+                Mask[self.FrontToeInd+1:] = True
+            ElevDetrend = ma.masked_where(Mask, ElevDetrend)
+            NewInd = np.argmin(ElevDetrend)
+            
+            #print(Counter)                         # NH DEBUG
+            #print(ElevDetrend)
+            #print(f"b)FirstInd={FirstInd}, LastInd={LastInd}, MaxInd={MaxInd}, NewInd={NewInd}") 
+            
+            # Find Minimum detrended elevation, must be negative to be considered a low 
+            if ((NewInd < self.FrontToeInd) and (ElevDetrend[NewInd] < Tmin) and (MHWSFlag == False)):       # don't keep searching below current toe elevation if previous toe was < MHWS elevation
+                self.FrontToeInd = NewInd
+                BarrierPositionChangeFlag = True
+                #print("*")                         # NH DEBUG
+            
+            # Must also be seaward of FrontTopInd (NH). If toe landward of top, set toe index to front top index.
+            if self.FrontToeInd > self.FrontTopInd:
+                self.FrontToeInd = self.FrontTopInd
+                BarrierPositionChangeFlag = True
+            
+            # Must also be above MHWS 
+            # # only check this once   
+            if (ElevMasked[self.FrontToeInd] < self.MHWS) and (MHWSFlag == False):
+                
+                MHWSFlag = True
+                #print("%")                         # NH DEBUG
+
+                # find MHWS as minimum point and check index is one node seaward of MHWS mark
+                Mask[:self.FrontToeInd] = True
+                NewInd = np.argmin(np.abs(ma.masked_where(Mask, ElevMasked)-self.MHWS))
+                if ElevMasked[NewInd] > self.MHWS:
+                    NewInd -= 1
+
+                self.FrontToeInd = NewInd
+                BarrierPositionChangeFlag = True
+            
+            # NH DEBUG
+            #print(f"c)FirstInd={FirstInd}, LastInd={LastInd}, MaxInd={MaxInd}, NewInd={NewInd}") 
+            #print(f"FrontTopInd={self.FrontTopInd}, FrontToeInd={self.FrontToeInd}, BackTopInd={self.BackTopInd}")
+           
+            
+        # check toe is not inland of barrier due to MHWS     
+        if not self.FrontTopInd > self.FrontToeInd:
+            print("\n\tNot a barrier 6")
+            self.Barrier = False
+            return
+
+        # Check if coincides with a cliff
+        if self.FrontTopInd == LastInd:
+            print("\n\tNot a barrier 7")
+            self.Barrier = False
+            return
+
+        # this needs more work
+        self.FrontHeight = self.Elevation[self.FrontTopInd]-self.Elevation[self.FrontToeInd]
+        self.FrontSlope = self.FrontHeight/(self.Distance[self.FrontTopInd]-self.Distance[self.FrontToeInd])
+        
+        # default back barrier positions
+        self.BackTopInd = self.FrontTopInd
+        Mask = ElevMasked.mask.copy()                      
+        Mask[0:self.FrontTopInd] = True
+        ElevMasked = ma.masked_where(Mask,ElevMasked)
+
+        # NH: Back barrier detection: Choose MinInd=LastInd (most landward unmasked data, thus within 200 m of coast)
+        MinInd = LastInd
+        self.BackToeInd = MinInd
+            
+        
+        
+        # flag for changing position
+        BarrierPositionChangeFlag = True
+        
+        while BarrierPositionChangeFlag:
+            
+            # FIRST Back Barrier TOE
+            
+            # reset flag
+            BarrierPositionChangeFlag = False
+            
+            # catch divide by zero
+            if DistanceMasked[self.FrontTopInd] == DistanceMasked[MinInd]:
+                print(self.LineID, self.ID)
+                print(DistanceMasked[self.FrontTopInd], DistanceMasked[MinInd], self.FrontTopInd, MinInd, LastInd)
+                print("Divide by zero getting back toe!")
+                sys.exit()
+
+            # Get Angle to detrend towards the coast - NH: This will only execute once as FrontTopInd and MinInd don't change. If same as FindCliff, this should be between MinInd and BackTopInd
+            Angle = np.degrees(np.arctan((ElevMasked[MinInd]-ElevMasked[self.FrontTopInd]) 
+                                        / (DistanceMasked[MinInd]-DistanceMasked[self.FrontTopInd])))
+            
+            # Get detrended elevation
+            ElevDetrend = ((ElevMasked-ElevMasked[self.FrontTopInd]) + (DistanceMasked[self.FrontTopInd] - DistanceMasked) \
+                            * np.tan(np.radians(Angle)))
+
+            # mask values seaward of the barrier front top
+            Mask = ElevMasked.mask.copy()              
+            Mask[0:self.BackTopInd] = True
+            Mask[MinInd+1:] = True
+            ElevDetrend = ma.masked_where(Mask, ElevDetrend)
+            NewInd = np.argmin(ElevDetrend)
+            #plt.plot(DistanceMasked,ElevDetrend,'r-')
+            
+            # Find Minimum detrended elevation, must be negative to be considered a low (probably never a worry)
+            if not NewInd == self.BackToeInd:
+                if ((NewInd < self.BackToeInd) and (ElevDetrend[NewInd] < -0.001) and (NewInd > self.BackTopInd)):
+                    self.BackToeInd = NewInd
+                    BarrierPositionChangeFlag = True
+
+            # THEN Back Top
+            
+            # catch divide by zero
+            if DistanceMasked[self.FrontTopInd] == DistanceMasked[self.BackToeInd]:
+                print(self.LineID, self.ID)
+                print(DistanceMasked[self.FrontTopInd], DistanceMasked[self.BackToeInd], self.FrontTopInd, self.BackToeInd, LastInd)
+                print("Divide by zero getting back top!")
+                sys.exit()
+            
+            # Get Angle to detrend towards away from the coast
+            Angle = np.degrees(np.arctan((ElevMasked[self.BackToeInd]-ElevMasked[self.FrontTopInd])
+                                        / (DistanceMasked[self.BackToeInd]-DistanceMasked[self.FrontTopInd])))
+            
+            # Get detrended elevation
+            ElevDetrend = ((ElevMasked-ElevMasked[self.FrontTopInd])+(DistanceMasked[self.FrontTopInd]-DistanceMasked) \
+                            * np.tan(np.radians(Angle)))
+
+            # mask values up to the peak
+            Mask = ElevMasked.mask.copy()
+            Mask[0:self.FrontTopInd] = True
+            Mask[self.BackToeInd+1:] = True
+            ElevDetrend = ma.masked_where(Mask,ElevDetrend)
+            NewInd = np.argmax(ElevDetrend)
+            
+            # Find Maximum detrended elevation. Must be positive to be considered a change in barrier back top position
+            if not self.BackTopInd == NewInd:
+                if ((NewInd < self.BackToeInd) and (ElevDetrend[np.argmax(ElevDetrend)] > 0.001)):
+                    self.BackTopInd = np.argmax(ElevDetrend)
+                    BarrierPositionChangeFlag = True
+                    
+        if self.BackTopInd == LastInd:
+            print("\n\tNot a barrier 8")
+            self.Barrier = False
+            return        
+            
+        # Get Barrier Crest
+        #Mask = self.Elevation.mask.copy()              # Problem: this returns boolean value (not array) of False when no masked elements
+        Mask = ma.getmaskarray(self.Elevation)          # Return the mask of a masked array, or full boolean array of False.
+        Mask[0:self.FrontToeInd] = True
+        Mask[self.BackToeInd+1:] = True                 # NH bug fix: exclude all elevations beyond BackToeInd, not just the single elev at BackToeInd
+        ElevMasked = ma.masked_where(Mask,self.Elevation)
+        self.CrestInd = ma.argmax(ElevMasked)
+        self.CrestElevation = ElevMasked[self.CrestInd]
+            
+        # Calculate Barrier Height, front and back
+        self.FrontHeight = self.Elevation[self.FrontTopInd]-self.Elevation[self.FrontToeInd]
+        self.BackHeight = self.Elevation[self.BackTopInd]-self.Elevation[self.BackToeInd]
+        
+        # Calculate Barrier Width, top and bottom
+        self.ToeWidth = np.abs(self.Distance[self.FrontToeInd]-self.Distance[self.BackToeInd])
+        self.TopWidth = np.abs(self.Distance[self.FrontTopInd]-self.Distance[self.BackTopInd])
+        
+        # Calculate Slope, front and back
+        self.FrontSlope = self.FrontHeight/(self.Distance[self.FrontTopInd]-self.Distance[self.FrontToeInd])
+        self.BackSlope = self.BackHeight/(self.Distance[self.BackTopInd]-self.Distance[self.BackToeInd])
+        
+        # Volume m3/m
+        Start, End = ma.notmasked_edges(self.Distance)
+        self.DistanceSpacing = self.Distance[Start+1]-self.Distance[Start] # temporary fix
+        
+        self.BarrierVolume = ma.sum(ElevMasked)*self.DistanceSpacing
+        
+        self.BarrierVolume -= 0.5 * (ElevMasked[self.FrontToeInd] + ElevMasked[self.BackToeInd-1]) \
+                                 * np.abs(self.Distance[self.BackToeInd-1] - self.Distance[self.FrontToeInd])
+        
+        # switch flag to indicate a barrier has been found
+        self.Barrier = True
+    
+    def SaveBarrierElevations(self):
+        
+        """
+        Use the dune toe and crest indexes from FindBarrier2 to save elevations to Transect
+        Only save if transect is a barrier. Else keep as None.
+        
+        NH, Jan 2024
+        
+        """
+        if self.Barrier:
+            self.H_FrontToe = self.Elevation[self.FrontToeInd]
+            self.H_FrontTop = self.Elevation[self.FrontTopInd]
+            self.H_BackToe = self.Elevation[self.BackToeInd]
+            self.H_BackTop = self.Elevation[self.BackTopInd]
+            self.H_Crest = self.Elevation[self.CrestInd]
+    
+    def ExtractHinterlandElevSlope(self):
+    
+        """
+        Extract mean elevation of hinterland landward of 
+        back barrier toe
+        
+        NH, Feb 2024
+        
+        """
+        
+        if not self.Barrier:
+            return
+        
+        # If barrier, create new unmasked Elevation array 
+        data = self.Elevation
+        x = np.ma.array(data, mask = False)             # This still has original mask as applied in FindBarrier2. self.Elevation is still masked!
+        x.mask = False                                  # force mask reset. unmasked Elevation data now in x.data
+        #print(x.data)
+        
+        # Create new mask: all seaward of BackToe is masked
+        Mask = ma.getmask(x)
+        Mask[0:self.BackToeInd] = True
+        HinterlandElev = np.ma.array(x, mask=Mask) 
+        #print(HinterlandElev)
+        
+        # Calcualte mean
+        self.HinterlandElev = np.mean(HinterlandElev)
+        #print(" ",self.HinterlandElev)
+        
+        # Create new unmasked Distance array
+        data = self.Distance
+        x = np.ma.array(data, mask = False)             # This still has original mask as applied in FindBarrier2. self.Elevation is still masked!
+        x.mask = False 
+        
+        # Use above mask to mask all points seaward of back toe
+        HinterlandDist = np.ma.array(x, mask=Mask) 
+        
+        # Calculate slope
+        self.HinterlandSlope = (HinterlandElev[-1] - HinterlandElev[self.BackToeInd+1])/(HinterlandDist[-1] - HinterlandDist[self.BackToeInd+1])
+        #print(" ", self.HinterlandSlope)
+    
+    def ClearTopographyMasks(self):
+        
+        """
+        Clear Transect.Distance and Transect.Elevation masks set during FindCliff2 and FindBarrier2
+        NH, June 2024
+        
+        """
+        
+        # Create new unmasked Elevation array
+        data = self.Elevation
+        x = np.ma.array(data, mask = False)       
+        x.mask = False                                  # force mask reset. unmasked Elevation data now in x.data
+        self.Elevation = x.data
+        
+        # Create new unmasked Distance array
+        data = self.Distance
+        x = np.ma.array(data, mask = False)             
+        x.mask = False 
+        self.Distance = x.data
+        
+        #print("E=", self.Elevation)                    # works
+        #print("D=", self.Distance)
+        
     
     def ExtractBarrierWidthVolume(self,Elevation=None):
 
@@ -2992,9 +3800,9 @@ class Transect:
         f = open(Filename,'w')
         
         # write headers
-        f.write("X" + delimiter + "Y" + "\n")
-        f.write(str(self.StartNode.X) + delimiter + str(self.StartNode.Y) + "\n")
-        f.write(str(self.EndNode.X) + delimiter + str(self.EndNode.Y) + "\n")
+        #f.write("X" + delimiter + "Y" + "\n")
+        #f.write(str(self.StartNode.X) + delimiter + str(self.StartNode.Y) + "\n")
+        #f.write(str(self.EndNode.X) + delimiter + str(self.EndNode.Y) + "\n")
         f.write("Distance" + delimiter + "ZIDW" + delimiter + "ZMin" + delimiter + "ZMax" +"\n")
 
         #loop through transect and write data

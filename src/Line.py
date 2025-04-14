@@ -598,7 +598,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             if not LineObj:
                 continue
             elif (LineObj.geom_type == "MultiLineString"):
-                for ThisLine in LineObj.geoms:
+                for ThisLine in LineObj.geoms:              # NH fix compile error: "MultiLineString object is not iterable". Original: for ThisLine in LineObj
                     LineList.append(ThisLine)
             elif (LineObj.geom_type == "LineString"):
                 LineList.append(LineObj)
@@ -621,7 +621,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             if not LineObj:
                 continue
             elif (LineObj.geom_type == "MultiLineString"):
-                for ThisLine in LineObj.geoms:
+                for ThisLine in LineObj.geoms:          # NH fix compile error: "MultiLineString object is not iterable". Original: for ThisLine in LineObj
                     LineList.append(ThisLine)
             elif (LineObj.geom_type == "LineString"):
                 LineList.append(LineObj)
