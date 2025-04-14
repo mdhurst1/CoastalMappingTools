@@ -20,6 +20,7 @@ import shapefile
 import itertools
 import rasterio
 import geopandas as gp
+import pandas as pd
 from shapely.geometry import Point, Polygon, LineString, MultiLineString, MultiPoint
 from shapely.ops import nearest_points, linemerge
 
@@ -703,26 +704,33 @@ class Coast:
         """
 
         # print action to screen
-        #print("Coast.WriteLinesShp: Writing a list of lines to a polyline shapefile")
+        print("Coast.WriteLinesShp: Writing a list of lines to a polyline shapefile")
 
         # open new shapefile        
         WL = shapefile.Writer(CoastShp,shapeType=shapefile.POLYLINE)
+        print("a")
        
         # Create Fields
         self.Fields = [('DeletionFlag','C',1,0),['Line_ID', 'C', 3, 0],['Method', 'C', 5, 0]]
         WL.fields = self.Fields[1:] 
+        print("b")
+        i=0
 
         for Line in self.__dict__[DictionaryKey]:
             
+            print(i)
+            i = i+1
+            print(Line)
+            
             if Smooth:
                 Line.SmoothLine(WindowSize=11)
-
+            print("\tc")
             # Find Loops
             Line.MakeSimple()
-                
+            print("\td")   
             # get line node positions
             X, Y = Line.get_XY()
-
+            print("\te")
             if Smooth and len(X) > 5:
 
                 XSmooth = X[1:-1]
@@ -743,24 +751,27 @@ class Coast:
                 YSmooth = np.insert(YSmooth,0,Y[0])
                 X = np.append(XSmooth,X[-1])
                 Y = np.append(YSmooth,Y[-1])
-
+            print("\tf")
             # get line node positions
             WriteLine = [np.column_stack([X,Y]).tolist()]
-            
+            print("\tg")
             # generate record
             Record = [str(Line.ID),str(self.Method)]
-
+            print("\th")
             # write line and record
             WL.line(WriteLine)
             WL.record(*Record) ####### ISSUE WITH RECORDS NEEDS FIXING ########
-        
+            print("\ti")
         # close the shapefiles and clean up
         WL.close()
-            
+        print("j")  
         # create the projection file    
         f = open(CoastShp.rstrip("shp")+"prj","w")
+        print("k")
         f.write(self.Projection)
+        print("l")
         f.close()
+        print("m")
     
     def WritePatchesShp(self, DictionaryKey1, DictionaryKey2, PatchShp, Smooth=False):
 
@@ -1099,6 +1110,140 @@ class Coast:
         f.write(self.Projection)
         f.close()
 
+    def WriteStormImpactTransectsShp(self, TransectsShp, Cell):
+        
+        """
+        Write Tranects with storm impact scale data to shapefile
+        
+        NH, Novembeer 2023
+        
+        """
+        
+        print("Coast.WriteStormImpactTransectsShp: Writing coastal transects and storm impact data to shapefile for Cell", Cell)
+        
+        # open new shapefile        
+        WL = shapefile.Writer(TransectsShp,shapeType=shapefile.POLYLINE)
+        
+        # Create Fields
+        Fields = [('DeletionFlag','C',1,0), 
+        ['Cell', 'C', 4, 0], ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], ['ID', 'C', 12, 0],
+        ['Shingle', 'B', 7, 0],
+        ['Hist_Rate','N', 5, 2],
+        ['Slope_Int','N', 5, 3], 
+        ['PureGravel', 'B', 7, 0],
+        ['H_Hs','N', 5, 2],['H_Tp','N', 5, 2], ['H_Diss','B', 7, 0], ['H_R2','N', 5, 2], ['H_setup','N', 5, 2], 
+        ['H_ESL_c3','N', 5, 2], ['H_TWL','N', 5, 2], ['H_TWL_su','N', 5, 2], 
+        ['H_Toe','N', 5, 2],['H_Crest','N', 5, 2],
+        ['H_SIS', 'C', 14, 0],['H_HRoom','N', 5, 2], ['Barr_Vol','N', 5, 2], 
+        ['Hint_Elev','N', 5, 2], ['Hint_Slope','N', 5, 2],
+        ['Ass1_Dist','N', 5, 2], ['Ass1_Elev','N', 5, 2], ['Rd1_Dist','N', 5, 2], ['Rd1_Elev','N', 5, 2],
+        ['Rail1_Dist','N', 5, 2], ['Rail1_Elev','N', 5, 2], ['Prop1_Dist','N', 5, 2], ['Prop1_Elev','N', 5, 2],
+        ['M45_Hs','N', 5, 2],['M45_Tp','N', 5, 2], ['M45_Diss','B', 7, 0], ['M45_R2','N', 5, 2], ['M45_setup','N', 5, 2], 
+        ['M45_ESL_c3','N', 5, 2], ['M45_TWL','N', 5, 2], ['M45_TWL_su','N', 5, 2], 
+        ['M45_Toe','N', 5, 2],['M45_Crest','N', 5, 2],['M45_Drown','B', 7, 0],
+        ['M45_SIS', 'C', 14, 0],['M45_HRoom','N', 5, 2],
+        ['E45_Hs','N', 5, 2],['E45_Tp','N', 5, 2], ['E45_Diss','B', 7, 0], ['E45_R2','N', 5, 2], ['E45_setup','N', 5, 2], 
+        ['E45_ESL_c3','N', 5, 2], ['E45_TWL','N', 5, 2], ['E45_TWL_su','N', 5, 2], 
+        ['E45_Toe','N', 5, 2],['E45_Crest','N', 5, 2],['E45_Drown','B', 7, 0],
+        ['E45_SIS', 'C', 14, 0],['E45_HRoom','N', 5, 2],
+        ['M85_Hs','N', 5, 2],['M85_Tp','N', 5, 2], ['M85_Diss','B', 7, 0], ['M85_R2','N', 5, 2], ['M85_setup','N', 5, 2], 
+        ['M85_ESL_c3','N', 5, 2], ['M85_TWL','N', 5, 2], ['M85_TWL_su','N', 5, 2], 
+        ['M85_Toe','N', 5, 2],['M85_Crest','N', 5, 2],['M85_Drown','B', 7, 0],
+        ['M85_SIS', 'C', 14, 0],['M85_HRoom','N', 5, 2],
+        ['E85_Hs','N', 5, 2],['E85_Tp','N', 5, 2], ['E85_Diss','B', 7, 0], ['E85_R2','N', 5, 2], ['E85_setup','N', 5, 2], 
+        ['E85_ESL_c3','N', 5, 2], ['E85_TWL','N', 5, 2], ['E85_TWL_su','N', 5, 2], 
+        ['E85_Toe','N', 5, 2],['E85_Crest','N', 5, 2],['E85_Drown','B', 7, 0],
+        ['E85_SIS', 'C', 14, 0],['E85_HRoom','N', 5, 2]
+        ]
+        
+        WL.fields = Fields[1:]
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+
+                # get transect node positions
+                X, Y = Transect.get_XY()
+                
+                WriteTransect = [np.column_stack([X,Y]).tolist()]
+
+                # Create the record this could become a function in transect object...
+                if Transect.Barrier:
+                    Record = [str(Cell), str(Line.ID), str(Transect.ID), str(Cell) + "_" + str(Line.ID) + "_" + str(Transect.ID),
+                                Transect.Shingle,
+                                Transect.Hist_Rate,                
+                                Transect.IntertidalSlope, 
+                                Transect.PureGravel, 
+                                Transect.H_Hs_p99, Transect.H_Tp_p99, Transect.H_Dissipative, Transect.H_R2, Transect.H_setup, 
+                                Transect.H_ESL_c3, Transect.H_TWL, Transect.H_TWL_setup,
+                                Transect.H_FrontToe, Transect.H_Crest,
+                                Transect.H_StormImpactScale, Transect.H_Headroom, Transect.BarrierVolume, 
+                                Transect.HinterlandElev, Transect.HinterlandSlope,
+                                Transect.FirstAssetDist, Transect.FirstAssetElev, Transect.FirstRoadDist, Transect.FirstRoadElev,
+                                Transect.FirstRailDist, Transect.FirstRailElev, Transect.FirstPropertyDist, Transect.FirstPropertyElev,
+                                Transect.M45_Hs_p99, Transect.M45_Tp_p99, Transect.M45_Dissipative, Transect.M45_R2, Transect.M45_setup, 
+                                Transect.M45_ESL_c3, Transect.M45_TWL, Transect.M45_TWL_setup,
+                                Transect.M45_FrontToe, Transect.M45_Crest, Transect.M45_BarrierDrowning,
+                                Transect.M45_StormImpactScale, Transect.M45_Headroom,
+                                Transect.E45_Hs_p99, Transect.E45_Tp_p99, Transect.E45_Dissipative, Transect.E45_R2, Transect.E45_setup, 
+                                Transect.E45_ESL_c3, Transect.E45_TWL, Transect.E45_TWL_setup,
+                                Transect.E45_FrontToe, Transect.E45_Crest, Transect.E45_BarrierDrowning, 
+                                Transect.E45_StormImpactScale, Transect.E45_Headroom,
+                                Transect.M85_Hs_p99, Transect.M85_Tp_p99, Transect.M85_Dissipative, Transect.M85_R2, Transect.M85_setup, 
+                                Transect.M85_ESL_c3, Transect.M85_TWL, Transect.M85_TWL_setup,
+                                Transect.M85_FrontToe, Transect.M85_Crest, Transect.M85_BarrierDrowning, 
+                                Transect.M85_StormImpactScale, Transect.M85_Headroom,
+                                Transect.E85_Hs_p99, Transect.E85_Tp_p99, Transect.E85_Dissipative, Transect.E85_R2, Transect.E85_setup, 
+                                Transect.E85_ESL_c3, Transect.E85_TWL, Transect.E85_TWL_setup,
+                                Transect.E85_FrontToe, Transect.E85_Crest, Transect.E85_BarrierDrowning, 
+                                Transect.E85_StormImpactScale, Transect.E85_Headroom]
+                else:
+                    Record = [str(Cell), str(Line.ID), str(Transect.ID), str(Cell) + "_" + str(Line.ID) + "_" + str(Transect.ID),
+                                Transect.Shingle,
+                                Transect.Hist_Rate,                
+                                Transect.IntertidalSlope,
+                                Transect.PureGravel,
+                                Transect.H_Hs_p99, Transect.H_Tp_p99, Transect.H_Dissipative, Transect.H_R2, Transect.H_setup, 
+                                Transect.H_ESL_c3, Transect.H_TWL, Transect.H_TWL_setup,
+                                "", "",
+                                Transect.H_StormImpactScale, "", "", 
+                                "", "",
+                                Transect.FirstAssetDist, Transect.FirstAssetElev, Transect.FirstRoadDist, Transect.FirstRoadElev,
+                                Transect.FirstRailDist, Transect.FirstRailElev, Transect.FirstPropertyDist, Transect.FirstPropertyElev,
+                                Transect.M45_Hs_p99, Transect.M45_Tp_p99, Transect.M45_Dissipative, Transect.M45_R2, Transect.M45_setup, 
+                                Transect.M45_ESL_c3, Transect.M45_TWL, Transect.M45_TWL_setup,
+                                "", "",  "",
+                                Transect.M45_StormImpactScale, "",
+                                Transect.E45_Hs_p99, Transect.E45_Tp_p99, Transect.E45_Dissipative, Transect.E45_R2, Transect.E45_setup, 
+                                Transect.E45_ESL_c3, Transect.E45_TWL, Transect.E45_TWL_setup,
+                                "", "", "",
+                                Transect.E45_StormImpactScale, "", 
+                                Transect.M85_Hs_p99, Transect.M85_Tp_p99, Transect.M85_Dissipative, Transect.M85_R2, Transect.M85_setup, 
+                                Transect.M85_ESL_c3, Transect.M85_TWL, Transect.M85_TWL_setup,
+                                "", "", "",
+                                Transect.M85_StormImpactScale, "", 
+                                Transect.E85_Hs_p99, Transect.E85_Tp_p99, Transect.E85_Dissipative, Transect.E85_R2, Transect.E85_setup, 
+                                Transect.E85_ESL_c3, Transect.E85_TWL, Transect.E85_TWL_setup,
+                                "", "", "", 
+                                Transect.E85_StormImpactScale, ""]
+
+                # write transect and record
+                WL.line(WriteTransect)
+                try:
+                    WL.record(*Record) 
+                except:
+                    print(Transect.ID)
+                    print(Record)
+                    #print(Transect.ExtremeWidths)
+                    sys.exit()
+                
+        # close the shapefiles and clean up
+        WL.close()
+            
+        # create the projection file    
+        f = open(TransectsShp.rstrip("shp")+"prj","w")
+        f.write(self.Projection)
+        f.close()
+    
     def WriteCrestLinesShp(self, CrestLineShp):
 
         """
@@ -1371,25 +1516,119 @@ class Coast:
         f = open(Filename,'w')
         
         # write headers
-        f.write("LineID" + delimiter + "TransectID" + delimiter + "IntertidalSlope" + delimiter + "ForeshoreSlope" + delimiter +\
-                "FrontToeElev" + delimiter + "BackToeElev" + delimiter + "FrontTopElev" + delimiter + "CrestElev" + "\n")
+        f.write("LineID" + delimiter + "TransectID" + delimiter + "IntertidalSlope" + delimiter +\
+                "FrontToeElev" + delimiter + "BackToeElev" + delimiter + "FrontTopElev" + delimiter + "BackTopElev" + delimiter + "CrestElev" + delimiter +\
+                "FrontToeDist" + delimiter + "BackToeDist" + delimiter + "FrontTopDist" + delimiter + "BackTopDist" + delimiter + "CrestDist" + delimiter +\
+                "CliffToeDist" + delimiter + "CliffTopDist" + "\n")
                 
         for Line in self.CoastLines:
             for Transect in Line.Transects:
                 f.write(str(Line.ID) + delimiter)
                 f.write(str(Transect.ID) + delimiter)
-                f.write(str(Transect.IntertidalSlope) + delimiter)      # slope between MHWSIntersect and MLWSIntersect (sampled elevations)
-                f.write(str(Transect.ForeshoreSlope) + delimiter)       # slope between 0 m and MHWS (interpolated elevations)
+                f.write(str(Transect.IntertidalSlope) + delimiter)      # slope between MHWSIntersect and MLWSIntersect
+                #f.write(str(Transect.ForeshoreSlope) + delimiter)       # slope between 0 m and MHWS (interpolated elevations)
                 if Transect.Barrier:
-                    f.write(str(Transect.Elevation[Transect.FrontToeInd]) + delimiter)
-                    f.write(str(Transect.Elevation[Transect.BackToeInd]) + delimiter)
-                    f.write(str(Transect.Elevation[Transect.FrontTopInd]) + delimiter)
-                    f.write(str(Transect.Elevation[Transect.CrestInd]) + "\n")
+                    f.write(str(Transect.H_FrontToe) + delimiter)
+                    f.write(str(Transect.H_BackToe) + delimiter)
+                    f.write(str(Transect.H_FrontTop) + delimiter)
+                    f.write(str(Transect.H_BackTop) + delimiter)
+                    f.write(str(Transect.H_Crest) + delimiter)
+                    f.write(str(Transect.Distance[Transect.FrontToeInd]) + delimiter)
+                    f.write(str(Transect.Distance[Transect.BackToeInd]) + delimiter)
+                    f.write(str(Transect.Distance[Transect.FrontTopInd]) + delimiter)
+                    f.write(str(Transect.Distance[Transect.BackTopInd]) + delimiter)
+                    f.write(str(Transect.Distance[Transect.CrestInd]) + delimiter) # "\n")
                 else:
-                    f.write("NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + "\n")
+                    f.write("NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + \
+                            "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter) #"\n")
+                            
+                if Transect.Cliff:
+                    f.write(str(Transect.Distance[Transect.CliffToeInd]) + delimiter)
+                    f.write(str(Transect.Distance[Transect.CliffTopInd]) + "\n")
+                else:
+                    f.write("NaN" + delimiter + "NaN" + "\n")
                     
         f.close()
         
+    def WriteSlopesDuneParSISTextfile(self, Filename, Cell, delimiter=","):
+        
+        """
+        Writes all transect slopes and dune parameters to .csv file
+        Water levels and storm impacts for Historical (present day) scenario
+        
+        Input parameters: Filename = output filename; Cell = coastal cell name
+        
+        NH, Novembeer 2023
+        Revised July 2024
+        
+        """
+        
+        print("Coast.WriteSlopesDuneParSISTextfile: Writing transects slopes, barrier toe and crest elevations and water levels to .csv file")
+        
+        # define filename and open for writing
+        f = open(Filename,'w')
+        
+        # write headers
+        f.write("Cell" + delimiter + "LineID" + delimiter + "TransectID" + delimiter + "ID" + delimiter + "IntertidalSlope" + delimiter + "Shingle" + delimiter +\
+                "PureGravel" + delimiter + "MHWS" + delimiter + "H_ESL_c3" + delimiter + "H_R2" + delimiter + "H_setup" + delimiter + "H_TWL" + delimiter + "H_TWL_setup" + delimiter +\
+                "H_Hs" + delimiter + "H_Tp" + delimiter + "H_Steepness" + delimiter + "H_Iribarren" + delimiter +\
+                "SeawardMask" + delimiter + "LandwardMask" + delimiter +\
+                "FrontToeElev" + delimiter + "BackToeElev" + delimiter + "FrontTopElev" + delimiter + "BackTopElev" + delimiter + "CrestElev" + delimiter +\
+                "FrontToeDist" + delimiter + "BackToeDist" + delimiter + "FrontTopDist" + delimiter + "BackTopDist" + delimiter + "CrestDist" + delimiter +\
+                "StormRegime" + delimiter + "CliffToeDist" + delimiter + "CliffTopDist" + delimiter + "Asset1Dist" + delimiter + "Asset1Elev" + "\n")
+                
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                f.write(str(Cell) + delimiter)
+                f.write(str(Line.ID) + delimiter)
+                f.write(str(Transect.ID) + delimiter)
+                f.write(str(Cell) + "_" + str(Line.ID) + "_" + str(Transect.ID) + delimiter)
+                f.write(str(Transect.IntertidalSlope) + delimiter)      # slope between MHWSIntersect and MLWSIntersect
+                f.write(str(Transect.Shingle) + delimiter)
+                f.write(str(Transect.PureGravel) + delimiter)
+                f.write(str(Transect.MHWS) + delimiter)
+                f.write(str(Transect.H_ESL_c3) + delimiter)
+                f.write(str(Transect.H_R2) + delimiter)
+                f.write(str(Transect.H_setup) + delimiter)
+                f.write(str(Transect.H_TWL) + delimiter)
+                f.write(str(Transect.H_TWL_setup) + delimiter)
+                f.write(str(Transect.H_Hs_p99) + delimiter)
+                f.write(str(Transect.H_Tp_p99) + delimiter)
+                f.write(str(Transect.H_WaveSteepness) + delimiter)
+                f.write(str(Transect.H_Iribarren) + delimiter)
+                f.write(str(Transect.SeawardMask) + delimiter)
+                f.write(str(Transect.LandwardMask) + delimiter)
+                
+                if Transect.Barrier:
+                    f.write(str(Transect.H_FrontToe) + delimiter)
+                    f.write(str(Transect.H_BackToe) + delimiter)
+                    f.write(str(Transect.H_FrontTop) + delimiter)
+                    f.write(str(Transect.H_BackTop) + delimiter)
+                    f.write(str(Transect.H_Crest) + delimiter)
+                    f.write(str(Transect.Distance[Transect.FrontToeInd]) + delimiter)
+                    f.write(str(Transect.Distance[Transect.BackToeInd]) + delimiter)
+                    f.write(str(Transect.Distance[Transect.FrontTopInd]) + delimiter)
+                    f.write(str(Transect.Distance[Transect.BackTopInd]) + delimiter)
+                    f.write(str(Transect.Distance[Transect.CrestInd]) + delimiter)
+                else:
+                    f.write("NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + \
+                            "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter + "NaN" + delimiter)
+                
+                f.write(str(Transect.H_StormImpactScale) + delimiter)
+                
+                if Transect.Cliff:
+                    f.write(str(Transect.Distance[Transect.CliffToeInd]) + delimiter)
+                    f.write(str(Transect.Distance[Transect.CliffTopInd]) + delimiter)
+                else:
+                    f.write("NaN" + delimiter + "NaN" + delimiter)
+                    
+                if Transect.AssetPresent:
+                    f.write(str(Transect.FirstAssetDist) + delimiter)
+                    f.write(str(Transect.FirstAssetElev) + "\n")
+                else:
+                    f.write("NaN" + delimiter + "NaN" + "\n")
+                    
+        f.close()
     
     def MergeReverseCoastLines(self):
 
@@ -1870,7 +2109,7 @@ class Coast:
         
         for Line in self.CoastLines:
             for Transect in Line.Transects:
-                Transect.CalculateIntertidalSlope2()  
+                Transect.CalculateIntertidalSlope3()  
                 
     def GetForeshoreSlopes(self):
     
@@ -1895,11 +2134,11 @@ class Coast:
                 # check indexes valid
                 if (ihigh == -1 or ilow == -1):
                     print(f"\t{Transect.LineID}, {Transect.ID}: Indexes not valid!", ihigh, ilow)
-                    Transect.ForeshoreSlope = None
+                    Transect.ForeshoreSlope = -1
                     continue
                 if ihigh < ilow:
                     print(f"\t{Transect.LineID}, {Transect.ID}: MHWS index < coastline index!")
-                    Transect.ForeshoreSlope = None
+                    Transect.ForeshoreSlope = -1
                     continue
                 
                 # Calculate slopes
@@ -1909,14 +2148,41 @@ class Coast:
                 # Catch divide by zero
                 if dx == 0:
                     print(f"\t{Transect.LineID}, {Transect.ID}: \tdx = 0!")
-                    Transect.ForeshoreSlope = None
+                    Transect.ForeshoreSlope = -1
                     continue
                     
                 else:
                     Transect.ForeshoreSlope = dz/dx
                 
-                if __debug__:
-                    print(f"\t{Transect.LineID}, {Transect.ID}: \tihigh={ihigh}, ilow={ilow}, \tdz={dz}, \tdx={dx}, \tslope={Transect.ForeshoreSlope}")
+                #if __debug__:
+                    #print(f"\t{Transect.LineID}, {Transect.ID}: \tihigh={ihigh}, ilow={ilow}, \tdz={dz}, \tdx={dx}, \tslope={Transect.ForeshoreSlope}")
+        
+    def CheckForeshoreSlopes(self):
+    
+        """
+        Check for invalid Transect.ForeshoreSlopes (negative)
+        Set to Transect.IntertidalSlope, if this is valid
+        Else, set to None and throw exception
+        
+        NH, Jan 2024
+    
+        """
+        
+        print("Coast.CheckForeshoreSlopes: Checking foreshoreslopes are greater than 0")
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+            
+                # Foreshoreslope could not be extracted, or is actually negative (also wrong)
+                if Transect.ForeshoreSlope < 0:
+                    # if valid IntertidalSlope, copy to ForeshoreSlope
+                    if Transect.IntertidalSlope > 0:
+                        Transect.ForeshoreSlope = Transect.IntertidalSlope
+                        print(f"\t{Transect.LineID}, {Transect.ID}: \tForeshoreSlope set to IntertidalSlope = {Transect.ForeshoreSlope}")
+                    else:
+                        Transect.ForeshoreSlope = None
+                        print(f"\t{Transect.LineID}, {Transect.ID}: No valid foreshore/intertidal slopes!!")
+                        sys.exit()
         
     
     def GenerateTransectsBetweenContoursShp(self, ContourShp1, ContourShp2, Distance2Sea=8000., Distance2Land=8000., TransectSpacing=20., CheckTopology=True):
@@ -2459,8 +2725,9 @@ class Coast:
                 elif ThisLine.geom_type == "LineString":
                     MultiLines.append(ThisLine)
                 elif ThisLine.geom_type == "MultiLineString":
-                    for SubLine in ThisLine.geoms:
-                        if SubLine.geom_type == "LineString":
+                  
+for SubLine in ThisLine.geoms:                  # NH: fix compile error "MultiLineString object is not iterable"
+  if SubLine.geom_type == "LineString":
                             MultiLines.append(SubLine)
         
             MultiLines = MultiLineString(MultiLines) # NH fix compile error: "object of type LineString has no len()". Change this to be inside the else statement. 
@@ -2484,13 +2751,14 @@ class Coast:
         
         """
         Function to find the intersection between each transect and the given contour.
+        If no intersect or no input file, NodeToSave set to (0,0)
 
         NH September 2023
 
         Parameters
         ----------
         Shp : string
-            Filename for polyline shapefile containing contour
+            Filename for shapefile to intersect with transects
         NodeToSave : string
             Name of transect node in which to save intersect point
         MostSeaward : boolean
@@ -2508,35 +2776,60 @@ class Coast:
         
         print("Coast.ExtractIntersection: Finding intersection between each transect and", Shp) 
         
+        # Check if file exists. If not, set intersect to (0,0) and return
+        shapefile_path = Path(Shp)
+        if not shapefile_path.is_file():
+            print("\t NO FILE:", Shp, "Setting intersect to (0,0)")
+            
+            for Line in self.CoastLines:
+                for Transect in Line.Transects:
+                    Intersection = Point(0,0) 
+                    setattr(Transect, NodeToSave, Node(Intersection.x, Intersection.y))
+                    
+            return
+        
         # read shapefile using geopandas
         GDF = gp.read_file(Shp)
         
-        # get lines geometry
-        Lines = GDF['geometry']
+        # check for empty geometry - case when e.g. no rail within subcell and empty file was saved
+        if GDF.empty:
+            print("\t NO GEOMETRY:", Shp, "Setting intersect to (0,0)")
+            
+            for Line in self.CoastLines:
+                for Transect in Line.Transects:
+                    Intersection = Point(0,0) 
+                    setattr(Transect, NodeToSave, Node(Intersection.x, Intersection.y))
+                    
+            return
         
-        # catch situation where only one line
+        # get GeoDataFrame geometry (GeoSeries)
+        Vector = GDF['geometry']
+        #print("v1=",Vector)
+        #print(Vector.geom_type[0])
+        #return
+        
+        # if polygon, use GeoSeries.boundary to get LineString vector of the polygon outline
+        if Vector.geom_type[0] == "Polygon":
+            Vector = Vector.boundary
+            #print("v2=",Vector)
+        
         MultiLines = []
-
-        if len(Lines) == 1:
-            MultiLines = Lines[0]
         
-        # deal with invalid geometries on the fly? This is messy!
-        else:
-            for ThisLine in Lines:
-                if not ThisLine:
-                    continue
-                elif ThisLine.geom_type == "LineString":
-                    MultiLines.append(ThisLine)
-                elif ThisLine.geom_type == "MultiLineString":
-                    for SubLine in ThisLine:
-                        if SubLine.geom_type == "LineString":
-                            MultiLines.append(SubLine)
-        
-            MultiLines = MultiLineString(MultiLines) 
+        for v in Vector:
+            if not v:
+                continue
+            elif v.geom_type == "LineString":
+                MultiLines.append(v)
+            elif v.geom_type == "MultiLineString":
+                for SubLine in v.geoms:
+                    if SubLine.geom_type == "LineString":
+                        MultiLines.append(SubLine)
+    
+        MultiLines = MultiLineString(MultiLines) 
 
         # Find coordinates of intersection between transect and contour. If no intersection (0,0). Save as Transect."NodeToSave"
-        for ThisLine in self.CoastLines:
-            for Transect in ThisLine.Transects:
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
         
                 # construct linestring and find intersection
                 TransectLS = LineString([(Transect.StartNode.X,Transect.StartNode.Y), (Transect.EndNode.X,Transect.EndNode.Y)])
@@ -2545,8 +2838,8 @@ class Coast:
                     
                     # if more than one intersection, use MostSeaward flag to pick point. StartNode is in the sea. 
                     if Intersections.geom_type == "MultiPoint":
-                        if __debug__:
-                            print(Transect.LineID, Transect.ID, "\t More than one intersection!")
+                        #if __debug__:
+                            #print(Transect.LineID, Transect.ID, "\t More than one intersection!")
                         StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
                         Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections.geoms]
                         if MostSeaward:
@@ -2560,12 +2853,6 @@ class Coast:
                         
                 else:
                     Intersection = Point(0,0)
-                
-                # check if Transect contains the passed nodename as attribute 
-                if not hasattr(Transect, NodeToSave):
-                    if __debug__:
-                        print(Transect.LineID, Transect.ID, "\t Transect has no attribute", NodeToSave)
-                        print("Creating", NodeToSave)
                     
                 setattr(Transect, NodeToSave, Node(Intersection.x, Intersection.y))
                 
@@ -2573,6 +2860,255 @@ class Coast:
                     #ThisNode = getattr(Transect, NodeToSave) 
                     #print(Transect.LineID, Transect.ID, "\t", NodeToSave, Intersection, ThisNode)            
        
+    def IntersectShingle(self, Baseline, Shingle):
+        """
+        Find if transect intersects shingle habitat
+        Buffer baseline by 75m. Intersect with Shingle shapefile, save
+        Find if transect intersects this 
+        If so, set Shingle flag, to be used in extreme runup calc.
+        
+        NH, Feb 2024
+        
+        """
+        
+        print("Coast.IntersectShingle: Finding if intersection between transect and", Shingle) 
+        
+        buffer_dist = 75.0
+        
+        # Read in shapefiles as geodataframes using geopandas
+        coastline = gp.read_file(Baseline)
+        shingle = gp.read_file(Shingle)
+        
+        #print("Coastline", coastline)
+        
+        # Buffer baseline by 50 m. This way retains it as a geodataframe
+        coastline['geometry'] = coastline.geometry.buffer(buffer_dist)
+        #print("Coastline_buffered",coastline)
+        #coastline.to_file("coastline_buffered.shp")            # works
+        
+        # Intersect with Habmos B2 shingle polygon. Both inputs must be geodataframes
+        coastal_shingle = gp.overlay(coastline, shingle, how="intersection")
+        #print("Coastal shingle=",coastal_shingle['geometry'])
+        #coastal_shingle.to_file("coastal_shingle.shp")         # works
+        
+        # If transect intersects coastal shingle, set flag
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                TransectLS = LineString([(Transect.StartNode.X,Transect.StartNode.Y), (Transect.EndNode.X,Transect.EndNode.Y)])
+                # turn into geodataframe to use in gp.overlay
+                d = {'geometry':[TransectLS]}
+                #print(d)
+                transect_gdf = gp.GeoDataFrame(d, crs="EPSG:27700")
+                #print(transect_gdf)
+                intersect = gp.overlay(coastal_shingle, transect_gdf, how="intersection", keep_geom_type=False) # if keep_geom_type=True, return only geometries of the same geometry type the GeoDataFrame has, if False, return all resulting geometries
+                #print(Line.ID,"_",Transect.ID, intersect)
+                if intersect.empty:
+                    Transect.Shingle = False
+                else:
+                    Transect.Shingle = True
+                    #print("Shingle!", Line.ID,"_",Transect.ID)
+        
+    def ExtractCoastalAssets(self, Baseline, AssetShp, BufferDist, OutputPath):
+        """
+        
+        Create coastal buffer and intersect with given asset shapefile 
+        
+        Input Parameters:
+        Baseline: MHWS contour shapefile 
+        AssetPath: national / regional asset shapefile 
+        BufferDist: Distance in meters for the coastal buffer
+        
+        Output:
+        Coastal asset shapefile saved to OutputPath
+        
+        NH, April 2024
+        
+        """
+        
+        print("Coast.ExtractCoastalAssets: Buffering coastline by", BufferDist, "m and extracting intersection with", AssetShp)
+        
+        # Read in shapefiles as geodataframes using geopandas
+        coastline = gp.read_file(Baseline)
+        assets = gp.read_file(AssetShp)
+        
+        # Buffer and dissolve baseline
+        coastline['geometry'] = coastline.geometry.buffer(BufferDist)
+        dissolved = coastline.dissolve()
+        #print("dissolved=",dissolved)        
+        
+        # Clip assets to buffer
+        coastal_assets = gp.clip(assets, dissolved)
+        #print("Coastal assets=",coastal_assets)
+        
+        # Save as coastal asset shapefile
+        if coastal_assets.empty:
+            print("\tNo coastal assets for", AssetShp)  
+        
+        print("\tSaving", OutputPath)
+        coastal_assets.to_file(OutputPath)              # save, even if empty shapefile
+        
+    def MergeGeoDataFrames(self, Input1, Input2, Output):
+        """
+        Merge two input geodataframes and save to output
+        
+        NH, April 2024
+        
+        """
+        print("Coast.MergeGeoDataFrames:", Input1, Input2, "Save as:", Output)
+        
+        # Read in shapefiles as geodataframes using geopandas
+        gdf1 = gp.read_file(Input1)
+        gdf2 = gp.read_file(Input2)
+        
+        # Merge using pandas concat(). Geopandas append() has been deprecated
+        merged = pd.concat([gdf1, gdf2])
+        merged.to_file(Output)
+    
+    def CalculateDistanceToFirstAsset(self):
+        """
+        Funcion to calculate the distance between the CoastNode and first 
+        road / rail / property asset that intersects the transect
+        
+        Uses Transect.RoadsIntersect, Transect.RailIntersect and Transect.PropertyIntersect
+        which are (0,0) for no intersect.
+        If no intersect, dist_xxx very large (>900,000), so check before saving.
+        
+        Save distance as Transect.FirstAssetDist. None if dist > transect length/2.
+        Also save individual asset distances.
+        
+        NH, Mar 2024
+        
+        """
+        print("Coast.CalculateDistanceToFirstAsset: Finding distance from coastline to first road/rail/property")
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                
+                # Turn Nodes into Points
+                CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                RoadPoint = Point(Transect.RoadsIntersect.X, Transect.RoadsIntersect.Y)
+                RailPoint = Point(Transect.RailIntersect.X, Transect.RailIntersect.Y)
+                PropertyPoint = Point(Transect.PropertyIntersect.X, Transect.PropertyIntersect.Y)
+                
+                # Use Geopandas distance
+                dist_road = CoastPoint.distance(RoadPoint) 
+                dist_rail = CoastPoint.distance(RailPoint)
+                dist_prop = CoastPoint.distance(PropertyPoint)
+                
+                # Pick smaller distance, only if on landward part of transect
+                dist_asset = min(dist_road, dist_rail, dist_prop)
+                Transect.FirstAssetDist = (dist_asset if (dist_asset < Transect.Length/2) else None)
+                
+                # set flag
+                if Transect.FirstAssetDist:
+                    Transect.AssetPresent = True
+                else:
+                    Transect.AssetPresent = False
+                
+                # Save all asset distances
+                Transect.FirstRoadDist = (dist_road if (dist_road < Transect.Length/2) else None)
+                Transect.FirstRailDist = (dist_rail if (dist_rail < Transect.Length/2) else None)
+                Transect.FirstPropertyDist = (dist_prop if (dist_prop < Transect.Length/2) else None)
+                
+                #print(Line.ID, Transect.ID, "NearestAsset=", Transect.FirstAssetDist, "flag=", Transect.AssetPresent)
+                #print("FirstRoadDist", Transect.FirstRoadDist, "FirstRailDist", Transect.FirstRailDist, "FirstPropertyDist", Transect.FirstPropertyDist)
+    
+    def my_round(x, base=5.0):
+        return base * round(x/base)
+    
+    def FindAssetElevations(self):
+        """
+        Use asset distances to find asset elevations.
+        First round decimal (exact) distance to nearest 5 m to match Transect.Distance
+        Then get index and corresponding sampled interpolated elevation from Transect.Elevtion. 
+       
+        NH, Mar 2024
+       
+        """
+        
+        print("Coast.FindAssetElevations: Finding elevations of first road/rail/property")
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                # Landward/seaward transect length. Assumes symmetrical transect, Round to remove any decimals
+                TransectLen = round(Transect.Length / 2)
+                
+                # round to nearest 5m of transect distance vector. As FirstAssetDist is from CoastPoint, add Tlen/2 for distance from transect StartPoint
+                if Transect.AssetPresent:
+                    dist_asset = Coast.my_round(Transect.FirstAssetDist) + TransectLen
+                    idx = (np.where(Transect.Distance == dist_asset))[0]                                    # tuple, with array of matching indices in first element
+                    Transect.FirstAssetElev = Transect.Elevation[idx[0]]                                    # first element of matching indexes (should only be one)
+                    #print("D=", Transect.Distance)
+                    #print("E=", Transect.Elevation)
+                    #print(Line.ID, Transect.ID, "\tL1=", Transect.Length, "\tL2=",TransectLen, "\tdist_asset=", dist_asset, "\tidx=", idx)
+                    #print(Line.ID, Transect.ID, "\tdist_asset=", dist_asset, "\telev_asset=", Transect.FirstAssetElev)
+                   
+                # repeat for individual assets
+                if Transect.FirstRoadDist:
+                    dist_road = Coast.my_round(Transect.FirstRoadDist) + TransectLen
+                    idx = (np.where(Transect.Distance == dist_road))[0] 
+                    Transect.FirstRoadElev = Transect.Elevation[idx[0]] 
+                    #print("\tdist_road=", dist_road, "\telev_road=", Transect.FirstRoadElev)
+                
+                if Transect.FirstRailDist:
+                    dist_rail = Coast.my_round(Transect.FirstRailDist) + TransectLen
+                    idx = (np.where(Transect.Distance == dist_rail))[0] 
+                    Transect.FirstRailElev = Transect.Elevation[idx[0]] 
+                    #print("\tdist_rail=", dist_rail, "\telev_rail=", Transect.FirstRailElev)
+                    
+                if Transect.FirstPropertyDist:
+                    dist_prop = Coast.my_round(Transect.FirstPropertyDist) + TransectLen
+                    idx = (np.where(Transect.Distance == dist_prop))[0] 
+                    Transect.FirstPropertyElev = Transect.Elevation[idx[0]] 
+                    #print("\tdist_prop=", dist_prop, "\telev_prop=", Transect.FirstPropertyElev)
+                
+                
+    
+    def SetBarrierSearchWindow(self):
+        """
+        Function to set the window within which to search for coastal barrier.
+        NOTE: Requires transect min length of 200 m.
+        
+        Uses the nearest coastal asset location to find LandwardMask: 
+        - if assets within 200 m of coast, use the most seaward asset location as the landward edge of the 
+        barrier search window (to only look for barriers seaward of assets, e.g. Golspie)
+        - else if no assets within 200 m of coast, use min elevation between 50 m and 200 m landward
+        as the landward edge of the barrier search window (to find wider barriers).
+        
+        Set SeawardMask to -50 m for now. 
+        
+        Save to Transect.LandwardMask and Transect.SeawardMask
+        
+        NH, Mar 2024
+        
+        """
+        print("Coast.SetBarrierSearchWindow: Setting search window for coastal barriers")
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                # Landward transect length. Assumes symmetrical transect
+                TransectLen = round(Transect.Length / 2)
+                
+                # Set seaward edge of search 50 m seaward of coastline
+                Transect.SeawardMask = TransectLen - 50
+                
+                # Landward window: If assets present inside potential barrier region, look only seaward of asset
+                if (Transect.AssetPresent and Transect.FirstAssetDist < 200):
+                    Transect.LandwardMask = round(TransectLen + Transect.FirstAssetDist)
+                    #print(Line.ID, Transect.ID, "*1", Transect.LandwardMask)
+                else:
+                    # If no assets, look seaward of min elevation between 50 m and 200 m (shingle) or 100 m and 200 m landward (sand). 
+                    # This copes with wide/narrow/high/low barriers
+                    # Sand barriers tend to be wider, and shingle narrower and closer to MHWS
+                    dstart = 50 if Transect.Shingle else 100
+                    idx = np.where((Transect.Distance > TransectLen+dstart) & (Transect.Distance < TransectLen+200))
+                    idx = idx[0]                                                                                # take first element of tuple, which is the array of indexes
+                    idx_min_elev = np.argmin(Transect.Elevation[idx]) + idx[0]
+                    Transect.LandwardMask = Transect.Distance[idx_min_elev]
+                    #print(f"{Line.ID}, {Transect.ID}, *2, idx={idx}, idx_min_elev={idx_min_elev}")
+                    #print(Line.ID, Transect.ID, "*2", Transect.LandwardMask)
+        
+    
     def ExtractContours(self,ContourShp):
 
         """
@@ -2675,6 +3211,80 @@ class Coast:
                     for val in MHWSDataset.sample([(Transect.CoastNode.X,Transect.CoastNode.Y)]):
                         Transect.MHWS = val[0]
                         
+    def SampleRaster(self, Raster=None, NodeToSample=None, Attrib=None):
+    
+        """
+        Samples raster at the specified node, 
+        and saves value to the specified attribute.
+        
+        Parameters
+        ----------
+        Raster : string
+            Filename of raster to be sampled
+        NodeToSample : string
+            Name of node containing (x,y) coordinates to be sampled.
+            Default is CoastNode
+        Attrib : string
+            Name of Transect attribute in which to save the sampled raster value
+        
+        NH, November 2023
+        
+        Works
+        
+        """
+        
+        print(f"Coast.SampleRaster: Sampling raster {Raster} band 0 and saving to Transect.{Attrib}")
+        
+        # check parameters
+        if not Raster:
+            raise SystemExit("\tNo raster passed in function call")
+        if not NodeToSample:
+            NodeToSample = "CoastNode"
+        if not Attrib:
+            raise SystemExit("\tNo Transect attribute passed in function call")
+            
+        RasterDataset = rasterio.open(Raster)
+        
+        # get extent of raster
+        XMin = RasterDataset.bounds[0]
+        XMax = RasterDataset.bounds[2]
+        YMin = RasterDataset.bounds[1]
+        YMax = RasterDataset.bounds[3]
+        RasterExtent = Polygon([[XMin, YMin], [XMin, YMax], [XMax, YMax], [XMax, YMin]])
+        
+        print("\tRaster width, height:", RasterDataset.width, RasterDataset.height)
+        print("\tRaster bounds:", RasterDataset.bounds)
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+        
+                # Check if Transect contains NodeToSample as attribute 
+                # If not, continue to next transect as need (x,y) coords to sample.
+                if not hasattr(Transect, NodeToSample):
+                    print(f"\t{Transect.LineID}_{Transect.ID}: Transect has no attribute", NodeToSample)
+                    continue
+                
+                # get attribute   
+                SampleNode = getattr(Transect, NodeToSample) 
+                #print(f"\t{Transect.LineID}_{Transect.ID}:{SampleNode}")                
+                    
+                # check if node inside raster
+                SamplePoint = Point(SampleNode.X, SampleNode.Y) 
+                if not SamplePoint.within(RasterExtent):
+                    print(f"\t{Transect.LineID}_{Transect.ID}: {NodeToSample} outwith {Raster}")
+                    continue
+                    
+                for val in RasterDataset.sample([(SampleNode.X, SampleNode.Y)]):
+                    sampled = val[0]
+                        
+                # check if Transect contains Attrib 
+                #if not hasattr(Transect, Attrib):
+                #    print(f"\t{Transect.LineID}_{Transect.ID}: Creating {Attrib}")
+                    
+                setattr(Transect, Attrib, sampled)
+                #print("\t",getattr(Transect, Attrib))
+        
+    
     def SampleNodeElevation(self, NodeToSample, DEMFileList=None):
     
         """
@@ -3197,6 +3807,27 @@ class Coast:
             for Transect in Line.Transects:
                 Transect.Truncate()
                             
+    def TruncateTransects2Coast(self, D_start=200., D_end=200.):
+        
+        """
+        Function to truncate transects between specified
+        start and end distances either side of CoastNode.
+        Can also extend transects.
+        
+        D_start: distance (m) seaward of CoastNode
+        D_end: distance (m) landward of CoastNode
+        default = 200 m
+        
+        NH, Sep 2024
+        
+        """
+        print("Coast.TruncateTransects2Coast: change transect lengths to specified window around CoastNode")
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                Transect.Truncate2Coast(D_start, D_end)
+        
+    
     def FindDEM(self, DEMIndexFileShp):
 
         """
@@ -3239,7 +3870,9 @@ class Coast:
             # set DEMs to list 
             # NH: For each CoastLine, a list of unique DEMs. 
             # But, if a DEM spans two CoastLines, it is also added for the second CoastLine interation. 
-            self.UniqueDEMList.extend(list(JoinGDF.location.unique()))
+            ### self.UniqueDEMList.extend(list(JoinGDF.location.unique()))
+            self.UniqueDEMList.extend(list(JoinGDF[JoinGDF['HiResExist']=='Y'].loc_HiRes.unique()))
+            self.UniqueDEMList.extend(list(JoinGDF[JoinGDF['HiResExist']=='N'].location.unique()))
             
         # NH: This list is only unique for each CoastLine, not unique overall
         if __debug__:
@@ -3352,6 +3985,12 @@ class Coast:
 
     def ExtractTransectTopographySwath(self, DEMFileList=None, SwathDistance=-9999, DistanceSpacing=None, CrossShoreWindowSize=None):
         """
+        Now deprecated, as this function only handles transect crossing 2 DTMs.
+        Replaced with SampleTransectTopographySwath and PerformIDWInterpolation.
+        This separates topo sampling and IDW interpolation into separate functions,
+        and handles transect spanning multiple DTMs.
+        
+        ExtractTransectTopographySwath:
         Profile to populate transects with topographic data
         Uses swath profile routine to collect elevations within a certain distance
         of each transect line then takes IDW values for the transect topography
@@ -3515,8 +4154,8 @@ class Coast:
                         jEnd = len(XVector)
                         Transect.InterpolationIncomplete = True                        
                     
-                    if __debug__:
-                        print("\t\tiStart, iEnd, jStart, jEnd = ", iStart, iEnd, jStart, jEnd)
+                    #if __debug__:
+                        #print("\t\tiStart, iEnd, jStart, jEnd = ", iStart, iEnd, jStart, jEnd)
                         #print("\tXVector[jStart], XVector[jEnd-1], YVector[iStart], YVector[iEnd-1] = ", XVector[jStart], XVector[jEnd-1], YVector[iStart], YVector[iEnd-1])
 
                     #Get Vector X and Y
@@ -3778,14 +4417,373 @@ class Coast:
                     Transect.ElevStd = ZStd.copy()
                     Transect.DistanceNodes = [Node(X,Y) for X, Y in zip(XLine,YLine)]
                     
-             
-    def AnalyseTransectMorphology(self):
+    def SampleTransectTopographySwath(self, DEMFileList=None, SwathDistance=-9999):
+        """
+        Profile to populate transects with topographic data
+        Uses swath profile routine to collect elevations within a certain distance
+        of each transect line
+        
+        Original by MDH. Now split into separate sampling function here.
+        Thi sis to allow multiple rasters to be sampled by a transect.
+
+        NH, Jan 2024
+        
+        Parameters
+        ----------
+        DEMFileList : list or single string - NEW
+            Either a) List of strings containing pathnames of unique DEMs for current coast
+            or     b) A single DTM filename string (backwards compatible)
+            Coast.FindDEM can be called prior to write to self.UniqueDEMList
+            In that case you don't have to send the list as a parameter.
+
+        SwathDistance : float
+            Distance away from transect line to sample elevations in DEM
+            Default is 2 times the resolution of the DTM
+            
+        """  
+        
+        print("Coast.SampleTransectTopographySwath: Sampling DTMs for each transect")
+                            
+        # set up dem file list
+        if DEMFileList:
+            # check if list and make list if not
+            if not isinstance(DEMFileList, list):
+                DEMFileList = [DEMFileList,]
+            self.UniqueDEMList = DEMFileList
+
+        # loop through DEMs
+        for DEM in self.UniqueDEMList:
+            
+            print("\t" + DEM.split("/")[-1])
+
+            # load the DTM and get its properties
+            print("\tLoading DTM... ", end="")
+            DTM_Dataset = rasterio.open(DEM) 
+            DTMArray = DTM_Dataset.read(1)
+            NCols = DTM_Dataset.width
+            NRows = DTM_Dataset.height
+            NDV = DTM_Dataset.nodata
+            Resolutions = DTM_Dataset.res
+            print("Done")
+
+            # check for square pixels
+            if not DTM_Dataset.res[0] == DTM_Dataset.res[1]:
+                raise SystemExit("DTM has non-square cells")
+            
+            # NH add: check if we're missing no data
+            if not DTM_Dataset.nodata:
+                # raise SystemExit("DTM missing no data value") # NH: remove this as .asc files don't have nodata set.
+                print("\tDTM missing no data value!")
+                NDV = -9999
+        
+            # get resolution
+            DTM_Resolution = DTM_Dataset.res[0]
+
+            # get extent of DTM and set up polygon of extent
+            XMin = DTM_Dataset.bounds[0]
+            XMax = DTM_Dataset.bounds[2]
+            YMin = DTM_Dataset.bounds[1]
+            YMax = DTM_Dataset.bounds[3]
+            DTM_Extent = Polygon([[XMin, YMin], [XMin,YMax], [XMax, YMax], [XMax, YMin]])
+            
+            if __debug__:
+                print("\tXMin, XMax, YMin, YMax = ", XMin, XMax, YMin, YMax) 
+
+            # check swath distance
+            if SwathDistance < 0:
+                SwathDistance = DTM_Resolution*2.
+            
+            if SwathDistance > DTM_Resolution*20:
+                print("\tSwathDistance > DTM_Resolution*20! Setting to DTM_Resolution*20")
+                SwathDistance = DTM_Resolution*20.
+           
+            # Get vectors of X and Y coordinates, NB reversal of Y in line with 
+            # DTM indexing from top left
+            XVector = XMin+np.arange(0,NCols)*DTM_Resolution+0.5*DTM_Resolution
+            YVector = YMin+DTM_Resolution*np.arange(0,NRows)[::-1]+0.5*DTM_Resolution
+        
+            if __debug__:
+                print("\tXVector len = ", len(XVector)) 
+                print("\tYVector len = ", len(YVector))
+
+            # Track progress
+            NoTransects = np.sum([Line.NoTransects for Line in self.CoastLines])-1 # NH: subtract one as counting from zero
+            CurrentTransect = 0
+            
+            for Line in self.CoastLines:
+                for Transect in Line.Transects:
+                    
+                    # print progress to screen
+                    print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
+
+                    #Get line points
+                    X1, Y1 = Transect.StartNode.get_XY()
+                    X2, Y2 = Transect.EndNode.get_XY()
+                    TransectLine = LineString([(X1, Y1), (X2, Y2)])
+                    
+                    #if __debug__:
+                        #print("\tTransect X1, Y1, X2, Y2 = ", X1, Y1, X2, Y2)
+
+                    # check for intersection
+                    if not TransectLine.intersects(DTM_Extent):
+                        CurrentTransect += 1 # NH: increment transect count if no intersect
+                        continue
+
+                    # NH: Bounding box size to extend past transect bounds by SwathDistance
+                    iStart = np.argmin(np.abs(YVector-np.max([Y1,Y2])))-(int)(SwathDistance/DTM_Resolution) 
+                    iEnd = np.argmin(np.abs(YVector-np.min([Y1,Y2])))+(int)(SwathDistance/DTM_Resolution)
+                    jStart = np.argmin(np.abs(XVector-np.min([X1,X2])))-(int)(SwathDistance/DTM_Resolution)
+                    jEnd = np.argmin(np.abs(XVector-np.max([X1,X2])))+(int)(SwathDistance/DTM_Resolution)
+                    
+                    # Catch Start index of -1, when bounding box intersects top (i) or left hand side (j) of DEM.
+                    # Catch End index larger than the length or width of the DTM. Set InterpolationInconplete flag.  
+                    if iStart < 0:
+                        print("\tiStart < 0! Setting to 0")
+                        iStart = 0
+                        #Transect.InterpolationIncomplete = True
+                    if jStart < 0:
+                        print("\tjStart < 0! Setting to 0")
+                        jStart = 0
+                        #Transect.InterpolationIncomplete = True
+                    if iEnd > len(YVector):
+                        print("\tiEnd > len(YVector)! Setting to", len(YVector))
+                        iEnd = len(YVector)
+                        #Transect.InterpolationIncomplete = True
+                    if jEnd > len(XVector):
+                        print("\tjEnd > len(XVector)! Setting to", len(XVector))
+                        jEnd = len(XVector)
+                        #Transect.InterpolationIncomplete = True                        
+                    
+                    #if __debug__:
+                        #print("\t\tiStart, iEnd, jStart, jEnd = ", iStart, iEnd, jStart, jEnd)
+                        #print("\tXVector[jStart], XVector[jEnd-1], YVector[iStart], YVector[iEnd-1] = ", XVector[jStart], XVector[jEnd-1], YVector[iStart], YVector[iEnd-1])
+
+                    #Get Vector X and Y
+                    dX12 = X2-X1
+                    dY12 = Y2-Y1
+
+                    # Declare list holders for profile data
+                    # If data sampled previously from another raster, load it
+                    if Transect.X: 
+                        X = Transect.X
+                        Y = Transect.Y
+                        Z = Transect.Z
+                        DistAlong = Transect.DistAlong
+                        DistTo = Transect.DistTo
+                        Transect.InterpolationIncomplete = False 
+                        print("\t\tContinuing elevation sampling...")
+                    else:
+                        X = []
+                        Y = []
+                        Z = []
+                        DistAlong = []
+                        DistTo = []
+                        print("\t\tStarting elevation sampling...")
+                    
+                    # Sample elevation data in swath around transect
+                    for i in range(iStart,iEnd):
+
+                        #get Y position
+                        YNode = YMax-DTM_Resolution*i-0.5*DTM_Resolution
+
+                        for j in range(jStart,jEnd):
+                            
+                            #get X position
+                            XNode = XMin + j*DTM_Resolution + 0.5*DTM_Resolution;
+
+                            #Get 2nd Vector Properties in Array
+                            dX13 = XNode-X1
+                            dY13 = YNode-Y1
+
+                            #Find Dot Product
+                            DotProduct = dX12*dX13 + dY12*dY13;
+
+                            #calculate fraction of distance along line
+                            t = DotProduct/(dX12*dX12 + dY12*dY12)
+                            if ((t < 0.) or (t > 1.)):
+                                continue
+                        
+                            #Find point along line
+                            XLine = X1 + t*dX12
+                            YLine = Y1 + t*dY12
+                            DistanceAlongLine = t*np.sqrt(dX12*dX12 + dY12*dY12)
+
+                            #find distance to point
+                            DistanceToLine = np.sqrt((XLine-XNode)*(XLine-XNode) + (YLine-YNode)*(YLine-YNode))
+
+                            if ((DistanceToLine < SwathDistance) and (DTMArray[i][j] != NDV)):
+                                X.append(XNode)
+                                Y.append(YNode)
+                                DistAlong.append(DistanceAlongLine)
+                                DistTo.append(DistanceToLine)
+                                Z.append(DTMArray[i][j])
+                    
+                    # Save data                    
+                    Transect.X = X
+                    Transect.Y = Y
+                    Transect.Z = Z
+                    Transect.DistAlong = DistAlong
+                    Transect.DistTo = DistTo
+                    Transect.DTM_Resolution = DTM_Resolution
+                    Transect.NDV = NDV
+                    CurrentTransect += 1
+            
+            print("")
+            
+    
+    def PerformIDWInterpolation(self, DistanceSpacing=None, CrossShoreWindowSize=None):
+        """
+        Perform inverse distance weighted interpolation on the sampled swath data
+        
+        Parameters
+        ----------
+        DistanceSpacing : float
+            Distance in m between elevation nodes on the transect
+            
+        CrossShoreWindowSize : float
+            Size in m of the cross-shore window landward and seaward of
+            each point during the interpolation.
+            Ultimate inrerpolation window width is thus two times this value.
+            Minimum of DTM resolution, max of 5*DTM resolution
+            Default of 2*DTM resolution
+            
+        """
+        
+        print("Coast.PerformIDWInterpolation: IDW interpolation on sampled elevation data")
+        
+        # Track progress
+        NoTransects = np.sum([Line.NoTransects for Line in self.CoastLines])-1  # counting from zero
+        CurrentTransect = 0
+        
+        # Perfrom interpolation        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+            
+                # print progress to screen
+                print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
+                
+                # Load sampled topography data
+                X = Transect.X
+                Y = Transect.Y
+                Z = Transect.Z
+                DistAlong = Transect.DistAlong
+                DistTo = Transect.DistTo
+                DTM_Resolution = Transect.DTM_Resolution
+                NDV = Transect.NDV
+                
+                # check input parameters - have to do this here as need transect saved data
+                if not DistanceSpacing:
+                    DistanceSpacing = DTM_Resolution*2.
+                if DistanceSpacing < 0:
+                    DistanceSpacing = -DistanceSpacing
+                    
+                if not CrossShoreWindowSize:
+                    CrossShoreWindowSize = DTM_Resolution*2.
+                if CrossShoreWindowSize < DTM_Resolution:
+                    CrossShoreWindowSize = DTM_Resolution
+                if CrossShoreWindowSize > DTM_Resolution*5.:
+                    CrossShoreWindowSize = DTM_Resolution*5.
+        
+                #Get line points
+                X1, Y1 = Transect.StartNode.get_XY()
+                X2, Y2 = Transect.EndNode.get_XY()
+                    
+                #Sort by distance along line, need to convert to numpy arrays as we go to sort
+                Sortedi = np.argsort(DistAlong)
+                X = np.asarray(X)[Sortedi]
+                Y = np.asarray(Y)[Sortedi]
+                DistAlong = np.asarray(DistAlong)[Sortedi]
+                DistTo = np.asarray(DistTo)[Sortedi]
+                Z = np.asarray(Z)[Sortedi]
+                
+                # Create a line for interpolating to
+                LineLength = np.sqrt((X2-X1)**2 + (Y2-Y1)**2)
+                
+                NoPoints = round(LineLength/DistanceSpacing)+1
+                if NoPoints < 1:
+                    raise SystemExit("LineLength/DistanceSpacing leads to zero elevation points")
+                    
+                Transect.DistanceSpacing = DistanceSpacing
+                XLine = np.linspace(X1,X2,NoPoints)
+                YLine = np.linspace(Y1,Y2,NoPoints)
+                DistAlongTransect = np.zeros(len(XLine))
+                ZIDW = np.zeros(len(XLine))
+                ZMin = np.zeros(len(XLine))
+                ZMax = np.zeros(len(XLine))
+                ZStd = np.zeros(len(XLine))
+                                
+                #Loop along line
+                for i in range(0,NoPoints):
+                    
+                    #Calculate distance along the line
+                    DistAlongTransect[i] = i*DistanceSpacing
+                    
+                    # Sample a reduced array here i.e. a neighbourhood to reduce computation time                      
+                    Neighbourhood = np.abs(DistAlongTransect[i]-DistAlong) < CrossShoreWindowSize
+                    ZLocal = Z[Neighbourhood]
+                    
+                    if len(ZLocal) == 0:
+                        
+                        # Set to NDV
+                        ZIDW[i] = NDV
+                        ZMin[i] = NDV
+                        ZMax[i] = NDV
+                        ZStd[i] = NDV
+                        
+                        continue
+                    
+                    # Do IDW
+                    # Create a distance vector
+                    Dist = np.sqrt(DistAlong[Neighbourhood]**2. + DistTo[Neighbourhood]**2.)
+                    
+                    # Weights are inverse
+                    Weights = 1./Dist**2.
+                    
+                    # Interpolate Z
+                    ZIDW[i]  = np.sum(Z[Neighbourhood]*Weights)/np.sum(Weights)
+                    
+                    # Other Z Values
+                    ZMin[i] = np.min(ZLocal)
+                    ZMax[i] = np.max(ZLocal)
+                    ZStd[i] = np.std(ZLocal)
+                    
+                # Set up the mask from NDVs
+                Mask = ZIDW == NDV
+                DistAlongTransect = ma.masked_where(Mask,DistAlongTransect)
+                ZIDW = ma.masked_where(Mask,ZIDW)
+                #print("ZIDW.data=", ZIDW.data, "ZIDW.mask=", ZIDW.mask)        ### NH DEBUG: ZIDW does have .data and .mask componenets. BUT .mask is single boolean=False (not array) when no masked elements
+                ZMin = ma.masked_where(Mask,ZMin)
+                ZMax = ma.masked_where(Mask,ZMax)
+                ZStd = ma.masked_where(Mask,ZStd)
+                
+                Transect.Distance = DistAlongTransect.copy()                    ### NH ADD: use ma.MaskedArray.copy() to copy whole masked array
+                Transect.DistanceSpacing = DistAlongTransect[1]-DistAlongTransect[0]
+                Transect.DistanceNodes = [Node(X,Y) for X, Y in zip(XLine,YLine)]
+                Transect.Elevation = ZIDW.copy()
+                Transect.ElevationMin = ZMin.copy()
+                Transect.ElevationMax = ZMax.copy()
+                Transect.ElevStd = ZStd.copy()
+                
+                # update transect no
+                CurrentTransect += 1
+                
+        print("")
+    
+    def AnalyseTransectMorphology(self, StormImpactAnalysis=None, FrontToeMin=-0.001):
 
         """
 
         Barrier focus for now
 
         MDH, June 2019
+        
+        NH edits: 
+            Add StormImpactAnalysis selection to call revised FindBarrier2 and FindCliff2 functions.
+            If not set, will call MDH original FindCliff and FindBarrier functions. 
+        
+            Add ability to set FrontToeMin when calling FindBarrier2: 
+            FrontToeMin defined as minimum negative detrended elevation for new front toe. 
+            Default is -0.001 (1mm) as per MDH original code.
 
         """
 
@@ -3802,15 +4800,1134 @@ class Coast:
                 print(" \r\tTransect %3d / %3d" % (CurrentTransect, NoTransects), end="")
                 
                 # # Call analyses
-                #if Transect.ID == "13":
-                # Transect.FindCliff()
-                Transect.FindBarrier()
+                if StormImpactAnalysis == True:
+                    # NH: Revised cliff detection: mask elevations < 0m
+                    Transect.FindCliff2()
+                    
+                    # NH: Revised front toe detection
+                    Transect.FindBarrier2(FrontToeMin=FrontToeMin)
+
+                    # Save dune toe and crest elevations
+                    Transect.SaveBarrierElevations()
+                    
+                    # Extract hinterland characteristics
+                    Transect.ExtractHinterlandElevSlope()
+                    
+                    # Clear masks applied to Transect.Distance and Transect.Elevation
+                    Transect.ClearTopographyMasks()
+                    
+                else:
+                    Transect.FindCliff()
+                    Transect.FindBarrier()
                 
                 # update transect progress no
                 CurrentTransect += 1
         
         print("")
+        
+    def AdjustTp(self, subcell=None):
+    
+        """
+        Downscale Tp by 33% for the very sheltered coasts of Cell 6f and Cell 7.
+        Looking at the hindcast wave climate time series for 1976 - 2005,
+        P99 Hs-Tp does not occur in the time series, but downscaling Tp by 30% brings
+        the wave climate back into the point cloud.
+        
+        NH, October 2024
+        """
+        
+        # check input parameters
+        if not (subcell):
+            print("Coast.AdjustTp: Invalid subcell!", str(subcell))
+            sys.exit()
+        
+        if (subcell == "6f" or subcell == "7"):
+            print("Coast.AdjustTp: Downscaling Tp for very sheltered coasts - Cell ", str(subcell))
+            
+            for Line in self.CoastLines:
+                for Transect in Line.Transects:
+                    Transect.H_Tp_p99 = Transect.H_Tp_p99*0.67
+                    Transect.M45_Tp_p99 = Transect.M45_Tp_p99*0.67
+                    Transect.M85_Tp_p99 = Transect.M85_Tp_p99*0.67
+                    Transect.E45_Tp_p99 = Transect.E45_Tp_p99*0.67
+                    Transect.E85_Tp_p99 = Transect.E85_Tp_p99*0.67
+                    
+            print("Done")
+    
+    def CalculateExtremeRunup(self, Scenario=None, PureGravelSubcell=False):
+        
+        """
+        Implement equations that estimate 
+        extreme runup R2 under storm wave conditions.
+        
+        Use Stockdon (2006) for sandy and composite or mixed sand/gravel beaches runup and setup.
+        Use Poate (2016) for pure gravel wave runup,
+        and Powell (1990) for pure gravel wave setup if Bf >= 0.1. 
+        
+        While Poate (2016) approximates Bf > 0.1 as pure gravel,
+        many Scottish beaches with Bf > 0.1 are not pure gravel (from manual inspection). 
+        But, the Stockdon parameter space applies for Bf up to 0.11 and setup 
+        predictions for steeper slopes with Stockdon are too extreme.
+        Thus use Powell setup equation for all Bf >= 0.1.
+        
+        Calcuation requires the foreshore slope, deepwater significant wave height
+        and deepwater peak wave period. 
+        
+        This will allow the application of the Sallenger (2000) Storm Impace Scale 
+        by comparing total water level with dune crest and toe elevations.
 
+        Parameters
+        ----------
+        Scenario - string   
+            - String describing the scenario of interest
+            - Options: 
+                - "Hist" = Historic 
+                - "M45" = Mid-century RCP4.5
+                - "M85" = Mid-century RCP8.8
+                - "E45" = End-century RCP4.5
+                - "E85" = End-century RCP8.5
+        
+        NH, November 2023
+        
+        """
+        
+        print("Coast.CalculateExtremeRunup: Estimating extreme wave runup under storm conditions")
+        
+        # check input parameters
+        if not (Scenario == "Hist" or Scenario == "M45" or Scenario == "M85" or \
+                Scenario == "E45" or Scenario == "E85"):
+            print("\tInvalid Scenario:", Scenario)
+            sys.exit()
+        
+        g = 9.81                                                                            # gravitational constant in m/s2
+        Cp = 0.33                                                                           # Constant in Poate (2016) eq(12)
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                Bf = Transect.IntertidalSlope
+                Transect.PureGravel = False
+                
+                if Scenario == "Hist":
+                    Tp = Transect.H_Tp_p99                                                  # Offshore peak wave period
+                    H0 = Transect.H_Hs_p99                                                  # Offshore significant wave height
+                    L0 = g*Transect.H_Tp_p99**2/(2*np.pi)                                   # Stockdon eq(1)
+                    Iribarren = Bf/np.sqrt(H0/L0)                                           # Stockdon eq(2)
+                    
+                    if (Transect.Shingle and Bf > 0.095):                                   # Steep GRAVEL beaches. 0.095 to save having to round to 1 decimal
+                        Transect.H_setup = 0.3*H0                                           # Powell (1990) eq(6.8)
+                        
+                        if (PureGravelSubcell == True):                                            # PURE GRAVEL
+                            Transect.H_R2 = Cp*np.sqrt(Bf)*H0*Tp                            # Poate (2016) eq(12): Extreme wave runup, simplified equation
+                            Transect.PureGravel = True
+                        else:                                                               # COMPOSITE or MIXED sand+gravel
+                            Transect.H_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
+                                            np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)         # Stockdon eq(19): Extreme wave runup (intermediate and reflective)
+                        
+                        Transect.H_Dissipative = False
+                    else:                                                                   # SAND or shallower COMPOSITE / MIXED sand+gravel                    
+                        if Iribarren < 0.3:                                                 # extremely dissipative beach
+                            Transect.H_R2 = 0.043*np.sqrt(H0*L0)                            # Stockdon eq(18): Extreme wave runup
+                            Transect.H_setup = 0.016*np.sqrt(H0*L0)                         # Stockdon eq(16) 
+                            Transect.H_Dissipative = True                                   # set flag for extremely dissipative beach
+                        else:
+                            Transect.H_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
+                                            np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)         # Stockdon eq(19): Extreme wave runup (all other sandy beaches)
+                            Transect.H_setup = 0.35*Bf*np.sqrt(H0*L0)                       # Stockdon eq(10)
+                            Transect.H_Dissipative = False
+                    
+                    # save parameters 
+                    Transect.H_WaveSteepness = H0/L0
+                    Transect.H_Iribarren = Iribarren
+                    
+                elif Scenario == "M45":                                                     # repeat for each climate scenario
+                    Tp = Transect.M45_Tp_p99
+                    H0 = Transect.M45_Hs_p99
+                    L0 = g*Transect.M45_Tp_p99**2/(2*np.pi)                                              
+                    Iribarren = Bf/np.sqrt(H0/L0)
+                    
+                    if (Transect.Shingle and Bf > 0.095):                                   
+                        Transect.M45_setup = 0.3*H0                                           
+                        
+                        if (PureGravelSubcell == True):                                           
+                            Transect.M45_R2 = Cp*np.sqrt(Bf)*H0*Tp                           
+                            Transect.PureGravel = True
+                        else:                                                               
+                            Transect.M45_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
+                                            np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)         
+                        
+                        Transect.M45_Dissipative = False
+                    else:                                                                                      
+                        if Iribarren < 0.3:                                                
+                            Transect.M45_R2 = 0.043*np.sqrt(H0*L0)                            
+                            Transect.M45_setup = 0.016*np.sqrt(H0*L0)                         
+                            Transect.M45_Dissipative = True                                   
+                        else:
+                            Transect.M45_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
+                                            np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)         
+                            Transect.M45_setup = 0.35*Bf*np.sqrt(H0*L0)                       
+                            Transect.M45_Dissipative = False 
+                    
+                    # save parameters 
+                    Transect.M45_WaveSteepness = H0/L0
+                    Transect.M45_Iribarren = Iribarren
+                
+                elif Scenario == "M85":
+                    Tp = Transect.M85_Tp_p99
+                    H0 = Transect.M85_Hs_p99
+                    L0 = g*Transect.M85_Tp_p99**2/(2*np.pi)                                              
+                    Iribarren = Bf/np.sqrt(H0/L0)
+                    
+                    if (Transect.Shingle and Bf > 0.095):                                   
+                        Transect.M85_setup = 0.3*H0                                           
+                        
+                        if (PureGravelSubcell == True):                                           
+                            Transect.M85_R2 = Cp*np.sqrt(Bf)*H0*Tp                           
+                            Transect.PureGravel = True
+                        else:                                                               
+                            Transect.M85_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
+                                            np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)         
+                        
+                        Transect.M85_Dissipative = False
+                    else:                                                                                      
+                        if Iribarren < 0.3:                                                
+                            Transect.M85_R2 = 0.043*np.sqrt(H0*L0)                            
+                            Transect.M85_setup = 0.016*np.sqrt(H0*L0)                         
+                            Transect.M85_Dissipative = True                                   
+                        else:
+                            Transect.M85_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
+                                            np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)         
+                            Transect.M85_setup = 0.35*Bf*np.sqrt(H0*L0)                       
+                            Transect.M85_Dissipative = False 
+                    
+                    # save parameters 
+                    Transect.M85_WaveSteepness = H0/L0
+                    Transect.M85_Iribarren = Iribarren
+                                        
+                elif Scenario == "E45":
+                    Tp = Transect.E45_Tp_p99
+                    H0 = Transect.E45_Hs_p99
+                    L0 = g*Transect.E45_Tp_p99**2/(2*np.pi)                                              
+                    Iribarren = Bf/np.sqrt(H0/L0)
+                    
+                    if (Transect.Shingle and Bf > 0.095):                                   
+                        Transect.E45_setup = 0.3*H0                                           
+                        
+                        if (PureGravelSubcell == True):                                           
+                            Transect.E45_R2 = Cp*np.sqrt(Bf)*H0*Tp                           
+                            Transect.PureGravel = True
+                        else:                                                               
+                            Transect.E45_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
+                                            np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)         
+                        
+                        Transect.E45_Dissipative = False
+                    else:                                                                                      
+                        if Iribarren < 0.3:                                                
+                            Transect.E45_R2 = 0.043*np.sqrt(H0*L0)                            
+                            Transect.E45_setup = 0.016*np.sqrt(H0*L0)                         
+                            Transect.E45_Dissipative = True                                   
+                        else:
+                            Transect.E45_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
+                                            np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)         
+                            Transect.E45_setup = 0.35*Bf*np.sqrt(H0*L0)                       
+                            Transect.E45_Dissipative = False 
+                            
+                    # save parameters 
+                    Transect.E45_WaveSteepness = H0/L0
+                    Transect.E45_Iribarren = Iribarren
+                                        
+                elif Scenario == "E85":
+                    Tp = Transect.E85_Tp_p99
+                    H0 = Transect.E85_Hs_p99
+                    L0 = g*Transect.E85_Tp_p99**2/(2*np.pi)                                              
+                    Iribarren = Bf/np.sqrt(H0/L0)
+                    
+                    if (Transect.Shingle and Bf > 0.095):                                   
+                        Transect.E85_setup = 0.3*H0                                           
+                        
+                        if (PureGravelSubcell == True):                                           
+                            Transect.E85_R2 = Cp*np.sqrt(Bf)*H0*Tp                           
+                            Transect.PureGravel = True
+                        else:                                                               
+                            Transect.E85_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
+                                            np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)         
+                        
+                        Transect.E85_Dissipative = False
+                    else:                                                                                      
+                        if Iribarren < 0.3:                                                
+                            Transect.E85_R2 = 0.043*np.sqrt(H0*L0)                            
+                            Transect.E85_setup = 0.016*np.sqrt(H0*L0)                         
+                            Transect.E85_Dissipative = True                                   
+                        else:
+                            Transect.E85_R2 = 1.1*(0.35*Bf*np.sqrt(H0*L0) + \
+                                            np.sqrt(H0*L0*(0.563*Bf**2 + 0.004))/2)         
+                            Transect.E85_setup = 0.35*Bf*np.sqrt(H0*L0)                       
+                            Transect.E85_Dissipative = False 
+                            
+                    # save parameters 
+                    Transect.E85_WaveSteepness = H0/L0
+                    Transect.E85_Iribarren = Iribarren
+                                        
+                else:
+                    print(f"\t{Transect.LineID}_{Transect.ID}:Invalid scenario {Scenario}") # should not ever get this
+
+    def ExtractExtremeSeaLevel(self, Shapefile=None, Scenario=None, MaxDist=None):
+        
+        """
+        Input data is SLR uplifted CFB2018 extreme still water levels, provided as
+        dataproduct by UKCP18.
+        Find nearest input data point within MaxDist (m) of transect.
+        Extract 25-yr return level and its likely range for each point.
+        Likely range: c1 = 5th percentile, c3 = 95th percentile of projected SLR
+        
+        Parameters
+        ----------
+        Shapefile : string 
+            - geospatial point data vector location of ESL data
+        Scenario : string
+            - String describing the scenario of interest
+            - Options: 
+                - "Hist" = Historic, 2020 RCP8.5 
+                - "M45" = Mid-century RCP4.5
+                - "M85" = Mid-century RCP8.8
+                - "E45" = End-century RCP4.5
+                - "E85" = End-century RCP8.5
+        MaxDist : integer
+            - Search radius in meters from CoastNode to ESL datapoint
+            - Must be positive and less than 50 km
+                
+        NH, November 2023
+        Revised July 2024 to pass MaxDist as parameter
+        
+        """
+        
+        print("Coast.ExtractExtremeSeaLevel: Extracting extreme still water level, uplifted according to climate change scenario")
+        
+        # check input parameters
+        if not (Scenario == "Hist" or Scenario == "M45" or Scenario == "M85" or \
+                Scenario == "E45" or Scenario == "E85"):
+            print("\tInvalid Scenario:", Scenario)
+            sys.exit()
+            
+        if not (MaxDist > 0 and MaxDist < 50000):
+            print("\tInvalid search radius:", MaxDist)
+            sys.exit()
+            
+        # read shapefile using geopandas
+        GDF = gp.read_file(Shapefile)
+        DataPoints = GDF['geometry']
+        
+        if len(DataPoints) == 0:
+            print(f"\tNo Points in {Shapefile}!")
+            return
+        
+        # Extract data: uplifted extreme still water levels for 25-yr return period, plus likely range
+        t25_geoser = GDF["t25"]
+        t25_c1_geoser = GDF["c1_t25"]
+        t25_c3_geoser = GDF["c3_t25"]         
+        
+        # For each transect, find nearest ESL point to CoastNode
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                
+                CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                
+                # extract nearest ESL index within 4 km of CoastNode
+                nearest_idx_array = DataPoints.sindex.nearest(CoastPoint, max_distance=MaxDist) 
+                nearest_idx = nearest_idx_array[1]
+                     
+                if len(nearest_idx) > 0:
+                    t25 = t25_geoser[nearest_idx].values[0]                   # returns geoseries of index,value pair. get value only
+                    t25_c1 = t25_c1_geoser[nearest_idx].values[0]                     
+                    t25_c3 = t25_c3_geoser[nearest_idx].values[0]                    
+                    
+                else:
+                    print(f"\t{Transect.LineID}_{Transect.ID}: No nearby points!")
+                    sys.exit()
+                    
+                # save extracted ESL values to the given scenario
+                if Scenario == "Hist":
+                    Transect.H_ESL = t25
+                    Transect.H_ESL_c1 = t25_c1
+                    Transect.H_ESL_c3 = t25_c3
+                    
+                elif Scenario == "M45":
+                    Transect.M45_ESL = t25
+                    Transect.M45_ESL_c1 = t25_c1
+                    Transect.M45_ESL_c3 = t25_c3
+                
+                elif Scenario == "M85":
+                    Transect.M85_ESL = t25
+                    Transect.M85_ESL_c1 = t25_c1
+                    Transect.M85_ESL_c3 = t25_c3
+                
+                elif Scenario == "E45":
+                    Transect.E45_ESL = t25
+                    Transect.E45_ESL_c1 = t25_c1
+                    Transect.E45_ESL_c3 = t25_c3
+                
+                elif Scenario == "E85":
+                    Transect.E85_ESL = t25
+                    Transect.E85_ESL_c1 = t25_c1
+                    Transect.E85_ESL_c3 = t25_c3
+                
+                else:
+                    print(f"\t{Transect.LineID}_{Transect.ID}:Invalid scenario {Scenario}")
+           
+                #print(f"\t{Transect.LineID}_{Transect.ID}:")
+                #print(f"\t\tt25:{t25}, {Transect.H_ESL}")
+                #print(f"\t\tc1: {t25_c1}, {Transect.H_ESL_c1}")
+                #print(f"\t\tc3: {t25_c3}, {Transect.H_ESL_c3}")
+    
+    def CalculateTotalWaterLevel(self):
+    
+        """
+        
+        Adds up the extreme still water level and extreme wave runup 
+        to estimate extreme total water level.
+        Also calculate extreme wave setup. 
+        Repeat for each climate scenario. Use 95th percentile SLR (c3 data in uplifted ESL).
+        
+        NH, Novembeer 2023
+        
+        """
+        
+        print("Coast.CalculateTotalWaterLevel: Adding extreme sea level to extreme wave runup")
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                # Wave total extreme runup level (Stockdon 20006)
+                Transect.H_TWL = Transect.H_ESL_c3 + Transect.H_R2
+                Transect.M45_TWL = Transect.M45_ESL_c3 + Transect.M45_R2
+                Transect.M85_TWL = Transect.M85_ESL_c3 + Transect.M85_R2
+                Transect.E45_TWL = Transect.E45_ESL_c3 + Transect.E45_R2
+                Transect.E85_TWL = Transect.E85_ESL_c3 + Transect.E85_R2
+                
+                # Wave setup component of extreme wave runup (Stockdon 2006)
+                Transect.H_TWL_setup = Transect.H_ESL_c3 + Transect.H_setup
+                Transect.M45_TWL_setup = Transect.M45_ESL_c3 + Transect.M45_setup
+                Transect.M85_TWL_setup = Transect.M85_ESL_c3 + Transect.M85_setup
+                Transect.E45_TWL_setup = Transect.E45_ESL_c3 + Transect.E45_setup
+                Transect.E85_TWL_setup = Transect.E85_ESL_c3 + Transect.E85_setup
+    
+    def StormImpactScale(self):
+    
+        """
+        Apply Sallenger (2000) Storm Impact Scale
+        For future scenarios use adjusted dune elevations.
+        
+        NH, November 2023
+        
+        """
+        
+        print("Coast.StormImpactScale: Comparing total water level and dune elevations")
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                if Transect.Barrier:
+                    if Transect.H_TWL < Transect.H_FrontToe:
+                        Transect.H_StormImpactScale = "Swash"
+                    elif Transect.H_TWL > Transect.H_FrontToe and Transect.H_TWL < Transect.H_Crest:
+                        Transect.H_StormImpactScale = "Collision"
+                    elif Transect.H_TWL > Transect.H_Crest:
+                        if Transect.H_TWL_setup > Transect.H_Crest:
+                            Transect.H_StormImpactScale = "Inundation"
+                        else:
+                            Transect.H_StormImpactScale = "Overwash"
+                    else:
+                        print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for Historic scenario!")
+                    
+                    if Transect.M45_TWL < Transect.M45_FrontToe:
+                        Transect.M45_StormImpactScale = "Swash"
+                    elif Transect.M45_TWL > Transect.M45_FrontToe and Transect.M45_TWL < Transect.M45_Crest:
+                        Transect.M45_StormImpactScale = "Collision"
+                    elif Transect.M45_TWL > Transect.M45_Crest:
+                        if Transect.M45_TWL_setup > Transect.M45_Crest:
+                            Transect.M45_StormImpactScale = "Inundation"
+                        else:
+                            Transect.M45_StormImpactScale = "Overwash"
+                    else:
+                        print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for MidC RCP4.5 scenario!")
+                        
+                    if Transect.M85_TWL < Transect.M85_FrontToe:
+                        Transect.M85_StormImpactScale = "Swash"
+                    elif Transect.M85_TWL > Transect.M85_FrontToe and Transect.M85_TWL < Transect.M85_Crest:
+                        Transect.M85_StormImpactScale = "Collision"
+                    elif Transect.M85_TWL > Transect.M85_Crest:
+                        if Transect.M85_TWL_setup > Transect.M85_Crest:
+                            Transect.M85_StormImpactScale = "Inundation"
+                        else:
+                            Transect.M85_StormImpactScale = "Overwash"
+                    else:
+                        print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for MidC RCP8.5 scenario!")
+                        
+                    if Transect.E45_TWL < Transect.E45_FrontToe:
+                        Transect.E45_StormImpactScale = "Swash"
+                    elif Transect.E45_TWL > Transect.E45_FrontToe and Transect.E45_TWL < Transect.E45_Crest:
+                        Transect.E45_StormImpactScale = "Collision"
+                    elif Transect.E45_TWL > Transect.E45_Crest:
+                        if Transect.E45_TWL_setup > Transect.E45_Crest:
+                            Transect.E45_StormImpactScale = "Inundation"
+                        else:
+                            Transect.E45_StormImpactScale = "Overwash"
+                    else:
+                        print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for EndC RCP4.5 scenario!")
+                        
+                    if Transect.E85_TWL < Transect.E85_FrontToe:
+                        Transect.E85_StormImpactScale = "Swash"
+                    elif Transect.E85_TWL > Transect.E85_FrontToe and Transect.E85_TWL < Transect.E85_Crest:
+                        Transect.E85_StormImpactScale = "Collision"
+                    elif Transect.E85_TWL > Transect.E85_Crest:
+                        if Transect.E85_TWL_setup > Transect.E85_Crest:
+                            Transect.E85_StormImpactScale = "Inundation"
+                        else:
+                            Transect.E85_StormImpactScale = "Overwash"
+                    else:
+                        print(f"\t{Transect.LineID}_{Transect.ID}: No assigned storm impact scale for EndC RCP8.5 scenario!")
+                else:
+                    #print(f"\t{Transect.LineID}_{Transect.ID}: Not a barrier")
+                    if (Transect.AssetPresent and Transect.FirstAssetDist < 200):   # If assets present near coast, apply Sallenger classfication to asset elevations
+                        if Transect.H_TWL > Transect.FirstAssetElev:
+                            if Transect.H_TWL_setup > Transect.FirstAssetElev:
+                                Transect.H_StormImpactScale = "NB_Inundation"
+                            else:
+                                Transect.H_StormImpactScale = "NB_Overwash"
+                        elif Transect.FirstAssetElev - Transect.H_TWL > 5.0:        # This 5 m breakpoint is arbitrary. Arguing that if no barrier present and assets > 5m higher than severe storm runuop, not of immediate concern. 
+                            Transect.H_StormImpactScale = "NB_Swash"
+                        else:
+                            Transect.H_StormImpactScale = "NB_Collision"            # No brrier and assets < 5m above severe storm runup
+                            
+                        if Transect.M45_TWL > Transect.FirstAssetElev:
+                            if Transect.M45_TWL_setup > Transect.FirstAssetElev:
+                                Transect.M45_StormImpactScale = "NB_Inundation"
+                            else:
+                                Transect.M45_StormImpactScale = "NB_Overwash"
+                        elif Transect.FirstAssetElev - Transect.M45_TWL > 5.0:       
+                            Transect.M45_StormImpactScale = "NB_Swash"
+                        else:
+                            Transect.M45_StormImpactScale = "NB_Collision"  
+                            
+                        if Transect.M85_TWL > Transect.FirstAssetElev:
+                            if Transect.M85_TWL_setup > Transect.FirstAssetElev:
+                                Transect.M85_StormImpactScale = "NB_Inundation"
+                            else:
+                                Transect.M85_StormImpactScale = "NB_Overwash"
+                        elif Transect.FirstAssetElev - Transect.M85_TWL > 5.0:       
+                            Transect.M85_StormImpactScale = "NB_Swash"
+                        else:
+                            Transect.M85_StormImpactScale = "NB_Collision" 
+                        
+                        if Transect.E45_TWL > Transect.FirstAssetElev:
+                            if Transect.E45_TWL_setup > Transect.FirstAssetElev:
+                                Transect.E45_StormImpactScale = "NB_Inundation"
+                            else:
+                                Transect.E45_StormImpactScale = "NB_Overwash"
+                        elif Transect.FirstAssetElev - Transect.E45_TWL > 5.0:       
+                            Transect.E45_StormImpactScale = "NB_Swash"
+                        else:
+                            Transect.E45_StormImpactScale = "NB_Collision"
+                            
+                        if Transect.E85_TWL > Transect.FirstAssetElev:
+                            if Transect.E85_TWL_setup > Transect.FirstAssetElev:
+                                Transect.E85_StormImpactScale = "NB_Inundation"
+                            else:
+                                Transect.E85_StormImpactScale = "NB_Overwash"
+                        elif Transect.FirstAssetElev - Transect.E85_TWL > 5.0:       
+                            Transect.E85_StormImpactScale = "NB_Swash"
+                        else:
+                            Transect.E85_StormImpactScale = "NB_Collision"
+                            
+                    else:
+                        Transect.H_StormImpactScale = "NB_NoAsset"
+                        Transect.M45_StormImpactScale = "NB_NoAsset"
+                        Transect.M85_StormImpactScale = "NB_NoAsset"
+                        Transect.E45_StormImpactScale = "NB_NoAsset"
+                        Transect.E85_StormImpactScale = "NB_NoAsset"
+                    
+                    
+    def CountStormImpacts(self, subcell, OutputFilename, delimiter):
+        
+        """
+        Function to count to total number of transects in the given subcell,
+        and the total number predicted of each storm regime, for each climate scenario.
+       
+        Write out to .csv file
+        
+        """
+        
+        # initialise all counts
+        H_SwashCount = 0
+        H_CollisionCount = 0
+        H_OverwashCount = 0
+        H_InundationCount = 0
+        H_NB_SwashCount = 0
+        H_NB_CollisionCount = 0
+        H_NB_OverwashCount = 0
+        H_NB_InundationCount = 0
+        H_NB_NoAssetCount = 0
+        
+        M45_SwashCount = 0
+        M45_CollisionCount = 0
+        M45_OverwashCount = 0
+        M45_InundationCount = 0
+        M45_NB_SwashCount = 0
+        M45_NB_CollisionCount = 0
+        M45_NB_OverwashCount = 0
+        M45_NB_InundationCount = 0
+        M45_NB_NoAssetCount = 0
+        
+        M85_SwashCount = 0
+        M85_CollisionCount = 0
+        M85_OverwashCount = 0
+        M85_InundationCount = 0
+        M85_NB_SwashCount = 0
+        M85_NB_CollisionCount = 0
+        M85_NB_OverwashCount = 0
+        M85_NB_InundationCount = 0
+        M85_NB_NoAssetCount = 0
+        
+        E45_SwashCount = 0
+        E45_CollisionCount = 0
+        E45_OverwashCount = 0
+        E45_InundationCount = 0
+        E45_NB_SwashCount = 0
+        E45_NB_CollisionCount = 0
+        E45_NB_OverwashCount = 0
+        E45_NB_InundationCount = 0
+        E45_NB_NoAssetCount = 0
+        
+        E85_SwashCount = 0
+        E85_CollisionCount = 0
+        E85_OverwashCount = 0
+        E85_InundationCount = 0
+        E85_NB_SwashCount = 0
+        E85_NB_CollisionCount = 0
+        E85_NB_OverwashCount = 0
+        E85_NB_InundationCount = 0
+        E85_NB_NoAssetCount = 0
+        
+        NoTransects = np.sum([Line.NoTransects for Line in self.CoastLines])
+        print("NoTransects =", NoTransects)
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                #print(Transect.LineID, Transect.ID)
+                match Transect.H_StormImpactScale:              # works
+                    case "Swash":
+                        H_SwashCount += 1
+                    case "Collision":
+                        H_CollisionCount += 1
+                    case "Overwash":
+                        H_OverwashCount += 1
+                    case "Inundation":
+                        H_InundationCount += 1
+                    case "NB_Swash":
+                        H_NB_SwashCount += 1
+                    case "NB_Collision":
+                        H_NB_CollisionCount += 1
+                    case "NB_Overwash":
+                        H_NB_OverwashCount += 1
+                    case "NB_Inundation":
+                        H_NB_InundationCount += 1
+                    case "NB_NoAsset":
+                        H_NB_NoAssetCount += 1
+                    case _:
+                        print(Transect.LineID, Transect.ID, "No assigned historical storm regime!")
+                        
+                match Transect.M45_StormImpactScale:            
+                    case "Swash":
+                        M45_SwashCount += 1
+                    case "Collision":
+                        M45_CollisionCount += 1
+                    case "Overwash":
+                        M45_OverwashCount += 1
+                    case "Inundation":
+                        M45_InundationCount += 1
+                    case "NB_Swash":
+                        M45_NB_SwashCount += 1
+                    case "NB_Collision":
+                        M45_NB_CollisionCount += 1
+                    case "NB_Overwash":
+                        M45_NB_OverwashCount += 1
+                    case "NB_Inundation":
+                        M45_NB_InundationCount += 1
+                    case "NB_NoAsset":
+                        M45_NB_NoAssetCount += 1
+                    case _:
+                        print(Transect.LineID, Transect.ID, "No assigned M45 storm regime!")
+                        
+                match Transect.M85_StormImpactScale:            
+                    case "Swash":
+                        M85_SwashCount += 1
+                    case "Collision":
+                        M85_CollisionCount += 1
+                    case "Overwash":
+                        M85_OverwashCount += 1
+                    case "Inundation":
+                        M85_InundationCount += 1
+                    case "NB_Swash":
+                        M85_NB_SwashCount += 1
+                    case "NB_Collision":
+                        M85_NB_CollisionCount += 1
+                    case "NB_Overwash":
+                        M85_NB_OverwashCount += 1
+                    case "NB_Inundation":
+                        M85_NB_InundationCount += 1
+                    case "NB_NoAsset":
+                        M85_NB_NoAssetCount += 1
+                    case _:
+                        print(Transect.LineID, Transect.ID, "No assigned M85 storm regime!")
+                        
+                match Transect.E45_StormImpactScale:            
+                    case "Swash":
+                        E45_SwashCount += 1
+                    case "Collision":
+                        E45_CollisionCount += 1
+                    case "Overwash":
+                        E45_OverwashCount += 1
+                    case "Inundation":
+                        E45_InundationCount += 1
+                    case "NB_Swash":
+                        E45_NB_SwashCount += 1
+                    case "NB_Collision":
+                        E45_NB_CollisionCount += 1
+                    case "NB_Overwash":
+                        E45_NB_OverwashCount += 1
+                    case "NB_Inundation":
+                        E45_NB_InundationCount += 1
+                    case "NB_NoAsset":
+                        E45_NB_NoAssetCount += 1
+                    case _:
+                        print(Transect.LineID, Transect.ID, "No assigned E45 storm regime!")
+                        
+                match Transect.E85_StormImpactScale:            
+                    case "Swash":
+                        E85_SwashCount += 1
+                    case "Collision":
+                        E85_CollisionCount += 1
+                    case "Overwash":
+                        E85_OverwashCount += 1
+                    case "Inundation":
+                        E85_InundationCount += 1
+                    case "NB_Swash":
+                        E85_NB_SwashCount += 1
+                    case "NB_Collision":
+                        E85_NB_CollisionCount += 1
+                    case "NB_Overwash":
+                        E85_NB_OverwashCount += 1
+                    case "NB_Inundation":
+                        E85_NB_InundationCount += 1
+                    case "NB_NoAsset":
+                        E85_NB_NoAssetCount += 1
+                    case _:
+                        print(Transect.LineID, Transect.ID, "No assigned E85 storm regime!")
+        
+        """        
+        print("Sw=", H_SwashCount)
+        print("Col=", H_CollisionCount)
+        print("Ov=", H_OverwashCount)
+        print("In=", H_InundationCount)
+        print("NSw=", H_NB_SwashCount)
+        print("NCol=", H_NB_CollisionCount)
+        print("NOv=", H_NB_OverwashCount)
+        print("NIn=", H_NB_InundationCount)
+        print("NNA=", H_NB_NoAssetCount)
+        """
+        
+        # open csv fle in appand mode, save counts for current subcell. works
+        f = open(OutputFilename,'a')
+        f.write(subcell + delimiter + str(NoTransects) + delimiter +\
+                str(H_SwashCount) + delimiter + str(H_CollisionCount) + delimiter + str(H_OverwashCount) + delimiter + str(H_InundationCount) + delimiter +\
+                str(H_NB_SwashCount) + delimiter + str(H_NB_CollisionCount) + delimiter + str(H_NB_OverwashCount) + delimiter + str(H_NB_InundationCount) + delimiter + str(H_NB_NoAssetCount) + delimiter +\
+                str(M45_SwashCount) + delimiter + str(M45_CollisionCount) + delimiter + str(M45_OverwashCount) + delimiter + str(M45_InundationCount) + delimiter +\
+                str(M45_NB_SwashCount) + delimiter + str(M45_NB_CollisionCount) + delimiter + str(M45_NB_OverwashCount) + delimiter + str(M45_NB_InundationCount) + delimiter + str(M45_NB_NoAssetCount) + delimiter +\
+                str(M85_SwashCount) + delimiter + str(M85_CollisionCount) + delimiter + str(M85_OverwashCount) + delimiter + str(M85_InundationCount) + delimiter +\
+                str(M85_NB_SwashCount) + delimiter + str(M85_NB_CollisionCount) + delimiter + str(M85_NB_OverwashCount) + delimiter + str(M85_NB_InundationCount) + delimiter + str(M85_NB_NoAssetCount) + delimiter +\
+                str(E45_SwashCount) + delimiter + str(E45_CollisionCount) + delimiter + str(E45_OverwashCount) + delimiter + str(E45_InundationCount) + delimiter +\
+                str(E45_NB_SwashCount) + delimiter + str(E45_NB_CollisionCount) + delimiter + str(E45_NB_OverwashCount) + delimiter + str(E45_NB_InundationCount) + delimiter + str(E45_NB_NoAssetCount) + delimiter +\
+                str(E85_SwashCount) + delimiter + str(E85_CollisionCount) + delimiter + str(E85_OverwashCount) + delimiter + str(E85_InundationCount) + delimiter +\
+                str(E85_NB_SwashCount) + delimiter + str(E85_NB_CollisionCount) + delimiter + str(E85_NB_OverwashCount) + delimiter + str(E85_NB_InundationCount) + delimiter + str(E85_NB_NoAssetCount) + "\n")
+        f.close()
+    
+    def CalculateHeadroom(self):
+        
+        """
+        Calcualte the difference between the dune crest and estimated total water level
+        for each climate scenario
+        
+        NH, Feb 2024
+        
+        """
+        
+        print("Coast.CalcualteHeadroom: Finding the difference between total water level and dune crest")
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                if Transect.Barrier:
+                    Transect.H_Headroom = Transect.H_Crest - Transect.H_TWL
+                    Transect.M45_Headroom = Transect.M45_Crest - Transect.M45_TWL
+                    Transect.M85_Headroom = Transect.M85_Crest - Transect.M85_TWL
+                    Transect.E45_Headroom = Transect.E45_Crest - Transect.E45_TWL
+                    Transect.E85_Headroom = Transect.E85_Crest - Transect.E85_TWL
+                #else:
+                    #print(f"\t{Transect.LineID}_{Transect.ID}: Not a barrier")
+    
+    
+    def FindNearestIndex(self, Shapefile=None):
+    
+        """
+        Find index of nearest DC2 transect to Transect.CoastNode
+        Look only within 200 m of CoastNode
+        Save to Transect.NearestDC2Idx
+        
+        Parameters
+        ----------
+        Shapefile - string 
+            - geospatial multiline vector of DC2 transects
+            
+        NH, November 2023
+        
+        """
+        
+        print("Coast.FindNearestIndex: Saving index of nearest DC2 transect")
+            
+        # read shapefile using geopandas
+        GDF = gp.read_file(Shapefile)
+        TransectsGeom = GDF['geometry']
+        
+        if len(TransectsGeom) == 0:
+            print(f"\tNo geometries in {Shapefile}!")
+            return
+            
+        #if __debug__:
+        #    print(f"\tNumber of geometries = {len(TransectsGeom)}")
+        #    print(TransectsGeom[0:5])
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects: 
+                CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                
+                # extract nearest DC2 transect index within 200m of CoastNode
+                # returns input index in [0] (in the case of a point this is always 0), nearest index of TransectsGeom in [1]
+                nearest_idx_array = TransectsGeom.sindex.nearest(CoastPoint, max_distance=200) 
+                
+                # if no DC2 transect within 200 m of my transect, set index to None
+                if len(nearest_idx_array[1]) == 0:
+                    #print(f"\t{Transect.LineID}_{Transect.ID}:{nearest_idx_array[1]}")
+                    Transect.NearestDC2Idx = None
+                
+                else:                
+                    # save index to Transect
+                    Transect.NearestDC2Idx = nearest_idx_array[1]           
+                
+                
+                    
+    def ExtractFutureErosion(self, Shapefile=None, Scenario=None):
+    
+        """
+        Extract predicted future erosion from DC2 transect.
+        Requires Transect.NearestDC2Idx to be set by calling Coast.FindNearestIndex.
+        
+        Parameters
+        ----------
+        Shapefile - string 
+            - geospatial multiline vector of DC2 transects for given climate scenario
+        Scenario - string 
+            - Climate change scenario of interest
+            - Options: "RCP4" / "RCP8"
+            
+        NH, November 2023
+        
+        """
+        
+        print(f"Coast.ExtractFutureErosion: Read the predicted future erosion from DC2 transect for scenario {Scenario}")
+        
+        # check input parameters
+        if not (Scenario == "RCP4" or Scenario == "RCP8"):
+            print("\tInvalid Scenario:", Scenario)
+            sys.exit()
+            
+        # read shapefile using geopandas
+        GDF = gp.read_file(Shapefile)
+        Erosion_2050 = GDF['Tot_E_2050']
+        Erosion_2100 = GDF['Tot_E_2100']
+        
+        if len(Erosion_2050) == 0 or len(Erosion_2100) == 0:
+            print(f"\tNo erosion data in {Shapefile}!")
+            return
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects: 
+            
+                if not Transect.NearestDC2Idx:
+                    print(f"\t{Transect.LineID}_{Transect.ID}: No value for Transect.NearestDC2Idx")
+                    continue
+                    
+                # save predicted erosion values to given scenario
+                if Scenario == "RCP4":
+                    Transect.M45_Erosion = Erosion_2050[Transect.NearestDC2Idx].values[0] 
+                    Transect.E45_Erosion = Erosion_2100[Transect.NearestDC2Idx].values[0] 
+                
+                elif Scenario == "RCP8":
+                    Transect.M85_Erosion = Erosion_2050[Transect.NearestDC2Idx].values[0] 
+                    Transect.E85_Erosion = Erosion_2100[Transect.NearestDC2Idx].values[0] 
+    
+    def ExtractHistoricCoastalChange(self, Shapefile=None):
+    
+        """
+        Extract historic change rates in m/yr from the DC2 transect shapefile dataset.
+        Save to storm impact transect. 
+        Requires Transect.NearestDC2Idx to be set by calling Coast.FindNearestIndex.
+        
+        Parameters
+        ----------
+        Shapefile - string 
+            - geospatial multiline vector of DC2 transects for given climate scenario
+            
+        NH, Jan 2024
+        
+        """
+        
+        print(f"Coast.ExtractHistoricCoastalChange: Read historic change rate for nearest DC2 transect")
+        
+        # read shapefile using geopandas
+        GDF = gp.read_file(Shapefile)
+        HistRate = GDF['Hist_Rate']
+        
+        if len(HistRate) == 0:
+            print(f"\tNo historic change rate data in {Shapefile}!")
+            return
+            
+        for Line in self.CoastLines:
+            for Transect in Line.Transects: 
+            
+                if Transect.NearestDC2Idx == None:
+                    print(f"\t{Transect.LineID}_{Transect.ID}: No value for Transect.NearestDC2Idx")
+                    Transect.Hist_Rate = None            # set to None so can check for this later when value gets used
+                    continue
+                    
+                Transect.Hist_Rate = HistRate[Transect.NearestDC2Idx].values[0] 
+        
+                #print(f"\t{Transect.LineID}_{Transect.ID}:\tHistRate:{Transect.Hist_Rate}")
+                
+    def ExtractSeaLevelRise(self, Shapefile=None, MaxDist=None):
+    
+        """
+        Extract UKCP18 sea level rise projections from nearest point in shapefile
+        Extract 50th percentile for all scenarios: RCP4.5, RCP8.5, 2050, 2100
+        Save to Transect
+        
+        Parameters
+        ----------
+        Shapefile - string    
+            - location of shapefile with SLR data
+            - 17 column names: "lon" "lat" 
+                               "SLR_H85_c1" "SLR_H85_c2" "SLR_H85_c3" 
+                               "SLR_M45_c1" "SLR_M45_c2" "SLR_M45_c3" 
+                               "SLR_E45_c1" "SLR_E45_c2" "SLR_E45_c3"
+                               "SLR_M85_c1" "SLR_M85_c2" "SLR_M85_c3" 
+                               "SLR_E85_c1" "SLR_E85_c2" "SLR_E85_c3" 
+            - c1 = 5th percentile, c2 = 50th percentile, c3 = 95th percentile of model simulations
+            
+        MaxDist - integer
+            - Search radius in meters from CoastNode to SLR data
+            - must be positive and less than 50 km
+        
+        NH, November 2023
+        Revised July 2024 to pass in MaxDist
+        
+        """
+        
+        print("Coast.ExtractSeaLevelRise: Extracting UKCP18 SLR projections")
+        
+        # check input parameters
+        if not (MaxDist > 0 and MaxDist < 50000):
+            print("\tInvalid search radius:", MaxDist)
+            sys.exit()
+        
+        # read shapefile using geopandas
+        GDF = gp.read_file(Shapefile)
+        VectorPoints = GDF['geometry']
+        
+        if len(VectorPoints) == 0:
+            print(f"\tNo Points in {Shapefile}!")
+            sys.exit()
+        
+        # Extract data: future projected SLR for different CC scenearios and years. c3=95th percentile
+        SLR_H85_geoser = GDF["SLR_H85_c3"]
+        SLR_M45_geoser = GDF["SLR_M45_c3"]
+        SLR_E45_geoser = GDF["SLR_E45_c3"]
+        SLR_M85_geoser = GDF["SLR_M85_c3"]
+        SLR_E85_geoser = GDF["SLR_E85_c3"]        
+        
+        # For each transect, find nearest SLR point to CoastNode
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                
+                CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                
+                # extract nearest SLR vector index within MAX_DIST of CoastNode
+                nearest_idx_array = VectorPoints.sindex.nearest(CoastPoint, max_distance=MaxDist) 
+                nearest_idx = nearest_idx_array[1]
+                
+                if len(nearest_idx) > 0:
+                    SLR_H85 = SLR_H85_geoser[nearest_idx].values[0]
+                    SLR_M45 = SLR_M45_geoser[nearest_idx].values[0]                   # returns geoseries of index,value pair. get value only
+                    SLR_E45 = SLR_E45_geoser[nearest_idx].values[0]   
+                    SLR_M85 = SLR_M85_geoser[nearest_idx].values[0]      
+                    SLR_E85 = SLR_E85_geoser[nearest_idx].values[0] 
+                    
+                else:
+                    print(f"\t{Transect.LineID}_{Transect.ID}: No nearby points")
+                    continue
+                    
+                # save extracted ESL values to the given scenario. 
+                # BUG FIX: Use diference with present-day SLR_H85, i.e. baseline = 2020.
+                # else dune elevations are adjusted w.r.t 1981-2000 baseline sea level that SLR is reported against,
+                # not 2020 (historic) sea levels.
+                # This would lead to dune uplift exceeding still water level uplift in 2050 and 2100. 
+                Transect.M45_SLR = SLR_M45 - SLR_H85
+                Transect.E45_SLR = SLR_E45 - SLR_H85
+                Transect.M85_SLR = SLR_M85 - SLR_H85
+                Transect.E85_SLR = SLR_E85 - SLR_H85
+                
+                #print(f"\t{Transect.LineID}_{Transect.ID}:")
+                #print(f"\t\tM45_SLR:{Transect.M45_SLR} \tE45_SLR:{Transect.E45_SLR} \tM85_SLR:{Transect.M85_SLR} \tE85_SLR:{Transect.E85_SLR}")
+    
+    def AdjustFutureDuneElevations(self):
+    
+        """
+        According to the below conceptual model of dune evolution, adjust dune 
+        front toe and crest elevations for future storm impact analysis. 
+        
+        Conceptual model of dune evolution:
+        For a future of accelerating SLR and increased annual extreme water level events predicted by UKCP18, 
+        and our understanding of the processes that control foredune evolution, the conceptual model for 
+        dune toe and crest elevation proposed for this study is:
+        a.	On the assumption that sediment remains in the system, foredune toe elevation will keep pace 
+            with SLR until 2050 and 2100, regardless of sediment budget.
+        b.	Foredune crests of historically stable or accreting beaches will keep pace with SLR until 2050. 
+            After 2050 when SLR is expected to accelerate dramatically, accretion could turn into stability or erosion, 
+            and foredune crests will no longer increase at the same rate as SLR. 
+            For 2100 model scenarios of historically stable or accreting beaches, dune crest elevations are thus maintained at 2050 levels.
+        c.	Foredune crests of historically eroding beaches do not keep pace with SLR and remain at present day elevations for both 2050 and 2100.
+        d.	In the event of future foredune/berm toe elevations exceeding future crest elevations, due to toes keeping pace with SLR and crests not, 
+            future crest elevations are set to equal future toe elevations, to make sense from a morphological perspective.
+        
+        Need to know future SLR from Coast.ExtractSeaLevelRise.
+        
+        NH, Jan 2024
+    
+        """
+        
+        print(f"Coast.AdjustFutureDuneElevations: Adjusting future dune toe and crest elevations for storm impact analysis")
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+                
+                # Only adjust elevations if transect contains a barrier
+                if Transect.Barrier:
+                    
+                    # Increase barrier TOE elevations to keep pace with SLR, regardless of sediment budget
+                    Transect.M45_FrontToe = Transect.H_FrontToe + Transect.M45_SLR
+                    Transect.E45_FrontToe = Transect.H_FrontToe + Transect.E45_SLR
+                    Transect.M85_FrontToe = Transect.H_FrontToe + Transect.M85_SLR
+                    Transect.E85_FrontToe = Transect.H_FrontToe + Transect.E85_SLR
+                
+                    # If no nearby DC2 transect found, historic sediment budget is not known. Treat as if barrier is eroding (percautionary):
+                    # Barrier CREST elevations maintained at present-day levels for 2050 and 2100
+                    if Transect.Hist_Rate == None:
+                        Transect.M45_Crest = Transect.H_Crest
+                        Transect.E45_Crest = Transect.H_Crest
+                        Transect.M85_Crest = Transect.H_Crest
+                        Transect.E85_Crest = Transect.H_Crest
+                        
+                    else:
+                        # Historic trend of erosion (negative sediment budget): Barrier crest elevations maintained at present-day levels for 2050 and 2100
+                        if Transect.Hist_Rate < 0.:
+                            Transect.M45_Crest = Transect.H_Crest
+                            Transect.E45_Crest = Transect.H_Crest
+                            Transect.M85_Crest = Transect.H_Crest
+                            Transect.E85_Crest = Transect.H_Crest
+                        
+                        # Historically stable or accreting (positive sediment budget): Barrier crest elevations keep pace with SLR until 2050
+                        else:
+                            Transect.M45_Crest = Transect.H_Crest + Transect.M45_SLR
+                            Transect.E45_Crest = Transect.M45_Crest
+                            Transect.M85_Crest = Transect.H_Crest + Transect.M85_SLR
+                            Transect.E85_Crest = Transect.M85_Crest
+                    
+                    # Check if future toe elevation exceeds future crest elevation: set to equal and set flag
+                    if Transect.M45_FrontToe > Transect.M45_Crest:
+                        print(f"\t{Transect.LineID}_{Transect.ID}: M45 toe>crest!")
+                        Transect.M45_Crest = Transect.M45_FrontToe
+                        Transect.M45_BarrierDrowning = True
+                    else:
+                        Transect.M45_BarrierDrowning = False
+                        
+                    if Transect.E45_FrontToe > Transect.E45_Crest:
+                        print(f"\t{Transect.LineID}_{Transect.ID}: E45 toe>crest!")
+                        Transect.E45_Crest = Transect.E45_FrontToe
+                        Transect.E45_BarrierDrowning = True
+                    else:
+                        Transect.E45_BarrierDrowning = False
+                        
+                    if Transect.M85_FrontToe > Transect.M85_Crest:
+                        print(f"\t{Transect.LineID}_{Transect.ID}: M85 toe>crest!")
+                        Transect.M85_Crest = Transect.M85_FrontToe
+                        Transect.M85_BarrierDrowning = True
+                    else:
+                        Transect.M85_BarrierDrowning = False
+                        
+                    if Transect.E85_FrontToe > Transect.E85_Crest:
+                        print(f"\t{Transect.LineID}_{Transect.ID}: E85 toe>crest!")
+                        Transect.E85_Crest = Transect.E85_FrontToe
+                        Transect.E85_BarrierDrowning = True
+                    else:
+                        Transect.E85_BarrierDrowning = False
+                    
+                    """
+                    if Transect.Hist_Rate == None:
+                        Transect.M45_FrontToe = Transect.H_FrontToe
+                        Transect.E45_FrontToe = Transect.H_FrontToe
+                        Transect.M85_FrontToe = Transect.H_FrontToe
+                        Transect.E85_FrontToe = Transect.H_FrontToe
+                        
+                        Transect.M45_Crest = Transect.H_Crest
+                        Transect.E45_Crest = Transect.H_Crest
+                        Transect.M85_Crest = Transect.H_Crest
+                        Transect.E85_Crest = Transect.H_Crest
+                        
+                    else:
+                        # Historically stable or eroding coastline (rate < 0.25 m/yr chosen from qual comp w DC2 RCP8.5 2050 and 2100 erosion predictions):
+                        # Dune toe and crest elevations maintained at present-day levels for 2050 and 2100 (i.e. cannot keep pace with SLR)
+                        if Transect.Hist_Rate < 0.25:
+                            Transect.M45_FrontToe = Transect.H_FrontToe
+                            Transect.E45_FrontToe = Transect.H_FrontToe
+                            Transect.M85_FrontToe = Transect.H_FrontToe
+                            Transect.E85_FrontToe = Transect.H_FrontToe
+                            
+                            Transect.M45_Crest = Transect.H_Crest
+                            Transect.E45_Crest = Transect.H_Crest
+                            Transect.M85_Crest = Transect.H_Crest
+                            Transect.E85_Crest = Transect.H_Crest
+                        
+                        # Historically accreting coastline: Increase elevations with SLR to 2050, maintain constant thereafter
+                        else:
+                            Transect.M45_FrontToe = Transect.H_FrontToe + Transect.M45_SLR
+                            Transect.E45_FrontToe = Transect.M45_FrontToe
+                            Transect.M85_FrontToe = Transect.H_FrontToe + Transect.M85_SLR
+                            Transect.E85_FrontToe = Transect.M85_FrontToe
+                            
+                            Transect.M45_Crest = Transect.H_Crest + Transect.M45_SLR
+                            Transect.E45_Crest = Transect.M45_Crest
+                            Transect.M85_Crest = Transect.H_Crest + Transect.M85_SLR
+                            Transect.E85_Crest = Transect.M85_Crest
+                    """
+                #if Transect.ID == '36':
+                    #print(f"\t{Transect.LineID}_{Transect.ID}: HistRate:{Transect.Hist_Rate} \tToe:{Transect.H_FrontToe}\tCrest:{Transect.H_Crest}")
+                    #print(f"\t\tM45_SLR:{Transect.M45_SLR},\tM45Toe:{Transect.M45_FrontToe}, E45Toe:{Transect.E45_FrontToe} \tM85_SLR:{Transect.M85_SLR} M85Toe:{Transect.M85_FrontToe} E85Toe:{Transect.E85_FrontToe}")
+                    #print(f"\t\tM45Crest:{Transect.M45_Crest}, E45Crest:{Transect.E45_Crest} M85Crest:{Transect.M85_Crest} E85Crest:{Transect.E85_Crest}")
+    
     def AnalyseExtremeWater(self, WaterElevs):
         
         """
