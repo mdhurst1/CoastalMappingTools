@@ -13,6 +13,7 @@ from pathlib import Path
 import numpy as np
 from scipy.interpolate import splprep, splev
 import numpy.ma as ma
+from datetime import datetime
 from sklearn.cluster import KMeans
 
 import shapefile
@@ -256,7 +257,7 @@ class Coast:
             # launch polygon patches shapefile writer
             self.WritePatchesShp("ExtFrontLines_"+Level, "ExtBackLines_"+Level, ExtPatchesShp)
     
-    def WriteErodedAreaShp(self, ErosionShp, StartYear=2030, Year=2100,Smooth=True,tempWrite=False):
+    def WriteErodedAreaShp(self, ErosionShp, StartYear='2020-01-01', Year='2100-01-01',Smooth=True,tempWrite=False):
         
         """
         Writes future shorelines to polygon patches
@@ -266,14 +267,26 @@ class Coast:
         """
         
         # print action to screen
-        #print("Coast.WriteErodedAreaShp: Writing predicted erosion area to polygon file")
+        print("Coast.WriteErodedAreaShp: Writing predicted erosion area to polygon file")
         
         # retrieve future shorelines
         self.GetFutureShoreLines()
 
+        # check date formatting for indices if statement
+        if isinstance(Year,str):
+            Year = datetime.strptime(Year,'%Y-%m-%d')
+        else:
+            sys.exit('Coast.WriteErodedAreaShp - input Year not in string format for conversion to datetime')
+            
+        if isinstance(StartYear, str):
+            StartYear = datetime.strptime(StartYear,'%Y-%m-%d')
+        else:
+            sys.exit('Coast.WriteErodedAreaShp - input StartYear not in string format for conversion to datetime')
+        
         # get lists of lines for year of prediction and most recent shoreline position
         Indices = [i for i, Line in enumerate(self.FutureShoreLines) if Line.Year == Year]
         self.WriteFutureLines = [self.FutureShoreLines[i] for i in Indices]
+        
         Indices = [i for i, Line in enumerate(self.FutureShoreLines) if Line.Year == StartYear]
         self.WriteRecentLines = [self.FutureShoreLines[i] for i in Indices]
         
@@ -285,9 +298,10 @@ class Coast:
         if tempWrite:
             self.WriteLinesShp("WriteFutureLines", ErosionBackShp, Smooth)
             self.WriteLinesShp("WriteRecentLines", ErosionFrontShp, Smooth)
+            
         self.WritePatchesShp("WriteFutureLines", "WriteRecentLines", ErosionShp, Smooth)
 
-    def WriteErosionProximityShp(self, ProximityShp, BufferDistance=10., Year=2100, Smooth=True, tempWrite=False):
+    def WriteErosionProximityShp(self, ProximityShp, BufferDistance=10., Year='2100-01-01', Smooth=True, tempWrite=False):
 
         """
         Writes Erosion Proximity polygon patches for a given decade
@@ -299,6 +313,12 @@ class Coast:
         # retrieve future shorelines
         self.GetFutureShoreLines()
         Lines = self.GetFutureShoreLinesProximity(BufferDistance)
+        
+        # check date formatting for indices if statement
+        if isinstance(Year,str):
+            Year = datetime.strptime(Year,'%Y-%m-%d')
+        else:
+            sys.exit('Coast.ErosionProximityShp - input Year not in string format for conversion to datetime')
 
         # get lists of lines for year of prediction and most recent shoreline position
         Indices = [i for i, Line in enumerate(self.FutureShoreLines) if Line.Year == Year]
@@ -341,16 +361,16 @@ class Coast:
         WL = shapefile.Writer(FutureShoreLinesShp,shapeType=shapefile.POLYLINE)
        
         # Create Fields
-        self.Fields = [('DeletionFlag','C',1,0),['Cell','C', 2, 0], ['SubCell','C', 2, 0], ['Line_ID', 'C', 20, 0],['Year','N', 4, 0],['Method','C', 5, 0]]
+        self.Fields = [('DeletionFlag','C',1,0),['Cell','C', 2, 0], ['SubCell','C', 2, 0], ['Line_ID', 'C', 20, 0],['Year','C', 10, 0],['Method','C', 5, 0]]
         WL.fields = self.Fields[1:] 
-
+        
         for Line in self.FutureShoreLines:
             
             if Smooth:
                 Line.SmoothLine(WindowSize=11)
 
             # Find Loops
-            Line.MakeSimple()
+            Line.MakeSimple() #LineString is not simple... Valid Geometry
                 
             # get line node positions
             # why are we not just recalling Line.SmoothLine here? What is different?
@@ -385,8 +405,9 @@ class Coast:
             if self.Method == None:
                 import pdb
                 pdb.set_trace()
-             
-            Record = [str(Line.Cell), str(Line.SubCell),str(Line.ID),str(Line.Year), str(self.Method)]
+            
+            LineYr_str = Line.Year.strftime('%Y-%m-%d') if isinstance(Line.Year, datetime) else str(Line.Year)
+            Record = [str(Line.Cell), str(Line.SubCell),str(Line.ID),str(LineYr_str), str(self.Method)]
 
             # write line and record
             WL.line(WriteLine)
@@ -765,7 +786,7 @@ class Coast:
         """
 
         # print action to screen
-        #print("Coast.WritePatchesShp: Writing patch between two lines to a polygon shapefile")
+        print("Coast.WritePatchesShp: Writing patch between two lines to a polygon shapefile")
 
         if len(self.__dict__[DictionaryKey1]) == 0:
             print("Coast.WritePatchesShp (Error): Trying to write from empty list of lines", DictionaryKey1, DictionaryKey2)
@@ -987,25 +1008,39 @@ class Coast:
         # Create Fields
         Fields = [('DeletionFlag','C',1,0), 
         ['Cell', 'C', 3, 0], ['SubCell', 'C', 3, 0], ['CMU','C', 20, 0],
-        ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], ['Min_Rate','N', 6, 4], ['Max_Rate','N', 6, 4], ['Hist_Rate','N', 6, 4], 
-        ['CalibYr','N', 4, 0], ['BaseLYr','N', 4, 0], ['BaseLSrc','C', 50, 0], 
+        ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], 
+        #['Min_Rate','N', 6, 4], ['Max_Rate','N', 6, 4], 
+        ['Hist_Rate','N', 6, 4], 
+        ['CalibYr', 'C', 10, 0], ['BaseLYr', 'C', 10, 0], ['BaseLSrc','C', 50, 0], 
         ['Extrap2050','N', 6, 4], ['Extrap2100','N', 6, 4], ['FirstEYr','N',4, 4],
-        #['Dist_2030', 'N', 6, 4], ['Rate_2030', 'N', 6, 4], 
+        
+        ['pDist_2030', 'N', 6, 4], ['pRate_2030', 'N', 6, 4],
+        
         ['Dist_2040', 'N', 6, 4], ['Rate_2040', 'N', 6, 4], 
         ['Dist_2050', 'N', 6, 4], ['Rate_2050', 'N', 6, 4], 
         ['Dist_2060', 'N', 6, 4], ['Rate_2060', 'N', 6, 4], 
         ['Dist_2070', 'N', 6, 4], ['Rate_2070', 'N', 6, 4], 
         ['Dist_2080', 'N', 6, 4], ['Rate_2080', 'N', 6, 4], 
         ['Dist_2090', 'N', 6, 4], ['Rate_2090', 'N', 6, 4], 
-        ['Dist_2100', 'N', 6, 4], ['Rate_2100', 'N', 6, 4], 
-        ['RCP85_2100', 'N', 4, 3],
+        ['Dist_2100', 'N', 6, 4], ['Rate_2100', 'N', 6, 4],
+        #['Dist_2110', 'N', 6, 4], ['Rate_2110', 'N', 6, 4], 
+        #['Dist_2120', 'N', 6, 4], ['Rate_2120', 'N', 6, 4], 
+        
+        #['Dist_2150', 'N', 6, 4], ['Rate_2150', 'N', 6, 4], 
+        #['Dist_2200', 'N', 6, 4], ['Rate_2200', 'N', 6, 4], 
+        #['Dist_2250', 'N', 6, 4], ['Rate_2250', 'N', 6, 4], 
+        #['Dist_2300', 'N', 6, 4], ['Rate_2300', 'N', 6, 4], 
+        
+        ['RCP85_2050', 'N', 4, 3],['RCP85_2100', 'N', 4, 3],
+        #['RCP85_2150', 'N', 4, 3],['RCP85_2200', 'N', 4, 3],
+        #['RCP85_2250', 'N', 4, 3],['RCP85_2300', 'N', 4, 3],
+        
         ['DC1_SvEn_B','N', 4, 0], ['DC1_SvEn_C','N', 4, 0], 
         ['DC1_DistV','N', 6, 4], ['DC1_RateBC','N', 6, 4],
-        ['OS_2020_Yr','N',4,0], ['Method','C', 5, 0]
+        ['OS_2020_Yr','C',10,0], ['Method','C', 5, 0]
         ]
         
         WL.fields = Fields[1:]
-
         
         for Line in self.CoastLines:
             for Transect in Line.Transects:
@@ -1023,13 +1058,22 @@ class Coast:
                             Transect.DC1[3] = Transect.DC1[2]/(Transect.DC1[1]-Transect.DC1[0])
                         except:
                             Transect.DC1 = ["","","",""]
+                            
+                    # Convert dates to strings in 'yyyy-mm-dd' format
+                    CalibYr_str = Transect.CalibrationYear.strftime('%Y-%m-%d') if isinstance(Transect.CalibrationYear, datetime) else str(Transect.CalibrationYear)
+                    BaseLYr_str = Transect.HistoricShorelinesYears[-1].strftime('%Y-%m-%d') if isinstance(Transect.HistoricShorelinesYears[-1], datetime) else str(Transect.HistoricShorelinesYears[-1])
+                    OSYr_str = Transect.OSYear.strftime('%Y-%m-%d') if isinstance(Transect.OSYear, datetime) else str(Transect.OSYear)
+
                     
                     # Create the record this could become a function in transect object...
                     Record = [str(self.Cell), str(self.SubCell), str(self.CMU), str(Line.ID), str(Transect.ID),
-                                Transect.MinChangeRate, Transect.MaxChangeRate, Transect.ChangeRate, 
-                                Transect.CalibrationYear, Transect.HistoricShorelinesYears[-1], Transect.HistoricShorelinesSources[-1], 
+                                #Transect.MinChangeRate, Transect.MaxChangeRate, 
+                                Transect.ChangeRate, 
+                                CalibYr_str, BaseLYr_str, Transect.HistoricShorelinesSources[-1], 
                                 Transect.get_ExtrapDistance(2050), Transect.get_ExtrapDistance(2100), Transect.get_FirstFutureErosionYear(),
-                                #Transect.get_FuturePositionChange(2020, 2030), Transect.get_FutureRate(2020, 2030), # should we be doing 2020 to 2030?
+                                
+                                Transect.get_FuturePositionChange(2020, 2030), Transect.get_FutureRate(2020, 2030),
+                                
                                 Transect.get_FuturePositionChange(2030, 2040), Transect.get_FutureRate(2030, 2040),
                                 Transect.get_FuturePositionChange(2040, 2050), Transect.get_FutureRate(2040, 2050),
                                 Transect.get_FuturePositionChange(2050, 2060), Transect.get_FutureRate(2050, 2060),
@@ -1037,10 +1081,20 @@ class Coast:
                                 Transect.get_FuturePositionChange(2070, 2080), Transect.get_FutureRate(2070, 2080),
                                 Transect.get_FuturePositionChange(2080, 2090), Transect.get_FutureRate(2080, 2090),
                                 Transect.get_FuturePositionChange(2090, 2100), Transect.get_FutureRate(2090, 2100),
-                                Transect.FutureSeaLevels[-1],
+                                #Transect.get_FuturePositionChange(2100, 2110), Transect.get_FutureRate(2100, 2110),
+                                #Transect.get_FuturePositionChange(2110, 2120), Transect.get_FutureRate(2110, 2120),
+                                
+                                #Transect.get_FuturePositionChange(2120, 2150), Transect.get_FutureRate(2120, 2150),
+                                #Transect.get_FuturePositionChange(2150, 2200), Transect.get_FutureRate(2150, 2200),
+                                #Transect.get_FuturePositionChange(2200, 2250), Transect.get_FutureRate(2200, 2250),
+                                #Transect.get_FuturePositionChange(2250, 2300), Transect.get_FutureRate(2250, 2300),
+                                
+                                Transect.FutureSeaLevels[2],Transect.FutureSeaLevels[7], # 2050, 2100
+                                #Transect.FutureSeaLevels[11],Transect.FutureSeaLevels[12], # 2150, 2200
+                                #Transect.FutureSeaLevels[13],Transect.FutureSeaLevels[-1], # 2250, 2300
                                 
                                 Transect.DC1[0], Transect.DC1[1], Transect.DC1[2], Transect.DC1[3],
-                                Transect.OSYear, self.Method]
+                                OSYr_str, self.Method]
                     
                                 
     
@@ -2399,8 +2453,6 @@ class Coast:
         
         if len(Lines) == 0:
             print("No Lines")
-            import pdb
-            pdb.set_trace()
             return
         
         # catch situation where only one line
@@ -2450,22 +2502,6 @@ class Coast:
                     continue
 
                 # check there arent multiple intersections
-                """
-                # store multiple intersections if so
-                if Intersections.geom_type is "MultiPoint":
-                    StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
-                    Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections]
-                    Index = Distances.index(min(Distances))
-                    Indices = np.argsort(np.array(Distances))
-                    Distances = np.array(Distances)[Indices]
-                    IntersectionsList = [Intersections[i] for i in Indices]
-                    
-                else:
-                    # check if this is a new endnode by intersecting with line from startnode to endnode
-                    Distance = Transect.LineString.distance(Intersections)
-                    Intersection = Intersections
-                    IntersectionsList = [Intersection,]
-                """
 
                 # store multiple intersections if so
                 if Intersections.geom_type == "MultiPoint":
@@ -2492,25 +2528,28 @@ class Coast:
                     Distances = Lines.distance(Intersection)
                     NearestLine = GDF.iloc[Distances.idxmin()]
                     
-                    # check it hasnt already been read
-                    if "FULLSHP_YR" in NearestLine:
-                        IntersectionYears.append(int(NearestLine.FULLSHP_YR))
+                    if "Date" in NearestLine: # updated with datetime update, all input files must have 'Date' field in attributes in format yyyy-mm-dd
+                        IntersectionYears.append(datetime.strptime(NearestLine.Date,"%Y-%m-%d"))
+                    
+                    elif "FULLSHP_YR" in NearestLine:
+                        sys.exit('Since update of code to datetime formatting, please ensure that file (likely ModernSoft) has Date field in attributes in format yyyy-mm-dd to replace FULLSHP_YR')
                     elif "Surv_EndYr" in NearestLine:
-                        IntersectionYears.append(int(NearestLine.Surv_EndYr))
+                        sys.exit('Since update of code to datetime formatting, please ensure that file has Date field in attributes in format yyyy-mm-dd to replace Surv_EndYr')
                     elif "Surv_End_A" in NearestLine:
-                        IntersectionYears.append(int(NearestLine.Surv_End_A))
+                        sys.exit('Since update of code to datetime formatting, please ensure that file (likely 1890s) has Date field in attributes in format yyyy-mm-dd to replace Surv_End_A')
                     elif "Surv_End_B" in NearestLine:
-                        IntersectionYears.append(int(NearestLine.Surv_End_B))
+                        sys.exit('Since update of code to datetime formatting, please ensure that file (likely 1970s) has Date field in attributes in format yyyy-mm-dd to replace Surv_End_B')
                     elif "Surv_End_C" in NearestLine:
-                        IntersectionYears.append(int(NearestLine.Surv_End_C))
+                        sys.exit('Since update of code to datetime formatting, please ensure that file has Date field in attributes in format yyyy-mm-dd to replace Surv_End_C')
                     elif "Surv_End_D" in NearestLine:
-                        IntersectionYears.append(int(NearestLine.Surv_End_D))
+                        sys.exit('Since update of code to datetime formatting, please ensure that file has Date field in attributes in format yyyy-mm-dd to replace Surv_End_D')
                     elif "versiondat" in NearestLine:
-                        IntersectionYears.append(int(NearestLine.versiondat[0:4]))
+                        sys.exit('Since update of code to datetime formatting, please ensure that file has Date field in attributes in format yyyy-mm-dd to replace versiondat')
                     elif "Year" in NearestLine:
-                        IntersectionYears.append(int(NearestLine.Year))
+                        sys.exit('Since update of code to datetime formatting, please ensure that file has Date field in attributes in format yyyy-mm-dd to replace Year')
                     elif "YEAR" in NearestLine:
-                        IntersectionYears.append(int(NearestLine.YEAR))
+                        sys.exit('Since update of code to datetime formatting, please ensure that file has Date field in attributes in format yyyy-mm-dd to replace YEAR')
+                    
                     else:
                         sys.exit("Couldnt find survey year for MHWS historic shoreline position")
                 
@@ -2554,9 +2593,9 @@ class Coast:
                         Transect.HistoricShorelinesSources.insert(Index, Path(HistoricalShorelinesShp).name)
                         
                         # retrieve positional error
-                        if Year < 1970:
+                        if Year < datetime.strptime('1970-01-01',"%Y-%m-%d"):
                             Error = 5.
-                        elif Year < 2000:
+                        elif Year < datetime.strptime('2000-01-01',"%Y-%m-%d"):
                             Error = 2.
                         else:
                             Error = 1.
@@ -2590,9 +2629,9 @@ class Coast:
                     for Year in UniqueYears:
     
                         # retrieve positional error
-                        if Year < 1970:
+                        if Year < datetime.strptime('1970-01-01',"%Y-%m-%d"):
                             Error = 5.
-                        elif Year < 2000:
+                        elif Year < datetime.strptime('2000-01-01',"%Y-%m-%d"):
                             Error = 2.
                         else:
                             Error = 1.
@@ -2646,53 +2685,6 @@ class Coast:
                                 Transect.HistoricShorelinesPositions[Index].append(Position)
                                 Transect.HistoricShorelinesDistances[Index].append(Distance)
 
-                """
-                for i, Intersection in enumerate(IntersectionsList):
-                    
-                    # retrieve year
-                    Year = IntersectionYears[i]
-                    
-                    if Year not in Transect.HistoricShorelinesYears:
-                       
-                        # add year to transect
-                        Index = bisect.bisect(Transect.HistoricShorelinesYears, Year)
-                        Transect.HistoricShorelinesYears.insert(Index, Year)
-                        
-                        # add shoreline position
-                        Position = Node(Intersection.x,Intersection.y)
-                        Positions = [Position,]
-                        Transect.HistoricShorelinesPositions.insert(Index, Positions)
-                        
-                        # add distance
-                        Distances = [Transect.StartNode.get_Distance(Position),]
-                        Transect.HistoricShorelinesDistances.insert(Index, Distances)
-                        
-                        # add source info
-                        Transect.HistoricShorelinesSources.insert(Index, Path(HistoricalShorelinesShp).name)
-                        
-                        # add error
-                        Transect.HistoricShorelinesErrors.insert(Index, Error)
-                        
-                    else:
-                        
-                        # find and either add or replace depending on proximity
-                        Index = Transect.HistoricShorelinesYears.index(Year)
-                        Position = Node(Intersection.x,Intersection.y)
-                        
-                        MinDistance = 1000.
-                        
-                        for OldPosition in Transect.HistoricShorelinesPositions[Index]:
-                            Distance = OldPosition.get_Distance(Position)
-                            if Distance < MinDistance:
-                                MinDistance = Distance
-                        
-                        if MinDistance > 1.:
-                        
-                            # add to transect
-                            Transect.HistoricShorelinesPositions[Index].append(Position)
-                            Transect.HistoricShorelinesDistances[Index].append(Distance)
-                """
-
 
     def ExtractMLWS(self, MLWSShp, NearestNode=0):
 
@@ -2733,8 +2725,9 @@ class Coast:
                 elif ThisLine.geom_type == "LineString":
                     MultiLines.append(ThisLine)
                 elif ThisLine.geom_type == "MultiLineString":
-                    for SubLine in ThisLine.geoms:                  # NH: fix compile error "MultiLineString object is not iterable"
-                        if SubLine.geom_type == "LineString":
+                  
+for SubLine in ThisLine.geoms:                  # NH: fix compile error "MultiLineString object is not iterable"
+  if SubLine.geom_type == "LineString":
                             MultiLines.append(SubLine)
         
             MultiLines = MultiLineString(MultiLines) # NH fix compile error: "object of type LineString has no len()". Change this to be inside the else statement. 
@@ -3388,7 +3381,7 @@ class Coast:
                         ThisNode.Z = Elevation
                     
     
-    def SampleFutureRSL(self, FutureRSLFolder, RCP=8, Percentile=95, Years=[2030,2040,2050,2060,2070,2080,2090,2100], Location=None):
+    def SampleFutureRSL(self, FutureRSLFolder, RCP=8, Percentile=95, Years=['2030-01-01','2040-01-01','2050-01-01','2060-01-01','2070-01-01','2080-01-01','2090-01-01','2100-01-01'], Location=None):
 
         """ 
         
@@ -3417,9 +3410,11 @@ class Coast:
             print("\tFuture sea levels already sampled")
             return
 
-        self.FutureShoreLinesYears = Years
+        #self.FutureShoreLinesYears = Years
+        self.FutureShoreLinesYears = [datetime.strptime(Date, '%Y-%m-%d') for Date in Years]
 
-        for Year in Years:
+        for Date in self.FutureShoreLinesYears:
+            Year = Date.year
             FutureRSLRaster = FutureRSLFolder + "/RCP" + str(RCP) + "_" + str(Percentile) + "th_" + str(Year) + "_filled.tif"
 
             # open the raster dataset to work on
@@ -3431,11 +3426,11 @@ class Coast:
                         if Location:
                             for val in RSLDataset.sample([(Location.X,Location.Y)]):
                                 Transect.FutureSeaLevels.append(val[0])
-                                Transect.FutureSeaLevelYears.append(Year)
+                                Transect.FutureSeaLevelYears.append(Date)
                         else:
                             for val in RSLDataset.sample([(Transect.CoastNode.X,Transect.CoastNode.Y)]):
                                 Transect.FutureSeaLevels.append(val[0])
-                                Transect.FutureSeaLevelYears.append(Year)
+                                Transect.FutureSeaLevelYears.append(Date)
 
     def SampleRockHeadPosition(self, UPSMRaster, MaxRockHeadErosionDistance=25.):
 
@@ -3469,6 +3464,10 @@ class Coast:
                     #for val in RSLRDataset.sample([(Transect.CoastNode.X,Transect.CoastNode.Y)]):
                     RockHeadVector = np.array([val[0] for val in RockHeadDataset.sample(NodeList)])
                     RockHeadVector[RockHeadVector < 0] = np.nan
+                    
+                    if  Line.ID == '1' and Transect.ID == '145':
+                        import pdb
+                        #pdb.set_trace()
                     
                     # if everything is soft, carry on
                     # ignore errors caused by NaNs

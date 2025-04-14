@@ -8,7 +8,9 @@ June 2019
 """
 
 # import modules
+import os
 import sys
+from pathlib import Path
 import numpy as np
 from scipy.signal import savgol_filter
 from scipy.interpolate import splprep, splev
@@ -266,19 +268,52 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         # Get X and Y vectors from Nodes and write LineString object
         X, Y = self.get_XY()
         LS = LineString(zip(X, Y))
-
-        while not LS.is_simple:
+        
+        loopCount = 0
+        maxLoops = 5
+             
+        while not LS.is_simple: # and loopCount <= maxLoops:
             validity_explanation = explain_validity(LS)
             print("LineString is not simple...", validity_explanation)
+            #print("Loop count:",str(loopCount))
+            loopCount = loopCount + 1
+            
+            # Export LS as shapefile for GIS debugging
+            try:
+                # If LS is a MultiLineString, convert it to a list of LineStrings
+                if LS.geom_type == "MultiLineString":
+                    lines = [line for line in LS.geoms]
+                else:
+                    lines = [LS]
+                
+                # Create GeoDataFrame
+                gdf = gp.GeoDataFrame({'geometry': lines})
+                
+                # Optionally, set CRS (Coordinate Reference System)
+                gdf.set_crs('EPSG:27700', allow_override=True, inplace=True)  # Change to your CRS if needed
+
+                # Write to shapefile
+                folder_path = Path('//media/14TB_RAID_Array/User_Homes/Craig_MacDonell/CMT_CRSES/linestring_cleaning')
+                folder_path.mkdir(parents=True, exist_ok=True)
+                
+                from datetime import datetime
+                current_datetime_str = datetime.now().strftime("%Y_%m_%d_%H%M%S")
+
+                gdf.to_file('//media/14TB_RAID_Array/User_Homes/Craig_MacDonell/CMT_CRSES/linestring_cleaning/output_LS_' + current_datetime_str + '.shp')
+                print("Shapefile exported successfully.", current_datetime_str)
+                
+            except Exception as e:
+                 print("Error exporting shapefile:", e)
+            
+            #import pdb
+            #pdb.set_trace()
                 
             # Get the unary union to find all intersections
             Result = unary_union(LS)
             
-# =============================================================================
-#             plt.clf()
-#             for L in Result.geoms:
-#                 plt.plot(L.xy[0],L.xy[1])
-# =============================================================================
+            plt.clf()
+            for L in Result.geoms:
+                plt.plot(L.xy[0],L.xy[1])
 
             # Isolate non-looping line segments
             try:
@@ -516,7 +551,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 
         # check for overlaps?
         if CheckTopology:
-            self.CheckTransectTopology()     
+            self.CheckTransectTopology()
 
     def GenerateTransectsFromContour(self, ContourShp, Spacing):
 
