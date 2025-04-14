@@ -256,7 +256,7 @@ class Coast:
             # launch polygon patches shapefile writer
             self.WritePatchesShp("ExtFrontLines_"+Level, "ExtBackLines_"+Level, ExtPatchesShp)
     
-    def WriteErodedAreaShp(self, ErosionShp, StartYear=2020, Year=2100,Smooth=True):
+    def WriteErodedAreaShp(self, ErosionShp, StartYear=2030, Year=2100,Smooth=True,tempWrite=False):
         
         """
         Writes future shorelines to polygon patches
@@ -282,11 +282,12 @@ class Coast:
         ErosionBackShp = ErosionShp.split(".")[0]+"_temp2.shp"
 
         # write lines then patches
-        self.WriteLinesShp("WriteFutureLines", ErosionBackShp, Smooth)
-        self.WriteLinesShp("WriteRecentLines", ErosionFrontShp, Smooth)
+        if tempWrite:
+            self.WriteLinesShp("WriteFutureLines", ErosionBackShp, Smooth)
+            self.WriteLinesShp("WriteRecentLines", ErosionFrontShp, Smooth)
         self.WritePatchesShp("WriteFutureLines", "WriteRecentLines", ErosionShp, Smooth)
 
-    def WriteErosionProximityShp(self, ProximityShp, BufferDistance=10., Year=2100, Smooth=True):
+    def WriteErosionProximityShp(self, ProximityShp, BufferDistance=10., Year=2100, Smooth=True, tempWrite=False):
 
         """
         Writes Erosion Proximity polygon patches for a given decade
@@ -310,8 +311,9 @@ class Coast:
         ErosionBufferShp = ProximityShp.split(".")[0]+"_temp2.shp"
 
         # write lines then patches
-        self.WriteLinesShp("WriteFutureLines", ErosionFutureShp, Smooth)
-        self.WriteLinesShp("WriteBufferLines", ErosionBufferShp, Smooth)
+        if tempWrite:
+            self.WriteLinesShp("WriteFutureLines", ErosionFutureShp, Smooth)
+            self.WriteLinesShp("WriteBufferLines", ErosionBufferShp, Smooth)
         self.WritePatchesShp("WriteFutureLines", "WriteBufferLines", ProximityShp, Smooth)
     
     
@@ -988,7 +990,7 @@ class Coast:
         ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], ['Min_Rate','N', 6, 4], ['Max_Rate','N', 6, 4], ['Hist_Rate','N', 6, 4], 
         ['CalibYr','N', 4, 0], ['BaseLYr','N', 4, 0], ['BaseLSrc','C', 50, 0], 
         ['Extrap2050','N', 6, 4], ['Extrap2100','N', 6, 4], ['FirstEYr','N',4, 4],
-        ['Dist_2030', 'N', 6, 4], ['Rate_2030', 'N', 6, 4], 
+        #['Dist_2030', 'N', 6, 4], ['Rate_2030', 'N', 6, 4], 
         ['Dist_2040', 'N', 6, 4], ['Rate_2040', 'N', 6, 4], 
         ['Dist_2050', 'N', 6, 4], ['Rate_2050', 'N', 6, 4], 
         ['Dist_2060', 'N', 6, 4], ['Rate_2060', 'N', 6, 4], 
@@ -1027,7 +1029,7 @@ class Coast:
                                 Transect.MinChangeRate, Transect.MaxChangeRate, Transect.ChangeRate, 
                                 Transect.CalibrationYear, Transect.HistoricShorelinesYears[-1], Transect.HistoricShorelinesSources[-1], 
                                 Transect.get_ExtrapDistance(2050), Transect.get_ExtrapDistance(2100), Transect.get_FirstFutureErosionYear(),
-                                Transect.get_FuturePositionChange(2020, 2030), Transect.get_FutureRate(2020, 2030),
+                                #Transect.get_FuturePositionChange(2020, 2030), Transect.get_FutureRate(2020, 2030), # should we be doing 2020 to 2030?
                                 Transect.get_FuturePositionChange(2030, 2040), Transect.get_FutureRate(2030, 2040),
                                 Transect.get_FuturePositionChange(2040, 2050), Transect.get_FutureRate(2040, 2050),
                                 Transect.get_FuturePositionChange(2050, 2060), Transect.get_FutureRate(2050, 2060),
@@ -3386,7 +3388,7 @@ class Coast:
                         ThisNode.Z = Elevation
                     
     
-    def SampleFutureRSL(self, FutureRSLFolder, RCP=8, Percentile=95, Years=[2020,2030,2040,2050,2060,2070,2080,2090,2100], Location=None):
+    def SampleFutureRSL(self, FutureRSLFolder, RCP=8, Percentile=95, Years=[2030,2040,2050,2060,2070,2080,2090,2100], Location=None):
 
         """ 
         
@@ -7343,7 +7345,7 @@ class Coast:
                 if not Transect.Future:
                     continue
 
-                ErosionDistance = Transect.get_TotalErosion(2020,Decade)
+                ErosionDistance = Transect.get_TotalErosion(2030,Decade)
                 
                 if not ErosionDistance:
                     continue
@@ -7407,7 +7409,7 @@ class Coast:
                 if not Transect.Future:
                     continue
 
-                ErosionDistance = Transect.get_TotalErosion(2020,Decade)
+                ErosionDistance = Transect.get_TotalErosion(2030,Decade)
                 
                 if not ErosionDistance:
                     continue

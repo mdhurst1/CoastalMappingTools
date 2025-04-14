@@ -1050,7 +1050,8 @@ class Transect:
             dT = self.FutureSeaLevelYears[i]-self.HistoricShorelinesYears[-1]
 
             # catch the condition where observed shorelines are more recent than those we're trying to make predictions for
-            if dT < 0:
+            if dT <= 0:
+                print('Predict Future Shorelines - observed shorelines are more recent than predictions:', str(self.FutureSeaLevelYears[i]), '-', self.HistoricShorelinesYears[-1])
                 X1 = self.HistoricShorelinesPosition[-1].X
                 Y1 = self.HistoricShorelinesPosition[-1].Y
 
