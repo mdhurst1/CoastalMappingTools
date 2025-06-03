@@ -370,6 +370,7 @@ class Coast:
                 Line.SmoothLine(WindowSize=11)
 
             # Find Loops
+            print(Line.Year)
             Line.MakeSimple() #LineString is not simple... Valid Geometry
                 
             # get line node positions
@@ -773,7 +774,7 @@ class Coast:
         f.close()
         print("m")
     
-    def WritePatchesShp(self, DictionaryKey1, DictionaryKey2, PatchShp, Smooth=False):
+    def WritePatchesShp(self, DictionaryKey1, DictionaryKey2, PatchShp, Smooth=True):
 
         """
 
@@ -3539,9 +3540,9 @@ for SubLine in ThisLine.geoms:                  # NH: fix compile error "MultiLi
         Lines = GDF['geometry']
         
         if len(Lines) == 0:
-            print("No Lines")
-            import pdb
-            pdb.set_trace()
+            print("\nNo Defence Lines\n")
+            #import pdb
+            #pdb.set_trace()
             return
         
         # catch situation where only one line
@@ -7344,7 +7345,7 @@ for SubLine in ThisLine.geoms:                  # NH: fix compile error "MultiLi
                 if not Transect.Future:
                     continue
 
-                ErosionDistance = Transect.get_TotalErosion(2030,Decade)
+                ErosionDistance = Transect.get_TotalErosion(2020,Decade)
                 
                 if not ErosionDistance:
                     continue
