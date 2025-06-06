@@ -3872,14 +3872,17 @@ class Coast:
             # NH: For each CoastLine, a list of unique DEMs. 
             # But, if a DEM spans two CoastLines, it is also added for the second CoastLine interation. 
             ### self.UniqueDEMList.extend(list(JoinGDF.location.unique()))
-            self.UniqueDEMList.extend(list(JoinGDF[JoinGDF['HiResExist']=='Y'].loc_HiRes.unique()))
-            self.UniqueDEMList.extend(list(JoinGDF[JoinGDF['HiResExist']=='N'].location.unique()))
-            
+            try:
+                self.UniqueDEMList.extend(list(JoinGDF[JoinGDF['HiResExist']=='Y'].loc_HiRes.unique()))
+                self.UniqueDEMList.extend(list(JoinGDF[JoinGDF['HiResExist']=='N'].location.unique()))
+            except:
+                self.UniqueDEMList.extend(list(JoinGDF.location.unique()))
+
         # NH: This list is only unique for each CoastLine, not unique overall
         if __debug__:
             print("DEM list: unique per CoastLine", self.UniqueDEMList,"\n")
         
-        # NH fix: drop duplicate DEMs from final list: convert to dictionariy and back again to list
+        # NH fix: drop duplicate DEMs from final list: convert to dictionary and back again to list
         self.UniqueDEMList = list(dict.fromkeys(self.UniqueDEMList))
         if __debug__:
             print("DEM list: unique overall", self.UniqueDEMList)
