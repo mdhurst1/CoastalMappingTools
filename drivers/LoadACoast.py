@@ -16,11 +16,11 @@ from Coast import *
 
 # define file names for analysis
 #WorkingPath = pathlib.Path.cwd().parent
-WorkingPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/Supersites/Montrose_2024/CMT")
-
+#WorkingPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/Supersites/Montrose_2024/CMT")
+WorkingPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/CMT_CRSES/CMTresults_25May25")
 Scenario = 8
 Percentile = 95
-Cell = "2b"
+Cell = "1a"
 InnerorOpen = "Open"
 
 #Filename2LoadCoast = WorkingPath / "ShorelineRunInner" / ("Cell_"+Cell+"_InnerChange.pydata")
@@ -31,8 +31,8 @@ Filename2LoadCoast = WorkingPath / ("RCP_"+str(Scenario)+"_"+str(Percentile)+"th
 Cst = pickle.load( open( Filename2LoadCoast, "rb" ) )
 
 # set a line and a transect if needed
-LineID = "0"
-TransectID = "373"
+LineID = "14"
+TransectID = "22"
 
 # get line
 Lns = Cst.CoastLines
@@ -42,7 +42,7 @@ Ln = [Ln for Ln in Lns if Ln.ID == LineID][0]
 Trs = Ln.Transects
 Tr = [Tr for Tr in Trs if Tr.ID == TransectID][0]
 
-Tr.CalculateHistoricalRegression_testing()
+#Tr.CalculateHistoricalRegression_testing()
 
 
 # =============================================================================

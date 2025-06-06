@@ -12,7 +12,8 @@ import pandas as pd
 import geopandas as gp
 
 # Set working directory
-WorkingPath = pathlib.Path.cwd().parent
+#WorkingPath = pathlib.Path.cwd().parent
+WorkingPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/CMT_CRSES/CMTresults_25May25")
 
 # set up scenarios
 Scenarios = [2,4,8]
@@ -22,7 +23,7 @@ PrefixNames = ["Open", "Inner"]
 FilenameExts = ["_Future.shp", "_Transects.shp"]
 
 # get all coastal cells to loop through
-Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
+Cells = gp.read_file(WorkingPath.parent / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # merge results
 #loop through scenarios
@@ -32,8 +33,8 @@ for Scenario, Percentile in zip(Scenarios, Percentiles):
     
     # set up output folder
     OpenPath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_OpenCoast")
-    InnerPath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_InnerCoast")
-    WritePath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_National")
+    #InnerPath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_InnerCoast")
+    WritePath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_Merged")
     
     if not WritePath.exists():
         WritePath.mkdir(parents=True, exist_ok=True)
@@ -57,17 +58,17 @@ for Scenario, Percentile in zip(Scenarios, Percentiles):
                 TempGDF = gp.read_file(FutureFile)
                 TempList.append(TempGDF)
                 
-            FutureFile = InnerPath / (RowName + FilenameExt)
+            """FutureFile = InnerPath / (RowName + FilenameExt)
             if FutureFile.exists():
                 TempGDF = gp.read_file(FutureFile)
-                TempList.append(TempGDF)
+                TempList.append(TempGDF)"""
         
         
         # write new file
         try:
             WriteGDF = pd.concat(TempList, sort=True)
-            WriteGDF.to_file(WritePath / ("Scotland" + FilenameExt))
-            print("Written", ("Scotland" + FilenameExt))
+            WriteGDF.to_file(WritePath / ("CRSES" + FilenameExt))
+            print("Written", ("CRSES" + FilenameExt))
         except:
             print("Unable to write", FilenameExt, "for RCP", Scenario)
             continue

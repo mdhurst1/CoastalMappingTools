@@ -2724,10 +2724,10 @@ class Coast:
                     continue
                 elif ThisLine.geom_type == "LineString":
                     MultiLines.append(ThisLine)
+                
                 elif ThisLine.geom_type == "MultiLineString":
-                  
-for SubLine in ThisLine.geoms:                  # NH: fix compile error "MultiLineString object is not iterable"
-  if SubLine.geom_type == "LineString":
+                    for SubLine in ThisLine.geoms:                  # NH: fix compile error "MultiLineString object is not iterable"
+                        if SubLine.geom_type == "LineString":
                             MultiLines.append(SubLine)
         
             MultiLines = MultiLineString(MultiLines) # NH fix compile error: "object of type LineString has no len()". Change this to be inside the else statement. 
