@@ -11,12 +11,12 @@ Modified by C. MacDonell, CRSES Project 2025
 """
 
 # add modules
-import sys
+import os, sys
 import pickle, pathlib
 import geopandas as gp
 from datetime import datetime
 import matplotlib.pyplot as plt
-%matplotlib qt5
+#%matplotlib qt5
 
 # add src path to find custom modules
 sys.path.append("../src/")
@@ -58,7 +58,7 @@ GeometryPath = WorkingPath/("Geometry")
 if not GeometryPath.exists(): # checks if geometry folder exists, if not create
     GeometryPath.mkdir(parents=True, exist_ok=True)
         
-# set the minimum length
+# set the minimum length of baseline segments
 MinLength = 50.
 
 # set the transect spacing (in m)
@@ -70,7 +70,8 @@ NoSmooths = 100 # do not change
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # Cell list
-CellList = ["1a"]
+CellList = ["1a","1b","1c","1d","2a"]
+
 
 # loop through each cell
 for CellSub in CellList:
@@ -86,7 +87,7 @@ for CellSub in CellList:
         continue
 
     # get soft coast position as most recent
-    ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Open_Baseline.shp") # only doing open?
+    ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Open_Baseline_undefended.shp") # only doing open?
     
     OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp") 
     QuiteOldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp") 
@@ -130,13 +131,11 @@ for CellSub in CellList:
         # # this checks to see whether coast object already exists
         Filename2SaveAll = OutputPath / (RowName+"_OpenChange.pydata")
     
-        try: # check if geometry already been created
-            CellCoast = pickle.load( open( Filename2SaveCoast, "rb" ) )
+        if Filename2SaveCoast.exists():
+            CellCoast = pickle.load(open(Filename2SaveCoast, "rb" ))
             print("Loaded Coast Object ", Filename2SaveCoast)
-        
-        except:
+        else:
             print("Creating New Coast Object") # if saved geometry not exist
-        
             # SET UP THE COAST FROM -10m Contour
             CellCoast = Coast(str(ModernPath), MinLength=MinLength)
         
@@ -205,7 +204,8 @@ for CellSub in CellList:
             CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
                        
             # Sample coastal defences
-            CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp"))) # DIFFERENT DEFENCE VERSIONS
+            CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp")),25.) # DIFFERENT DEFENCE VERSIONS
+            #CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / "Cells_1a_2a_NoDefences_CRSES.shp")) # DIFFERENT DEFENCE VERSIONS
             
             CellCoast.GotHistoricShorelines = True
             
@@ -236,6 +236,7 @@ for CellSub in CellList:
             
             # Sample coastal defences
             CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp")), 25.)
+            #CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / "Cells_1a_2a_NoDefences_CRSES.shp"))
             
             CellCoast.Method = "Open"
             
