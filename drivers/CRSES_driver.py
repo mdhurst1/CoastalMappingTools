@@ -87,7 +87,7 @@ for CellSub in CellList:
         continue
 
     # get soft coast position as most recent
-    ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Open_Baseline_undefended.shp") # only doing open?
+    ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Open_Baseline.shp") # only doing open?
     
     OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp") 
     QuiteOldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp") 

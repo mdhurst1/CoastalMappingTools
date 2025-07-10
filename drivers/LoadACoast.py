@@ -31,8 +31,8 @@ Filename2LoadCoast = WorkingPath / ("RCP_"+str(Scenario)+"_"+str(Percentile)+"th
 Cst = pickle.load( open( Filename2LoadCoast, "rb" ) )
 
 # set a line and a transect if needed
-LineID = "2"
-TransectID = "40"
+LineID = "0"
+TransectID = "33"
 
 # get line
 Lns = Cst.CoastLines
@@ -50,6 +50,8 @@ Tr = [Tr for Tr in Trs if Tr.ID == TransectID][0]
 # print("Transect ID =", Tr.ID,"\n")
 print("Transect Shoreline Years:\n",Tr.HistoricShorelinesYears,"\n")
 print("Transect Hist. Shoreline Dists:\n", Tr.HistoricShorelinesDistances,"\n")
+print("Sources:\n", Tr.HistoricShorelinesSources, "\n")
+
 # 
 # printout = []
 # if len(Tr.HistoricShorelinesYears) == len(Tr.HistoricShorelinesDistances):

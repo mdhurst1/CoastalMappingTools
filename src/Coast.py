@@ -2485,6 +2485,9 @@ class Coast:
             
             for Transect in Line.Transects:
                 
+                #if Line.ID == "18" and Transect.ID == "163":
+                    #pdb.set_trace()
+
                 if Reset:
                     Transect.ResetHistoricShorelines()
                     
