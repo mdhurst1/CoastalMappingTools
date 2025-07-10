@@ -70,7 +70,7 @@ NoSmooths = 100 # do not change
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # Cell list
-CellList = ["1a"] #,"1b","1c","1d","2a"]
+CellList = ["1b"] #,"1b","1c","1d","2a"]
 
 
 # loop through each cell
