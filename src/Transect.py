@@ -29,7 +29,7 @@ from shapely.geometry import Point, Polygon, LineString, MultiLineString, MultiP
 from openpyxl import load_workbook
 
 # import other custom classes
-from Node import *
+from .Node import *
 
 from shapely.geometry import Point, LineString
 

@@ -13,7 +13,7 @@ import geopandas as gp
 
 # Set working directory
 #WorkingPath = pathlib.Path.cwd().parent
-WorkingPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/CMT_CRSES/CMTresults_25May25")
+WorkingPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/CMT_CRSES/")
 
 # set up scenarios
 Scenarios = [2,4,8]
@@ -23,7 +23,7 @@ PrefixNames = ["Open", "Inner"]
 FilenameExts = ["_Future.shp", "_Transects.shp"]
 
 # get all coastal cells to loop through
-Cells = gp.read_file(WorkingPath.parent / "CoastalCells" / "CoastalCells_Partitioned.shp")
+Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # merge results
 #loop through scenarios
@@ -32,9 +32,9 @@ for Scenario, Percentile in zip(Scenarios, Percentiles):
     print(Scenario)
     
     # set up output folder
-    OpenPath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_OpenCoast")
+    OpenPath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_OpenCoast/")
     #InnerPath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_InnerCoast")
-    WritePath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_Merged")
+    WritePath = WorkingPath/("Final_Results/RCP_"+str(Scenario)+"_"+str(Percentile)+"th_Merged/")
     
     if not WritePath.exists():
         WritePath.mkdir(parents=True, exist_ok=True)
@@ -65,10 +65,7 @@ for Scenario, Percentile in zip(Scenarios, Percentiles):
         
         
         # write new file
-        try:
-            WriteGDF = pd.concat(TempList, sort=True)
-            WriteGDF.to_file(WritePath / ("CRSES" + FilenameExt))
-            print("Written", ("CRSES" + FilenameExt))
-        except:
-            print("Unable to write", FilenameExt, "for RCP", Scenario)
-            continue
+        WriteGDF = pd.concat(TempList, sort=True)
+        WriteGDF.to_file(WritePath / ("CRSES" + FilenameExt))
+        print("Written", ("CRSES" + FilenameExt))
+        

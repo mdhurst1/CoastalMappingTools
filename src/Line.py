@@ -14,9 +14,9 @@ from pathlib import Path
 import numpy as np
 from scipy.signal import savgol_filter
 from scipy.interpolate import splprep, splev
-import Transect
-from Node import *
-from Transect import *
+
+from .Node import *
+from .Transect import *
 
 import geopandas as gp
 from shapely.geometry import Point, LineString, MultiLineString, Polygon, MultiPolygon, GeometryCollection

@@ -10,7 +10,7 @@ Created on Tue Feb 23 15:07:21 2021
 import pickle, pathlib, sys
 import pandas as pd
 import geopandas as gp
-from Coast import *
+from src import Coast
 
 #set up working directory
 WorkingPath = pathlib.path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/CMT_CRSES")
