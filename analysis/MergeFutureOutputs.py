@@ -66,6 +66,6 @@ for Scenario, Percentile in zip(Scenarios, Percentiles):
         
         # write new file
         WriteGDF = pd.concat(TempList, sort=True)
-        WriteGDF.to_file(WritePath / ("CRSES" + FilenameExt))
-        print("Written", ("CRSES" + FilenameExt))
+        WriteGDF.to_file(WritePath / ("CRSES_RCP_" + str(Scenario) + FilenameExt))
+        print("Written", ("CRSES_RCP_" + str(Scenario) + FilenameExt))
         

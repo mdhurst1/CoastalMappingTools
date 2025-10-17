@@ -18,11 +18,8 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 #%matplotlib qt5
 
-# add src path to find custom modules
-sys.path.append("../src/")
-
 #import custom modules
-from Coast import *
+from src.Coast import *
 
 # define file names for analysis
 WorkingPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/CMT_CRSES")
@@ -70,7 +67,7 @@ NoSmooths = 100 # do not change
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # Cell list
-CellList = ["1b"] #,"1b","1c","1d","2a"]
+CellList = ["1a","1b","1c","1d","2a"]
 
 
 # loop through each cell
@@ -235,8 +232,8 @@ for CellSub in CellList:
         if not CellCoast.PredictedFutureShorelines:    
             
             # Sample coastal defences
-            CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp")), 25.)
-            #CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / "Cells_1a_2a_NoDefences_CRSES.shp"))
+            #CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp")), 25.)
+            CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / "Cells_1a_2a_NoDefences_CRSES.shp"))
             
             CellCoast.Method = "Open"
             

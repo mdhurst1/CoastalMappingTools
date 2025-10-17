@@ -13,7 +13,7 @@ import geopandas as gp
 from src import Coast
 
 #set up working directory
-WorkingPath = pathlib.path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/CMT_CRSES")
+WorkingPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/CMT_CRSES")
 
 # get all coastal cells to loop through
 Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
@@ -107,7 +107,6 @@ for Scenario, Percentile in zip(Scenarios, Percentiles):
     for i, Decade in enumerate(Decades):
             
         ErodedAreaList = []
-        DecadalAreaList = []
         InfluenceList = []
         VicinityList = []
         
@@ -117,47 +116,32 @@ for Scenario, Percentile in zip(Scenarios, Percentiles):
             RowName = "Cell_"+CellSub
             
             # load future area file and append
-            FutureFile = PolygonsPath / (RowName + "_ErodedArea_" + str(Decade) + ".shp")
+            FutureFile = PolygonsPath / (RowName + "_ErodedArea_" + str(Decade) + "-01-01.shp")
             
             if FutureFile.exists():
                 TempGDF = gp.read_file(FutureFile)
                 ErodedAreaList.append(TempGDF)
                 
             # load future area file and append
-            FutureFile = FilePath / (RowName + "_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")
-            
-            if FutureFile.exists():
-                TempGDF = gp.read_file(FutureFile)
-                DecadalAreaList.append(TempGDF)
-            
-            # load future area file and append
-            InfluenceFile = FilePath / (RowName + "_Influence_" + str(Decade) + ".shp")
+            InfluenceFile = PolygonsPath / (RowName + "_Influence_" + str(Decade) + "-01-01.shp")
             
             if InfluenceFile.exists():
                 TempGDF = gp.read_file(InfluenceFile)
                 InfluenceList.append(TempGDF)
             
             # load future area file and append
-            VicinityFile = FilePath / (RowName + "_Influence_" + str(Decade) + ".shp")
+            VicinityFile = PolygonsPath / (RowName + "_Influence_" + str(Decade) + "-01-01.shp")
             
             if VicinityFile.exists():
                 TempGDF = gp.read_file(VicinityFile)
                 VicinityList.append(TempGDF)
         
-        # write new file
-        try:
-            WriteGDF = pd.concat(ErodedAreaList, sort=True)
-            WriteGDF.to_file(FilePath / ("CRSES_" + PrefixName + "_ErodedArea_" + str(Decade) + ".shp"))
-        except:
-            import pdb
-            pdb.set_trace()
-            
-        
-        WriteGDF = pd.concat(DecadalAreaList, sort=True)
-        WriteGDF.to_file(FilePath / ("CRSES_" + PrefixName + "_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp"))
+        # write new files
+        WriteGDF = pd.concat(ErodedAreaList, sort=True)
+        WriteGDF.to_file(PolygonsPath / ("CRSES_RCP_" + str(Scenario) + "_ErodedArea_" + str(Decade) + ".shp"))
         
         WriteGDF = pd.concat(InfluenceList, sort=True)
-        WriteGDF.to_file(FilePath / ("CRSES_" + PrefixName + "_Influence_" + str(Decade) + ".shp"))
+        WriteGDF.to_file(PolygonsPath / ("CRSES_RCP_" + str(Scenario) + "_Influence_" + str(Decade) + ".shp"))
         
         WriteGDF = pd.concat(VicinityList, sort=True)
-        WriteGDF.to_file(FilePath / ("CRSES_" + PrefixName + "_Vicinity_" + str(Decade) + ".shp"))
+        WriteGDF.to_file(PolygonsPath / ("CRSES_RCP" + str(Scenario) + "_Vicinity_" + str(Decade) + ".shp"))
