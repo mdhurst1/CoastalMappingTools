@@ -29,7 +29,7 @@ from shapely.geometry import Point, Polygon, LineString, MultiLineString, MultiP
 from openpyxl import load_workbook
 
 # import other custom classes
-from .Node import *
+from Node import *
 
 from shapely.geometry import Point, LineString
 
@@ -443,10 +443,10 @@ class Transect:
         
         """
         
-        if self.Future:
-            self.PredictFutureShorelineUncertainty(Year)
-        else:
-            return
+        # if self.Future:
+        #     self.PredictFutureShorelineUncertainty(Year)
+        # else:
+        #     return
             
         # get all distances
         DistancesList = []
@@ -877,8 +877,8 @@ class Transect:
             return        
 
         # reset change rates in case already calculated
-        self.ChangeRates = []
-        self.ChangeRateErrors = []
+        #self.ChangeRates = []
+        #self.ChangeRateErrors = []
         
         # Convert dates to numerical values for regression
         dates_numeric = np.array([date.toordinal() for date in self.HistoricShorelinesYears])
@@ -950,12 +950,6 @@ class Transect:
             weights3t = np.exp(-(max_date3 - dates_numeric) / sf)
             weights3t /= np.sum(weights3t)
             
-            if tw == 10:
-                wTableReport = weights3t
-                print(self.HistoricShorelinesYears)
-                print(wTableReport)
-                sys.exit(-1)
-        
             incErrors_weighting = 0        
             if incErrors_weighting == 1:
                 # Calculate recency weights
@@ -1021,10 +1015,8 @@ class Transect:
             plt.title(titleText)
             
             
-            plt.savefig("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/Supersites/Montrose_2024/CMT/test" + str(self.ID)+ ".png")
-            
-        #return
-        #sys.exit(-1)
+            plt.savefig("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/CCMP/03_analysis/Montrose/" + str(self.ID)+ ".pdf")
+
     
 # Plot transect plots to test regression
         plotTransect = 1
@@ -1098,16 +1090,15 @@ class Transect:
             # Add legend
             plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2), ncol=3, fontsize=10)
             
-            fig_fn = '/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/Supersites/Montrose_2024/CMT/regressionFigures/Montrose_Transect_' + str(self.ID) + '.png'
+            fig_fn = "/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/CCMP/03_analysis/Montrose/Montrose_Transect_" + str(self.ID) + ".pdf"
             plt.savefig(fig_fn, dpi=300, bbox_inches='tight')
             
-        return
-        sys.exit(-1)
-
-# Weighted regression spreadsheet writing (for testing)
+        
+        # Weighted regression spreadsheet writing (for testing)
         # Path to the existing Excel file
         excel_file_path = '/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/Supersites/Montrose_2024/CMT/regressionFigures/regressionAnalysis.xlsx'
         
+        """
         # Try reading the existing Excel file
         try:
             existing_df = pd.read_excel(excel_file_path)
@@ -1128,8 +1119,7 @@ class Transect:
             
             existing_df = pd.DataFrame(columns=columns)
             
-        
-        row = {"Location": loc, "ID": self.ID, 
+        row = {"Location": 0, "ID": self.ID, 
                    "First Shoreline":self.HistoricShorelinesYears[0], "Overall Rate":rate0, "Recent Shoreline":self.HistoricShorelinesYears[-1],
                    "Current CMT rate":self.ChangeRates[-1],
                    "First shoreline after 2000":date2000, "Rate since 2000":rate1,
@@ -1154,6 +1144,8 @@ class Transect:
             existing_df.to_excel(writer, index=False,sheet_name='Sheet1')
 
         sys.exit('Transect.CalculateHistoricRegression_testing: completed testing, please check transect plots and spreadsheet for regression fit')
+
+        """
 
     def CalculateIntertidalSlope(self):
         
@@ -1710,7 +1702,9 @@ class Transect:
 
         """
         Function to map uncertainty for shoreline position in a certain year based on range 
-        of historical coastal changes
+        of historical coastal change
+
+        This needs updating for datetimes MDH Apr 2026
 
         MDH March 2020
 

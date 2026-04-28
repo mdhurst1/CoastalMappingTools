@@ -17,10 +17,11 @@ from Coast import *
 # define file names for analysis
 #WorkingPath = pathlib.Path.cwd().parent
 #WorkingPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/Supersites/Montrose_2024/CMT")
-WorkingPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/CMT_CRSES/CMTresults_25May25")
+#WorkingPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/CMT_CRSES/CMTresults_25May25")
+WorkingPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/CCMP/03_analysis/Montrose/")
 Scenario = 8
 Percentile = 95
-Cell = "1a"
+Cell = "2b"
 InnerorOpen = "Open"
 
 #Filename2LoadCoast = WorkingPath / "ShorelineRunInner" / ("Cell_"+Cell+"_InnerChange.pydata")
@@ -32,7 +33,7 @@ Cst = pickle.load( open( Filename2LoadCoast, "rb" ) )
 
 # set a line and a transect if needed
 LineID = "0"
-TransectID = "33"
+TransectID = "372"
 
 # get line
 Lns = Cst.CoastLines
@@ -42,15 +43,16 @@ Ln = [Ln for Ln in Lns if Ln.ID == LineID][0]
 Trs = Ln.Transects
 Tr = [Tr for Tr in Trs if Tr.ID == TransectID][0]
 
-#Tr.CalculateHistoricalRegression_testing()
+print(Tr.ChangeRates[-1])
+Tr.CalculateHistoricalRegression_testing()
 
 
 # =============================================================================
 # #Cst.GetFutureShoreLines()
 # print("Transect ID =", Tr.ID,"\n")
-print("Transect Shoreline Years:\n",Tr.HistoricShorelinesYears,"\n")
-print("Transect Hist. Shoreline Dists:\n", Tr.HistoricShorelinesDistances,"\n")
-print("Sources:\n", Tr.HistoricShorelinesSources, "\n")
+#print("Transect Shoreline Years:\n",Tr.HistoricShorelinesYears,"\n")
+#print("Transect Hist. Shoreline Dists:\n", Tr.HistoricShorelinesDistances,"\n")
+#print("Sources:\n", Tr.HistoricShorelinesSources, "\n")
 
 # 
 # printout = []

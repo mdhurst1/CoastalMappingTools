@@ -24,7 +24,7 @@ import pandas as pd
 from shapely.geometry import Point, Polygon, LineString, MultiLineString, MultiPoint
 from shapely.ops import nearest_points, linemerge
 
-from .Line import *
+from Line import *
 
 # might do some multiprocessing?
 from multiprocessing import Pool
@@ -1096,6 +1096,82 @@ class Coast:
                     # write transect and record
                     WL.line(WriteTransect)
                     WL.record(*Record) 
+                                    
+        # close the shapefiles and clean up
+        WL.close()
+            
+        # create the projection file    
+        f = open(TransectsShp.rstrip("shp")+"prj","w")
+        f.write(self.Projection)
+        f.close()
+
+    def WriteTransectPointsShp(self, TransectPointsShp):
+
+        """
+        Writes points for each of the the transects of a Coast object to point shape file
+
+        builds attribute table with historic rates
+
+        MDH, April 2026
+
+        """
+
+        # print action to screen
+        print("Coast.WriteTransectPointsShp: Writing coastal transect points and attributes to a shapefile")
+
+        # open new shapefile        
+        WL = shapefile.Writer(TransectsShp,shapeType=shapefile.POINT)
+        
+        # Check length of extreme water levels
+        if len(self.ExtremeWaterLevels) != 3:
+            self.ExtremeWaterLevels = [[],[],[]]
+
+        # Create Fields
+        Fields = [('DeletionFlag','C',1,0), 
+        ['Cell', 'C', 3, 0], ['SubCell', 'C', 3, 0], ['CMU','C', 20, 0],
+        ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], 
+        #['Min_Rate','N', 6, 4], ['Max_Rate','N', 6, 4], 
+        ['Hist_Rate','N', 6, 4], 
+        ['CalibYr', 'C', 10, 0], ['BaseLYr', 'C', 10, 0], ['BaseLSrc','C', 50, 0], 
+        ['DC1_SvEn_B','N', 4, 0], ['DC1_SvEn_C','N', 4, 0], 
+        ['DC1_DistV','N', 6, 4], ['DC1_RateBC','N', 6, 4],
+        ['OS_2020_Yr','C',10,0], ['Method','C', 5, 0]
+        ]
+        
+        WL.fields = Fields[1:]
+        
+        for Line in self.CoastLines:
+            for Transect in Line.Transects:
+
+               
+                # get transect MOST RECENT POSITION
+                X, Y = Transect.CoastNode.get_XY()    
+                    
+                if not Transect.DC1:
+                    Transect.DC1 = ["","","",""]
+                else:
+                    try:
+                        Transect.DC1[3] = Transect.DC1[2]/(Transect.DC1[1]-Transect.DC1[0])
+                    except:
+                        Transect.DC1 = ["","","",""]
+                            
+                # Convert dates to strings in 'yyyy-mm-dd' format
+                CalibYr_str = Transect.CalibrationYear.strftime('%Y-%m-%d') if isinstance(Transect.CalibrationYear, datetime) else str(Transect.CalibrationYear)
+                BaseLYr_str = Transect.HistoricShorelinesYears[-1].strftime('%Y-%m-%d') if isinstance(Transect.HistoricShorelinesYears[-1], datetime) else str(Transect.HistoricShorelinesYears[-1])
+                OSYr_str = Transect.OSYear.strftime('%Y-%m-%d') if isinstance(Transect.OSYear, datetime) else str(Transect.OSYear)
+
+                
+                # Create the record this could become a function in transect object...
+                Record = [str(self.Cell), str(self.SubCell), str(self.CMU), str(Line.ID), str(Transect.ID),
+                            #Transect.MinChangeRate, Transect.MaxChangeRate, 
+                            Transect.ChangeRate, 
+                            CalibYr_str, BaseLYr_str, Transect.HistoricShorelinesSources[-1], 
+                            Transect.DC1[0], Transect.DC1[1], Transect.DC1[2], Transect.DC1[3],
+                            OSYr_str, self.Method]
+                
+                # write point and record
+                WL.point(X,Y)
+                WL.record(*Record) 
                                     
         # close the shapefiles and clean up
         WL.close()
@@ -2526,8 +2602,14 @@ class Coast:
                     Distances = Lines.distance(Intersection)
                     NearestLine = GDF.iloc[Distances.idxmin()]
                     
+                    
                     if "Date" in NearestLine: # updated with datetime update, all input files must have 'Date' field in attributes in format yyyy-mm-dd
-                        IntersectionYears.append(datetime.strptime(NearestLine.Date,"%Y-%m-%d"))
+                        try:
+                            # IntersectionYears.append(datetime.strptime(NearestLine.Date,"%Y-%m-%d"))
+                            IntersectionYears.append(pd.to_datetime(NearestLine.Date))
+                        except:
+                            import pdb
+                            pdb.set_trace()
                     
                     elif "FULLSHP_YR" in NearestLine:
                         sys.exit('Since update of code to datetime formatting, please ensure that file (likely ModernSoft) has Date field in attributes in format yyyy-mm-dd to replace FULLSHP_YR')

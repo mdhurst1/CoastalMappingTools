@@ -15,8 +15,6 @@ import sys
 import pickle, pathlib
 import geopandas as gp
 from datetime import datetime
-import matplotlib.pyplot as plt
-%matplotlib qt5
 
 # add src path to find custom modules
 sys.path.append("../src/")
@@ -25,9 +23,9 @@ sys.path.append("../src/")
 from Coast import *
 
 # define file names for analysis
-DC2Path = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/")
+DC2Path = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/Supersites/Montrose_2024/CMT/")
 NewMHWSPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/CCMP/02_secondary_data/Montrose_MHWS/")
-WorkingPath = pathlib.Path()"/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/CCMP/03_analysis/Montrose/")
+WorkingPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/CCMP/03_analysis/Montrose/")
 NationalDEMPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2Final/99_NationalData/OSTerrain5/")
 
 # set sea level scenario
@@ -198,16 +196,16 @@ for CellSub in CellList:
             CellCoast.SampleDC1Data(str(DC1Path))
             
             #### get MHWS elevation for each transect
-            CellCoast.SampleMHWSElevation(str(WorkingPath / "MHWS_Lines" / "scotland_mhws_elev.tif"))
+            CellCoast.SampleMHWSElevation(str(DC2Path / "MHWS_Lines" / "scotland_mhws_elev.tif"))
             
             #### get historical rate of relative sea level change
-            CellCoast.SampleHistoricalRSLR(str(WorkingPath / "RSL_Bradley_Model" / "Scotland_NEngland_RSLR_Modern_BNG.tif"))
+            CellCoast.SampleHistoricalRSLR(str(DC2Path / "RSL_Bradley_Model" / "Scotland_NEngland_RSLR_Modern_BNG.tif"))
         
             # Sample rock head position
-            CellCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
+            CellCoast.SampleRockHeadPosition(str(DC2Path / "UPSM" / "upsm_ncca.tif"))
             
             # Sample coastal defences
-            CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp"))) # DIFFERENT DEFENCE VERSIONS
+            CellCoast.SampleDefencesPosition(str(DC2Path / "Defences" / (RowName + "_Defences.shp"))) # DIFFERENT DEFENCE VERSIONS
             
             CellCoast.GotHistoricShorelines = True
             
@@ -237,12 +235,12 @@ for CellSub in CellList:
         if not CellCoast.PredictedFutureShorelines:    
             
             # Sample coastal defences
-            CellCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp")), 25.)
+            CellCoast.SampleDefencesPosition(str(DC2Path / "Defences" / (RowName + "_Defences.shp")), 25.)
             
             CellCoast.Method = "Open"
             
             ### get future relative sea level time series
-            CellCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL" / ("RCP"+str(Scenario))), RCP=Scenario, Percentile=Percentile,Years=Decades)
+            CellCoast.SampleFutureRSL(str(DC2Path / "Future_RSL" / ("RCP"+str(Scenario))), RCP=Scenario, Percentile=Percentile,Years=Decades)
             
             ## predict future shorelines
             CellCoast.GetShorefaceSlopes(str(BathyPath))
@@ -256,6 +254,7 @@ for CellSub in CellList:
                 
         # write transect during debugging for GIS interface interogation
         print('Writing transects to',str(OutputPath / (RowName + "_Transects.shp")))
+        CellCoast.TruncateTransects()
         CellCoast.WriteFutureTransectsShp(str(OutputPath / (RowName + "_Transects.shp")))
         
         # write future shorelines
@@ -267,25 +266,25 @@ for CellSub in CellList:
         
         #sys.exit(-1)
 
-        #Loop through decades
-        for i, Decade in enumerate(Decades):
+        # #Loop through decades
+        # for i, Decade in enumerate(Decades):
 
-            CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_" + str(Decade) + ".shp")), Year=Decade)
-            CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
+        #     CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_" + str(Decade) + ".shp")), Year=Decade)
+        #     CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
             
-            CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Influence_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
-            CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Vicinity_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
+        #     CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Influence_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
+        #     CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Vicinity_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
         
 
         # note min and max reversed due to sign convention on volumetric calibration terms
-        CellCoast.PredictFutureShorelines(MinMaxFlag="Min")
-        CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future_Max.shp")),SmoothOutput)
+        #CellCoast.PredictFutureShorelines(MinMaxFlag="Min")
+        #CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future_Max.shp")),SmoothOutput)
 
         #Loop through decades
-        for i, Decade in enumerate(Decades):
+        #for i, Decade in enumerate(Decades):
 
-            CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_Max" + str(Decade) + ".shp")), Year=Decade)
-            CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_Max" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
+            #CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_Max" + str(Decade) + ".shp")), Year=Decade)
+            #CellCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_Max" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
             
-            CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Influence_Max" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
-            CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Vicinity_Max" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
+            #CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Influence_Max" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
+            #CellCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Vicinity_Max" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
