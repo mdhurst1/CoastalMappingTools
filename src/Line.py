@@ -640,12 +640,19 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             else:
                 sys.exit("problem reading lines")
 
+        print(type(LineList))
+        print(len(LineList))
+        for i, l in enumerate(LineList):
+            print(i, type(l), getattr(l, "geom_type", None))
+            if hasattr(l, "is_empty"):
+                print("  empty:", l.is_empty)
+
         # catch situation where only one line
         if len(LineList) == 1:
             ShoreLines = LineList[0]
         else:
             ShoreLines = MultiLineString(LineList)
-
+            
         # load the second contour shapefile
         GDF = gp.read_file(OffshoreShp)
         Lines = GDF['geometry']
