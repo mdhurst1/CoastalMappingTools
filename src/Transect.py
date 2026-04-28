@@ -768,7 +768,7 @@ class Transect:
         self.ChangeRates = []
         self.ChangeRateErrors = []
         
- ### REGRESSION RATE CALCULATIONS - Recency Proportional Weights ###       
+        ### REGRESSION RATE CALCULATIONS - Recency Proportional Weights ###       
         
         # Convert dates to numerical values for regression
         dates_numeric = np.array([date.toordinal() for date in self.HistoricShorelinesYears])
@@ -828,8 +828,7 @@ class Transect:
         
         # Confidence interval for regression line
         conf_interval = t_value * stderr * np.sqrt(
-            1 / n + (dates_numeric - mean_x) ** 2 / np.sum((dates_numeric - mean_x) ** 2)
-)
+            1 / n + (dates_numeric - mean_x) ** 2 / np.sum((dates_numeric - mean_x) ** 2))
         
         self.ChangeRates.append(slope_yr)
         self.ChangeRateErrors.append(stderr)

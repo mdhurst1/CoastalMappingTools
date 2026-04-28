@@ -25,8 +25,10 @@ sys.path.append("../src/")
 from Coast import *
 
 # define file names for analysis
-WorkingPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/Supersites/Montrose_2026_Update/")
-NationalDEMPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2Final/99_NationalData/OSTerrain5")
+DC2Path = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/")
+NewMHWSPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/CCMP/02_secondary_data/Montrose_MHWS/")
+WorkingPath = pathlib.Path()"/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/CCMP/03_analysis/Montrose/")
+NationalDEMPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2Final/99_NationalData/OSTerrain5/")
 
 # set sea level scenario
 # set up scenarios
@@ -68,7 +70,7 @@ SmoothingWindowSize = 21 # do not change
 NoSmooths = 100 # do not change
 
 # get all coastal cells to loop through
-Cells = gp.read_file(WorkingPath / "CoastalCells" / "CoastalCells_Partitioned.shp")
+Cells = gp.read_file(DC2Path / "CoastalCells" / "CoastalCells_Partitioned.shp")
 
 # Cell list
 CellList = ["2b"] # Montrose in Cell 2b
@@ -83,22 +85,21 @@ for CellSub in CellList:
     
     # try opening bathy file as check on whether there is data
     try:
-        gp.read_file(WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp"))
+        gp.read_file(DC2Path / "Bathymetry" / (RowName + "_Bathy.shp"))
     except:
         print("\tUnable to access files for " + RowName)
         continue
 
     # get soft coast position as most recent
-    ModernPath = WorkingPath / "MHWS_Lines" / (RowName + "_Open_Baseline_revised_v2.shp") 
-    SoftPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_Soft.shp") 
-    LiDARPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR_Montrose2024_PolTips.shp")
-    #LiDARPath = WorkingPath / "MHWS_Lines" / (RowName + "_Modern_LiDAR_Montrose2024_PolTips.shp") # vegetation edge only
-    MLWSPath = WorkingPath / "MLWS_Lines" / (RowName + "_MLWS.shp") 
-    BathyPath = WorkingPath / "Bathymetry" / (RowName + "_Bathy.shp") 
-    OldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1890.shp") 
-    QuiteOldPath = WorkingPath / "MHWS_Lines" / (RowName + "_MHWS_1970.shp") 
+    ModernPath = DC2Path / "MHWS_Lines" / (RowName + "_Open_Baseline_revised_v2.shp") 
+    SoftPath = DC2Path / "MHWS_Lines" / (RowName + "_Modern_Soft.shp") 
+    LiDARPath = DC2Path / "MHWS_Lines" / (RowName + "_Modern_LiDAR_Montrose2024_PolTips.shp")
+    MLWSPath = DC2Path / "MLWS_Lines" / (RowName + "_MLWS.shp") 
+    BathyPath = DC2Path / "Bathymetry" / (RowName + "_Bathy.shp") 
+    OldPath = DC2Path / "MHWS_Lines" / (RowName + "_MHWS_1890.shp") 
+    QuiteOldPath = DC2Path / "MHWS_Lines" / (RowName + "_MHWS_1970.shp") 
     
-    DC1Path = WorkingPath / "DC1_Results" / (RowName +"_DC1_Results.shp")
+    DC1Path = DC2Path / "DC1_Results" / (RowName +"_DC1_Results.shp")
     
     if not BathyPath.is_file():
         print("No Bathy")
@@ -180,7 +181,13 @@ for CellSub in CellList:
                 print("No LiDAR MHWS file")
             else:
                 CellCoast.ExtractHistoricalShorelinePositions(str(LiDARPath),AllowMultiples=True)
-                
+
+            ### Add capability to loop over all shp in a folder to sample MHWS
+            for shp in NewMHWSPath.glob("*.shp"):
+                # do something here
+                print(shp)
+                CellCoast.ExtractHistoricalShorelinePositions(str(shp),AllowMultiples=True)
+
             if not MLWSPath.is_file():
                 print("No MLWS file")
             else:
