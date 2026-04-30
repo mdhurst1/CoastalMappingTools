@@ -875,66 +875,53 @@ class Transect:
         elif len(self.HistoricShorelinesYears) < 2:
             self.Future = False
             return        
-
-        # reset change rates in case already calculated
-        #self.ChangeRates = []
-        #self.ChangeRateErrors = []
         
         # Convert dates to numerical values for regression
         dates_numeric = np.array([date.toordinal() for date in self.HistoricShorelinesYears])
                 
-        # overall rate
-        dateDiff0 = self.HistoricShorelinesYears[-1] - self.HistoricShorelinesYears[0]
-        dt0 = dateDiff0.total_seconds() / (365.2425 * 24 * 3600)
-        dD0 = self.HistoricShorelinesDistance[-1] - self.HistoricShorelinesDistance[0]
-        rate0 = round((dD0 / dt0),3)*-1
+        # overall rate (end point rate)
+        # elapsed time in decimal years
+        dDate = self.HistoricShorelinesYears[-1] - self.HistoricShorelinesYears[0]
+        dT = dDate.total_seconds() / (365.2425 * 24. * 3600.)
+        # overall change in distasnce
+        dDist = self.HistoricShorelinesDistance[-1] - self.HistoricShorelinesDistance[0]
+        EndPointRate = round((dDist / dT),3)*-1
         
-        # rate after 2000
+        # rate after year 2000
         # Find the index of the first date after 1st January 2000
         threshold_date = datetime(2000, 1, 1)
-        index2000 = next(
-            (i for i, date in enumerate(self.HistoricShorelinesYears) if date > threshold_date), 
-            None
-        )
+        Ind = next((i for i, date in enumerate(self.HistoricShorelinesYears) if date > threshold_date), None)
         
-        if index2000 is not None:
-            # Get the corresponding datetime and value from the separate list
-            date2000 = self.HistoricShorelinesYears[index2000]
-            dist2000 = self.HistoricShorelinesDistance[index2000]
-            
-            dateList2000 = self.HistoricShorelinesYears[index2000:]
-            distList2000 = self.HistoricShorelinesDistance[index2000:]
-            
+        if Ind is not None:
             # Calculate the difference in years
-            dt1 = (self.HistoricShorelinesYears[-1] - date2000).total_seconds() / (
-                365.2425 * 24 * 3600
-            )
-            
-            dD1 = self.HistoricShorelinesDistance[-1] - dist2000
-            rate1 = round((dD1 /dt1),3)*-1
+            dT = (self.HistoricShorelinesYears[-1] - self.HistoricShorelinesYears[Ind]).total_seconds() / (365.2425 * 24 * 3600)
+            dDist = self.HistoricShorelinesDistance[-1] - self.HistoricShorelinesDistance[Ind]
+            RecentRate = round((dDist/dT),3)*-1
+
         else:
             print("No date found after 1st Jan 2000")
             
         # Perform linear regression
-        slope0, intercept0 = np.polyfit(dates_numeric, self.HistoricShorelinesDistance, 1)  # 1 = degree of the polynomial
-        regression_line0 = slope0 * np.array(dates_numeric) + intercept0
-        # Calculate R-squared
-        residuals0 = self.HistoricShorelinesDistance - regression_line0
-        ss_res0 = np.sum(residuals0 ** 2)
-        ss_tot0 = np.sum((self.HistoricShorelinesDistance - np.mean(self.HistoricShorelinesDistance)) ** 2)
-        r_sq0 = round(1 - (ss_res0 / ss_tot0),3)
+        SlopeCoef, InterceptCoef = np.polyfit(dates_numeric, self.HistoricShorelinesDistance, 1)  # 1 = degree of the polynomial
+        RegressionDist = SlopeCoef * np.array(dates_numeric) + InterceptCoef
 
-# WEIGHTED REGRESSIONS
+        # Calculate R-squared from Sum of Squares (SS)
+        Residuals = self.HistoricShorelinesDistance - RegressionDist
+        Residual_SS = np.sum(Residuals ** 2)
+        Total_SS = np.sum((self.HistoricShorelinesDistance - np.mean(self.HistoricShorelinesDistance)) ** 2)
+        R2 = round(1 - (Residual_SS / Total_SS),3)
+
+        # WEIGHTED REGRESSIONS
         # Linearly Increasing Weights
-        weights1 = np.linspace(1, 10, len(self.HistoricShorelinesYears))  # Adjust the range if needed
-        coefficients1 = np.polyfit(dates_numeric, self.HistoricShorelinesDistance, 1, w=weights1)  # 1 = degree of the polynomial
-        slope1, intercept1 = coefficients1
-        regression_line1 = slope1 * dates_numeric + intercept1
-        # Calculate R-squared
-        residuals1 = self.HistoricShorelinesDistance - regression_line1
-        ss_res1 = np.sum(residuals1 ** 2)
-        ss_tot1 = np.sum((self.HistoricShorelinesDistance - np.mean(self.HistoricShorelinesDistance)) ** 2)
-        r_sq1 = round(1 - (ss_res1 / ss_tot1),3)
+        Weights = np.linspace(1, 10, len(self.HistoricShorelinesYears))  # Adjust the range if needed
+        SlopeCoefLinear, InterceptCoefLinear = np.polyfit(dates_numeric, self.HistoricShorelinesDistance, 1, w=weights1)  # 1 = degree of the polynomial
+        RegressionDistLinear = SlopeCoefLinear * dates_numeric + InterceptCoefLinear
+        
+        # Calculate R-squared from Sum of Squares (SS)
+        ResidualsLinear = self.HistoricShorelinesDistance - RegressionDistLinear
+        Residual_SS_Linear = np.sum(ResidualsLinear ** 2)
+        Total_SS_Linear = np.sum((self.HistoricShorelinesDistance - np.mean(self.HistoricShorelinesDistance)) ** 2)
+        R2_Linear = round(1 - (Residual_SS_Linear / Total_SS_Linear),3)
         
         # Recency Proportional Weights
         result_rates = []
