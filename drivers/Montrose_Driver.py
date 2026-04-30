@@ -256,7 +256,7 @@ for CellSub in CellList:
         print('Writing transects to',str(OutputPath / (RowName + "_Transects.shp")))
         CellCoast.TruncateTransects()
         CellCoast.WriteFutureTransectsShp(str(OutputPath / (RowName + "_Transects.shp")))
-        
+        CellCoast.WriteTransectPointsShp(str(OutputPath / (RowName + "_Points.shp")))
         # write future shorelines
         SmoothOutput = True # smooth coastlines (true) or not (false)
         

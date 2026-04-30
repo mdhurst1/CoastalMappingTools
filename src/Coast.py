@@ -1120,7 +1120,7 @@ class Coast:
         print("Coast.WriteTransectPointsShp: Writing coastal transect points and attributes to a shapefile")
 
         # open new shapefile        
-        WL = shapefile.Writer(TransectsShp,shapeType=shapefile.POINT)
+        WL = shapefile.Writer(TransectPointsShp,shapeType=shapefile.POINT)
         
         # Check length of extreme water levels
         if len(self.ExtremeWaterLevels) != 3:
@@ -1177,7 +1177,7 @@ class Coast:
         WL.close()
             
         # create the projection file    
-        f = open(TransectsShp.rstrip("shp")+"prj","w")
+        f = open(TransectPointsShp.rstrip("shp")+"prj","w")
         f.write(self.Projection)
         f.close()
 
