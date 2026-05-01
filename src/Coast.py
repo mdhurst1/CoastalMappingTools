@@ -1056,7 +1056,7 @@ class Coast:
                             
                     # Convert dates to strings in 'yyyy-mm-dd' format
                     CalibYr_str = Transect.CalibrationYear.strftime('%Y-%m-%d') if isinstance(Transect.CalibrationYear, datetime) else str(Transect.CalibrationYear)
-                    BaseLYr_str = Transect.HistoricShorelinesYears[-1].strftime('%Y-%m-%d') if isinstance(Transect.HistoricShorelinesYears[-1], datetime) else str(Transect.HistoricShorelinesYears[-1])
+                    BaseLYr_str = Transect.HistoricShorelinesDates[-1].strftime('%Y-%m-%d') if isinstance(Transect.HistoricShorelinesDates[-1], datetime) else str(Transect.HistoricShorelinesDates[-1])
                     OSYr_str = Transect.OSYear.strftime('%Y-%m-%d') if isinstance(Transect.OSYear, datetime) else str(Transect.OSYear)
 
                     
@@ -1157,7 +1157,7 @@ class Coast:
                             
                 # Convert dates to strings in 'yyyy-mm-dd' format
                 CalibYr_str = Transect.CalibrationYear.strftime('%Y-%m-%d') if isinstance(Transect.CalibrationYear, datetime) else str(Transect.CalibrationYear)
-                BaseLYr_str = Transect.HistoricShorelinesYears[-1].strftime('%Y-%m-%d') if isinstance(Transect.HistoricShorelinesYears[-1], datetime) else str(Transect.HistoricShorelinesYears[-1])
+                BaseLYr_str = Transect.HistoricShorelinesDates[-1].strftime('%Y-%m-%d') if isinstance(Transect.HistoricShorelinesDates[-1], datetime) else str(Transect.HistoricShorelinesDates[-1])
                 OSYr_str = Transect.OSYear.strftime('%Y-%m-%d') if isinstance(Transect.OSYear, datetime) else str(Transect.OSYear)
 
                 
@@ -2635,11 +2635,11 @@ class Coast:
                 
                 # delete intersections for years that already exist?
                 if len(IntersectionYears) == 1:
-                    if IntersectionYears[0] in Transect.HistoricShorelinesYears:
+                    if IntersectionYears[0] in Transect.HistoricShorelinesDates:
                         continue
                         
                 elif len(IntersectionYears) > 1:
-                    Indices = [i for i, Year in enumerate(IntersectionYears) if Year not in Transect.HistoricShorelinesYears]
+                    Indices = [i for i, Year in enumerate(IntersectionYears) if Year not in Transect.HistoricShorelinesDates]
                     IntersectionsList = [IntersectionsList[i] for i in Indices]
                     IntersectionYears = [IntersectionYears[i] for i in Indices]
                 
@@ -2654,11 +2654,11 @@ class Coast:
                     Intersection = IntersectionsList[IntersectionIndex]
                     Year = IntersectionYears[IntersectionIndex]
                     
-                    if Year not in Transect.HistoricShorelinesYears:
+                    if Year not in Transect.HistoricShorelinesDates:
                         
                         # add year to transect
-                        Index = bisect.bisect(Transect.HistoricShorelinesYears, Year)
-                        Transect.HistoricShorelinesYears.insert(Index, Year)
+                        Index = bisect.bisect(Transect.HistoricShorelinesDates, Year)
+                        Transect.HistoricShorelinesDates.insert(Index, Year)
                         
                         # add shoreline position
                         Position = Node(Intersection.x,Intersection.y)
@@ -2686,7 +2686,7 @@ class Coast:
                     else:
                         
                         # find and either add or replace depending on proximity
-                        Index = Transect.HistoricShorelinesYears.index(Year)
+                        Index = Transect.HistoricShorelinesDates.index(Year)
                         Position = Node(Intersection.x,Intersection.y)
                         
                         MinDistance = 1000.
@@ -2725,11 +2725,11 @@ class Coast:
                         IntersectionIndex = TempDistances.index(min(TempDistances))
                         Intersection = TempIntersectionsList[IntersectionIndex]
     
-                        if Year not in Transect.HistoricShorelinesYears:
+                        if Year not in Transect.HistoricShorelinesDates:
                             
                             # add year to transect
-                            Index = bisect.bisect(Transect.HistoricShorelinesYears, Year)
-                            Transect.HistoricShorelinesYears.insert(Index, Year)
+                            Index = bisect.bisect(Transect.HistoricShorelinesDates, Year)
+                            Transect.HistoricShorelinesDates.insert(Index, Year)
                             
                             # add shoreline position
                             Position = Node(Intersection.x,Intersection.y)
@@ -2749,7 +2749,7 @@ class Coast:
                         else:
                             
                             # find and either add or replace depending on proximity
-                            Index = Transect.HistoricShorelinesYears.index(Year)
+                            Index = Transect.HistoricShorelinesDates.index(Year)
                             Position = Node(Intersection.x,Intersection.y)
                             
                             MinDistance = 1000.
