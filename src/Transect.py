@@ -83,6 +83,11 @@ class Transect:
         self.MaxChangeRate = None
         self.DeleteFlag = False
 
+        # Regression info
+        self.RegressionIntercept = None
+        self.RegressionSlope = None
+        self.RegressionConfidence = None
+
         # rock head info
         self.RockHeadDistance = None
         self.RockHeadPosition = None
@@ -800,11 +805,11 @@ class Transect:
         
         # Perform weighted regression
         coefficients = np.polyfit(dates_numeric, self.HistoricShorelinesDistance, 1, w=weights)
-        slope, intercept = coefficients
-        slope_yr = round(slope*365.2425,3)*-1
+        self.RegressionSlope, self.RegressionIntercept = coefficients
+        slope_yr = round(self.RegressionSlope*365.2425,3)*-1
         
         # Calculate the regression line
-        regression_line = slope * dates_numeric + intercept
+        regression_line = self.RegressionSlope * dates_numeric + self.RegressionIntercept
         
         # Calculate R-squared
         residuals = self.HistoricShorelinesDistance - regression_line
@@ -832,55 +837,7 @@ class Transect:
         
         self.ChangeRates.append(slope_yr)
         self.ChangeRateErrors.append(stderr)
-
-        if Plot:
-            # create figure
-            fig = plt.figure(1,figsize=(8,4.5))
-            ax = fig.add_subplot(111)
-
-            plt.clf()
-            plt.errorbar(
-                self.HistoricShorelinesYears, 
-                self.HistoricShorelinesDistance, 
-                yerr=self.HistoricShorelinesErrors,  # Use the errors directly
-                fmt='o',  # Marker for the data points
-                ecolor='gray',  # Color of the error bars
-                elinewidth=1,  # Line width of the error bars
-                capsize=3,  # Caps at the end of error bars
-                label='Shoreline Positions with Errors'
-            )
-            plt.plot(self.HistoricShorelinesYears, self.HistoricShorelinesDistance, marker='o', linestyle='-', color='b', label='Shoreline Positions')
-            
-            # Plot the regression lines
-            plt.plot(self.HistoricShorelinesYears, RegressionDist, color='r', linestyle='--', label='Linear Regression')
-            
-            plt.fill_between(
-                self.HistoricShorelinesYears,
-                regression_line3 - conf_interval,
-                regression_line3 + conf_interval,
-                color='gray',
-                alpha=0.3,
-                label='95% Confidence Interval'
-            )
-            plt.plot(self.HistoricShorelinesYears, regression_line3, color='m', linestyle='--', label='Time-weighted Regression')
-            plt.plot([self.HistoricShorelinesYears[0], self.HistoricShorelinesYears[-1]],[self.HistoricShorelinesDistance[0], self.HistoricShorelinesDistance[-1]],linestyle=':', color='g',label='Overall Rate')
-            
-            # Add labels and title
-            plt.title("Montrose - Transect: " + str(self.ID))
-            plt.xlabel('Dates')
-            plt.ylabel('Relative Distance along transect (m)')
-            
-            # Rotate the x-axis labels for better visibility
-            plt.xticks(rotation=45)
-            
-            # invert y-axis to more clearly demonstrate negative rates as erosional (further from offshore baseline)
-            plt.gca().invert_yaxis()
-            
-            # Add legend
-            plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2), ncol=3, fontsize=10)
-            
-            fig_fn = "/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/CCMP/03_analysis/Montrose/Montrose_Transect_" + str(self.ID) + ".pdf"
-            plt.savefig(fig_fn, dpi=300, bbox_inches='tight')
+        self.RegressionConfidence = conf_interval
         
     def CalculateHistoricalRegression_testing(self):
     
