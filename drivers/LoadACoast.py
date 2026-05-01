@@ -43,8 +43,10 @@ Ln = [Ln for Ln in Lns if Ln.ID == LineID][0]
 Trs = Ln.Transects
 Tr = [Tr for Tr in Trs if Tr.ID == TransectID][0]
 
-print(Tr.ChangeRates[-1])
-Tr.CalculateHistoricalRegression_testing()
+# print(Tr.ChangeRates[-1])
+
+for Tr in Trs:
+    Tr.CalculateHistoricalRegression_testing()
 
 
 # =============================================================================

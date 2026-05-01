@@ -735,7 +735,7 @@ class Transect:
         IndexMax = np.where(np.array(self.HistoricShorelinesYears) > (datetime.strptime(min_max_date, "%Y-%m-%d")))[0][TempIndex]
         self.MaxChangeRate = self.ChangeRates[IndexMax]
 
-    def CalculateHistoricalRegression(self):
+    def CalculateHistoricalRegression(self, Plot=False):
     
         """
         Function to calculate historical rates of shoreline change based on
@@ -832,6 +832,55 @@ class Transect:
         
         self.ChangeRates.append(slope_yr)
         self.ChangeRateErrors.append(stderr)
+
+        if Plot:
+            # create figure
+            fig = plt.figure(1,figsize=(8,4.5))
+            ax = fig.add_subplot(111)
+
+            plt.clf()
+            plt.errorbar(
+                self.HistoricShorelinesYears, 
+                self.HistoricShorelinesDistance, 
+                yerr=self.HistoricShorelinesErrors,  # Use the errors directly
+                fmt='o',  # Marker for the data points
+                ecolor='gray',  # Color of the error bars
+                elinewidth=1,  # Line width of the error bars
+                capsize=3,  # Caps at the end of error bars
+                label='Shoreline Positions with Errors'
+            )
+            plt.plot(self.HistoricShorelinesYears, self.HistoricShorelinesDistance, marker='o', linestyle='-', color='b', label='Shoreline Positions')
+            
+            # Plot the regression lines
+            plt.plot(self.HistoricShorelinesYears, RegressionDist, color='r', linestyle='--', label='Linear Regression')
+            
+            plt.fill_between(
+                self.HistoricShorelinesYears,
+                regression_line3 - conf_interval,
+                regression_line3 + conf_interval,
+                color='gray',
+                alpha=0.3,
+                label='95% Confidence Interval'
+            )
+            plt.plot(self.HistoricShorelinesYears, regression_line3, color='m', linestyle='--', label='Time-weighted Regression')
+            plt.plot([self.HistoricShorelinesYears[0], self.HistoricShorelinesYears[-1]],[self.HistoricShorelinesDistance[0], self.HistoricShorelinesDistance[-1]],linestyle=':', color='g',label='Overall Rate')
+            
+            # Add labels and title
+            plt.title("Montrose - Transect: " + str(self.ID))
+            plt.xlabel('Dates')
+            plt.ylabel('Relative Distance along transect (m)')
+            
+            # Rotate the x-axis labels for better visibility
+            plt.xticks(rotation=45)
+            
+            # invert y-axis to more clearly demonstrate negative rates as erosional (further from offshore baseline)
+            plt.gca().invert_yaxis()
+            
+            # Add legend
+            plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2), ncol=3, fontsize=10)
+            
+            fig_fn = "/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/CCMP/03_analysis/Montrose/Montrose_Transect_" + str(self.ID) + ".pdf"
+            plt.savefig(fig_fn, dpi=300, bbox_inches='tight')
         
     def CalculateHistoricalRegression_testing(self):
     
@@ -914,7 +963,7 @@ class Transect:
         # WEIGHTED REGRESSIONS
         # Linearly Increasing Weights
         Weights = np.linspace(1, 10, len(self.HistoricShorelinesYears))  # Adjust the range if needed
-        SlopeCoefLinear, InterceptCoefLinear = np.polyfit(dates_numeric, self.HistoricShorelinesDistance, 1, w=weights1)  # 1 = degree of the polynomial
+        SlopeCoefLinear, InterceptCoefLinear = np.polyfit(dates_numeric, self.HistoricShorelinesDistance, 1, w=Weights)  # 1 = degree of the polynomial
         RegressionDistLinear = SlopeCoefLinear * dates_numeric + InterceptCoefLinear
         
         # Calculate R-squared from Sum of Squares (SS)
@@ -967,9 +1016,9 @@ class Transect:
             r_sq3t = round(1 - (ss_res3t / ss_tot3t), 3)
             
             # Calculate R-squared for data after 2000 only
-            residuals3tt = distList2000 - regression_line3t[index2000:]
+            residuals3tt = self.HistoricShorelinesDistances[Ind:] - regression_line3t[Ind:]
             ss_res3tt = np.sum(residuals3tt ** 2)
-            ss_tot3tt = np.sum((distList2000 - np.mean(distList2000)) ** 2)
+            ss_tot3tt = np.sum((self.HistoricShorelinesDistances[Ind:] - np.mean(self.HistoricShorelinesDistances[Ind:])) ** 2)
             r_sq3tt = round(1 - (ss_res3tt / ss_tot3tt),3)
             
             # Calculate confidence intervals
@@ -993,16 +1042,31 @@ class Transect:
         
         plotWeightings = 1    
         if plotWeightings == 1:
+            # create figure
+            fig = plt.figure(figsize=(8,4.5))
+            ax = fig.add_subplot(111)
+
+            # set font parameters
+            plt.rcParams.update({
+            "font.size": 16,          # base size
+            "axes.titlesize": 18,
+            "axes.labelsize": 16,
+            "xtick.labelsize": 14,
+            "ytick.labelsize": 14,
+            "legend.fontsize": 14
+            })
+
             plt.clf()
             plt.plot(timeweightings, result_rates,'ko-')
             #plt.plot(timeweightings, result_errors,'co--')
-            plt.xlabel('Weighting Scale Factor (yrs)')
+            plt.xlabel('Timescale Factor (e-folding timescale) (yrs)')
             plt.ylabel('Coastal Change Rates (m/yr)')
             titleText = "Montrose - Transect: " + str(self.ID)
             plt.title(titleText)
-            
+            plt.tight_layout()
             
             plt.savefig("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/CCMP/03_analysis/Montrose/" + str(self.ID)+ ".pdf")
+            plt.close()
 
     
 # Plot transect plots to test regression
@@ -1022,7 +1086,7 @@ class Transect:
             plt.plot(self.HistoricShorelinesYears, self.HistoricShorelinesDistance, marker='o', linestyle='-', color='b', label='Shoreline Positions')
             
             # Plot the regression lines
-            plt.plot(self.HistoricShorelinesYears, regression_line0, color='r', linestyle='--', label='Linear Regression')
+            plt.plot(self.HistoricShorelinesYears, RegressionDist, color='r', linestyle='--', label='Linear Regression')
             
             plt.fill_between(
                 self.HistoricShorelinesYears,
@@ -1032,15 +1096,7 @@ class Transect:
                 alpha=0.3,
                 label='95% Confidence Interval'
             )
-            plt.plot(self.HistoricShorelinesYears, regression_line3, color='m', linestyle='--', label='Recency Proportional Weights')
-            
-            #plt.plot(self.HistoricShorelinesYears, regression_line3a, color='m', linestyle='--', label='RPW 5yrs')
-            #plt.plot(self.HistoricShorelinesYears, regression_line3b, color='g', linestyle='--', label='RPW 10yrs')
-            #plt.plot(self.HistoricShorelinesYears, regression_line3c, color='k', linestyle='--', label='RPW 15yrs')
-            #plt.plot(self.HistoricShorelinesYears, regression_line3d, color='y', linestyle='--', label='RPW 20yrs')
-            
-            #plt.plot(date2000,dist2000,marker='+',color='r',label='First shoreline after 2000')
-            
+            plt.plot(self.HistoricShorelinesYears, regression_line3, color='m', linestyle='--', label='Time-weighted Regression')
             plt.plot([self.HistoricShorelinesYears[0], self.HistoricShorelinesYears[-1]],[self.HistoricShorelinesDistance[0], self.HistoricShorelinesDistance[-1]],linestyle=':', color='g',label='Overall Rate')
             #plt.plot([date2000, self.HistoricShorelinesYears[-1]],[dist2000, self.HistoricShorelinesDistance[-1]],linestyle=':', color='r',label='Rate since 2000')
             
