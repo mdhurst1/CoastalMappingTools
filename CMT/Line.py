@@ -15,8 +15,8 @@ import numpy as np
 from scipy.signal import savgol_filter
 from scipy.interpolate import splprep, splev
 
-from Node import *
-from Transect import *
+from CMT.Node import *
+from CMT.Transect import *
 
 import geopandas as gp
 from shapely.geometry import Point, LineString, MultiLineString, Polygon, MultiPolygon, GeometryCollection
@@ -24,8 +24,6 @@ from shapely.ops import nearest_points, linemerge, unary_union
 from shapely.validation import explain_validity
 
 from collections import defaultdict
-
-import pdb
 
 class Line:
     

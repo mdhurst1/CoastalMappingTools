@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 #%matplotlib qt5
 
 #import custom modules
-from src.Coast import *
+from CMT.Coast import *
 
 # define file names for analysis
 WorkingPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/CMT_CRSES")

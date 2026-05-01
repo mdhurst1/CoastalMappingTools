@@ -20,7 +20,7 @@ from datetime import datetime
 sys.path.append("../src/")
 
 #import custom modules
-from Coast import *
+from CMT.Coast import *
 
 # define file names for analysis
 DC2Path = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/Supersites/Montrose_2024/CMT/")
@@ -58,6 +58,11 @@ GeometryPath = WorkingPath/("Geometry")
        
 if not GeometryPath.exists(): # checks if geometry folder exists, if not create
     GeometryPath.mkdir(parents=True, exist_ok=True)
+
+PlottingPath = WorkingPath/("Plots")
+       
+if not PlottingPath.exists(): # checks if geometry folder exists, if not create
+    PlottingPath.mkdir(parents=True, exist_ok=True)
         
 # set the minimum length
 MinLength = 50.
@@ -265,6 +270,21 @@ for CellSub in CellList:
         CellCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future.shp")),SmoothOutput)
         
         #sys.exit(-1)
+
+        # import plotting library
+        from CMT.plotting.Transect_Plots import PlotShorelineTimeseries
+
+        # loop over transects and plot
+        for Transect in (T for Line in CellCoast.CoastLines for T in Line.Transects): 
+            
+            # run the plotting script
+            fig, ax = PlotShorelineTimeseries(Transect, ax=None, show_errors=True, show_weights=False, StartDate=None, Regression=True)
+            
+            # set up file to save
+            FigFilename = PlottingPath / ("Transect_" + str(Transect.ID) + ".pdf")
+
+            fig.savefig(FigFilename)
+            plt.close(fig)
 
         # #Loop through decades
         # for i, Decade in enumerate(Decades):

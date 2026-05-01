@@ -24,7 +24,7 @@ import pandas as pd
 from shapely.geometry import Point, Polygon, LineString, MultiLineString, MultiPoint
 from shapely.ops import nearest_points, linemerge
 
-from Line import *
+from CMT.Line import *
 
 # might do some multiprocessing?
 from multiprocessing import Pool
