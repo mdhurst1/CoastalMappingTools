@@ -1,7 +1,7 @@
 # import modules
 import matplotlib.pyplot as plt
 
-def PlotShorelineTimeseries(Transect, ax=None, show_errors=True, show_weights=False, Regression=True):
+def PlotShorelineTimeseries(Transect, ax=None, show_errors=True, show_weights=False, StartDate=None, Regression=True):
     
     """
     Plot shoreline position through time for a Transect object.
