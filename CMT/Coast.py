@@ -370,7 +370,6 @@ class Coast:
                 Line.SmoothLine(WindowSize=11)
 
             # Find Loops
-            print(Line.Year)
             Line.MakeSimple() #LineString is not simple... Valid Geometry
                 
             # get line node positions

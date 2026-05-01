@@ -132,15 +132,20 @@ for CellSub in CellList:
         Filename2SaveAll = OutputPath / (RowName+"_OpenChange.pydata")
     
         try: # check if geometry already been created
-            CellCoast = pickle.load( open( Filename2SaveCoast, "rb" ) )
-            print("Loaded Coast Object ", Filename2SaveCoast)
+            CellCoast = pickle.load( open( Filename2SaveAll, "rb" ) )
+            print("Loaded Coast Object ", Filename2SaveAll)
         
-        except:
-            print("Creating New Coast Object") # if saved geometry not exist
+        except FileNotFoundError:
+            try:
+                CellCoast = pickle.load( open( Filename2SaveAll, "rb" ) )
+                print("Loaded Coastal Object with geomery only", Filename2SaveAll)
+            
+            except:
+                print("Creating New Coast Object") # if saved geometry not exist
         
-            # SET UP THE COAST FROM -10m Contour
-            CellCoast = Coast(str(ModernPath), MinLength=MinLength)
-        
+                # SET UP THE COAST FROM -10m Contour
+                CellCoast = Coast(str(ModernPath), MinLength=MinLength)
+            
         if not CellCoast.BuiltTransects: # do transects already exist?
             
             # may need to think carefully about how much to smooth
@@ -275,17 +280,20 @@ for CellSub in CellList:
         from CMT.plotting.Transect_Plots import PlotShorelineTimeseries
 
         # loop over transects and plot
-        for Transect in (T for Line in CellCoast.CoastLines for T in Line.Transects): 
-            
+        #ThisLine = CellCoast.CoastLines[0]
+        #ThisTransect = ThisLine.Transects[373]
+
+        for ThisTransect in (T for Line in CellCoast.CoastLines for T in Line.Transects): 
+        #if True:    
             # run the plotting script
-            fig, ax = PlotShorelineTimeseries(Transect, ax=None, show_errors=True, show_weights=False, StartDate=None, Regression=True)
+            fig, ax = PlotShorelineTimeseries(ThisTransect, ax=None, show_errors=True, show_weights=False, StartDate=None, Regression=True)
             
             # set up file to save
-            FigFilename = PlottingPath / ("Transect_" + str(Transect.ID) + ".pdf")
+            FigFilename = PlottingPath / ("Transect_" + str(ThisTransect.ID) + ".png")
 
             fig.savefig(FigFilename)
             plt.close(fig)
-
+            
         # #Loop through decades
         # for i, Decade in enumerate(Decades):
 
