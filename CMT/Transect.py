@@ -68,13 +68,13 @@ class Transect:
         self.HistoricShorelinesSources = []
         self.HistoricShorelinesDates = []
         self.OSYear = False
-        self.HistoricShorelinesPositions = []
-        self.HistoricShorelinesDistances = []
-        self.HistoricShorelinesPosition = []
-        self.HistoricShorelinesDistance = []
+        self.HistoricShorelinesPositions = [] # do we need both of these
+        self.HistoricShorelinesDistances = [] #
+        self.HistoricShorelinesPosition = [] #
+        self.HistoricShorelinesDistance = [] #
         self.HistoricShorelinesErrors = []
         self.DC1 = []
-
+        
         # change rates will be 1 less than no of positions
         self.ChangeRates = []
         self.ChangeRateErrors = []
@@ -88,6 +88,14 @@ class Transect:
         self.RegressionSlope = None
         self.RegressionConfidence = None
 
+        # historic vegetation edge positions, distances and change rates
+        self.VEdgeFlag = False
+        self.HistoricVEdgeSources = []
+        self.HistoricVEdgeDates = []
+        self.HistoricVEdgePositions = [] 
+        self.HistoricVEdgeDistances = [] 
+        self.HistoricVEdgeErrors = []
+        
         # rock head info
         self.RockHeadDistance = None
         self.RockHeadPosition = None
