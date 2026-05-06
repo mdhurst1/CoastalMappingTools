@@ -87,6 +87,7 @@ class Coast:
         # some tracking bools
         self.BuiltTransects = False
         self.GotHistoricShorelines = False
+        self.GotVEdge = False
         self.SampledDEMs = False
         self.PredictedFutureShorelines = False
         self.MorphologyAnalysed = False
@@ -2764,7 +2765,7 @@ class Coast:
                                 Transect.HistoricShorelinesPositions[Index].append(Position)
                                 Transect.HistoricShorelinesDistances[Index].append(Distance)
 
-    def ExtractHistoricalVEdgePositions(self,HistoricalVEdgeShp, Reset=False, AllowMultiples=False):
+    def ExtractVEdgePositions(self,HistoricalVEdgeShp, Reset=False, AllowMultiples=False):
 
         """
         Function to find nearest historic vegetation edge position on each transect
@@ -2780,7 +2781,7 @@ class Coast:
             Resets all historical shoreline positions
         """
         print("Coast.ExtractHistoricalShorelinePositions: Finding historical shoreline positions from ", end="")
-        print(Path(HistoricalShorelinesShp).name)
+        print(Path(HistoricalVEdgeShp).name)
 
         # set a distance to look inland to check for intersections
         LookDistance = 0.
@@ -2903,9 +2904,9 @@ class Coast:
                         continue
                         
                 elif len(IntersectionDates) > 1:
-                    Indices = [i for i, Date in enumerate(IntersectionDates) if Date not in Transect.HistoricVedgeDates]
+                    Indices = [i for i, Date in enumerate(IntersectionDates) if Date not in Transect.HistoricVEdgeDates]
                     IntersectionsList = [IntersectionsList[i] for i in Indices]
-                    IntersectionYears = [IntersectionYears[i] for i in Indices]
+                    IntersectionDates = [IntersectionDates[i] for i in Indices]
                 
                 if len(IntersectionDates) == 0:
                     continue
@@ -2992,8 +2993,8 @@ class Coast:
                         if Date not in Transect.HistoricVEdgeDates:
                             
                             # add year to transect
-                            Index = bisect.bisect(Transect.HistoricVEdgeDates, Year)
-                            Transect.HistoricVEdgeDates.insert(Index, Year)
+                            Index = bisect.bisect(Transect.HistoricVEdgeDates, Date)
+                            Transect.HistoricVEdgeDates.insert(Index, Date)
                             
                             # add shoreline position
                             Position = Node(Intersection.x,Intersection.y)

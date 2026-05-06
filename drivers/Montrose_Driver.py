@@ -192,7 +192,6 @@ for CellSub in CellList:
 
             ### Add capability to loop over all shp in a folder to sample MHWS
             for shp in NewMHWSPath.glob("*.shp"):
-                # do something here
                 print(shp)
                 CellCoast.ExtractHistoricalShorelinePositions(str(shp),AllowMultiples=True)
 
@@ -227,6 +226,20 @@ for CellSub in CellList:
             with open(str(Filename2SaveCoast), 'wb') as PFile:
                 pickle.dump(CellCoast, PFile)
         
+        if not CellCoast.GotVEdge:
+
+            ### Add capability to loop over all shp in a folder to sample VEdge
+            for shp in NewMHWSPath.glob("*.shp"):
+                print(shp)
+                CellCoast.ExtractVEdgePositions(str(shp),AllowMultiples=True)
+            
+            CellCoast.GotVEdge = True
+            
+            # SAVE ENTIRE COAST OBJECT
+            print("\tSaving Coast Object as ", Filename2SaveCoast)
+            with open(str(Filename2SaveCoast), 'wb') as PFile:
+                pickle.dump(CellCoast, PFile)
+                
         if not CellCoast.SampledDEMs:
         
             # Extend transects landward by a fixed distance and sample DEMs
