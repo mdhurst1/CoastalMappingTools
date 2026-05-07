@@ -2867,14 +2867,10 @@ class Coast:
                     NearestLine = GDF.iloc[Distances.idxmin()]
                     
                     
-                    if "Date" in NearestLine: # updated with datetime update, all input files must have 'Date' field in attributes in format yyyy-mm-dd
-                        try:
-                            # IntersectionYears.append(datetime.strptime(NearestLine.Date,"%Y-%m-%d"))
-                            IntersectionDates.append(pd.to_datetime(NearestLine.Date))
-                        except:
-                            import pdb
-                            pdb.set_trace()
-                    
+                    if "SrcDate" in NearestLine: # updated with datetime update, all input files must have 'Date' field in attributes in format yyyy-mm-dd
+                        # IntersectionYears.append(datetime.strptime(NearestLine.Date,"%Y-%m-%d"))
+                        IntersectionDates.append(pd.to_datetime(NearestLine.SrcDate,errors="raise"))
+                        
                     else:
                         sys.exit("Couldnt find survey date for veg edge position")
                 

@@ -11,11 +11,11 @@ class TimeSeriesSignal:
         self.Name = Name
 
         # set up object attributes and default if empty
-        self.Dates = Dates if Dates is not None else []
-        self.Positions = np.asarray(Positions) if Positions is not None else np.array([])
-        self.Distances = np.asarray(Distances) if Distances is not None else np.array([])
-        self.Errors = np.asarray(Errors) if Errors is not None else None
-        self.Sources = Sources if Sources is not None else []
+        self.Dates = list(Dates) if Dates is not None else []
+        self.Positions = list(Positions) if Positions is not None else []
+        self.Distances = list(Distances) if Distances is not None else []
+        self.Errors = list(Errors) if Errors is not None else []
+        self.Sources = list(Sources) if Sources is not None else []
 
         self.OrdinalDates = None
         self.Results = {}
