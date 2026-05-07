@@ -34,6 +34,16 @@ class TimeSeriesSignal:
 
     def AddObservation(self, Date, Position, Distance, Error=None, Source=None):
         
+        if Date in self.Dates:
+            Index = self.Dates.index(Date)
+
+            self.Positions[Index] = Position
+            self.Distances[Index] = Distance
+            self.Errors[Index] = Error
+            self.Sources[Index] = Source
+
+            return
+        
         # find position
         Index = bisect.bisect(self.Dates, Date)
 
@@ -55,8 +65,8 @@ class TimeSeriesSignal:
         if not self.HasData(Minimum=2):
             return
 
-        if not self.OrdinalDates:
-            Dates2Ordinal()
+        if self.OrdinalDates is None:
+            self.Dates2Ordinal()
 
         # get total length of record in decimal years
         TotalDt = (self.OrdinalDates[-1] - self.OrdinalDates[0]) / 365.25
@@ -68,14 +78,17 @@ class TimeSeriesSignal:
         Rate = (self.Distances[-1] - self.Distances[0]) / TotalDt
 
         # Calculate rate uncertainty
-        if self.Errors is not None:
-            RateUncertainty = np.sqrt(self.Errors[0]**2.+self.Errors[-1]**2.) / TotalDt
+        Errors = self.ErrorsArray()
+        if Errors is not None:
+            RateUncertainty = np.sqrt(Errors[0]**2.+Errors[-1]**2.) / TotalDt
+        else:
+            RateUncertainty = None
 
         # save results
         self.Results["EPR"] = {
             "Method": "EPR",
             "Rate": Rate,
-            "RateUncertainty": RateUncertainty
+            "RateUncertainty": RateUncertainty,
             "StartDate": self.Dates[0],
             "EndDate": self.Dates[-1],
             "StartDistance": self.Distances[0],
@@ -94,40 +107,46 @@ class TimeSeriesSignal:
         if not self.HasData(Minimum=2):
             return
 
-        if not self.OrdinalDates:
+        if self.OrdinalDates is None:
             self.Dates2Ordinal()
 
+        # convert lists to arrays
+        DatesArray = self.OrdinalDates.astype(float)
+        DistancesArray = self.DistancesArray()
+
         # perform OLS
-        Slope, Intercept = np.polyfit(self.OrdinalDates, self.Distances, 1)
+        Slope, Intercept = np.polyfit(DatesArray, DistancesArray, 1)
 
         # Calculate residuals and rate
-        FittedDistances = Slope*self.OrdinalDates + Intercept
-        Residuals = self.Distances - FittedDistances
+        FittedDistances = Slope*DatesArray + Intercept
+        Residuals = DistancesArray - FittedDistances
         Rate = Slope * 365.25
 
         # Calculate uncertainty
-        NObs = len(self.Distances)
+        NObs = len(DistancesArray)
 
         if NObs > 2:
             
             #Get variance in residuals
             Residual_SS = np.sum(Residuals**2) 
             Residual_Variance = Residual_SS / (NObs - 2)
-
+            Sxx = np.sum((DatesArray-np.mean(DatesArray))**2)
+            
             # get temporal spread
-            Total_SS = np.sum((self.OrdinalDates - np.mean(self.OrdinalDates))**2)
+            Total_SS = np.sum((DistancesArray - np.mean(DistancesArray))**2)
 
             # calculate R2
             R2 = round(1. - (Residual_SS / Total_SS), 3)
             
             # get standard error on the Slope
-            Rate_SE = np.sqrt(Residual_Variance / Total_SS) * 365.25
+            Rate_SE = np.sqrt(Residual_Variance / Sxx) * 365.25
             Rate_CI95 = 1.96 * Rate_SE
 
         else:
             # no errors if only 2 data points
             Rate_SE = None
             Rate_CI95 = None
+            R2 = None
 
         # save results
         self.Results["OLS"] = {
@@ -154,11 +173,15 @@ class TimeSeriesSignal:
         if not self.HasData(Minimum=2):
             return
 
-        if not self.OrdinalDates:
+        if self.OrdinalDates is None:
             self.Dates2Ordinal()
 
+        # convert lists to arrays
+        DatesArray = self.OrdinalDates.astype(float)
+        DistancesArray = self.DistancesArray()
+
         # perform theil sen rate analysis
-        Slope_Days, Intercept, Slope_Low, Slope_High = theilslopes(self.Distances, self.OrdinalDates, alpha=0.95)
+        Slope_Days, Intercept, Slope_Low, Slope_High = theilslopes(DistancesArray, DatesArray, alpha=0.95)
 
         # get rates in per year
         Rate = Slope_Days * 365.25
@@ -166,8 +189,29 @@ class TimeSeriesSignal:
         Rate_High = Slope_High * 365.25
 
         # Calculate residuals and rate
-        FittedDistances = Slope_Days*self.OrdinalDates + Intercept
-        Residuals = self.Distances - FittedDistances
+        FittedDistances = Slope_Days*DatesArray + Intercept
+        Residuals = DistancesArray - FittedDistances
+
+        # Calculate uncertainty
+        NObs = len(DistancesArray)
+
+        if NObs > 2:
+            
+            #Get variance in residuals
+            Residual_SS = np.sum(Residuals**2) 
+            Residual_Variance = Residual_SS / (NObs - 2)
+            Sxx = np.sum((DatesArray-np.mean(DatesArray))**2)
+            
+            # get temporal spread
+            Total_SS = np.sum((DistancesArray - np.mean(DistancesArray))**2)
+
+            # calculate R2
+            R2 = round(1. - (Residual_SS / Total_SS), 3)
+
+        else:
+            # no R2
+            R2 = None
+
 
         self.Results["TheilSen"] = {
             "Method": "Theil-Sen Regression",
@@ -176,6 +220,7 @@ class TimeSeriesSignal:
             "Intercept": Intercept,
             "Fitted": FittedDistances,
             "Residuals": Residuals,
+            "R2": R2
             "N": len(self.Distances),
         }    
     
@@ -193,52 +238,55 @@ class TimeSeriesSignal:
         if not self.HasData(Minimum=2):
             return None
 
-        if not self.OrdinalDates:
+        if self.OrdinalDates is None:
             self.Dates2Ordinal()
 
-        x = self.Dates2Ordinal()
-        y = self.DistancesArray()
+        # convert lists to arrays
+        DatesArray = self.OrdinalDates.astype(float)
+        DistancesArray = self.DistancesArray()
 
         # Calculate Time-Weights
-        MaxDate = np.max(self.OrdinalDates)
+        MaxDate = np.max(DatesArray)
         TauDays = TauYears * 365.25
-        RecencyWeights = np.exp(-(MaxDate - self.OrdinalDates) / TauDays)
+        RecencyWeights = np.exp(-(MaxDate - DatesArray) / TauDays)
 
         # Caluclate uncertainty-weights
-        if self.Errors is not None:
-            ErrorWeights = 1.0 / self.Errors**2
+        Errors = self.ErrorsArray()
+        if Errors is not None:
+            ErrorWeights = 1.0 / Errors**2
         else:
-            ErrorWeights = np.ones_like(x)
+            ErrorWeights = np.ones_like(DatesArray)
         
         # Combine weights
         Weights = RecencyWeights * ErrorWeights
         Weights = Weights / np.sum(Weights)
 
         # perform time-weighted OLS
-        Slope, Intercept = np.polyfit(self.OrdinalDates, self.Distances, 1, w=Weights)
+        Slope, Intercept = np.polyfit(DatesArray, DistancesArray, 1, w=Weights)
 
         # Calculate residuals and rate
-        FittedDistances = Slope*self.OrdinalDates + Intercept
-        Residuals = self.Distances - FittedDistances
+        FittedDistances = Slope*DatesArray + Intercept
+        Residuals = DistancesArray - FittedDistances
         Rate = Slope * 365.25
 
         # Calculate uncertainty
-        NObs = len(self.Distances)
+        NObs = len(DistancesArray)
 
         if NObs > 2:
             
-            #Get variance in residuals
-            Residual_SS = np.sum(Residuals**2) 
+            #Get variance in weighted residuals
+            Residual_SS = np.sum(Weights*Residuals**2) 
             Residual_Variance = Residual_SS / (NObs - 2)
-
+            Sxx = np.sum((DatesArray-np.mean(DatesArray))**2)
+            
             # get temporal spread
-            Total_SS = np.sum((self.OrdinalDates - np.mean(self.OrdinalDates))**2)
+            Total_SS = np.sum((DistancesArray - np.mean(DistancesArray))**2)
 
             # calculate R2
             R2 = round(1. - (Residual_SS / Total_SS), 3)
-
+            
             # get standard error on the Slope
-            Rate_SE = np.sqrt(Residual_Variance / Total_SS) * 365.25
+            Rate_SE = np.sqrt(Residual_Variance / Sxx) * 365.25
             Rate_CI95 = 1.96 * Rate_SE
 
         else:
@@ -257,7 +305,7 @@ class TimeSeriesSignal:
             "Fitted": FittedDistances,
             "Residuals": Residuals,
             "R2": R2,
-            "Weights": weights,
+            "Weights": Weights,
             "TauYears": TauYears,
             "N": NObs,
         }
@@ -276,3 +324,4 @@ class TimeSeriesSignal:
     def ErrorsArray(self):
         if len(self.Errors) == 0 or all(Error is None for Error in self.Errors):
             return None
+        return np.asarray(self.Errors, dtype=float)
