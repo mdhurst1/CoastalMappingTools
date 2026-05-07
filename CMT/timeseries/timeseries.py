@@ -310,6 +310,18 @@ class TimeSeriesSignal:
             "N": NObs,
         }
 
+    def Analyse(self, TauYears=10):
+        """
+        Wrapper function to launch all forms of regression analysis
+        
+        MDH, May 2026
+        
+        """
+        self.CalcEndPointRate()
+        self.CalcOLSRate()
+        self.CalcTheilSenRate()
+        self.CalcTimeWeightedRegression(TauYears)
+
     """ FIGURE THESE OUT LATER"""
     def Dates2Ordinal(self):
         self.OrdinalDates = np.array([d.toordinal() for d in self.Dates])
