@@ -1,38 +1,35 @@
 # import module
-
+import numpy as np
+import bisect
 # new object to store generic timeseries data
 # MDH May 2026
 
-#import modules
-import numpy as np
-import bisect
-
 class TimeSeriesSignal:
-    def __init__(self, name, dates=None, positions=None, distances=None, errors=None, sources=None):
+    def __init__(self, Name, Dates=None, Positions=None, Distances=None, Errors=None, Sources=None):
         
         # name here, could be MHWS, VEdge etc.
-        self.name = name
+        self.Name = Name
 
         # set up object attributes and default if empty
-        self.Dates = dates if dates is not None else []
-        self.Positions = np.asarray(positions) if positions is not None else np.array([])
-        self.Distances = np.asarray(distances) if distances is not None else np.array([])
-        self.Errors = np.asarray(errors) if errors is not None else None
-        self.Sources = sources if sources is not None else []
+        self.Dates = Dates if Dates is not None else []
+        self.Positions = np.asarray(Positions) if Positions is not None else np.array([])
+        self.Distances = np.asarray(Distances) if Distances is not None else np.array([])
+        self.Errors = np.asarray(Errors) if Errors is not None else None
+        self.Sources = Sources if Sources is not None else []
 
         self.OrdinalDates = None
         self.Results = {}
 
-    def AddObservation(self, date, position, distance, error=None, source=None):
+    def AddObservation(self, Date, Position, Distance, Error=None, Source=None):
         
         # find position
         Index = bisect.bisect(self.Dates, Date)
 
-        self.Dates.insert(Index, date)
-        self.Positions.insert(Index, position)
-        self.Distances.insert(Index, distance)
-        self.Errors.insert(Index, error)
-        self.Sources.insert(Index, source)
+        self.Dates.insert(Index, Date)
+        self.Positions.insert(Index, Position)
+        self.Distances.insert(Index, Distance)
+        self.Errors.insert(Index, Error)
+        self.Sources.insert(Index, Source)
 
     def Dates2Ordinal(self):
         self.OrdinalDates = np.array([d.toordinal() for d in self.Dates])

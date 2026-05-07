@@ -166,7 +166,7 @@ for CellSub in CellList:
             # SAVE ENTIRE COAST OBJECT
             with open(str(Filename2SaveCoast), 'wb') as PFile:
                 pickle.dump(CellCoast, PFile)
-        
+        """
         if not CellCoast.GotHistoricShorelines: # goes to find shorelines
             
             # Sample MHWS positions
@@ -225,11 +225,11 @@ for CellSub in CellList:
             print("\tSaving Coast Object as ", Filename2SaveCoast)
             with open(str(Filename2SaveCoast), 'wb') as PFile:
                 pickle.dump(CellCoast, PFile)
-        
+        """
         if not CellCoast.GotVEdge:
 
             ### Add capability to loop over all shp in a folder to sample VEdge
-            for shp in NewVEdgePath.glob("*.shp"):
+            for shp in VEdgePath.glob("*.shp"):
                 CellCoast.ExtractVEdgePositions(str(shp),AllowMultiples=True)
             
             CellCoast.GotVEdge = True
@@ -238,6 +238,8 @@ for CellSub in CellList:
             print("\tSaving Coast Object as ", Filename2SaveCoast)
             with open(str(Filename2SaveCoast), 'wb') as PFile:
                 pickle.dump(CellCoast, PFile)
+
+            sys.exit(-1)
                 
         if not CellCoast.SampledDEMs:
         
