@@ -293,7 +293,7 @@ for CellSub in CellList:
     # loop over transects and plot
     ThisLine = CellCoast.CoastLines[0]
     ThisTransect = ThisLine.Transects[373]
-    
+    ThisTransect.AnalyseTimeseries()
     
     #for ThisTransect in (T for Line in CellCoast.CoastLines for T in Line.Transects): 
     if True:    
