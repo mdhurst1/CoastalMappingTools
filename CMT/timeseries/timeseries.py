@@ -52,7 +52,7 @@ class TimeSeriesSignal:
         """
     
         if not self.HasData(Minimum=2):
-            return None
+            return
 
         if not self.OrdinalDates:
             Dates2Ordinal()
@@ -61,7 +61,7 @@ class TimeSeriesSignal:
         TotalDt = (self.OrdinalDates[-1] - self.OrdinalDates[0]) / 365.25
 
         if TotalDt == 0:
-            return None
+            return
 
         #Calculate rate
         Rate = (self.Distances[-1] - self.Distances[0]) / TotalDt
@@ -70,6 +70,7 @@ class TimeSeriesSignal:
         if self.Errors is not None:
             RateUncertainty = np.sqrt(self.Errors[0]**2.+self.Errors[-1]**2.) / TotalDt
 
+        # save results
         self.Results["EPR"] = {
             "Method": "EPR",
             "Rate": Rate,
@@ -88,6 +89,52 @@ class TimeSeriesSignal:
         MDH, May 2026
 
         """
+
+        if not self.HasData(Minimum=2):
+            return
+
+        if not self.OrdinalDates:
+            Dates2Ordinal()
+
+        # perform OLS
+        Slope, Intercept = np.polyfit(self.OrdinalDates, self.Distances, 1)
+
+        # Calculate residuals and rate
+        FittedDistances = Slope*self.OrdinalDates + Intercept
+        Residuals = self.Distances - FittedDistances
+        Rate = Slope * 365.25
+
+        # Calculate uncertainty
+        NObs = len(self.Distances)
+
+        if NObs > 2:
+            
+            #Get variance in residuals
+            ResidualVariance = np.sum(Residuals**2) / (NObs - 2)
+
+            # get temporal spread
+            sxx = np.sum((self.OrdinalDates - np.mean(self.OrdinalDates))**2)
+
+            # get standard error on the Slope
+            Rate_SE = np.sqrt(residual_variance / sxx) * 365.25
+            Rate_CI95 = 1.96 * Rate_SE
+
+        else:
+            # no errors if only 2 data points
+            Rate_SE = None
+            Rate_CI95 = None
+
+        # save results
+        self.Results["OLS"] = {
+            "Method": "Ordinary Least Squares",
+            "Rate": Rate,
+            "RateSE": Rate_SE,
+            "RateCI95": Rate_CI95,
+            "Intercept": Intercept,
+            "Fitted": FittedDistances,
+            "Residuals": Residuals,
+            "N": NObs,
+        }
     
     def CalcTheilSenRate(self):
 
