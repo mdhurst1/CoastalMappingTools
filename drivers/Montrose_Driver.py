@@ -188,7 +188,7 @@ for CellSub in CellList:
 
         ### Add capability to loop over all shp in a folder to sample VEdge
         for shp in VEdgePath.glob("*.shp"):
-            CellCoast.ExtractVEdgePositions(str(shp),AllowMultiples=True)
+            CellCoast.ExtractIndicatorPositions(str(shp), "VEdge", "SrcDate")
         
         CellCoast.GotVEdge = True
         
