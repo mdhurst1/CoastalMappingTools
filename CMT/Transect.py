@@ -678,7 +678,7 @@ class Transect:
         else:
             self.HinterlandSlope = Slope[0]
     
-    def AddTimeseries(self, Name, Dates, Positions, Errors=None, Sources=None):
+    def AddTimeseries(self, Name, Dates=None, Positions=None, Distances=None, Errors=None, Sources=None):
     
         """
         Add a time series signal to this transect, e.g. MHWS or vegetation edge.
@@ -690,10 +690,19 @@ class Transect:
             Name=Name,
             Dates=Dates,
             Positions=Positions,
-            Errors=Errors
+            Distances=Distances,
+            Errors=Errors,
             Sources=Sources)
         
     def AddTimeseriesObservation(self, Name, Date, Position, Distance, Error=None, Source=None):
+        
+        """
+        Add timeseries observation to object
+
+        MDH, May 2026
+
+        """
+        # create timeseries object if it doesnt already exist
         if Name not in self.Timeseries:
             self.AddTimeseries(Name)
 

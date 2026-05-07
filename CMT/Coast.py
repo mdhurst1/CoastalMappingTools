@@ -2906,8 +2906,8 @@ class Coast:
                     Intersection = TempIntersectionsList[TempDistances.index(min(TempDistances))]
     
                     #Get Position and Distance
-                    Position = Node(intersection.x, intersection.y)
-                    Distance = Transect.StartNode.get_Distance(position)
+                    Position = Node(Intersection.x, Intersection.y)
+                    Distance = Transect.StartNode.get_Distance(Position)
 
                     # add to timeseries object
                     Transect.AddTimeseriesObservation("VEdge", Date, Position, Distance, Error, Path(HistoricalVEdgeShp).name)

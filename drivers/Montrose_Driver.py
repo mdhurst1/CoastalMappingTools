@@ -25,6 +25,7 @@ from CMT.Coast import *
 # define file names for analysis
 DC2Path = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/Supersites/Montrose_2024/CMT/")
 NewMHWSPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/CCMP/02_secondary_data/Montrose_MHWS/")
+VEdgePath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/CCMP/02_secondary_data/Montrose_VEdge/")
 WorkingPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/CCMP/03_analysis/Montrose/")
 NationalDEMPath = pathlib.Path("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2Final/99_NationalData/OSTerrain5/")
 
@@ -192,7 +193,6 @@ for CellSub in CellList:
 
             ### Add capability to loop over all shp in a folder to sample MHWS
             for shp in NewMHWSPath.glob("*.shp"):
-                print(shp)
                 CellCoast.ExtractHistoricalShorelinePositions(str(shp),AllowMultiples=True)
 
             if not MLWSPath.is_file():
@@ -229,8 +229,7 @@ for CellSub in CellList:
         if not CellCoast.GotVEdge:
 
             ### Add capability to loop over all shp in a folder to sample VEdge
-            for shp in NewMHWSPath.glob("*.shp"):
-                print(shp)
+            for shp in NewVEdgePath.glob("*.shp"):
                 CellCoast.ExtractVEdgePositions(str(shp),AllowMultiples=True)
             
             CellCoast.GotVEdge = True
