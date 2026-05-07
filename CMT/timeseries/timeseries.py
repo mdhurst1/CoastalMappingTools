@@ -220,7 +220,7 @@ class TimeSeriesSignal:
             "Intercept": Intercept,
             "Fitted": FittedDistances,
             "Residuals": Residuals,
-            "R2": R2
+            "R2": R2,
             "N": len(self.Distances),
         }    
     

@@ -117,6 +117,124 @@ for CellSub in CellList:
     
     Filename2SaveCoast = GeometryPath / (RowName+"_OpenGeometry.pydata")
     
+    try:
+        CellCoast = pickle.load( open( Filename2SaveCoast, "rb" ) )
+        print("Loaded Coastal Object with geomery only", Filename2SaveCoast)
+    
+    except:
+        print("Creating New Coast Object") # if saved geometry not exist
+
+        # SET UP THE COAST FROM -10m Contour
+        CellCoast = Coast(str(ModernPath), MinLength=MinLength)
+        
+    if not CellCoast.BuiltTransects: # do transects already exist?
+        
+        # may need to think carefully about how much to smooth
+        CellCoast.SmoothCoastLines(WindowSize=SmoothingWindowSize,NoSmooths=NoSmooths)
+        
+        # make sure each baseline is correctly orientated with sea on left as you look down the line
+        CellCoast.CheckOrientation(str(SoftPath),str(MLWSPath))
+        
+        # write smoothed coast/bathy to file
+        CellCoast.WriteCoastShp(str(GeometryPath / (RowName + "_Smoothed_Baseline.shp")))
+    
+        # create some initial dummy transects
+        CellCoast.GenerateTransects(TransectSpacing, 500, 500, CheckTopology=False) # transect lengths
+        
+        CellCoast.BuiltTransects = True
+        
+        # SAVE ENTIRE COAST OBJECT
+        with open(str(Filename2SaveCoast), 'wb') as PFile:
+            pickle.dump(CellCoast, PFile)
+    
+    if not CellCoast.GotHistoricShorelines: # goes to find shorelines
+        
+        # Sample MHWS positions
+        
+        if not SoftPath.is_file():
+            print("No soft MHWS file")
+        else:
+            CellCoast.ExtractHistoricalShorelinePositions(str(SoftPath),Reset=True)
+        
+        if not OldPath.is_file():
+            print("No 1890s MHWS file")
+        else:
+            CellCoast.ExtractHistoricalShorelinePositions(str(OldPath))
+        
+        if not QuiteOldPath.is_file():
+            print("No 1970s MHWS file")
+        else:
+            CellCoast.ExtractHistoricalShorelinePositions(str(QuiteOldPath))
+        
+        if not LiDARPath.is_file():
+            print("No LiDAR MHWS file")
+        else:
+            CellCoast.ExtractHistoricalShorelinePositions(str(LiDARPath),AllowMultiples=True)
+
+        ### Add capability to loop over all shp in a folder to sample MHWS
+        for shp in NewMHWSPath.glob("*.shp"):
+            CellCoast.ExtractHistoricalShorelinePositions(str(shp),AllowMultiples=True)
+
+        if not MLWSPath.is_file():
+            print("No MLWS file")
+        else:
+            CellCoast.ExtractMLWS(str(MLWSPath))
+        
+        ### get DC1 results
+        # comment this out for now
+        CellCoast.SampleDC1Data(str(DC1Path))
+        
+        #### get MHWS elevation for each transect
+        CellCoast.SampleMHWSElevation(str(DC2Path / "MHWS_Lines" / "scotland_mhws_elev.tif"))
+        
+        #### get historical rate of relative sea level change
+        CellCoast.SampleHistoricalRSLR(str(DC2Path / "RSL_Bradley_Model" / "Scotland_NEngland_RSLR_Modern_BNG.tif"))
+    
+        # Sample rock head position
+        CellCoast.SampleRockHeadPosition(str(DC2Path / "UPSM" / "upsm_ncca.tif"))
+        
+        # Sample coastal defences
+        CellCoast.SampleDefencesPosition(str(DC2Path / "Defences" / (RowName + "_Defences.shp"))) # DIFFERENT DEFENCE VERSIONS
+        
+        CellCoast.GotHistoricShorelines = True
+        
+        # Get OS year smarter 2020
+        CellCoast.Check_OS_Years()
+        
+        # SAVE ENTIRE COAST OBJECT
+        print("\tSaving Coast Object as ", Filename2SaveCoast)
+        with open(str(Filename2SaveCoast), 'wb') as PFile:
+            pickle.dump(CellCoast, PFile)
+    
+    if not CellCoast.GotVEdge:
+
+        ### Add capability to loop over all shp in a folder to sample VEdge
+        for shp in VEdgePath.glob("*.shp"):
+            CellCoast.ExtractVEdgePositions(str(shp),AllowMultiples=True)
+        
+        CellCoast.GotVEdge = True
+        
+        # SAVE ENTIRE COAST OBJECT
+        print("\tSaving Coast Object as ", Filename2SaveCoast)
+        with open(str(Filename2SaveCoast), 'wb') as PFile:
+            pickle.dump(CellCoast, PFile)
+            
+    if not CellCoast.SampledDEMs:
+    
+        # Extend transects landward by a fixed distance and sample DEMs
+        #HinterlandDistance = 200
+        #CellCoast.ExtendTransects2Hinterland(HinterlandDistance)
+        CellCoast.FindDEM(str(NationalDEMPath / "OSTerrain5_fullcoastindex.shp"))
+        CellCoast.ExtractTransectTopography()
+        
+        CellCoast.SampledDEMs = True
+        
+        # SAVE ENTIRE COAST OBJECT
+        print("\tSaving Coast Object as ", Filename2SaveCoast)
+        with open(str(Filename2SaveCoast), 'wb') as PFile:
+            pickle.dump(CellCoast, PFile)
+    
+    """
     for Scenario, Percentile in zip(Scenarios, Percentiles): # main loop starting
         
         OutputPath = WorkingPath/("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_OpenCoast")
@@ -131,131 +249,7 @@ for CellSub in CellList:
         
         # # this checks to see whether coast object already exists
         Filename2SaveAll = OutputPath / (RowName+"_OpenChange.pydata")
-    
-        try: # check if geometry already been created
-            CellCoast = pickle.load( open( Filename2SaveAll, "rb" ) )
-            print("Loaded Coast Object ", Filename2SaveAll)
-        
-        except FileNotFoundError:
-            try:
-                CellCoast = pickle.load( open( Filename2SaveAll, "rb" ) )
-                print("Loaded Coastal Object with geomery only", Filename2SaveAll)
-            
-            except:
-                print("Creating New Coast Object") # if saved geometry not exist
-        
-                # SET UP THE COAST FROM -10m Contour
-                CellCoast = Coast(str(ModernPath), MinLength=MinLength)
-            
-        if not CellCoast.BuiltTransects: # do transects already exist?
-            
-            # may need to think carefully about how much to smooth
-            CellCoast.SmoothCoastLines(WindowSize=SmoothingWindowSize,NoSmooths=NoSmooths)
-            
-            # make sure each baseline is correctly orientated with sea on left as you look down the line
-            CellCoast.CheckOrientation(str(SoftPath),str(MLWSPath))
-            
-            # write smoothed coast/bathy to file
-            CellCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
-        
-            # create some initial dummy transects
-            CellCoast.GenerateTransects(TransectSpacing, 500, 500, CheckTopology=False) # transect lengths
-            
-            CellCoast.BuiltTransects = True
-            
-            # SAVE ENTIRE COAST OBJECT
-            with open(str(Filename2SaveCoast), 'wb') as PFile:
-                pickle.dump(CellCoast, PFile)
-        
-        if not CellCoast.GotHistoricShorelines: # goes to find shorelines
-            
-            # Sample MHWS positions
-            
-            if not SoftPath.is_file():
-                print("No soft MHWS file")
-            else:
-                CellCoast.ExtractHistoricalShorelinePositions(str(SoftPath),Reset=True)
-            
-            if not OldPath.is_file():
-                print("No 1890s MHWS file")
-            else:
-                CellCoast.ExtractHistoricalShorelinePositions(str(OldPath))
-            
-            if not QuiteOldPath.is_file():
-                print("No 1970s MHWS file")
-            else:
-                CellCoast.ExtractHistoricalShorelinePositions(str(QuiteOldPath))
-            
-            if not LiDARPath.is_file():
-                print("No LiDAR MHWS file")
-            else:
-                CellCoast.ExtractHistoricalShorelinePositions(str(LiDARPath),AllowMultiples=True)
 
-            ### Add capability to loop over all shp in a folder to sample MHWS
-            for shp in NewMHWSPath.glob("*.shp"):
-                CellCoast.ExtractHistoricalShorelinePositions(str(shp),AllowMultiples=True)
-
-            if not MLWSPath.is_file():
-                print("No MLWS file")
-            else:
-                CellCoast.ExtractMLWS(str(MLWSPath))
-            
-            ### get DC1 results
-            # comment this out for now
-            CellCoast.SampleDC1Data(str(DC1Path))
-            
-            #### get MHWS elevation for each transect
-            CellCoast.SampleMHWSElevation(str(DC2Path / "MHWS_Lines" / "scotland_mhws_elev.tif"))
-            
-            #### get historical rate of relative sea level change
-            CellCoast.SampleHistoricalRSLR(str(DC2Path / "RSL_Bradley_Model" / "Scotland_NEngland_RSLR_Modern_BNG.tif"))
-        
-            # Sample rock head position
-            CellCoast.SampleRockHeadPosition(str(DC2Path / "UPSM" / "upsm_ncca.tif"))
-            
-            # Sample coastal defences
-            CellCoast.SampleDefencesPosition(str(DC2Path / "Defences" / (RowName + "_Defences.shp"))) # DIFFERENT DEFENCE VERSIONS
-            
-            CellCoast.GotHistoricShorelines = True
-            
-            # Get OS year smarter 2020
-            CellCoast.Check_OS_Years()
-            
-            # SAVE ENTIRE COAST OBJECT
-            print("\tSaving Coast Object as ", Filename2SaveCoast)
-            with open(str(Filename2SaveCoast), 'wb') as PFile:
-                pickle.dump(CellCoast, PFile)
-        
-        if not CellCoast.GotVEdge:
-
-            ### Add capability to loop over all shp in a folder to sample VEdge
-            for shp in VEdgePath.glob("*.shp"):
-                CellCoast.ExtractVEdgePositions(str(shp),AllowMultiples=True)
-            
-            CellCoast.GotVEdge = True
-            
-            # SAVE ENTIRE COAST OBJECT
-            print("\tSaving Coast Object as ", Filename2SaveCoast)
-            with open(str(Filename2SaveCoast), 'wb') as PFile:
-                pickle.dump(CellCoast, PFile)
-
-            sys.exit(-1)
-                
-        if not CellCoast.SampledDEMs:
-        
-            # Extend transects landward by a fixed distance and sample DEMs
-            #HinterlandDistance = 200
-            #CellCoast.ExtendTransects2Hinterland(HinterlandDistance)
-            CellCoast.FindDEM(str(NationalDEMPath / "OSTerrain5_fullcoastindex.shp"))
-            CellCoast.ExtractTransectTopography()
-            
-            CellCoast.SampledDEMs = True
-            
-            # SAVE ENTIRE COAST OBJECT
-            print("\tSaving Coast Object as ", Filename2SaveCoast)
-            with open(str(Filename2SaveCoast), 'wb') as PFile:
-                pickle.dump(CellCoast, PFile)
-        
         if not CellCoast.PredictedFutureShorelines:    
             
             # Sample coastal defences
@@ -275,7 +269,8 @@ for CellSub in CellList:
             print("\tSaving Coast Object as ", Filename2SaveAll)
             with open(str(Filename2SaveAll), 'wb') as PFile:
                 pickle.dump(CellCoast, PFile)
-                
+        
+            
         # write transect during debugging for GIS interface interogation
         print('Writing transects to',str(OutputPath / (RowName + "_Transects.shp")))
         CellCoast.TruncateTransects()
@@ -290,24 +285,28 @@ for CellSub in CellList:
         
         #sys.exit(-1)
 
-        # import plotting library
-        from CMT.plotting.Transect_Timeseries_Plots import *
+        """
+    
+    # import plotting library
+    from CMT.plotting.Transect_Timeseries_Plots import *
 
-        # loop over transects and plot
-        ThisLine = CellCoast.CoastLines[0]
-        ThisTransect = ThisLine.Transects[373]
+    # loop over transects and plot
+    ThisLine = CellCoast.CoastLines[0]
+    ThisTransect = ThisLine.Transects[373]
+    
+    
+    #for ThisTransect in (T for Line in CellCoast.CoastLines for T in Line.Transects): 
+    if True:    
+        # run the plotting script
+        Signals = list(ThisTransect.Timeseries.values())
+        fig, ax = PlotTimeSeriesSignals(Signals, ax=None, ShowErrors=True, RegressionMethods=("TWR",), Title=None)
+        #fig, ax = PlotShorelineTimeseries(ThisTransect, ax=None, show_errors=True, show_weights=False, StartDate=None, Regression=True)
+        
+        # set up file to save
+        FigFilename = PlottingPath / ("Transect_" + str(ThisTransect.ID) + ".png")
 
-        #for ThisTransect in (T for Line in CellCoast.CoastLines for T in Line.Transects): 
-        if True:    
-            # run the plotting script
-            fig, ax = PlotTimeSeriesSignals(ThisTransect.Timeseries, ax=None, ShowErrors=True, RegressionMethods=("TWR",), Title=None)
-            #fig, ax = PlotShorelineTimeseries(ThisTransect, ax=None, show_errors=True, show_weights=False, StartDate=None, Regression=True)
-            
-            # set up file to save
-            FigFilename = PlottingPath / ("Transect_" + str(ThisTransect.ID) + ".png")
-
-            fig.savefig(FigFilename)
-            plt.close(fig)
+        fig.savefig(FigFilename)
+        plt.close(fig)
             
         # #Loop through decades
         # for i, Decade in enumerate(Decades):

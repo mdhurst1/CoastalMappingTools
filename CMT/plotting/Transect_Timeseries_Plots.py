@@ -24,8 +24,8 @@ plt.rcParams.update({
 })
 
 LineColours = {
-    "VEdge": [0.2, 0.9, 0.2],
-    "MHWS": [0.2, 0.2, 0.9]
+    "VEdge": [0.4, 0.8, 0.4],
+    "MHWS": [0.4, 0.4, 0.9]
 }
 
 MarkerStyles = {
@@ -69,6 +69,7 @@ def PlotTimeSeriesSignals(Signals, ax=None, ShowErrors=True, RegressionMethods=(
 
     for Signal in Signals:
 
+        print(Signal)
         Dates = Signal.Dates
         PlotDates = mdates.date2num(Dates)
         Distances = Signal.DistancesArray()
