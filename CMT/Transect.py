@@ -714,6 +714,18 @@ class Transect:
             Source=Source
         )
 
+    def AnalyseTimeseries(self, TauYears=10):
+
+        """
+        Function to call all regression analyses on all timeseries
+        
+        MDH, May 2026
+        
+        """
+        
+        for Signal in self.Timeseries.values():
+            Signal.Analyse(TauYears=TauYears)
+
     """
     def get_signal(self, name):
         return self.signals.get(name, None)
