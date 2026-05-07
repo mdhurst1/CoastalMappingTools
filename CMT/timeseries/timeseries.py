@@ -5,14 +5,16 @@ import numpy as np
 # MDH May 2026
 
 class TimeSeriesSignal:
-    def __init__(self, name, dates=None, positions=None, errors=None):
+    def __init__(self, name, dates=None, positions=None, errors=None, sources=None):
         
         # name here, could be MHWS, VEdge etc.
         self.name = name
 
+        # set up object attributes and default if empty
         self.Dates = dates if dates is not None else []
         self.Positions = np.asarray(positions) if positions is not None else np.array([])
         self.Errors = np.asarray(errors) if errors is not None else None
+        self.Sources = sources if sources is not None else []
 
         self.OrdinalDates = None
         self.Results = {}

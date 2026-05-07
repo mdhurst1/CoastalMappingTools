@@ -30,6 +30,7 @@ from openpyxl import load_workbook
 
 # import other custom classes
 from CMT.Node import *
+from CMT.timeseries.timeseries import *
 
 from shapely.geometry import Point, LineString
 
@@ -64,6 +65,7 @@ class Transect:
         self.Overlaps = False
         
         # historic shoreline positions, distances and change rates
+        
         self.HistoricFlag = False
         self.HistoricShorelinesSources = []
         self.HistoricShorelinesDates = []
@@ -96,6 +98,9 @@ class Transect:
         self.HistoricVEdgeDistances = [] 
         self.HistoricVEdgeErrors = []
         
+        # set up dictionary to store all timeseries info
+        self.Timeseries = {}
+
         # rock head info
         self.RockHeadDistance = None
         self.RockHeadPosition = None
@@ -672,7 +677,32 @@ class Transect:
             self.HinterlandSlope = 0.001
         else:
             self.HinterlandSlope = Slope[0]
-        
+    
+    def AddTimeseries(self, Name, Dates, Positions, Errors=None, Sources=None):
+    
+        """
+        Add a time series signal to this transect, e.g. MHWS or vegetation edge.
+
+        MDH May 2026
+
+        """
+        self.Timeseries[Name] = TimeSeriesSignal(
+            Name=Name,
+            Dates=Dates,
+            Positions=Positions,
+            Errors=Errors
+            Sources=Sources
+    )
+
+    """
+    def get_signal(self, name):
+        return self.signals.get(name, None)
+
+
+    def iter_signals(self):
+        return self.signals.values()
+    """
+
     def CalculateHistoricalRates(self):
 
         """
