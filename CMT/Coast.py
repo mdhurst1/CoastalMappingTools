@@ -2765,29 +2765,35 @@ class Coast:
                                 Transect.HistoricShorelinesPositions[Index].append(Position)
                                 Transect.HistoricShorelinesDistances[Index].append(Distance)
 
-    def ExtractVEdgePositions(self,HistoricalVEdgeShp, Reset=False, AllowMultiples=False):
+    def ExtractIndicatorPositions(self, HistoricalShp, SignalName, DateField="Date", Reset=False, AllowMultiples=False):
 
         """
-        Function to find nearest historic vegetation edge position on each transect
+        Function to find nearest coastal change indicator position on each transect
         and add nodes to transect dictionary by date
 
         MDH, May 2026
 
         Parameters
         ----------
-        HistoricalVEdgeShp : string
-            Filename for polyline shapfile containing historical shoreline positions
+        HistoricalShp : string
+            Filename for polyline shapfile containing historical positions
+        SignalName : string
+            Type of indicator e.g. "MHWS", "VEdge", "MLWS", "CliffTop", "CliffToe"
+        DateField : string
+            Name of attribute that contains date
+        DateFmt : string
+            Format of date field if needed?
         Reset : bool
-            Resets all historical shoreline positions
+            Resets all historical positions
+
         """
-        print("Coast.ExtractVEdgePositions: Finding historical vegetation edge positions from ", end="")
-        print(Path(HistoricalVEdgeShp).name)
+        print(f"Coast.ExtractIndicatorPositions: Finding historical {SignalName} positions from {Path(IndicatorShp).name}")                
 
         # set a distance to look inland to check for intersections
         LookDistance = 0.
 
         # read shapefile using geopandas
-        GDF = gp.read_file(HistoricalVEdgeShp)
+        GDF = gp.read_file(HistoricalShp)
         Lines = GDF['geometry']
         
         if len(Lines) == 0:
@@ -2823,8 +2829,8 @@ class Coast:
             
             for Transect in Line.Transects:
                 
-                #if Reset:
-                #    Transect.ResetHistoricVEdge()
+                if Reset:
+                    Transect.Timeseries.pop(SignalName, None)
                     
                 # extend transect line inland to look for intersection
                 #Calculate start and end nodes and generate Transect
@@ -2845,34 +2851,33 @@ class Coast:
                 if Intersections.geom_type == "MultiPoint":
                     CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
                     Distances = [IntersectPoint.distance(CoastPoint) for IntersectPoint in Intersections.geoms]
-                    Index = Distances.index(min(Distances))
                     Indices = np.argsort(np.array(Distances))
                     Distances = np.array(Distances)[Indices]
                     IntersectionsList = [Intersections.geoms[i] for i in Indices]
                     
+                elif Intersections.geom_type == "Point":
+                    IntersectionsList = [Intersections]
+
                 else:
-                    # check if this is a new endnode by intersecting with line from startnode to endnode
-                    Distance = Transect.LineString.distance(Intersections)
-                    Intersection = Intersections
-                    IntersectionsList = [Intersection,]
+                    continue
                 
                 IntersectionDates = []
                 
                 # loop through intersections to identify line date attribute
                 for Intersection in IntersectionsList:
-                    #print(Intersection.wkt, end=", ")
+                    
                     # use minimum of line.distance to find line
                     # need date attribute if rates are to be calculated
                     Distances = Lines.distance(Intersection)
                     NearestLine = GDF.iloc[Distances.idxmin()]
                     
                     
-                    if "SrcDate" in NearestLine: # updated with datetime update, all input files must have 'Date' field in attributes in format yyyy-mm-dd
+                    if DateField in NearestLine: # updated with datefield
                         # IntersectionYears.append(datetime.strptime(NearestLine.Date,"%Y-%m-%d"))
-                        IntersectionDates.append(pd.to_datetime(NearestLine.SrcDate,errors="raise"))
+                        IntersectionDates.append(pd.to_datetime(NearestLine[DateField]],errors="raise"))
                         
                     else:
-                        sys.exit("Couldnt find survey date for veg edge position")
+                        sys.exit(f"Could not find {DateField} field for {SignalName} position")
                 
                 if len(IntersectionDates) > 1:
                     Indices = [i for i, Date in enumerate(IntersectionDates) if Date not in Transect.HistoricVEdgeDates]
@@ -2906,7 +2911,7 @@ class Coast:
                     Distance = Transect.StartNode.get_Distance(Position)
 
                     # add to timeseries object
-                    Transect.AddTimeseriesObservation("VEdge", Date, Position, Distance, Error, Path(HistoricalVEdgeShp).name)
+                    Transect.AddTimeseriesObservation(SignalName, Date, Position, Distance, Error, Path(HistoricalShp).name)
 
     def ExtractMLWS(self, MLWSShp, NearestNode=0):
 
