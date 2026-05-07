@@ -151,7 +151,7 @@ for CellSub in CellList:
         
         ### loop over all shp in a folder to sample MHWS
         for shp in NewMHWSPath.glob("*.shp"):
-            CellCoast.ExtractHistoricalShorelinePositions(str(shp),AllowMultiples=True)
+            CellCoast.ExtractIndicatorPositions(str(shp), "MHWS", "Date")
 
         if not MLWSPath.is_file():
             print("No MLWS file")
@@ -277,7 +277,7 @@ for CellSub in CellList:
     if True:    
         # run the plotting script
         Signals = list(ThisTransect.Timeseries.values())
-        fig, ax = PlotTimeSeriesSignals(Signals, ax=None, ShowErrors=True, RegressionMethods="all", Title=None)
+        fig, ax = PlotTimeSeriesSignals(Signals, ax=None, ShowErrors=True, RegressionMethods=("TWR",), Title=None)
         #fig, ax = PlotShorelineTimeseries(ThisTransect, ax=None, show_errors=True, show_weights=False, StartDate=None, Regression=True)
         
         # set up file to save

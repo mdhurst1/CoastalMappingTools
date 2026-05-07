@@ -15,12 +15,13 @@ from datetime import date
 import sys
 
 plt.rcParams.update({
+    "font.family": ["Arial"],
     "font.size": 12,          # base size
     "axes.titlesize": 16,
-    "axes.labelsize": 14,
-    "xtick.labelsize": 12,
-    "ytick.labelsize": 12,
-    "legend.fontsize": 12,
+    "axes.labelsize": 12,
+    "xtick.labelsize": 10,
+    "ytick.labelsize": 10,
+    "legend.fontsize": 10,
 })
 
 LineColours = {
@@ -40,6 +41,8 @@ LineStyles = {
     "TWR": "-.",
 }
 
+AllRegressionMethods = ("EPR", "OLS", "TheilSen", "TWR")
+
 # plot timeseries
 def PlotTimeSeriesSignals(Signals, ax=None, ShowErrors=True, RegressionMethods=("TWR",), Title=None):
 
@@ -51,8 +54,13 @@ def PlotTimeSeriesSignals(Signals, ax=None, ShowErrors=True, RegressionMethods=(
 
     """
 
-    if RegressionMethods.lower() == "all":
-        RegressionMethods=("EPR", "OLS", "TheilSen", "TWR")
+    if not isinstance(RegressionMethods,tuple):
+        if RegressionMethods.lower() == "all":
+            RegressionMethods=("EPR", "OLS", "TheilSen", "TWR")
+        elif RegressionMethods in AllRegressionMethods:
+            RegressionMethods = (RegressionMethods,)
+        else:
+            sys.exit(r"Unknown regression method [RegressionMethods]")
 
     if ax is None:
         fig, ax = plt.subplots(figsize=(8, 4.5))

@@ -2787,7 +2787,7 @@ class Coast:
             Resets all historical positions
 
         """
-        print(f"Coast.ExtractIndicatorPositions: Finding historical {SignalName} positions from {Path(IndicatorShp).name}")                
+        print(f"Coast.ExtractIndicatorPositions: Finding historical {SignalName} positions from {Path(HistoricalShp).name}")                
 
         # set a distance to look inland to check for intersections
         LookDistance = 0.
@@ -2874,7 +2874,7 @@ class Coast:
                     
                     if DateField in NearestLine: # updated with datefield
                         # IntersectionYears.append(datetime.strptime(NearestLine.Date,"%Y-%m-%d"))
-                        IntersectionDates.append(pd.to_datetime(NearestLine[DateField]],errors="raise"))
+                        IntersectionDates.append(pd.to_datetime(NearestLine[DateField],errors="raise"))
                         
                     else:
                         sys.exit(f"Could not find {DateField} field for {SignalName} position")
