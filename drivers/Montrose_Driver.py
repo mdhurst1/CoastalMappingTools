@@ -299,7 +299,7 @@ for CellSub in CellList:
     if True:    
         # run the plotting script
         Signals = list(ThisTransect.Timeseries.values())
-        fig, ax = PlotTimeSeriesSignals(Signals, ax=None, ShowErrors=True, RegressionMethods=("TWR",), Title=None)
+        fig, ax = PlotTimeSeriesSignals(Signals, ax=None, ShowErrors=True, RegressionMethods="all", Title=None)
         #fig, ax = PlotShorelineTimeseries(ThisTransect, ax=None, show_errors=True, show_weights=False, StartDate=None, Regression=True)
         
         # set up file to save

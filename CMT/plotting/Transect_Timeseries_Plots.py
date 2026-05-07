@@ -51,6 +51,9 @@ def PlotTimeSeriesSignals(Signals, ax=None, ShowErrors=True, RegressionMethods=(
 
     """
 
+    if RegressionMethods.lower() == "all":
+        RegressionMethods=("EPR", "OLS", "TheilSen", "TWR")
+
     if ax is None:
         fig, ax = plt.subplots(figsize=(8, 4.5))
     else:
@@ -69,7 +72,6 @@ def PlotTimeSeriesSignals(Signals, ax=None, ShowErrors=True, RegressionMethods=(
 
     for Signal in Signals:
 
-        print(Signal)
         Dates = Signal.Dates
         PlotDates = mdates.date2num(Dates)
         Distances = Signal.DistancesArray()
