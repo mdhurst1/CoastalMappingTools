@@ -166,7 +166,7 @@ for CellSub in CellList:
             # SAVE ENTIRE COAST OBJECT
             with open(str(Filename2SaveCoast), 'wb') as PFile:
                 pickle.dump(CellCoast, PFile)
-        """
+        
         if not CellCoast.GotHistoricShorelines: # goes to find shorelines
             
             # Sample MHWS positions
@@ -225,7 +225,7 @@ for CellSub in CellList:
             print("\tSaving Coast Object as ", Filename2SaveCoast)
             with open(str(Filename2SaveCoast), 'wb') as PFile:
                 pickle.dump(CellCoast, PFile)
-        """
+        
         if not CellCoast.GotVEdge:
 
             ### Add capability to loop over all shp in a folder to sample VEdge
@@ -291,16 +291,17 @@ for CellSub in CellList:
         #sys.exit(-1)
 
         # import plotting library
-        from CMT.plotting.Transect_Plots import PlotShorelineTimeseries
+        from CMT.plotting.Transect_Timeseries_Plots import *
 
         # loop over transects and plot
-        #ThisLine = CellCoast.CoastLines[0]
-        #ThisTransect = ThisLine.Transects[373]
+        ThisLine = CellCoast.CoastLines[0]
+        ThisTransect = ThisLine.Transects[373]
 
-        for ThisTransect in (T for Line in CellCoast.CoastLines for T in Line.Transects): 
-        #if True:    
+        #for ThisTransect in (T for Line in CellCoast.CoastLines for T in Line.Transects): 
+        if True:    
             # run the plotting script
-            fig, ax = PlotShorelineTimeseries(ThisTransect, ax=None, show_errors=True, show_weights=False, StartDate=None, Regression=True)
+            fig, ax = PlotTimeSeriesSignals(ThisTransect.Timeseries, ax=None, ShowErrors=True, RegressionMethods=("TWR",), Title=None)
+            #fig, ax = PlotShorelineTimeseries(ThisTransect, ax=None, show_errors=True, show_weights=False, StartDate=None, Regression=True)
             
             # set up file to save
             FigFilename = PlottingPath / ("Transect_" + str(ThisTransect.ID) + ".png")
