@@ -149,29 +149,7 @@ for CellSub in CellList:
     
     if not CellCoast.GotHistoricShorelines: # goes to find shorelines
         
-        # Sample MHWS positions
-        
-        if not SoftPath.is_file():
-            print("No soft MHWS file")
-        else:
-            CellCoast.ExtractHistoricalShorelinePositions(str(SoftPath),Reset=True)
-        
-        if not OldPath.is_file():
-            print("No 1890s MHWS file")
-        else:
-            CellCoast.ExtractHistoricalShorelinePositions(str(OldPath))
-        
-        if not QuiteOldPath.is_file():
-            print("No 1970s MHWS file")
-        else:
-            CellCoast.ExtractHistoricalShorelinePositions(str(QuiteOldPath))
-        
-        if not LiDARPath.is_file():
-            print("No LiDAR MHWS file")
-        else:
-            CellCoast.ExtractHistoricalShorelinePositions(str(LiDARPath),AllowMultiples=True)
-
-        ### Add capability to loop over all shp in a folder to sample MHWS
+        ### loop over all shp in a folder to sample MHWS
         for shp in NewMHWSPath.glob("*.shp"):
             CellCoast.ExtractHistoricalShorelinePositions(str(shp),AllowMultiples=True)
 
@@ -185,7 +163,7 @@ for CellSub in CellList:
         CellCoast.SampleDC1Data(str(DC1Path))
         
         #### get MHWS elevation for each transect
-        CellCoast.SampleMHWSElevation(str(DC2Path / "MHWS_Lines" / "scotland_mhws_elev.tif"))
+        CellCoast.SampleMHWSElevation(str(NewMHWSPath / "scotland_mhws_elev.tif"))
         
         #### get historical rate of relative sea level change
         CellCoast.SampleHistoricalRSLR(str(DC2Path / "RSL_Bradley_Model" / "Scotland_NEngland_RSLR_Modern_BNG.tif"))
