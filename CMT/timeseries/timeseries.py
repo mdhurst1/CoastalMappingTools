@@ -95,7 +95,7 @@ class TimeSeriesSignal:
             return
 
         if not self.OrdinalDates:
-            Dates2Ordinal()
+            self.Dates2Ordinal()
 
         # perform OLS
         Slope, Intercept = np.polyfit(self.OrdinalDates, self.Distances, 1)
@@ -111,13 +111,17 @@ class TimeSeriesSignal:
         if NObs > 2:
             
             #Get variance in residuals
-            ResidualVariance = np.sum(Residuals**2) / (NObs - 2)
+            Residual_SS = np.sum(Residuals**2) 
+            Residual_Variance = Residual_SS / (NObs - 2)
 
             # get temporal spread
-            sxx = np.sum((self.OrdinalDates - np.mean(self.OrdinalDates))**2)
+            Total_SS = np.sum((self.OrdinalDates - np.mean(self.OrdinalDates))**2)
 
+            # calculate R2
+            R2 = round(1. - (Residual_SS / Total_SS), 3)
+            
             # get standard error on the Slope
-            Rate_SE = np.sqrt(residual_variance / sxx) * 365.25
+            Rate_SE = np.sqrt(Residual_Variance / Total_SS) * 365.25
             Rate_CI95 = 1.96 * Rate_SE
 
         else:
@@ -134,6 +138,7 @@ class TimeSeriesSignal:
             "Intercept": Intercept,
             "Fitted": FittedDistances,
             "Residuals": Residuals,
+            "R2": R2,
             "N": NObs,
         }
     
@@ -150,7 +155,7 @@ class TimeSeriesSignal:
             return
 
         if not self.OrdinalDates:
-            Dates2Ordinal()
+            self.Dates2Ordinal()
 
         # perform theil sen rate analysis
         Slope_Days, Intercept, Slope_Low, Slope_High = theilslopes(self.Distances, self.OrdinalDates, alpha=0.95)
@@ -174,14 +179,88 @@ class TimeSeriesSignal:
             "N": len(self.Distances),
         }    
     
-    def CalcTimeWeightedRegression(self):
+    def CalcTimeWeightedRegression(self, TauYears):
+        
         """
-        Rate based on time-weighted regression as implemented by Craig Macdonell
+        Rate based on time-weighted regression as first implemented by Craig Macdonell
+
+        TauYears is the scaling_factor i.e. e-folding timescale looking backward
 
         MDH, May 2026
 
         """
     
+        if not self.HasData(Minimum=2):
+            return None
+
+        if not self.OrdinalDates:
+            self.Dates2Ordinal()
+
+        x = self.Dates2Ordinal()
+        y = self.DistancesArray()
+
+        # Calculate Time-Weights
+        MaxDate = np.max(self.OrdinalDates)
+        TauDays = TauYears * 365.25
+        RecencyWeights = np.exp(-(MaxDate - self.OrdinalDates) / TauDays)
+
+        # Caluclate uncertainty-weights
+        if self.Errors is not None:
+            ErrorWeights = 1.0 / self.Errors**2
+        else:
+            ErrorWeights = np.ones_like(x)
+        
+        # Combine weights
+        Weights = RecencyWeights * ErrorWeights
+        Weights = Weights / np.sum(Weights)
+
+        # perform time-weighted OLS
+        Slope, Intercept = np.polyfit(self.OrdinalDates, self.Distances, 1, w=Weights)
+
+        # Calculate residuals and rate
+        FittedDistances = Slope*self.OrdinalDates + Intercept
+        Residuals = self.Distances - FittedDistances
+        Rate = Slope * 365.25
+
+        # Calculate uncertainty
+        NObs = len(self.Distances)
+
+        if NObs > 2:
+            
+            #Get variance in residuals
+            Residual_SS = np.sum(Residuals**2) 
+            Residual_Variance = Residual_SS / (NObs - 2)
+
+            # get temporal spread
+            Total_SS = np.sum((self.OrdinalDates - np.mean(self.OrdinalDates))**2)
+
+            # calculate R2
+            R2 = round(1. - (Residual_SS / Total_SS), 3)
+
+            # get standard error on the Slope
+            Rate_SE = np.sqrt(Residual_Variance / Total_SS) * 365.25
+            Rate_CI95 = 1.96 * Rate_SE
+
+        else:
+            # no errors if only 2 data points
+            R2 = None
+            Rate_SE = None
+            Rate_CI95 = None
+
+        # save results
+        self.Results["TWR"] = {
+            "Method": "Time-weighted Regression",
+            "Rate": Rate,
+            "RateSE": Rate_SE,
+            "RateCI95": Rate_CI95,
+            "Intercept": Intercept,
+            "Fitted": FittedDistances,
+            "Residuals": Residuals,
+            "R2": R2,
+            "Weights": weights,
+            "TauYears": TauYears,
+            "N": NObs,
+        }
 
     """ FIGURE THESE OUT LATER"""
     def Dates2Ordinal(self):
