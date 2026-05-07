@@ -691,8 +691,19 @@ class Transect:
             Dates=Dates,
             Positions=Positions,
             Errors=Errors
-            Sources=Sources
-    )
+            Sources=Sources)
+        
+    def AddTimeseriesObservation(self, Name, Date, Position, Distance, Error=None, Source=None):
+        if Name not in self.Timeseries:
+            self.AddTimeseries(Name)
+
+        self.Timeseries[Name].AddObservation(
+            Date=Date,
+            Position=Position,
+            Distance=Distance,
+            Error=Error,
+            Source=Source
+        )
 
     """
     def get_signal(self, name):

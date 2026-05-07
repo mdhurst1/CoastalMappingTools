@@ -2775,12 +2775,12 @@ class Coast:
 
         Parameters
         ----------
-        HistoricalShorelineShp : string
+        HistoricalVEdgeShp : string
             Filename for polyline shapfile containing historical shoreline positions
         Reset : bool
             Resets all historical shoreline positions
         """
-        print("Coast.ExtractHistoricalShorelinePositions: Finding historical shoreline positions from ", end="")
+        print("Coast.ExtractVEdgePositions: Finding historical vegetation edge positions from ", end="")
         print(Path(HistoricalVEdgeShp).name)
 
         # set a distance to look inland to check for intersections
@@ -2832,7 +2832,7 @@ class Coast:
                 Y1 = Transect.EndNode.Y + LookDistance * np.cos( np.radians( Transect.Orientation ) )
                 TransectLine = LineString(((Transect.StartNode.X,Transect.StartNode.Y),(X1,Y1)))
             
-                # intersect with historical shoreline
+                # intersect with historical VEdge
                 Intersections = TransectLine.intersection(MultiLines)
                 
                 # catch no intersections and flag for deletion? updated all references to GeometryCollection with isempty, CM 09/23
@@ -2841,7 +2841,6 @@ class Coast:
                     continue
 
                 # check there arent multiple intersections
-
                 # store multiple intersections if so
                 if Intersections.geom_type == "MultiPoint":
                     CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
@@ -2859,7 +2858,7 @@ class Coast:
                 
                 IntersectionDates = []
                 
-                # loop through intersections and add to struct
+                # loop through intersections to identify line date attribute
                 for Intersection in IntersectionsList:
                     #print(Intersection.wkt, end=", ")
                     # use minimum of line.distance to find line
@@ -2876,34 +2875,10 @@ class Coast:
                             import pdb
                             pdb.set_trace()
                     
-                    elif "FULLSHP_YR" in NearestLine:
-                        sys.exit('Since update of code to datetime formatting, please ensure that file (likely ModernSoft) has Date field in attributes in format yyyy-mm-dd to replace FULLSHP_YR')
-                    elif "Surv_EndYr" in NearestLine:
-                        sys.exit('Since update of code to datetime formatting, please ensure that file has Date field in attributes in format yyyy-mm-dd to replace Surv_EndYr')
-                    elif "Surv_End_A" in NearestLine:
-                        sys.exit('Since update of code to datetime formatting, please ensure that file (likely 1890s) has Date field in attributes in format yyyy-mm-dd to replace Surv_End_A')
-                    elif "Surv_End_B" in NearestLine:
-                        sys.exit('Since update of code to datetime formatting, please ensure that file (likely 1970s) has Date field in attributes in format yyyy-mm-dd to replace Surv_End_B')
-                    elif "Surv_End_C" in NearestLine:
-                        sys.exit('Since update of code to datetime formatting, please ensure that file has Date field in attributes in format yyyy-mm-dd to replace Surv_End_C')
-                    elif "Surv_End_D" in NearestLine:
-                        sys.exit('Since update of code to datetime formatting, please ensure that file has Date field in attributes in format yyyy-mm-dd to replace Surv_End_D')
-                    elif "versiondat" in NearestLine:
-                        sys.exit('Since update of code to datetime formatting, please ensure that file has Date field in attributes in format yyyy-mm-dd to replace versiondat')
-                    elif "Year" in NearestLine:
-                        sys.exit('Since update of code to datetime formatting, please ensure that file has Date field in attributes in format yyyy-mm-dd to replace Year')
-                    elif "YEAR" in NearestLine:
-                        sys.exit('Since update of code to datetime formatting, please ensure that file has Date field in attributes in format yyyy-mm-dd to replace YEAR')
-                    
                     else:
                         sys.exit("Couldnt find survey date for veg edge position")
                 
-                # delete intersections for years that already exist?
-                if len(IntersectionDates) == 1:
-                    if IntersectionDates[0] in Transect.HistoricVEdgeDates:
-                        continue
-                        
-                elif len(IntersectionDates) > 1:
+                if len(IntersectionDates) > 1:
                     Indices = [i for i, Date in enumerate(IntersectionDates) if Date not in Transect.HistoricVEdgeDates]
                     IntersectionsList = [IntersectionsList[i] for i in Indices]
                     IntersectionDates = [IntersectionDates[i] for i in Indices]
@@ -2911,124 +2886,31 @@ class Coast:
                 if len(IntersectionDates) == 0:
                     continue
                 
-                if not AllowMultiples: # this is now redundant?
-                    
-                    CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
-                    TempDistances = [IntersectionPoint.distance(CoastPoint) for IntersectionPoint in IntersectionsList]
-                    IntersectionIndex = TempDistances.index(min(TempDistances))
-                    Intersection = IntersectionsList[IntersectionIndex]
-                    Date = IntersectionDates[IntersectionIndex]
-                    
-                    if Date not in Transect.HistoricVEdgeDates:
-                        
-                        # add year to transect (DOES INDEXING STILL WORK?)
-                        Index = bisect.bisect(Transect.HistoricVEdgeDates, Date)
-                        Transect.HistoricVEdgeDates.insert(Index, Date)
-                        
-                        # add shoreline position
-                        Position = Node(Intersection.x,Intersection.y)
-                        Positions = [Position,]
-                        Transect.HistoricVEdgePositions.insert(Index, Positions)
-                        
-                        # add distance
-                        Distances = [Transect.StartNode.get_Distance(Position),]
-                        Transect.HistoricVEdgeDistances.insert(Index, Distances)
-                        
-                        # add source info
-                        Transect.HistoricVEdgeSources.insert(Index, Path(HistoricalVEdgeShp).name)
-                        
-                        # retrieve positional error # this is nonesense
-                        if Date < datetime.strptime('1970-01-01',"%Y-%m-%d"):
-                            Error = 5.
-                        elif Year < datetime.strptime('2000-01-01',"%Y-%m-%d"):
-                            Date = 2.
-                        else:
-                            Date = 1.
-                            
-                        # add error
-                        Transect.HistoricShorelinesErrors.insert(Index, Error)
-                        
+                # loop through unique dates
+                UniqueDates = sorted(set(IntersectionDates))
+                for Date in UniqueDates:
+    
+                    # retrieve positional error
+                    if Date < datetime.strptime('1970-01-01',"%Y-%m-%d"):
+                        Error = 5.
+                    elif Date < datetime.strptime('2000-01-01',"%Y-%m-%d"):
+                        Error = 2.
                     else:
-                        
-                        # find and either add or replace depending on proximity
-                        Index = Transect.HistoricVEdgeDates.index(Date)
-                        Position = Node(Intersection.x,Intersection.y)
-                        
-                        MinDistance = 1000.
-                        
-                        for OldPosition in Transect.HistoricVEdgePositions[Index]:
-                            Distance = OldPosition.get_Distance(Position)
-                            if Distance < MinDistance:
-                                MinDistance = Distance
-                        
-                        if MinDistance > 1.:
-                        
-                            # add to transect
-                            Transect.HistoricVEdgePositions[Index].append(Position)
-                            Transect.HistoricVEdgeDistances[Index].append(Distance)
+                        Error = 1.
 
-                else:
-                
-                    # loop through unique dates
-                    UniqueDates = list(set(IntersectionDates))
-                    for Date in UniqueDates:
+                    # isolate intersections for this date
+                    Indices = [i for i, ThisDate in enumerate(IntersectionDates) if ThisDate == Date]
+                    TempIntersectionsList = [IntersectionsList[i] for i in Indices]
+                    CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
+                    TempDistances = [IntersectionPoint.distance(CoastPoint) for IntersectionPoint in TempIntersectionsList]
+                    Intersection = TempIntersectionsList[TempDistances.index(min(TempDistances))]
     
-                        # retrieve positional error
-                        if Date < datetime.strptime('1970-01-01',"%Y-%m-%d"):
-                            Error = 5.
-                        elif Date < datetime.strptime('2000-01-01',"%Y-%m-%d"):
-                            Error = 2.
-                        else:
-                            Error = 1.
-    
-                        
-                        # isolate intersections for this year
-                        Indices = [i for i, ThisDate in enumerate(IntersectionDates) if ThisDate == Date]
-                        TempIntersectionsList = [IntersectionsList[i] for i in Indices]
-                        CoastPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
-                        TempDistances = [IntersectionPoint.distance(CoastPoint) for IntersectionPoint in TempIntersectionsList]
-                        IntersectionIndex = TempDistances.index(min(TempDistances))
-                        Intersection = TempIntersectionsList[IntersectionIndex]
-    
-                        if Date not in Transect.HistoricVEdgeDates:
-                            
-                            # add year to transect
-                            Index = bisect.bisect(Transect.HistoricVEdgeDates, Date)
-                            Transect.HistoricVEdgeDates.insert(Index, Date)
-                            
-                            # add shoreline position
-                            Position = Node(Intersection.x,Intersection.y)
-                            Positions = [Position,]
-                            Transect.HistoricVEdgePositions.insert(Index, Positions)
-                            
-                            # add distance
-                            Distances = [Transect.StartNode.get_Distance(Position),]
-                            Transect.HistoricVEdgeDistances.insert(Index, Distances)
-                            
-                            # add source info
-                            Transect.HistoricVEdgeSources.insert(Index, Path(HistoricalVEdgeShp).name)
-                            
-                            # add error
-                            Transect.HistoricVEdgeErrors.insert(Index, Error)
-                            
-                        else:
-                            
-                            # find and either add or replace depending on proximity
-                            Index = Transect.HistoricVEdgeDates.index(Year)
-                            Position = Node(Intersection.x,Intersection.y)
-                            
-                            MinDistance = 1000.
-                            
-                            for OldPosition in Transect.HistoricVEdgePositions[Index]:
-                                Distance = OldPosition.get_Distance(Position)
-                                if Distance < MinDistance:
-                                    MinDistance = Distance
-                            
-                            if MinDistance > 1.:
-                            
-                                # add to transect
-                                Transect.HistoricVEdgePositions[Index].append(Position)
-                                Transect.HistoricVEdgeDistances[Index].append(Distance)
+                    #Get Position and Distance
+                    Position = Node(intersection.x, intersection.y)
+                    Distance = Transect.StartNode.get_Distance(position)
+
+                    # add to timeseries object
+                    Transect.AddTimeseriesObservation("VEdge", Date, Position, Distance, Error, Path(HistoricalVEdgeShp).name)
 
     def ExtractMLWS(self, MLWSShp, NearestNode=0):
 
