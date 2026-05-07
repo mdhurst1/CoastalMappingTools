@@ -1,6 +1,7 @@
 # import module
 import numpy as np
 import bisect
+from scipy.stats import theilslopes
 # new object to store generic timeseries data
 # MDH May 2026
 
@@ -144,6 +145,34 @@ class TimeSeriesSignal:
         MDH, May 2026
 
         """
+
+        if not self.HasData(Minimum=2):
+            return
+
+        if not self.OrdinalDates:
+            Dates2Ordinal()
+
+        # perform theil sen rate analysis
+        Slope_Days, Intercept, Slope_Low, Slope_High = theilslopes(self.Distances, self.OrdinalDates, alpha=0.95)
+
+        # get rates in per year
+        Rate = Slope_Days * 365.25
+        Rate_Low = Slope_Low * 365.25
+        Rate_High = Slope_High * 365.25
+
+        # Calculate residuals and rate
+        FittedDistances = Slope_Days*self.OrdinalDates + Intercept
+        Residuals = self.Distances - FittedDistances
+
+        self.Results["TheilSen"] = {
+            "Method": "Theil-Sen Regression",
+            "Rate": Rate,
+            "RateCI95": (Rate_Low, Rate_High),
+            "Intercept": Intercept,
+            "Fitted": FittedDistances,
+            "Residuals": Residuals,
+            "N": len(self.Distances),
+        }    
     
     def CalcTimeWeightedRegression(self):
         """
