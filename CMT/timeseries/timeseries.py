@@ -95,10 +95,13 @@ class TimeSeriesSignal:
             "EndDistance": self.Distances[-1],
         }
     
-    def CalcOLSRate(self,):
+    def CalcOLSRate(self, Years=None, ResultName="OLS"):
 
         """
         Rate based on slope of ordinary least squares regression through timeseries
+
+        If Years is provided, only observations within the last `Years`
+        years of the timeseries are used.
 
         MDH, May 2026
 
@@ -114,6 +117,20 @@ class TimeSeriesSignal:
         DatesArray = self.OrdinalDates.astype(float)
         DistancesArray = self.DistancesArray()
 
+        # optional recent-window filtering
+        if Years is not None:
+
+            EndDate = DatesArray[-1]
+            StartDate = EndDate - Years * 365.25
+
+            Mask = DatesArray >= StartDate
+
+            DatesArray = DatesArray[Mask]
+            DistancesArray = DistancesArray[Mask]
+
+            if len(DatesArray) < 2:
+                return
+            
         # perform OLS
         Slope, Intercept = np.polyfit(DatesArray, DistancesArray, 1)
 
@@ -149,16 +166,19 @@ class TimeSeriesSignal:
             R2 = None
 
         # save results
-        self.Results["OLS"] = {
-            "Method": "Ordinary Least Squares",
+        self.Results[ResultName] = {
+            "Method": "Ordinary Least Squares" if Years is None else f"OLS last {Years} years",
             "Rate": Rate,
             "RateSE": Rate_SE,
-            "RateCI95": Rate_CI95,
+            "RateUncertainty": Rate_CI95,
             "Intercept": Intercept,
             "Fitted": FittedDistances,
             "Residuals": Residuals,
             "R2": R2,
             "N": NObs,
+            "Years": Years,
+            "StartDate": DatesArray[0],
+            "EndDate": DatesArray[-1],
         }
     
     def CalcTheilSenRate(self):
@@ -300,7 +320,7 @@ class TimeSeriesSignal:
             "Method": "Time-weighted Regression",
             "Rate": Rate,
             "RateSE": Rate_SE,
-            "RateCI95": Rate_CI95,
+            "RateUncertainty": Rate_CI95,
             "Intercept": Intercept,
             "Fitted": FittedDistances,
             "Residuals": Residuals,
@@ -319,6 +339,8 @@ class TimeSeriesSignal:
         """
         self.CalcEndPointRate()
         self.CalcOLSRate()
+        self.CalcOLSRate(Years=5, ResultName="OLS5")
+        self.CalcOLSRate(Years=10, ResultName="OLS10")
         self.CalcTheilSenRate()
         self.CalcTimeWeightedRegression(TauYears)
 
