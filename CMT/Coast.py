@@ -82,7 +82,7 @@ class Coast:
         self.TransectsLength2Land = 1000.
         self.ExtremeWaterLevels = []
         self.MHWS = None
-        self.TimeSeriesTypes = []
+        self.TimeseriesTypes = []
         self.UniqueDEMList = []
             
         # some tracking bools
@@ -1224,11 +1224,11 @@ class Coast:
             except:
                 return None
                    
-        for TimeSeriesType in self.TimeSeriesTypes:
+        for TimeseriesType in self.TimeseriesTypes:
             
             # Create output file
-            OutShp = OutFolder + f"{ProjectName}_{TimeSeriesType}_Rates.shp"
-            print(f"  Writing {TimeSeriesType} to {OutShp}")
+            OutShp = str(OutFolder / f"{ProjectName}_{TimeseriesType}_Rates.shp")
+            print(f"  Writing {TimeseriesType} to {OutShp}")
 
             WL = shapefile.Writer(OutShp, shapeType=shapefile.POINT)
 
@@ -1269,18 +1269,20 @@ class Coast:
             # loop through all transects to get and write points with attributes
             for Line in self.CoastLines:
                 for Transect in Line.Transects:
-
+                    
                     # check timeseries exists and is of the correct type
-                    if not hasattr(Transect, "TimeSeries"):
+                    if not hasattr(Transect, "Timeseries"):
                         continue
 
-                    if TimeSeriesType not in Transect.TimeSeries:
+                    if TimeseriesType not in Transect.Timeseries:
                         continue
 
-                    TS = Transect.TimeSeries[TimeSeriesType]
+                    TS = Transect.Timeseries[TimeseriesType]
 
                     if not TS.HasData(Minimum=1):
                         continue
+                    
+                    print(Transect.ID)
 
                     # get latest point for shape recording and attributes
                     LatestDate = TS.Dates[-1]
@@ -1297,7 +1299,7 @@ class Coast:
                         int(Line.ID),
                         int(Transect.ID),
 
-                        str(TimeSeriesType),
+                        str(TimeseriesType),
                         date_to_str(LatestDate),
                         str(LatestSource),
 
@@ -2939,8 +2941,8 @@ class Coast:
 
         # if signal name not in tracked list then add
         # might need some logic here to make sure Signal name is a recognised type of timeseries
-        if SignalName not in self.TimeSeriesTypes:
-            self.TimeSeriesTypes.append(SignalName)
+        if SignalName not in self.TimeseriesTypes:
+            self.TimeseriesTypes.append(SignalName)
 
         # set a distance to look inland to check for intersections
         LookDistance = 0.

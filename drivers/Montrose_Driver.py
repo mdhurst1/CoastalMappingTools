@@ -266,25 +266,36 @@ for CellSub in CellList:
         """
     
     # import plotting library
-    from CMT.plotting.Transect_Timeseries_Plots import *
+    # from CMT.plotting.Transect_Timeseries_Plots import *
 
+    # loop over transects and plot
+    # ThisLine = CellCoast.CoastLines[0]
+    # ThisTransect = ThisLine.Transects[373]
+    # ThisTransect.AnalyseTimeseries()
+    
+    # analyse all timeseries
+    for ThisTransect in (T for Line in CellCoast.CoastLines for T in Line.Transects):
+        ThisTransect.AnalyseTimeseries()
+    
     # loop over transects and plot
     ThisLine = CellCoast.CoastLines[0]
     ThisTransect = ThisLine.Transects[373]
-    ThisTransect.AnalyseTimeseries()
+    print(ThisTransect.Timeseries)
     
-    #for ThisTransect in (T for Line in CellCoast.CoastLines for T in Line.Transects): 
-    if True:    
-        # run the plotting script
-        Signals = list(ThisTransect.Timeseries.values())
-        fig, ax = PlotTimeSeriesSignals(Signals, ax=None, ShowErrors=True, RegressionMethods=("TWR",), Title=None)
-        #fig, ax = PlotShorelineTimeseries(ThisTransect, ax=None, show_errors=True, show_weights=False, StartDate=None, Regression=True)
-        
-        # set up file to save
-        FigFilename = PlottingPath / ("Transect_" + str(ThisTransect.ID) + ".png")
+    # write timeseries to shapefiles
+    CellCoast.WriteTimeseriesPointsShp(WorkingPath, "Montrose")
 
-        fig.savefig(FigFilename)
-        plt.close(fig)
+    # if True:    
+    #     # run the plotting script
+    #     Signals = list(ThisTransect.Timeseries.values())
+    #     fig, ax = PlotTimeSeriesSignals(Signals, ax=None, ShowErrors=True, RegressionMethods=("TWR",), Title=None)
+    #     #fig, ax = PlotShorelineTimeseries(ThisTransect, ax=None, show_errors=True, show_weights=False, StartDate=None, Regression=True)
+        
+    #     # set up file to save
+    #     FigFilename = PlottingPath / ("Transect_" + str(ThisTransect.ID) + ".png")
+
+    #     fig.savefig(FigFilename)
+    #     plt.close(fig)
             
         # #Loop through decades
         # for i, Decade in enumerate(Decades):
