@@ -10,7 +10,7 @@ import pickle, pathlib
 
 # add src path to find custom modules
 import sys
-sys.path.append("../src/")
+sys.path.append("../")
 from Coast import *
 
 
@@ -25,9 +25,9 @@ Cell = "2b"
 InnerorOpen = "Open"
 
 #Filename2LoadCoast = WorkingPath / "ShorelineRunInner" / ("Cell_"+Cell+"_InnerChange.pydata")
-Filename2LoadCoast = WorkingPath / ("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_OpenCoast") / ("Cell_"+Cell+"_OpenChange.pydata")
-#Filename2LoadCoast = WorkingPath / "Geometry" / ("Cell_" + Cell + "_" + InnerorOuter + "Geometry.pydata")
-#Filename2LoadCoast = WorkingPath / "Geometry" / ("Cell_" + Cell + "_" + InnerorOpen + "Geometry.pydata")
+#Filename2LoadCoast = WorkingPath / ("RCP_"+str(Scenario)+"_"+str(Percentile)+"th_OpenCoast") / ("Cell_"+Cell+"_OpenChange.pydata")
+
+Filename2LoadCoast = WorkingPath / "Geometry" / ("Cell_" + Cell + "_" + InnerorOpen + "Geometry.pydata")
 
 Cst = pickle.load( open( Filename2LoadCoast, "rb" ) )
 
@@ -43,10 +43,16 @@ Ln = [Ln for Ln in Lns if Ln.ID == LineID][0]
 Trs = Ln.Transects
 Tr = [Tr for Tr in Trs if Tr.ID == TransectID][0]
 
+print(Tr.Timeseries["VEdge"].Dates)
+print(Tr.Timeseries["VEdge"].Distances)
+
+import matplotlib.pyplot as plt
+
+plt.plot(Tr.Timeseries["VEdge"].Dates,Tr.Timeseries["VEdge"].Distances,'ko')
+plt.xlabel("Date")
+plt.ylabel("Relative Distance (m)")
 # print(Tr.ChangeRates[-1])
 
-for Tr in Trs:
-    Tr.CalculateHistoricalRegression_testing()
 
 
 # =============================================================================
