@@ -278,9 +278,8 @@ for CellSub in CellList:
         ThisTransect.AnalyseTimeseries()
     
     # loop over transects and plot
-    ThisLine = CellCoast.CoastLines[0]
-    ThisTransect = ThisLine.Transects[373]
-    print(ThisTransect.Timeseries)
+    #ThisLine = CellCoast.CoastLines[0]
+    #ThisTransect = ThisLine.Transects[373]
     
     # write timeseries to shapefiles
     CellCoast.WriteTimeseriesPointsShp(WorkingPath, "Montrose")

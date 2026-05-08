@@ -1282,8 +1282,6 @@ class Coast:
                     if not TS.HasData(Minimum=1):
                         continue
                     
-                    print(Transect.ID)
-
                     # get latest point for shape recording and attributes
                     LatestDate = TS.Dates[-1]
                     LatestPosition = TS.Positions[-1]
