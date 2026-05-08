@@ -1210,11 +1210,24 @@ class Coast:
                 return float(Value)
             except:
                 return None
-            
+        
+        def safe_result(TS, Method, Key):
+            try:
+                return safe_num(TS.Results[Method][Key])
+            except:
+                return None
+
+
+        def safe_tuple_result(TS, Method, Key, Index):
+            try:
+                return safe_num(TS.Results[Method][Key][Index])
+            except:
+                return None
+                   
         for TimeSeriesType in self.TimeSeriesTypes:
             
             # Create output file
-            OutShp = OutFolder + f"{ProjectName}_{TimeSeriesType}_Rates.shp")
+            OutShp = OutFolder + f"{ProjectName}_{TimeSeriesType}_Rates.shp"
             print(f"  Writing {TimeSeriesType} to {OutShp}")
 
             WL = shapefile.Writer(OutShp, shapeType=shapefile.POINT)
@@ -1242,8 +1255,8 @@ class Coast:
                 ['LRR10_unc', 'N', 10, 4],
 
                 ['TS',     'N', 10, 4],
-                ['TS', 'N', 10, 4],
-                ['TS', 'N', 10, 4],
+                ['TS_Lower', 'N', 10, 4],
+                ['TS_Upper', 'N', 10, 4],
 
                 ['WLR',       'N', 10, 4],
                 ['WLR_unc',   'N', 10, 4],
@@ -1266,7 +1279,7 @@ class Coast:
 
                     TS = Transect.TimeSeries[TimeSeriesType]
 
-                    if not TS.HasData(Minumum=1):
+                    if not TS.HasData(Minimum=1):
                         continue
 
                     # get latest point for shape recording and attributes
@@ -1299,8 +1312,8 @@ class Coast:
                         safe_result(TS, "OLS10", "RateCI95"),
 
                         safe_result(TS, "TheilSen", "Rate"),
-                        safe_result(TS, "TheilSen", "LowerCI95"),
-                        safe_result(TS, "TheilSen", "UpperCI95"),
+                        safe_result(TS, "TheilSen", "RateCI95"[0]),
+                        safe_result(TS, "TheilSen", "RateCI95"[1]),
 
                         safe_result(TS, "TWR", "Rate"),
                         safe_result(TS, "TWR", "RateCI95"),
