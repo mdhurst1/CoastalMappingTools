@@ -82,6 +82,7 @@ class Coast:
         self.TransectsLength2Land = 1000.
         self.ExtremeWaterLevels = []
         self.MHWS = None
+        self.TimeSeriesTypes = []
         self.UniqueDEMList = []
             
         # some tracking bools
@@ -1180,6 +1181,140 @@ class Coast:
         f = open(TransectPointsShp.rstrip("shp")+"prj","w")
         f.write(self.Projection)
         f.close()
+
+    def WriteTimeseriesPointsShp(self, OutFolder, ProjectName):
+        
+        """
+        Write latest point from each transect timeseries to point shapefile,
+        including rate attributes from different calculations.
+
+        MDH, May 2026
+        """
+
+        print("Coast.WriteTimeseriesPointShp: Writing latest transect timeseries points to shapefile")
+
+        # some other useful functions
+        # put these somewhere else at some point?
+        def date_to_str(Date):
+            if isinstance(Date, datetime):
+                return Date.strftime("%Y-%m-%d")
+            elif Date is None:
+                return ""
+            else:
+                return str(Date)
+
+        def safe_num(Value):
+            try:
+                if Value is None:
+                    return None
+                return float(Value)
+            except:
+                return None
+            
+        for TimeSeriesType in self.TimeSeriesTypes:
+            
+            # Create output file
+            OutShp = OutFolder + f"{ProjectName}_{TimeSeriesType}_Rates.shp")
+            print(f"  Writing {TimeSeriesType} to {OutShp}")
+
+            WL = shapefile.Writer(OutShp, shapeType=shapefile.POINT)
+
+            # Shapefile field names should be <= 10 chars
+            Fields = [
+                ['Cell',    'C', 10, 0],
+                ['SubCell', 'C', 10, 0],
+                ['CMU',     'C', 20, 0],
+                ['LineID',  'N', 5, 0],
+                ['TransID', 'N', 8, 0],
+
+                ['TS_Type', 'C', 10, 0],
+                ['PtDate',  'C', 10, 0],
+                ['PtSrc',   'C', 50, 0],
+
+                ['EPR',       'N', 10, 4],
+                ['EPR_unc',   'N', 10, 4],
+
+                ['LRR',       'N', 10, 4],
+                ['LRR_unc',   'N', 10, 4],
+                ['LRR5',      'N', 10, 4],
+                ['LRR5_unc',  'N', 10, 4],
+                ['LRR10',     'N', 10, 4],
+                ['LRR10_unc', 'N', 10, 4],
+
+                ['TS',     'N', 10, 4],
+                ['TS', 'N', 10, 4],
+                ['TS', 'N', 10, 4],
+                
+                ['WLR',       'N', 10, 4],
+                ['WLR_unc',   'N', 10, 4],
+
+                ['Method',    'C', 10, 0],
+            ]
+
+            WL.fields = Fields
+
+            # loop through all transects to get and write points with attributes
+            for Line in self.CoastLines:
+                for Transect in Line.Transects:
+
+                    # check timeseries exists and is of the correct type
+                    if not hasattr(Transect, "TimeSeries"):
+                        continue
+
+                    if TimeSeriesType not in Transect.TimeSeries:
+                        continue
+
+                    TS = Transect.TimeSeries[TimeSeriesType]
+
+                    if not TS.HasData(Minumum=1):
+                        continue
+
+                    # get latest point for shape recording and attributes
+                    LatestDate = TS.Dates[-1]
+                    LatestPosition = TS.Positions[-1]
+                    LatestSource = TS.Sources[-1]
+                    
+                    # get the geom
+                    X, Y = LatestPosition.get_XY()
+
+                    Record = [
+                        str(self.Cell),
+                        str(self.SubCell),
+                        str(self.CMU),
+                        int(Line.ID),
+                        int(Transect.ID),
+
+                        str(TimeSeriesType),
+                        date_to_str(LatestDate),
+                        str(LatestSource),
+
+                        safe_result(TS, "EPR", "Rate"),
+                        safe_result(TS, "EPR", "RateUncertainty"),
+
+                        safe_result(TS, "OLS", "Rate"),
+                        safe_result(TS, "OLS", "RateCI95"),
+                        safe_result(TS, "OLS5", "Rate"),
+                        safe_result(TS, "OLS5", "RateCI95"),
+                        safe_result(TS, "OLS10", "Rate"),
+                        safe_result(TS, "OLS10", "RateCI95"),
+
+                        safe_result(TS, "TheilSen", "Rate"),
+                        safe_result(TS, "TheilSen", "LowerCI95"),
+                        safe_result(TS, "TheilSen", "UpperCI95"),
+
+                        safe_result(TS, "TWR", "Rate"),
+                        safe_result(TS, "TWR", "RateCI95"),
+                        
+                        str(self.Method),
+                    ]
+
+                    WL.point(X, Y)
+                    WL.record(*Record)
+
+            WL.close()
+
+            with open(OutShp.rstrip("shp") + "prj", "w") as f:
+                f.write(self.Projection)
 
     def WriteStormImpactTransectsShp(self, TransectsShp, Cell):
         
@@ -2788,6 +2923,11 @@ class Coast:
 
         """
         print(f"Coast.ExtractIndicatorPositions: Finding historical {SignalName} positions from {Path(HistoricalShp).name}")                
+
+        # if signal name not in tracked list then add
+        # might need some logic here to make sure Signal name is a recognised type of timeseries
+        if SignalName not in self.TimeSeriesTypes:
+            self.TimeSeriesTypes.append(SignalName)
 
         # set a distance to look inland to check for intersections
         LookDistance = 0.

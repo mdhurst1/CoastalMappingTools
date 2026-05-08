@@ -95,7 +95,7 @@ class TimeSeriesSignal:
             "EndDistance": self.Distances[-1],
         }
     
-    def CalcOLSRate(self):
+    def CalcOLSRate(self,):
 
         """
         Rate based on slope of ordinary least squares regression through timeseries
