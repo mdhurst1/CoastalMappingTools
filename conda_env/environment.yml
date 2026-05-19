@@ -1,9 +1,16 @@
-name: CMT
+name: OldCMT
 channels:
   - conda-forge
-  - defaults
 dependencies:
-  - numpy
+  - python=3.11
+  - numpy=1.26
+  - pandas=1.5
   - geopandas
+  - scipy
+  - matplotlib
+  - spyder
+  - shapely
   - rasterio
+  - gdal
   - pyshp
+  - pip
