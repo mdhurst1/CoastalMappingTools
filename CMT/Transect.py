@@ -1405,6 +1405,8 @@ class Transect:
         MDH, September 2019
 
         """
+        import pdb
+        pdb.set_trace()
         
         # reset outputs incase already has been run
         self.FutureShorelinesPositions = []

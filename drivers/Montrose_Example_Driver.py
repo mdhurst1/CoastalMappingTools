@@ -7,39 +7,35 @@ University of Glasgow
 Dynamic Coast 2 Project
 
 Modified by C. MacDonell, Montrose Project 2024
+Example configured by MH 3/7/26
 
 """
 
-# add modules
-import sys
-import pickle, pathlib
-import geopandas as gp
-from datetime import datetime
-import matplotlib.pyplot as plt
-%matplotlib qt5
+# import modules needed to run the tools
+import sys, pickle, pathlib
 
 # add src path to find custom modules
-sys.path.append("../src/")
+sys.path.append("../")
 
 #import custom modules
-from Coast import *
+from CMT.Coast import *
 
 # define file names for analysis
-WorkingPath = pathlib.Path("../../CMT_Examples")
-if not WorkingPath.exists(): # checks if geometry folder exists, if not create
-    WorkingPath.mkdir(parents=True, exist_ok=True)
+DataPath = pathlib.Path("../Example_Data/Montrose/")
+ResultsPath = pathlib.Path("../Results/Montrose/")
+
+if not ResultsPath.exists(): # checks if geometry folder exists, if not create
+    ResultsPath.mkdir(parents=True, exist_ok=True)
 
 # define data folder and files
-DataPath = pathlib.Path("../example_data/")
 BaselinePath = DataPath / ("montrose_baseline.shp")
-LiDARPath = WorkingPath / ("montrose_MHWS_Modern_LiDAR.shp")
 MLWSPath = DataPath / ("montrose_MLWS.shp") 
 BathyPath = DataPath / ("montrose_bathy.shp") 
-OldPath = DataPath / ("montrose_MHWS_1890.shp")
-QuiteOldPath = DataPath / ("montrose_MHWS_1970.shp") 
+MHWSPath = DataPath / ("MHWS_Lines")
+VEdgePath = DataPath / ("VEdge_Lines")
 
 # set up output folders
-GeometryPath = WorkingPath/("Geometry")
+GeometryPath = ResultsPath/("Geometry")
 if not GeometryPath.exists(): # checks if geometry folder exists, if not create
     GeometryPath.mkdir(parents=True, exist_ok=True)
         
@@ -49,169 +45,86 @@ MinLength = 50.
 # set the transect spacing (in m)
 TransectSpacing = 10.
 
-# parameters for smoothing the baseline
-SmoothingWindowSize = 21 # do not change
-NoSmooths = 100 # do not change
+print("Creating New Coast Object") # if saved geometry not exist
 
-# setup filename for loading/saving geometry
-Filename2SaveCoast = GeometryPath / ("montrose_Geometry.pydata")
+# SET UP THE COAST FROM -10m Contour
+MontroseCoast = Coast(str(BaselinePath), MinLength=MinLength)
     
-try: # check if geometry already been created
-    MontroseCoast = pickle.load( open( Filename2SaveCoast, "rb" ) )
-    print("Loaded Coast Object ", Filename2SaveCoast)
-        
-except:
-    print("Creating New Coast Object") # if saved geometry not exist
+# may need to think carefully about how much to smooth
+MontroseCoast.SmoothCoastLines(WindowSize=21,NoSmooths=100)
 
-    # SET UP THE COAST FROM -10m Contour
-    MontroseCoast = Coast(str(BaselinePath), MinLength=MinLength)
+# make sure each baseline is correctly orientated with sea on left as you look down the line
+MontroseCoast.CheckOrientation(str(BaselinePath),str(MLWSPath))
+
+# write smoothed coast/bathy to file
+MontroseCoast.WriteCoastShp(str(ResultsPath / "Montrose_Smoothed_Baseline.shp"))
+
+# create some initial dummy transects extending 500m offshore and inland
+MontroseCoast.GenerateTransects(TransectSpacing, 500, 500, CheckTopology=False) # transect lengths
+
+# write initial transects
+MontroseCoast.WriteTransectsShp(str(ResultsPath / "Montrose_Raw_Transects.shp"))            
+
+### loop over all shapefiles in MHWS folder to sample MHWS positions
+for shp in MHWSPath.glob("*.shp"):
+    MontroseCoast.ExtractIndicatorPositions(str(shp), "MHWS", "Date")
+
+### loop over all shp in a folder to sample VEdge
+for shp in VEdgePath.glob("*.shp"):
+    MontroseCoast.ExtractIndicatorPositions(str(shp), "VEdge", "SrcDate")
+
+# Sample MLWS positions
+MontroseCoast.ExtractMLWS(str(MLWSPath))
         
-    if not MontroseCoast.BuiltTransects: # do transects already exist?
-        
-        # may need to think carefully about how much to smooth
-        MontroseCoast.SmoothCoastLines(WindowSize=SmoothingWindowSize,NoSmooths=NoSmooths)
-        
-        # make sure each baseline is correctly orientated with sea on left as you look down the line
-        MontroseCoast.CheckOrientation(str(BaselinePath),str(MLWSPath))
-        
-        # write smoothed coast/bathy to file
-        MontroseCoast.WriteCoastShp(str(WorkingPath / "Montrose_Smoothed_Baseline.shp"))
+#### get MHWS elevation for each transect
+# The commened out line below will work when a distributed dataset of MHWS elevation is available
+# For Dynamic Coast 2 this was a raster dataset provided by poltips
+# MontroseCoast.SampleMHWSElevation(str(MHWSPath / "scotland_mhws_elev.tif"))
+# In small scale examples such as this a single value is appropriate. 
+# The value 2.14 has been sample from the poltips dataset for Scotland
+MontroseCoast.SetMHWS(2.14)        
+
+#### get historical rate of relative sea level change
+MontroseCoast.SampleHistoricalRSLR(str(DataPath / "RSL_Bradley_Model" / "Scotland_NEngland_RSLR_Modern_BNG.tif"))
     
-        # create some initial dummy transects
-        MontroseCoast.GenerateTransects(TransectSpacing, 500, 500, CheckTopology=False) # transect lengths
+# Sample rock head position if avaialable
+# CellCoast.SampleRockHeadPosition(str(DataPath / "UPSM" / "upsm_ncca.tif"))
+        
+# Sample coastal defences
+MontroseCoast.SampleDefencesPosition(str(DataPath / "Defences" / ("Montrose_Defences.shp")), 25.)
+        
+# Sample DEMs, this has been designed to work with OSTerrain5 under licence
+# MontroseCoast.FindDEM(str(NationalDEMPath / "OSTerrain5_fullcoastindex.shp"))
+# MontroseCoast.ExtractTransectTopography()
+            
+            
+# set method for future shoreline predictions "
+# Open" is standard Bruun Rule, 
+# "Inner" uses a modification for shallow (< 10 m) estuary settings
+MontroseCoast.Method = "Open"
+            
+### get future relative sea level time series from UKCP18 data
+Scenario = 8 # RCP 8.5
+Percentile = 50 # 50th percentile
+MontroseCoast.SampleFutureRSL(str(DataPath / "Future_RSL" / ("RCP"+str(Scenario))), RCP=Scenario, Percentile=Percentile)
 
-        # write initial transects
-        MontroseCoast.WriteTransects(str(WorkingPath / "Montrose_Transects.shp"))            
-        MontroseCoast.BuiltTransects = True
-            
-        # SAVE ENTIRE COAST OBJECT
-        with open(str(Filename2SaveCoast), 'wb') as PFile:
-            pickle.dump(MontroseCoast, PFile)
+## predict future shorelines
+MontroseCoast.GetShorefaceSlopes(str(BathyPath))
+MontroseCoast.PredictFutureShorelines()
 
-"""
-        if not MontroseCoast.GotHistoricShorelines: # goes to find shorelines
-            
-            # Sample MHWS positions
-            
-            if not SoftPath.is_file():
-                print("No soft MHWS file")
-            else:
-                MontroseCoast.ExtractHistoricalShorelinePositions(str(SoftPath),Reset=True)
-            
-            if not OldPath.is_file():
-                print("No 1890s MHWS file")
-            else:
-                MontroseCoast.ExtractHistoricalShorelinePositions(str(OldPath))
-            
-            if not QuiteOldPath.is_file():
-                print("No 1970s MHWS file")
-            else:
-                MontroseCoast.ExtractHistoricalShorelinePositions(str(QuiteOldPath))
-            
-            if not LiDARPath.is_file():
-                print("No LiDAR MHWS file")
-            else:
-                MontroseCoast.ExtractHistoricalShorelinePositions(str(LiDARPath),AllowMultiples=True)
-                
-            if not MLWSPath.is_file():
-                print("No MLWS file")
-            else:
-                MontroseCoast.ExtractMLWS(str(MLWSPath))
-            
-            ### get DC1 results
-            # comment this out for now
-            MontroseCoast.SampleDC1Data(str(DC1Path))
-            
-            #### get MHWS elevation for each transect
-            MontroseCoast.SampleMHWSElevation(str(WorkingPath / "MHWS_Lines" / "scotland_mhws_elev.tif"))
-            
-            #### get historical rate of relative sea level change
-            MontroseCoast.SampleHistoricalRSLR(str(WorkingPath / "RSL_Bradley_Model" / "Scotland_NEngland_RSLR_Modern_BNG.tif"))
+# Write Future Transects
+MontroseCoast.WriteFutureTransectsShp(str(ResultsPath / ("Montrose_Transects.shp")))
         
-            # Sample rock head position
-            MontroseCoast.SampleRockHeadPosition(str(WorkingPath / "UPSM" / "upsm_ncca.tif"))
-            
-            # Sample coastal defences
-            MontroseCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp"))) # DIFFERENT DEFENCE VERSIONS
-            
-            MontroseCoast.GotHistoricShorelines = True
-            
-            # Get OS year smarter 2020
-            MontroseCoast.Check_OS_Years()
-            
-            # SAVE ENTIRE COAST OBJECT
-            print("\tSaving Coast Object as ", Filename2SaveCoast)
-            with open(str(Filename2SaveCoast), 'wb') as PFile:
-                pickle.dump(MontroseCoast, PFile)
+# write future shorelines
+MontroseCoast.WriteFutureShorelinesShp(str(ResultsPath / ("Montrose_Future.shp")), True)
         
-        if not MontroseCoast.SampledDEMs:
-        
-            # Extend transects landward by a fixed distance and sample DEMs
-            #HinterlandDistance = 200
-            #MontroseCoast.ExtendTransects2Hinterland(HinterlandDistance)
-            MontroseCoast.FindDEM(str(NationalDEMPath / "OSTerrain5_fullcoastindex.shp"))
-            MontroseCoast.ExtractTransectTopography()
-            
-            MontroseCoast.SampledDEMs = True
-            
-            # SAVE ENTIRE COAST OBJECT
-            print("\tSaving Coast Object as ", Filename2SaveCoast)
-            with open(str(Filename2SaveCoast), 'wb') as PFile:
-                pickle.dump(MontroseCoast, PFile)
-        
-        if not MontroseCoast.PredictedFutureShorelines:    
-            
-            # Sample coastal defences
-            MontroseCoast.SampleDefencesPosition(str(WorkingPath / "Defences" / (RowName + "_Defences.shp")), 25.)
-            
-            MontroseCoast.Method = "Open"
-            
-            ### get future relative sea level time series
-            MontroseCoast.SampleFutureRSL(str(WorkingPath / "Future_RSL" / ("RCP"+str(Scenario))), RCP=Scenario, Percentile=Percentile,Years=Decades)
-            
-            ## predict future shorelines
-            MontroseCoast.GetShorefaceSlopes(str(BathyPath))
-            MontroseCoast.PredictFutureShorelines()
-            MontroseCoast.PredictedFutureShorelines = True
-        
-            # SAVE ENTIRE COAST OBJECT
-            print("\tSaving Coast Object as ", Filename2SaveAll)
-            with open(str(Filename2SaveAll), 'wb') as PFile:
-                pickle.dump(MontroseCoast, PFile)
-                
-        # write transect during debugging for GIS interface interogation
-        print('Writing transects to',str(OutputPath / (RowName + "_Transects.shp")))
-        MontroseCoast.WriteFutureTransectsShp(str(OutputPath / (RowName + "_Transects.shp")))
-        
-        # write future shorelines
-        SmoothOutput = True # smooth coastlines (true) or not (false)
-        
-        # write coast/bathy to file
-        MontroseCoast.WriteCoastShp(str(OutputPath / (RowName + "_Smoothed_Baseline.shp")))
-        MontroseCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future.shp")),SmoothOutput)
-        
-        #sys.exit(-1)
+#Loop through decades to write areas eroded
+Decades = [2050, 2100]
+for i, Decade in enumerate(Decades):
 
-        #Loop through decades
-        for i, Decade in enumerate(Decades):
-
-            MontroseCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_" + str(Decade) + ".shp")), Year=Decade)
-            MontroseCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
-            
-            MontroseCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Influence_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
-            MontroseCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Vicinity_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
-        
-
-        # note min and max reversed due to sign convention on volumetric calibration terms
-        MontroseCoast.PredictFutureShorelines(MinMaxFlag="Min")
-        MontroseCoast.WriteFutureShorelinesShp(str(OutputPath / (RowName + "_Future_Max.shp")),SmoothOutput)
-
-        #Loop through decades
-        for i, Decade in enumerate(Decades):
-
-            MontroseCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_Max" + str(Decade) + ".shp")), Year=Decade)
-            MontroseCoast.WriteErodedAreaShp(str(PolygonsPath / (RowName + "_ErodedArea_Max" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
-            
-            MontroseCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Influence_Max" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
-            MontroseCoast.WriteErosionProximityShp(str(PolygonsPath / (RowName + "_Vicinity_Max" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
-"""
+    MontroseCoast.WriteErodedAreaShp(str(ResultsPath / ("Montrose_ErodedArea_" + str(Decade) + ".shp")), Year=Decade)
+    MontroseCoast.WriteErodedAreaShp(str(ResultsPath / ("Montrose_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
+    
+    MontroseCoast.WriteErosionProximityShp(str(ResultsPath / ("Montrose_Influence_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
+    MontroseCoast.WriteErosionProximityShp(str(ResultsPath / ("Montrose_Vicinity_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
+       

@@ -277,6 +277,8 @@ class Coast:
         # check date formatting for indices if statement
         if isinstance(Year,str):
             Year = datetime.strptime(Year,'%Y-%m-%d')
+        elif isinstance(Year,int):
+            Year = datetime(Year, 1, 1)
         else:
             sys.exit('Coast.WriteErodedAreaShp - input Year not in string format for conversion to datetime')
             
@@ -319,6 +321,8 @@ class Coast:
         # check date formatting for indices if statement
         if isinstance(Year,str):
             Year = datetime.strptime(Year,'%Y-%m-%d')
+        elif isinstance(Year,int):
+            Year = datetime(Year, 1, 1)
         else:
             sys.exit('Coast.ErosionProximityShp - input Year not in string format for conversion to datetime')
 
@@ -3761,7 +3765,7 @@ class Coast:
                         ThisNode.Z = Elevation
                     
     
-    def SampleFutureRSL(self, FutureRSLFolder, RCP=8, Percentile=95, Years=['2030-01-01','2040-01-01','2050-01-01','2060-01-01','2070-01-01','2080-01-01','2090-01-01','2100-01-01'], Location=None):
+    def SampleFutureRSL(self, FutureRSLFolder, RCP=8, Percentile=95, Dates=['2030-01-01','2040-01-01','2050-01-01','2060-01-01','2070-01-01','2080-01-01','2090-01-01','2100-01-01'], Location=None):
 
         """ 
         
@@ -3776,8 +3780,8 @@ class Coast:
             RCP scenario to use
         Percentile : int
             Percentile scenario to use
-        Years : list
-            List of integers corresponding to the years to be analysed
+        Dates : list
+            List of dates corresponding to the years to be analysed
         Location: Node object with location to use
         
         MDH, September 2019
@@ -3791,7 +3795,7 @@ class Coast:
             return
 
         #self.FutureShoreLinesYears = Years
-        self.FutureShoreLinesYears = [datetime.strptime(Date, '%Y-%m-%d') for Date in Years]
+        self.FutureShoreLinesYears = [datetime.strptime(Date, '%Y-%m-%d') for Date in Dates]
 
         for Date in self.FutureShoreLinesYears:
             Year = Date.year
