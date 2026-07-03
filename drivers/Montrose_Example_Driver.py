@@ -112,6 +112,8 @@ MontroseCoast.SampleFutureRSL(str(DataPath / "Future_RSL" / ("RCP"+str(Scenario)
 MontroseCoast.GetShorefaceSlopes(str(BathyPath))
 MontroseCoast.PredictFutureShorelines()
 
+### FUTURE SHORELINE ANALYSIS NEEDS MODIFIED TO WORK WITH TIMESERIES OBJECTS
+
 # Write Future Transects
 MontroseCoast.WriteFutureTransectsShp(str(ResultsPath / ("Montrose_Transects.shp")))
         
