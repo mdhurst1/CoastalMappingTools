@@ -1061,7 +1061,7 @@ class Coast:
                             
                     # Convert dates to strings in 'yyyy-mm-dd' format
                     LatestYr_str = Transect.Timeseries["MHWS"].Dates[-1].strftime('%Y-%m-%d')
-                    LatestSrc_str = Transect.Timeseries["MHWS"].Sources[-1].strftime('%Y-%m-%d')
+                    LatestSrc_str = Transect.Timeseries["MHWS"].Sources[-1]
                     OSYr_str = Transect.OSYear.strftime('%Y-%m-%d') if isinstance(Transect.OSYear, datetime) else str(Transect.OSYear)
 
                     

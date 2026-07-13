@@ -3443,23 +3443,27 @@ class Transect:
         else:
             return
         
-    def get_ExtrapDistance(self, Year):
+    def get_ExtrapDistance(self, Year, Timeseries="MHWS", RateMethod="TWR"):
 
         """
 
         Get the extrapolated future position of the coast by extrapolating
         historical rate of shoreline change
 
+        Updated to use TS objects July 2026
+
         MDH, October 2020
 
         """
 
-        # check there are predictions for this transect
         if self.Future:
+            
+            LatestDate = self.Timeseries[Timeseries][-1]
+            Rate = TS.Results[RateMethod]["Rate"]
 
             # extrapolate future position on transect
-            extrapPeriodYrs = (datetime(Year,1,1) - self.HistoricShorelinesDates[-1]).days / 365.2425
-            Distance = self.ChangeRates[-1]*extrapPeriodYrs
+            ExtrapYears = (datetime(Year,1,1) - LatestDate).days / 365.2425
+            Distance = ExtrapYears*Rate
             return Distance
 
         else:
