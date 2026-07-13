@@ -3350,98 +3350,65 @@ class Transect:
         else:
             return
     
-    def get_FutureDistance(self, Year):
+    def get_FutureDistance(self, Year, Timeseries="MHWS"):
 
         """
 
         Get the future cposition of the coast in distance along transect
         from Bruun Rule predictions
 
+        Updated July 2026 to work with Timeseries object
+
         MDH, November 2020
 
         """
 
         # check there are predictions for this transect
-        if self.Future:
+        if not self.Future:
+            return None
 
-            # find year index
-            Index = [i for i, x in enumerate(self.FutureSeaLevelYears) if x == Year]
-            
-            if len(Index) == 0:
-                print("ERROR: Transect.get_FutureDistance - length of Index == 0")
-                sys.exit()
-                return
+        # retrieve timeseries
+        TS = self.Timeseries[Timeseries]
 
-            # use to access future position
-            try:
-                self.FutureShorelinesDistances[Index[0]]
-            except:
-                import pdb
-                pdb.set_trace()
+        # convert to datetime if an integer
+        if isinstance(Year, int):
+            Year = datetime(Year, 1, 1)
 
-            return self.FutureShorelinesDistances[Index[0]]
-           
-        else:
-            return
+        # find year index
+        LatestDate = TS.Dates[-1]
 
-    def get_FuturePositionChange(self, Year1, Year2):
+        # Before (or at) latest observation -> observed shoreline
+        if Year <= LatestDate:
+            return TS.Distances[-1]
+
+        # Find index of future
+        Index = self.FutureSeaLevelYears.index(Year)
+
+        # use to access future position
+        return self.FutureShorelinesDistances[Index]
+    
+    def get_FuturePositionChange(self, Year1, Year2, Timeseries="MHWS"):
 
         """
 
         Get the future change in  position of the coast over a particular number of years
         from Bruun Rule predictions
 
+        Updated July 2026 to work with timeseries object
+
         MDH, October 2019
 
         """
+        if not self.Future:
+            return None
 
-        # check there are predictions for this transect
-        if self.Future:
-            
-            # Check and if required, change the type of Year1 to datetime
-            if isinstance(Year1, datetime):
-                pass  # Do nothing if Year1 is already a datetime
-            elif isinstance(Year1, int):  # If it's an integer year, convert to datetime
-                Year1 = datetime(Year1, 1, 1)
-            else:
-                raise ValueError(f"Unsupported type: {type(Year1)}. Expected datetime or int.")
-            
-            # Check and if required, change the type of Year2 to datetime
-            if isinstance(Year2, datetime):
-                pass  # Do nothing if Year2 is already a datetime
-            elif isinstance(Year2, int):  # If it's an integer year, convert to datetime
-                Year2 = datetime(Year2, 1, 1)
-            else:
-                raise ValueError(f"Unsupported type: {type(Year2)}. Expected datetime or int.")
-            
-            # add a check in here if Year1 <= Latest Shoreline
-            if Year1 <= self.HistoricShorelinesDates[-1]:
-                Distance1 = self.HistoricShorelinesDistances[-1][0]
+        Distance1 = self.get_FutureDistance(Year1, Timeseries="MHWS")
+        Distance2 = self.get_FutureDistance(Year2, Timeseries="MHWS")
 
-            else:
-                # find year index
-                Index1 = [i for i, x in enumerate(self.FutureSeaLevelYears) if x == Year1]
-                if len(Index1) == 0:
-                    print("ERROR: Transect.get_FuturePositionChange - length of Index1 == 0 - Year=" + str(Year1))
-                    import pdb
-                    pdb.set_trace()
-                    
-                Distance1 = self.FutureShorelinesDistances[Index1[0]]
-            
-            # find year index for second year
-            Index2 = [i for i, x in enumerate(self.FutureSeaLevelYears) if x == Year2]
-            
-            if len(Index2) == 0:
-                print("ERROR: Transect.get_FuturePositionChange - length of Index2 == 0 - Year=" + str(Year2))
-                sys.exit()
+        if Distance1 is None or Distance2 is None:
+            return None
 
-            # add a check in here if Year1 < Latest Shoreline
-            Distance2 = self.FutureShorelinesDistances[Index2[0]]
-            
-            return Distance1-Distance2
-
-        else:
-            return
+        return Distance1 - Distance2
         
     def get_ExtrapDistance(self, Year, Timeseries="MHWS", RateMethod="TWR"):
 
@@ -3458,7 +3425,8 @@ class Transect:
 
         if self.Future:
             
-            LatestDate = self.Timeseries[Timeseries][-1]
+            TS = self.Timeseries[Timeseries]
+            LatestDate = TS.Dates[-1]
             Rate = TS.Results[RateMethod]["Rate"]
 
             # extrapolate future position on transect
@@ -3469,7 +3437,7 @@ class Transect:
         else:
             return
     
-    def get_FutureRate(self, Year1, Year2):
+    def get_FutureRate(self, Year1, Year2, Timeseries="MHWS"):
 
         """
 
@@ -3482,38 +3450,37 @@ class Transect:
         """
 
         # check there are predictions for this transect
-        if self.Future:
-            
-            # Check and if required, change the type of Year1 to datetime
-            if isinstance(Year1, datetime):
-                pass  # Do nothing if Year1 is already a datetime
-            elif isinstance(Year1, int):  # If it's an integer year, convert to datetime
-                Year1 = datetime(Year1, 1, 1)
-            else:
-                raise ValueError(f"Unsupported type: {type(Year1)}. Expected datetime or int.")
-            
-            # Check and if required, change the type of Year2 to datetime
-            if isinstance(Year2, datetime):
-                pass  # Do nothing if Year2 is already a datetime
-            elif isinstance(Year2, int):  # If it's an integer year, convert to datetime
-                Year2 = datetime(Year2, 1, 1)
-            else:
-                raise ValueError(f"Unsupported type: {type(Year2)}. Expected datetime or int.")
-            
-            # check year1 isnt less than an historic shoreline
-            if Year1 < self.HistoricShorelinesDates[-1]:
-                Year1 = self.HistoricShorelinesDates[-1]
+        if not self.Future:
+            return None
 
-            # get the position change
-            Distance = self.get_FuturePositionChange(Year1, Year2)
+        # check the timeseries specified exists probably redundant
+        if Timeseries not in self.Timeseries:
+            raise ValueError(f"Timeseries '{Timeseries}' does not exist")
+        
+        # convert to datetime if an integer
+        if isinstance(Year1, int):
+            Year1 = datetime(Year1, 1, 1)
+        if isinstance(Year2, int):
+            Year2 = datetime(Year1, 1, 1)
 
-            # calculate average rate
-            YrDiff = (Year2-Year1).days / 365.2425
-            Rate = Distance/YrDiff
-            return Rate
+        # get date of most recent observation
+        LatestDate = self.Timeseries[Timeseries].Dates[-1]
 
-        else:
-            return
+            
+        # check year1 isnt less than an historic shoreline
+        if Year1 < LatestDate:
+            Year1 = LatestDate
+
+        # get the position change
+        PositionChange = self.get_FuturePositionChange(Year1, Year2, Timeseries=Timeseries)
+
+        if PositionChange is None:
+            return None
+        
+        # calculate average rate
+        YrDiff = (Year2-Year1).days / 365.2425
+        return PositionChange/YrDiff
+            
 
     def get_TotalErosion(self, Year1, Year2):
 
