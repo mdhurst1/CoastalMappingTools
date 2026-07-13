@@ -3461,7 +3461,7 @@ class Transect:
         if isinstance(Year1, int):
             Year1 = datetime(Year1, 1, 1)
         if isinstance(Year2, int):
-            Year2 = datetime(Year1, 1, 1)
+            Year2 = datetime(Year2, 1, 1)
 
         # get date of most recent observation
         LatestDate = self.Timeseries[Timeseries].Dates[-1]
@@ -3602,27 +3602,28 @@ class Transect:
         
         return Node(X,Y)
 
-    def get_RecentPosition(self):
+    def get_RecentPosition(self, Timeseries="MHWS"):
 
         """
 
         Get the most recent position of the coast 
         
+        Updated July 2026 to work with timeseries objects
+
         MDH, January 2020
 
         """
 
         # catch if no shoreline
-        if len(self.HistoricShorelinesDates) == 0:
-            return
-            #raise Exception("self.get_RecentPosition: No recent position")
+        if Timeseries not in self.Timeseries:
+            return None
 
-        # find index of most recent historical shoreline
-        Index = np.argmax(self.HistoricShorelinesDates)
-        Position = self.HistoricShorelinesPositions[Index][0]
-        Year = self.HistoricShorelinesDates[Index]
-            
-        return Position
+        TS = self.Timeseries[Timeseries]
+
+        if not TS.HasData(Minimum=1):
+            return None
+
+        return TS.Positions[-1]
     
     def get_RecentYear(self):
 
@@ -3645,24 +3646,29 @@ class Transect:
             
         return Year
 
-    def get_RecentDistance(self):
+    def get_RecentDistance(self, Timeseries="MHWS"):
 
         """
 
         Get the most recent position of the coast 
 
+        Updated July 2026 to work with timeseries objects
+        
         MDH, November 2020
 
         """
 
-        # catch if no shoreline
-        if len(self.HistoricShorelinesDates) == 0:
-            raise Exception("self.get_RecentPosition: No recent position")
+        # catch if no timeseries
+        if Timeseries not in self.Timeseries:
+            raise ValueError(f"Timeseries '{Timeseries}' does not exist")
 
-        # find index of most recent historical shoreline
-        Index = np.argmax(self.HistoricShorelinesDates)
-        
-        return self.HistoricShorelinesDistances[Index][0]
+        TS = self.Timeseries[Timeseries]
+
+        # catch if no shoreline
+        if not TS.HasData(Minimum=1):
+            raise ValueError("No recent shoreline distance")
+
+        return TS.Distances[-1]
 
     def get_OldestPosition(self):
 

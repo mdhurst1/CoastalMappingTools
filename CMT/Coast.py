@@ -284,6 +284,8 @@ class Coast:
             
         if isinstance(StartYear, str):
             StartYear = datetime.strptime(StartYear,'%Y-%m-%d')
+        elif isinstance(StartYear, int):
+            StartYear = datetime(StartYear, 1, 1)
         else:
             sys.exit('Coast.WriteErodedAreaShp - input StartYear not in string format for conversion to datetime')
         
