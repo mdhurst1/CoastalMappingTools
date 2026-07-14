@@ -33,6 +33,7 @@ MLWSPath = DataPath / ("montrose_MLWS.shp")
 BathyPath = DataPath / ("montrose_bathy.shp") 
 MHWSPath = DataPath / ("MHWS_Lines")
 VEdgePath = DataPath / ("VEdge_Lines")
+DEMPath = DataPath / ("OS_Terrain_5")
 
 # set up output folders
 GeometryPath = ResultsPath/("Geometry")
@@ -95,7 +96,8 @@ MontroseCoast.SampleDefencesPosition(str(DataPath / "Defences" / ("Montrose_Defe
         
 # Sample DEMs, this has been designed to work with OSTerrain5 under licence
 # MontroseCoast.FindDEM(str(NationalDEMPath / "OSTerrain5_fullcoastindex.shp"))
-# MontroseCoast.ExtractTransectTopography()
+DEMFileList = [str(f) for f in DEMPath.glob("*.tif")]
+MontroseCoast.ExtractTransectTopography(DEMFileList)
             
             
 # set method for future shoreline predictions "
@@ -105,7 +107,7 @@ MontroseCoast.Method = "Open"
             
 ### get future relative sea level time series from UKCP18 data
 Scenario = 8 # RCP 8.5
-Percentile = 50 # 50th percentile
+Percentile = 95 # 95th percentile
 MontroseCoast.SampleFutureRSL(str(DataPath / "Future_RSL" / ("RCP"+str(Scenario))), RCP=Scenario, Percentile=Percentile)
 
 ## predict future shorelines

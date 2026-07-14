@@ -284,6 +284,8 @@ class Coast:
             
         if isinstance(StartYear, str):
             StartYear = datetime.strptime(StartYear,'%Y-%m-%d')
+        elif isinstance(StartYear, int):
+            StartYear = datetime(StartYear, 1, 1)
         else:
             sys.exit('Coast.WriteErodedAreaShp - input StartYear not in string format for conversion to datetime')
         
@@ -1011,7 +1013,7 @@ class Coast:
         ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], 
         #['Min_Rate','N', 6, 4], ['Max_Rate','N', 6, 4], 
         ['Hist_Rate','N', 6, 4], 
-        ['CalibYr', 'C', 10, 0], ['BaseLYr', 'C', 10, 0], ['BaseLSrc','C', 50, 0], 
+        ['LatestYr', 'C', 10, 0], ['LatestSrc','C', 50, 0], 
         ['Extrap2050','N', 6, 4], ['Extrap2100','N', 6, 4], ['FirstEYr','N',4, 4],
         
         ['pDist_2030', 'N', 6, 4], ['pRate_2030', 'N', 6, 4],
@@ -1060,8 +1062,8 @@ class Coast:
                             Transect.DC1 = ["","","",""]
                             
                     # Convert dates to strings in 'yyyy-mm-dd' format
-                    CalibYr_str = Transect.CalibrationYear.strftime('%Y-%m-%d') if isinstance(Transect.CalibrationYear, datetime) else str(Transect.CalibrationYear)
-                    BaseLYr_str = Transect.HistoricShorelinesDates[-1].strftime('%Y-%m-%d') if isinstance(Transect.HistoricShorelinesDates[-1], datetime) else str(Transect.HistoricShorelinesDates[-1])
+                    LatestYr_str = Transect.Timeseries["MHWS"].Dates[-1].strftime('%Y-%m-%d')
+                    LatestSrc_str = Transect.Timeseries["MHWS"].Sources[-1]
                     OSYr_str = Transect.OSYear.strftime('%Y-%m-%d') if isinstance(Transect.OSYear, datetime) else str(Transect.OSYear)
 
                     
@@ -1069,7 +1071,7 @@ class Coast:
                     Record = [str(self.Cell), str(self.SubCell), str(self.CMU), str(Line.ID), str(Transect.ID),
                                 #Transect.MinChangeRate, Transect.MaxChangeRate, 
                                 Transect.ChangeRate, 
-                                CalibYr_str, BaseLYr_str, Transect.HistoricShorelinesSources[-1], 
+                                LatestYr_str, LatestSrc_str, 
                                 Transect.get_ExtrapDistance(2050), Transect.get_ExtrapDistance(2100), Transect.get_FirstFutureErosionYear(),
                                 
                                 Transect.get_FuturePositionChange(2020, 2030), Transect.get_FutureRate(2020, 2030),
@@ -3765,7 +3767,7 @@ class Coast:
                         ThisNode.Z = Elevation
                     
     
-    def SampleFutureRSL(self, FutureRSLFolder, RCP=8, Percentile=95, Dates=['2030-01-01','2040-01-01','2050-01-01','2060-01-01','2070-01-01','2080-01-01','2090-01-01','2100-01-01'], Location=None):
+    def SampleFutureRSL(self, FutureRSLFolder, RCP=8, Percentile=95, Dates=['2020-01-01','2030-01-01','2040-01-01','2050-01-01','2060-01-01','2070-01-01','2080-01-01','2090-01-01','2100-01-01'], Location=None):
 
         """ 
         

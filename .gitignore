@@ -134,6 +134,10 @@ venv.bak/
 # mkdocs documentation
 /site
 
+# Ignore Results Folders if in repo
+./results/
+./Results
+
 # mypy
 .mypy_cache/
 .dmypy.json

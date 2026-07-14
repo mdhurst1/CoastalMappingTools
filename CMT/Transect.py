@@ -485,7 +485,7 @@ class Transect:
         for i in range(0, len(self.FutureSeaLevelYears)):
             
             # add nodes to lists
-            if self.FutureShorelinesDistances[i] > self.HistoricShorelinesDistances[-1][0]:
+            if self.FutureShorelinesDistances[i] > TS.Distances[-1][0]:
                 DistancesList.append(self.FutureShorelinesDistances[i])
                     
         # find index of min distance
@@ -735,488 +735,6 @@ class Transect:
         return self.signals.values()
     """
 
-    def CalculateHistoricalRates(self):
-
-        """
-        Function to calculate historical rates of shoreline change based on
-        historical shoreline positions
-
-        This function requires several funcions with the Coast object to have been run
-        first but the Coast wrapper should/could check for this.
-        
-        By convention, negative values indicate erosion and positive indicate accretion
-
-        MDH, October 2020
-
-        """
-
-        # cant make calculations without some historical shorelines
-        if not self.HistoricShorelinesDates:
-            self.Future = False
-            return
-    
-        # need at least two for a rate
-        elif len(self.HistoricShorelinesDates) < 2:
-            self.Future = False
-            return        
-
-        # reset change rates in case already calculated
-        self.ChangeRates = []
-        self.ChangeRateErrors = []
-        
-        # historic shoreline positions and change rates
-        for i in range(0,len(self.HistoricShorelinesDates)):
-            
-            # first do the whole length of the record
-            if i == 0:
-                dEta = (self.HistoricShorelinesDistance[-1] - self.HistoricShorelinesDistance[0])
-                ErrorSum = self.HistoricShorelinesErrors[-1] + self.HistoricShorelinesErrors[0]
-                dT = float(((self.HistoricShorelinesDates[-1] - self.HistoricShorelinesDates[0]).days)/365.2425)
-                
-            
-            # otherwise do the shorter period
-            else:
-                j = 1
-                while True:
-                    dT = float(((self.HistoricShorelinesDates[i] - self.HistoricShorelinesDates[i-j]).days)/365.2425)
-                    if (i-j == 0):
-                        dEta = self.HistoricShorelinesDistance[i] - self.HistoricShorelinesDistance[i-j]
-                        ErrorSum = self.HistoricShorelinesErrors[i] + self.HistoricShorelinesErrors[i-j]
-                        break
-                    elif dT < 4:
-                        j += 1
-                        continue
-                    else:
-                        dEta = self.HistoricShorelinesDistance[i] - self.HistoricShorelinesDistance[i-j]
-                        ErrorSum = self.HistoricShorelinesErrors[i] + self.HistoricShorelinesErrors[i-j]
-                        break
-                
-            self.ChangeRates.append(-dEta/dT)
-            self.ChangeRateErrors.append(ErrorSum/dT)
-
-        self.HistoricFlag = True
-
-        # add logic here to get best change rate and min/max?
-        # get min 
-        
-        min_max_date = '2000-01-01'
-        
-        TempIndex = np.argmin(np.array(self.ChangeRates)[np.array(self.HistoricShorelinesDates) > (datetime.strptime(min_max_date, "%Y-%m-%d"))])
-        IndexMin = np.where(np.array(self.HistoricShorelinesDates) > (datetime.strptime(min_max_date, "%Y-%m-%d")))[0][TempIndex]
-        self.MinChangeRate = self.ChangeRates[IndexMin]
-
-        # and max rates
-        TempIndex = np.argmax(np.array(self.ChangeRates)[np.array(self.HistoricShorelinesDates) > (datetime.strptime(min_max_date, "%Y-%m-%d"))])
-        IndexMax = np.where(np.array(self.HistoricShorelinesDates) > (datetime.strptime(min_max_date, "%Y-%m-%d")))[0][TempIndex]
-        self.MaxChangeRate = self.ChangeRates[IndexMax]
-
-    def CalculateHistoricalRegression(self, Plot=False):
-    
-        """
-        Function to calculate historical rates of shoreline change based on
-        historical shoreline positions. 
-        
-        Modified from original DC2 methodology (Transect.py function
-        CalculateHistoricalRates) by Craig MacDonell to use weighted
-        regression instead of most recent line and next 4 or 5 years prior.
-    
-        This function requires several funcions with the Coast object to have been run
-        first but the Coast wrapper should/could check for this.
-        
-        By convention, negative values indicate erosion and positive indicate accretion
-    
-        CM, January 2025
-    
-        """
-
-        # cant make calculations without some historical shorelines
-        if not self.HistoricShorelinesDates:
-            self.Future = False
-            return
-    
-        # need at least two for a rate
-        elif len(self.HistoricShorelinesDates) < 2:
-            self.Future = False
-            return        
-
-        # reset change rates in case already calculated
-        self.ChangeRates = []
-        self.ChangeRateErrors = []
-        
-        ### REGRESSION RATE CALCULATIONS - Recency Proportional Weights ###       
-        
-        # Convert dates to numerical values for regression
-        dates_numeric = np.array([date.toordinal() for date in self.HistoricShorelinesDates])
-        
-        # Get the current date
-        current_date = datetime.now().date()
-        # Convert the date to ordinal
-        ordinal_value = current_date.toordinal()
-        
-        max_date = max(dates_numeric)
-        scale_factor = 365.2425 * 10  # variable to smooth or strengthen recent-time weighting
-    
-        # Calculate weights using the smoother function
-        weights = np.exp(-(max_date - dates_numeric) / scale_factor)
-        # Normalize weights
-        weights /= np.sum(weights)
-        
-        incErrors_weighting = 0
-        if incErrors_weighting == 1:
-            # Calculate recency weights
-            recency_weights = np.exp(-(max_date - dates_numeric) / scale_factor)
-            recency_weights /= np.sum(recency_weights)  # Normalize weights
-            
-            # Incorporate shoreline errors as weights
-            error_weights = 1 / (np.array(self.HistoricShorelinesErrors) ** 2)
-            combined_weights = recency_weights * error_weights
-            combined_weights /= np.sum(combined_weights)  # Normalize weights
-            weights = combined_weights
-        
-        # Perform weighted regression
-        coefficients = np.polyfit(dates_numeric, self.HistoricShorelinesDistance, 1, w=weights)
-        self.RegressionSlope, self.RegressionIntercept = coefficients
-        slope_yr = round(self.RegressionSlope*365.2425,3)*-1
-        
-        # Calculate the regression line
-        regression_line = self.RegressionSlope * dates_numeric + self.RegressionIntercept
-        
-        # Calculate R-squared
-        residuals = self.HistoricShorelinesDistance - regression_line
-        ss_res = np.sum(residuals ** 2)
-        ss_tot = np.sum((self.HistoricShorelinesDistance - np.mean(self.HistoricShorelinesDistance)) ** 2)
-        r_sq = round(1 - (ss_res / ss_tot), 3)
-        
-        # Calculate confidence intervals
-        n = len(dates_numeric)
-        mean_x = np.mean(dates_numeric)
-        alpha = 0.05
-        t_value = t.ppf(1 - alpha / 2, n - 2)  # 95% confidence interval
-        
-        # Weighted residual standard error
-        weighted_residuals = residuals * weights
-        rss = np.sum(weighted_residuals ** 2)
-        if n <= 2: 
-            stderr = 0
-        else:    
-            stderr = np.sqrt(rss / (n - 2))
-        
-        # Confidence interval for regression line
-        conf_interval = t_value * stderr * np.sqrt(
-            1 / n + (dates_numeric - mean_x) ** 2 / np.sum((dates_numeric - mean_x) ** 2))
-        
-        self.ChangeRates.append(slope_yr)
-        self.ChangeRateErrors.append(stderr)
-        self.RegressionConfidence = conf_interval
-        
-    def CalculateHistoricalRegression_testing(self):
-    
-        """
-        Function to calculate historical rates of shoreline change based on
-        historical shoreline positions. 
-        
-        THIS FUNCTION WILL NOT UPDATE self.ChangeRates or self.ChangeRateErrors,
-        it is simply used for TESTING the regression fit
-        
-        Modified from original DC2 methodology (Transect.py function
-        CalculateHistoricalRates) by Craig MacDonell to use weighted
-        regression instead of most recent line and next 4 or 5 years prior.
-    
-        This function requires several funcions with the Coast object to have been run
-        first but the Coast wrapper should/could check for this.
-        
-        By convention, negative values indicate erosion and positive indicate accretion
-    
-        CM, January 2025
-    
-        """
-        
-        """Type here
-        result_ratess = []
-        resuts_errors = []
-        for timeweighting in timeweightings:
-            do regression and get rate and error
-            add to list of results and errors
-            
-        plt.plot(timeweightings, results,'ko--')
-        
-        """
-
-        # cant make calculations without some historical shorelines
-        if not self.HistoricShorelinesDates:
-            self.Future = False
-            return
-    
-        # need at least two for a rate
-        elif len(self.HistoricShorelinesDates) < 2:
-            self.Future = False
-            return        
-        
-        # Convert dates to numerical values for regression
-        dates_numeric = np.array([date.toordinal() for date in self.HistoricShorelinesDates])
-                
-        # overall rate (end point rate)
-        # elapsed time in decimal years
-        dDate = self.HistoricShorelinesDates[-1] - self.HistoricShorelinesDates[0]
-        dT = dDate.total_seconds() / (365.2425 * 24. * 3600.)
-        # overall change in distasnce
-        dDist = self.HistoricShorelinesDistance[-1] - self.HistoricShorelinesDistance[0]
-        EndPointRate = round((dDist / dT),3)*-1
-        
-        # rate after year 2000
-        # Find the index of the first date after 1st January 2000
-        threshold_date = datetime(2000, 1, 1)
-        Ind = next((i for i, date in enumerate(self.HistoricShorelinesDates) if date > threshold_date), None)
-        
-        if Ind is not None:
-            # Calculate the difference in years
-            dT = (self.HistoricShorelinesDates[-1] - self.HistoricShorelinesDates[Ind]).total_seconds() / (365.2425 * 24 * 3600)
-            dDist = self.HistoricShorelinesDistance[-1] - self.HistoricShorelinesDistance[Ind]
-            RecentRate = round((dDist/dT),3)*-1
-
-        else:
-            print("No date found after 1st Jan 2000")
-            
-        # Perform linear regression
-        SlopeCoef, InterceptCoef = np.polyfit(dates_numeric, self.HistoricShorelinesDistance, 1)  # 1 = degree of the polynomial
-        RegressionDist = SlopeCoef * np.array(dates_numeric) + InterceptCoef
-
-        # Calculate R-squared from Sum of Squares (SS)
-        Residuals = self.HistoricShorelinesDistance - RegressionDist
-        Residual_SS = np.sum(Residuals ** 2)
-        Total_SS = np.sum((self.HistoricShorelinesDistance - np.mean(self.HistoricShorelinesDistance)) ** 2)
-        R2 = round(1 - (Residual_SS / Total_SS),3)
-
-        # WEIGHTED REGRESSIONS
-        # Linearly Increasing Weights
-        Weights = np.linspace(1, 10, len(self.HistoricShorelinesDates))  # Adjust the range if needed
-        SlopeCoefLinear, InterceptCoefLinear = np.polyfit(dates_numeric, self.HistoricShorelinesDistance, 1, w=Weights)  # 1 = degree of the polynomial
-        RegressionDistLinear = SlopeCoefLinear * dates_numeric + InterceptCoefLinear
-        
-        # Calculate R-squared from Sum of Squares (SS)
-        ResidualsLinear = self.HistoricShorelinesDistance - RegressionDistLinear
-        Residual_SS_Linear = np.sum(ResidualsLinear ** 2)
-        Total_SS_Linear = np.sum((self.HistoricShorelinesDistance - np.mean(self.HistoricShorelinesDistance)) ** 2)
-        R2_Linear = round(1 - (Residual_SS_Linear / Total_SS_Linear),3)
-        
-        # Recency Proportional Weights
-        result_rates = []
-        result_errors = []
-        result_weights = []
-        
-        max_date3 = max(dates_numeric)
-
-        timeweightings = np.arange(2,20,1)
-            
-        for tw in timeweightings:
-            sf = 365.2425*tw
-            weights3t = np.exp(-(max_date3 - dates_numeric) / sf)
-            weights3t /= np.sum(weights3t)
-            
-            incErrors_weighting = 0        
-            if incErrors_weighting == 1:
-                # Calculate recency weights
-                recency_weights = np.exp(-(max_date3 - dates_numeric) / sf)
-                recency_weights /= np.sum(recency_weights)  # Normalize weights
-                
-                # Incorporate shoreline errors as weights
-                error_weights = 1 / (np.array(self.HistoricShorelinesErrors) ** 2)
-                combined_weights = recency_weights * error_weights
-                combined_weights /= np.sum(combined_weights)  # Normalize weights
-                weights3t = combined_weights
-                
-            result_weights.append(weights3t)
- 
-            coefficients3t = np.polyfit(dates_numeric, self.HistoricShorelinesDistance, 1, w=weights3t)
-            slope3t, intercept3t = coefficients3t
-            slope3t_yr = round(slope3t*365.2425,3)*-1
-            
-            # Calculate the regression line
-            regression_line3t = slope3t * dates_numeric + intercept3t
-            if tw == 10:
-                regression_line3 = regression_line3t
-            
-            # Calculate R-squared
-            residuals3t = self.HistoricShorelinesDistance - regression_line3t
-            ss_res3t = np.sum(residuals3t ** 2)
-            ss_tot3t = np.sum((self.HistoricShorelinesDistance - np.mean(self.HistoricShorelinesDistance)) ** 2)
-            r_sq3t = round(1 - (ss_res3t / ss_tot3t), 3)
-            
-            # Calculate R-squared for data after 2000 only
-            residuals3tt = self.HistoricShorelinesDistances[Ind:] - regression_line3t[Ind:]
-            ss_res3tt = np.sum(residuals3tt ** 2)
-            ss_tot3tt = np.sum((self.HistoricShorelinesDistances[Ind:] - np.mean(self.HistoricShorelinesDistances[Ind:])) ** 2)
-            r_sq3tt = round(1 - (ss_res3tt / ss_tot3tt),3)
-            
-            # Calculate confidence intervals
-            n = len(dates_numeric)
-            mean_x = np.mean(dates_numeric)
-            alpha = 0.05
-            t_value = t.ppf(1 - alpha / 2, n - 2)  # 95% confidence interval
-            
-            # Weighted residual standard error
-            weighted_residuals3t = residuals3t * weights3t
-            rss = np.sum(weighted_residuals3t ** 2)
-            stderr = np.sqrt(rss / (n - 2))
-            
-            # Confidence interval for regression line
-            conf_interval = t_value * stderr * np.sqrt(
-                1 / n + (dates_numeric - mean_x) ** 2 / np.sum((dates_numeric - mean_x) ** 2)
-    )
-            
-            result_rates.append(slope3t_yr)
-            result_errors.append(stderr)
-        
-        plotWeightings = 1    
-        if plotWeightings == 1:
-            # create figure
-            fig = plt.figure(figsize=(8,4.5))
-            ax = fig.add_subplot(111)
-
-            # set font parameters
-            plt.rcParams.update({
-            "font.size": 16,          # base size
-            "axes.titlesize": 18,
-            "axes.labelsize": 16,
-            "xtick.labelsize": 14,
-            "ytick.labelsize": 14,
-            "legend.fontsize": 14
-            })
-
-            plt.clf()
-            plt.plot(timeweightings, result_rates,'ko-')
-            #plt.plot(timeweightings, result_errors,'co--')
-            plt.xlabel('Timescale Factor (e-folding timescale) (yrs)')
-            plt.ylabel('Coastal Change Rates (m/yr)')
-            titleText = "Montrose - Transect: " + str(self.ID)
-            plt.title(titleText)
-            plt.tight_layout()
-            
-            plt.savefig("/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/CCMP/03_analysis/Montrose/" + str(self.ID)+ ".pdf")
-            plt.close()
-
-    
-# Plot transect plots to test regression
-        plotTransect = 1
-        if plotTransect == 1:
-            plt.clf()
-            plt.errorbar(
-                self.HistoricShorelinesDates, 
-                self.HistoricShorelinesDistance, 
-                yerr=self.HistoricShorelinesErrors,  # Use the errors directly
-                fmt='o',  # Marker for the data points
-                ecolor='gray',  # Color of the error bars
-                elinewidth=1,  # Line width of the error bars
-                capsize=3,  # Caps at the end of error bars
-                label='Shoreline Positions with Errors'
-            )
-            plt.plot(self.HistoricShorelinesDates, self.HistoricShorelinesDistance, marker='o', linestyle='-', color='b', label='Shoreline Positions')
-            
-            # Plot the regression lines
-            plt.plot(self.HistoricShorelinesDates, RegressionDist, color='r', linestyle='--', label='Linear Regression')
-            
-            plt.fill_between(
-                self.HistoricShorelinesDates,
-                regression_line3 - conf_interval,
-                regression_line3 + conf_interval,
-                color='gray',
-                alpha=0.3,
-                label='95% Confidence Interval'
-            )
-            plt.plot(self.HistoricShorelinesDates, regression_line3, color='m', linestyle='--', label='Time-weighted Regression')
-            plt.plot([self.HistoricShorelinesDates[0], self.HistoricShorelinesDates[-1]],[self.HistoricShorelinesDistance[0], self.HistoricShorelinesDistance[-1]],linestyle=':', color='g',label='Overall Rate')
-            #plt.plot([date2000, self.HistoricShorelinesDates[-1]],[dist2000, self.HistoricShorelinesDistance[-1]],linestyle=':', color='r',label='Rate since 2000')
-            
-# =============================================================================
-#             slope0_yr = round(slope0*365.2425,3)*-1
-#                     
-#             slope_text = (
-#                         "Overall Rate: " + str(rate0) + " m/yr\n"
-#                         "Rate since 2000: " + str(rate1) + " m/yr\n"
-#                         f"Slope 0 (LR): {slope0_yr:.3f} m/yr ($R^2 = {r_sq0:.3f}$)\n"
-#                         f"Slope 3 (RPW 5yrs): {(-1*slope3a*365.2425):.3f} m/yr ($R^2 = {r_sq3a:.3f}$) ($R^2 (2000) = {r_sq3aa:.3f}$)\n"
-#                         f"Slope 3 (RPW 10yrs): {(-1*slope3b*365.2425):.3f} m/yr ($R^2 = {r_sq3b:.3f}$) ($R^2 (2000) = {r_sq3bb:.3f}$)\n"
-#                         f"Slope 3 (RPW 15yrs): {(-1*slope3c*365.2425):.3f} m/yr ($R^2 = {r_sq3c:.3f}$) ($R^2 (2000) = {r_sq3cc:.3f}$)\n"
-#                         f"Slope 3 (RPW 20yrs): {(-1*slope3d*365.2425):.3f} m/yr ($R^2 = {r_sq3d:.3f}$) ($R^2 (2000) = {r_sq3dd:.3f}$)\n"
-#                         )
-#             
-#             plt.text(max(self.HistoricShorelinesDates) + timedelta(days=2500), y_ave, slope_text, color='r', fontsize=10, ha='left', va='center')
-# =============================================================================
-            
-            y_min, y_max = plt.gca().get_ylim()
-            y_ave = y_min + ((y_max - y_min)/2)
-            
-            # Add labels and title
-            plt.title("Montrose - Transect: " + str(self.ID))
-            plt.xlabel('Dates')
-            plt.ylabel('Relative Distance along transect (m)')
-            
-            # Rotate the x-axis labels for better visibility
-            plt.xticks(rotation=45)
-            
-            # invert y-axis to more clearly demonstrate negative rates as erosional (further from offshore baseline)
-            plt.gca().invert_yaxis()
-            
-            # Add legend
-            plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2), ncol=3, fontsize=10)
-            
-            fig_fn = "/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/CCMP/03_analysis/Montrose/Montrose_Transect_" + str(self.ID) + ".pdf"
-            plt.savefig(fig_fn, dpi=300, bbox_inches='tight')
-            
-        
-        # Weighted regression spreadsheet writing (for testing)
-        # Path to the existing Excel file
-        excel_file_path = '/media/14TB_RAID_Array/Virtual_Box_VMs/VBox_Shared/NCCA2/WS2_National_Scale_Change/Supersites/Montrose_2024/CMT/regressionFigures/regressionAnalysis.xlsx'
-        
-        """
-        # Try reading the existing Excel file
-        try:
-            existing_df = pd.read_excel(excel_file_path)
-        except FileNotFoundError:
-            # If the file doesn't exist, create an empty DataFrame with the column names
-            columns = ["Location", "ID", 
-                       "First Shoreline", "Overall Rate", "Recent Shoreline",
-                       "Current CMT rate",
-                       "First shoreline after 2000", "Rate since 2000",
-                       "Linear Regression", "LR R2",
-                       #"Linearly Increasing Weights", "LIW R2",
-                       #"Recency Proportional Weights", "RPW R2",
-                       "RPW5","RPW5 R2","RPW5 R2000",
-                       "RPW10","RPW10 R2","RPW10 R2000",
-                       "RPW15","RPW15 R2","RPW15 R2000",
-                       "RPW20","RPW20 R2","RPW20 R2000"]
-                       
-            
-            existing_df = pd.DataFrame(columns=columns)
-            
-        row = {"Location": 0, "ID": self.ID, 
-                   "First Shoreline":self.HistoricShorelinesDates[0], "Overall Rate":rate0, "Recent Shoreline":self.HistoricShorelinesDates[-1],
-                   "Current CMT rate":self.ChangeRates[-1],
-                   "First shoreline after 2000":date2000, "Rate since 2000":rate1,
-                   "Linear Regression":slope0_yr, "LR R2":r_sq0,
-                   #"Linearly Increasing Weights":slope1_yr, "LIW R2":r_sq1,
-                   #"Recency Proportional Weights":slope3_yr, "RPW R2":r_sq3,
-                   "RPW5":-1*slope3a*365.2425,"RPW5 R2":r_sq3a,"RPW5 R2000":r_sq3aa,
-                   "RPW10":-1*slope3b*365.2425,"RPW10 R2":r_sq3b,"RPW10 R2000":r_sq3bb,
-                   "RPW15":-1*slope3c*365.2425,"RPW15 R2":r_sq3c,"RPW15 R2000":r_sq3cc,
-                   "RPW20":-1*slope3d*365.2425,"RPW20 R2":r_sq3d,"RPW20 R2000":r_sq3dd,
-            }
-         
-        # Convert the row to a DataFrame
-        row_df = pd.DataFrame([row])
-        
-        # Append the row DataFrame to the existing DataFrame
-        existing_df = pd.concat([existing_df, row_df], ignore_index=True)
-        #print(existing_df)
-        # Save the updated DataFrame back to the Excel file
-        with pd.ExcelWriter(excel_file_path, engine='openpyxl', mode='a',if_sheet_exists='replace') as writer:
-            # Open the existing workbook and append the new data to the same sheet
-            existing_df.to_excel(writer, index=False,sheet_name='Sheet1')
-
-        sys.exit('Transect.CalculateHistoricRegression_testing: completed testing, please check transect plots and spreadsheet for regression fit')
-
-        """
-
     def CalculateIntertidalSlope(self):
         
         if not self.MLWS:
@@ -1391,7 +909,7 @@ class Transect:
             else:
                 continue
     
-    def PredictFutureShorelines(self, MaxRockHeadErosionDistance=25., MinMaxFlag=None):
+    def PredictFutureShorelines(self, MaxRockHeadErosionDistance=25., MinMaxFlag=None, Timeseries="MHWS", RateMethod="TWR"):
 
         """
         Function to predict the future position of the shoreline based on
@@ -1402,122 +920,75 @@ class Transect:
         This function requires several functions with the Coast object to have been run
         first but the Coast wrapper should/could check for this.
 
+        Updated to work with timeseries objects 13/7/26
+        Default is to work with MHWS data
+        Default rate method is time-weighted regression
+
         MDH, September 2019
 
         """
-        import pdb
-        pdb.set_trace()
         
-        # reset outputs incase already has been run
+        # boolean flag if making prediction
+        self.Future = False
         self.FutureShorelinesPositions = []
         self.FutureShorelinesRates = []
         self.FutureShorelinesDistances = []
-        self.InterpolatedRSLR = []
-        
-        # boolean flag if making prediction
-        self.Future = True
-        
+
         # cant make predictions without some historical shorelines
-        if not self.HistoricShorelinesDates:
+        if Timeseries not in self.Timeseries:
+            print("No historic positions in timeseries object")
             self.Future = False
             return
 
-        # dont let 1970s be calibration year if younger than modern soft
-        if len(self.HistoricShorelinesDates) > 2:
-            if self.HistoricShorelinesSources[-2].endswith("1970.shp") and self.HistoricShorelinesSources[-3].endswith("Soft.shp"):
-                self.HistoricShorelinesSources.pop(-2)
-                self.HistoricShorelinesDistances.pop(-2)
-                self.HistoricShorelinesPositions.pop(-2)
-                self.HistoricShorelinesErrors.pop(-2)
-                self.HistoricShorelinesDates.pop(-2)
+        # get timeseries object to work with
+        TS = self.Timeseries[Timeseries]
 
-# =============================================================================
-#         # check if the two most recent positions are closer than 4 years together
-#         while (float(((self.HistoricShorelinesDates[-1] - self.HistoricShorelinesDates[-2]).days)/365.2425) < 4):
-#             self.HistoricShorelinesSources.pop(-2)
-#             self.HistoricShorelinesDistances.pop(-2)
-#             self.HistoricShorelinesPositions.pop(-2)
-#             self.HistoricShorelinesErrors.pop(-2)
-#             self.HistoricShorelinesDates.pop(-2)
-# =============================================================================
-        
         # some logic here to check if its sensible to make predictions
-        if len(self.HistoricShorelinesDates) < 2:
+        if not TS.HasData(Minimum=2):
+            print("Not enough historic positions to base predictions")                
             self.Future = False
             return
         
-        # do not make predicitions if there are multiple lines on a single day (prev. single year)???
-        
-        
-        for i in range(0,len(self.HistoricShorelinesDates)):
-            self.HistoricShorelinesDistance.append(self.HistoricShorelinesDistances[i][0])
-            self.HistoricShorelinesPosition.append(self.HistoricShorelinesPositions[i][0])
-
-        NoPositions = [len(Distances) for Distances in self.HistoricShorelinesDistances]
-        EqualBool = NoPositions[1:] == NoPositions[:-1]
-
-        if not EqualBool:
-            self.Future = False
+        # check we have future sea levels MOVE THIS ONTO TIMESEREIES
+        if not self.FutureSeaLevelYears or not self.FutureSeaLevels:
             return
 
-        # calculate historical rates
-        if not self.HistoricFlag:
-            #self.CalculateHistoricalRates() # old DC2 method
-            self.CalculateHistoricalRegression() # updated regression method
+        # calculate historical rates from timeseries if not already existing
+        if RateMethod not in TS.Results:
+            TS.Analyse()
+
+        # retrieve results
+        HistoricRate = -TS.Results[RateMethod]["Rate"]
+        self.ChangeRate = HistoricRate
+        LatestDate = TS.Dates[-1]
+        LatestPosition = TS.Positions[-1]
+        LatestDistance = float(TS.Distances[-1])
         
-        # interpolate to get average RSLR in each time stamp between 1870s and 2020
+        # sense check
+        if HistoricRate is None or not np.isfinite(HistoricRate):
+            print("No rate or nan/inf")
+            return
+        
+        # Get rate of sea level rise during historic record for bruun rule calibration
+
+        # sea level rise over most recent 10 years
+        EndDate = TS.Dates[-1]
+        StartDate = EndDate - relativedelta(years=10)
+        CalibrationDate = EndDate - relativedelta(years=5)
+
+        # get historic RSLR and future RSLR to interpolate between
+        HistoricalRSLRate = self.HistoricalRSLR / 1000.0
         FutureSeaLevelYears_diff = (self.FutureSeaLevelYears[1] - self.FutureSeaLevelYears[0]).days / 365.2425
-        FutureSeaLevelRate = (self.FutureSeaLevels[1] - self.FutureSeaLevels[0])/(FutureSeaLevelYears_diff)
-        RSLRDiff= FutureSeaLevelRate-self.HistoricalRSLR/1000.
-        
-        InterpolationYears = []
-        for i in range(0,len(self.HistoricShorelinesDates)):
-            if i == 0:
-                base_date = self.HistoricShorelinesDates[0]
-                decYrs = 0.5*float(((self.HistoricShorelinesDates[-1] - self.HistoricShorelinesDates[0]).days)/365.2425)
-                
-                full_years = int(decYrs)
-                fractional_years = decYrs - full_years
+        FutureRSLRate = (self.FutureSeaLevels[1] - self.FutureSeaLevels[0])/(FutureSeaLevelYears_diff)
 
-                # Add full years first
-                new_date = base_date + relativedelta(years=full_years)
-                # Convert fractional years into days (accounting for leap years)
-                additional_days = int(round(fractional_years * 365.2425))
-                # Add the fractional days
-                new_date = new_date + relativedelta(days=additional_days)
-                
-                InterpolationYears.append(new_date)
-            else:
-                base_date = self.HistoricShorelinesDates[i-1]
-                decYrs = 0.5*float(((self.HistoricShorelinesDates[i] - self.HistoricShorelinesDates[i-1]).days)/365.2425)
-                
-                full_years = int(decYrs)
-                fractional_years = decYrs - full_years
+        # get one associated rate of RSLR associated with CalibrationDate
+        self.CalibrationRSLR = np.interp(CalibrationDate.toordinal(),
+                                     [StartDate.toordinal(), self.FutureSeaLevelYears[1].toordinal()],
+                                     [HistoricalRSLRate, FutureRSLRate])
 
-                # Add full years first
-                new_date = base_date + relativedelta(years=full_years)
-                # Convert fractional years into days (accounting for leap years)
-                additional_days = int(round(fractional_years * 365.2425))
-                # Add the fractional days
-                new_date = new_date + relativedelta(days=additional_days)
-                
-                InterpolationYears.append(new_date)
-                
-# =============================================================================
-#                 InterpolationYears.append((self.HistoricShorelinesDates[0]+self.HistoricShorelinesDates[i-1]-self.HistoricShorelinesDates[0])+
-#                                           0.5*(self.HistoricShorelinesDates[i]-self.HistoricShorelinesDates[i-1]))
-# =============================================================================
-
-        InterpFractions = np.array([
-            (interp_year - self.HistoricShorelinesDates[0]) / (self.FutureSeaLevelYears[0] - self.HistoricShorelinesDates[0])
-            for interp_year in InterpolationYears
-        ], dtype=float)
-        
-        self.InterpolatedRSLR = self.HistoricalRSLR/1000.+RSLRDiff*InterpFractions
-        
-        # get slope from intertidal zoneif we dont already have it
+        # get slope from intertidal zone if we dont already have it
         if not self.ShorefaceSlope:
-            self.ShorefaceDistance = self.MLWS.get_Distance(self.HistoricShorelinesPosition[-1])
+            self.ShorefaceDistance = self.MLWS.get_Distance(TS.Positions[-1])
             self.ShorefaceDepth = self.ClosureDepth + self.MHWS
             self.ShorefaceSlope = self.ShorefaceDepth/self.ShorefaceDistance
         
@@ -1537,112 +1008,57 @@ class Transect:
             self.BruunSlope = 0.001
 
         # Calibration term, remembering to convert relative sea level change rates to m/yr
-        self.VolumetricCalibrationRates = self.ShorefaceDepth*np.array(self.ChangeRates) + (self.ShorefaceDepth/self.BruunSlope)*(self.InterpolatedRSLR)
-        self.VolumetricCalibrationErrors = self.ShorefaceDepth*np.array(self.ChangeRateErrors) + (self.ShorefaceDepth/self.BruunSlope)*(self.InterpolatedRSLR)
-
+        CalibrationRate = (self.ShorefaceDepth * HistoricRate + (self.ShorefaceDepth / self.BruunSlope) * self.CalibrationRSLR)
+        
         # get sea level at latest time
-        if self.HistoricShorelinesDates[-1] < self.FutureSeaLevelYears[0]:
-            self.LatestRSL = self.FutureSeaLevels[0]
-        else:
-            Interp = (self.FutureSeaLevelYears[1]-self.HistoricShorelinesDates[-1])/(self.FutureSeaLevelYears[1]-self.FutureSeaLevelYears[0])
-            self.LatestRSL = self.FutureSeaLevels[1]-Interp*(self.FutureSeaLevels[1]-self.FutureSeaLevels[0])
-
-        # print(MinMaxFlag)
+        self.LatestRSL = np.interp(LatestDate.toordinal(),[Date.toordinal() for Date in self.FutureSeaLevelYears], self.FutureSeaLevels,)
         
-        # set index for calibration
-        if self.LongTermOnly:
-            CalibrationRate = self.VolumetricCalibrationRates[0]
-            self.ChangeRate = self.ChangeRates[0]
-            self.MinChangeRate = self.ChangeRate
-            self.MaxChangeRate = self.ChangeRate
-            self.CalibrationYear = self.HistoricShorelinesDates[0]
-
-# =============================================================================
-### EXCLUDE BEST/WORST CALCULATIONS INITIALLY WITH DATETIME UPGRADES - SEPARATE UPGRADE WORK ALONG WITH WEIGHTED REGRESSION
-#         # get min 
-#         TempIndex = np.argmin(self.VolumetricCalibrationRates[np.array(self.HistoricShorelinesDates) > 2000])
-#         IndexMin = np.where(np.array(self.HistoricShorelinesDates) > 2000)[0][TempIndex]
-#         
-#         # and max rates
-#         TempIndex = np.argmax(self.VolumetricCalibrationRates[np.array(self.HistoricShorelinesDates) > 2000])
-#         IndexMax = np.where(np.array(self.HistoricShorelinesDates) > 2000)[0][TempIndex]
-# 
-#         if ((MinMaxFlag == "Min") or (MinMaxFlag == "min")):
-#             CalibrationRate = self.VolumetricCalibrationRates[IndexMin]
-#             self.ChangeRate = self.ChangeRates[IndexMin]
-#             self.CalibrationYear = self.HistoricShorelinesDates[IndexMin]
-# 
-#         elif ((MinMaxFlag == "Max") or (MinMaxFlag == "max")):
-#             CalibrationRate = self.VolumetricCalibrationRates[IndexMax]
-#             self.ChangeRate = self.ChangeRates[IndexMax]
-#             self.CalibrationYear = self.HistoricShorelinesDates[IndexMax]
-# 
-#         else:
-#             CalibrationRate = self.VolumetricCalibrationRates[-1]
-#             self.ChangeRate = self.ChangeRates[-1]
-#             self.CalibrationYear = self.HistoricShorelinesDates[-2]
-# =============================================================================
-        
-        CalibrationRate = self.VolumetricCalibrationRates[-1]
-        self.ChangeRate = self.ChangeRates[-1]
-        self.CalibrationYear = self.HistoricShorelinesDates[-2]
-
         # Future shoreline positions
-        for i in range(0, len(self.FutureSeaLevelYears)):
+        for FutureDate, FutureSeaLevel in zip(self.FutureSeaLevelYears, self.FutureSeaLevels):
 
-            dT = (self.FutureSeaLevelYears[i]-self.HistoricShorelinesDates[-1]).days / 365.2425
+            dT = (FutureDate - LatestDate).days / 365.2425
 
             # catch the condition where observed shorelines are more recent than those we're trying to make predictions for
             if dT <= 0:
-                #print('Predict Future Shorelines - observed shorelines are more recent than predictions:', str(self.FutureSeaLevelYears[i]), '-', self.HistoricShorelinesDates[-1])
-                X1 = self.HistoricShorelinesPosition[-1].X
-                Y1 = self.HistoricShorelinesPosition[-1].Y
 
-                self.FutureShorelinesPositions.append(Node(X1,Y1))
-                self.FutureShorelinesRates.append(self.ChangeRates[-1])
-                self.FutureShorelinesDistances.append(self.HistoricShorelinesDistances[-1][0])
-
+                #print('Predict Future Shorelines - observed shorelines are more recent than predictions:', str(self.FutureSeaLevelYears[i]), '-', TS.Dates[-1])
+                self.FutureShorelinesPositions.append(Node(LatestPosition.X, LatestPosition.Y))
+                self.FutureShorelinesRates.append(HistoricRate)
+                self.FutureShorelinesDistances.append(LatestDistance)
                 continue
             
-            # self.InterpolatedRSLR
-            BruunRuleComponent = -(1./self.BruunSlope)*(self.FutureSeaLevels[i]-self.LatestRSL)
+            BruunRuleComponent = -(1./self.BruunSlope)*(FutureSeaLevel-self.LatestRSL)
             CalibrationComponent = (1./self.ShorefaceDepth)*CalibrationRate*dT
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
             
             # check rock head position not exceeded
-            HistoricShorelineDistance = self.StartNode.get_Distance(self.HistoricShorelinesPosition[-1])
-            FutureShorelineDistance = HistoricShorelineDistance - ShorelinePositionChange
+            FutureShorelineDistance = LatestDistance - ShorelinePositionChange
             
             if self.DefencesDistance and (FutureShorelineDistance > self.DefencesDistance):
 
-                # if landward of
-                self.FutureShorelinesPositions.append(self.DefencesPosition)
+                FutureShorelineDistance = self.DefencesDistance
+                ShorelinePositionChange = LatestDistance - FutureShorelineDistance
+                FuturePosition = self.DefencesPosition
                 
-                ShorelinePositionChange = HistoricShorelineDistance - self.DefencesDistance
-                self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
-                self.FutureShorelinesDistances.append(self.DefencesDistance)
-            
             elif self.RockHeadDistance and (FutureShorelineDistance > self.RockHeadDistance):
 
                 # if landward of
-                self.FutureShorelinesPositions.append(self.RockHeadPosition)
+                FutureShorelineDistance = self.RockHeadDistance
+                ShorelinePositionChange = LatestDistance - FutureShorelineDistance
+                FuturePosition = self.RockHeadPosition
                 
-                ShorelinePositionChange = HistoricShorelineDistance - self.RockHeadDistance
-                self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
-                self.FutureShorelinesDistances.append(self.RockHeadDistance)
-            
             # otherwise write new shoreline position as appropriate
             else:
-                X1 = self.HistoricShorelinesPosition[-1].X - ShorelinePositionChange * np.sin( np.radians( self.Orientation ) )
-                Y1 = self.HistoricShorelinesPosition[-1].Y - ShorelinePositionChange * np.cos( np.radians( self.Orientation ) )
-
-                self.FutureShorelinesPositions.append(Node(X1,Y1))
-                self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
-                self.FutureShorelinesDistances.append(FutureShorelineDistance)
-
-        # add analysis of 2100 uncertainty based on historical position change
-        self.VolumetricCalibrationRates = np.append(self.VolumetricCalibrationRates, 0.)
+                X1 = LatestPosition.X - ShorelinePositionChange * np.sin( np.radians( self.Orientation ) )
+                Y1 = LatestPosition.Y - ShorelinePositionChange * np.cos( np.radians( self.Orientation ) )
+                FuturePosition = Node(X1, Y1)
+                
+            self.FutureShorelinesPositions.append(FuturePosition)
+            self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
+            self.FutureShorelinesDistances.append(FutureShorelineDistance)
         
+        self.Future = True
+
     def PredictFutureShorelineBathtub(self):
 
         """
@@ -1663,7 +1079,7 @@ class Transect:
         for Year, SeaLevel in zip(self.FutureSeaLevelYears,self.FutureSeaLevels):
         
             # time
-            dT = Year-self.HistoricShorelinesDates[-1]
+            dT = Year-TS.Dates[-1]
 
             # vector at fixed elevation running the length of the transect
             Start, End = ma.notmasked_edges(self.Distance)
@@ -1761,8 +1177,8 @@ class Transect:
                 
                 # may be a sign issue in here will need to check
                 ShorelinePositionChange = HistoricShorelineDistance-FutureShorelineDistance
-                X1 = self.HistoricShorelinesPosition[-1].X + ShorelinePositionChange * np.sin( np.radians( self.Orientation ) )
-                Y1 = self.HistoricShorelinesPosition[-1].Y + ShorelinePositionChange * np.cos( np.radians( self.Orientation ) )
+                X1 = TS.Positions[-1].X + ShorelinePositionChange * np.sin( np.radians( self.Orientation ) )
+                Y1 = TS.Positions[-1].Y + ShorelinePositionChange * np.cos( np.radians( self.Orientation ) )
 
                 self.FutureShorelinesPositions.append(Node(X1,Y1))
                 self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
@@ -1785,17 +1201,17 @@ class Transect:
         # get future sea level and time difference
         Index = [i for i, x in enumerate(self.FutureSeaLevelYears) if x == Year]
         FutureSeaLevel = self.FutureSeaLevels[Index[0]]
-        dT = Year-self.HistoricShorelinesDates[-1]
+        dT = Year-TS.Dates[-1]
 
         # reset min and max in case uncertainty has been previously assessed
         self.FutureShorelineMinDistance = 9999999.
         self.FutureShorelineMaxDistance = -9999999.
 
         # get sea level at latest time
-        if self.HistoricShorelinesDates[-1] < self.FutureSeaLevelYears[0]:
+        if TS.Dates[-1] < self.FutureSeaLevelYears[0]:
             self.LatestRSL = self.FutureSeaLevels[0]
         else:
-            Interp = (self.FutureSeaLevelYears[1]-self.HistoricShorelinesDates[-1])/(self.FutureSeaLevelYears[1]-self.FutureSeaLevelYears[0])
+            Interp = (self.FutureSeaLevelYears[1]-TS.Dates[-1])/(self.FutureSeaLevelYears[1]-self.FutureSeaLevelYears[0])
             self.LatestRSL = self.FutureSeaLevels[1]-Interp*(self.FutureSeaLevels[1]-self.FutureSeaLevels[0])
 
         for VolumetricCalibrationRate in self.VolumetricCalibrationRates:
@@ -1833,7 +1249,7 @@ class Transect:
 
         # get future sea level and time difference
         FutureSeaLevel = self.FutureSeaLevels[self.FutureSeaLevelYears == Year]
-        dT = Year-self.HistoricShorelinesDates[-1]
+        dT = Year-TS.Dates[-1]
 
         # reset min and max in case uncertainty has been previously assessed
         self.FutureShorelineMinDistance = 9999999.
@@ -1893,7 +1309,7 @@ class Transect:
         self.VegEdgeDistance = self.StartNode.get_Distance(self.VegEdgePosition)
 
         # measure difference between latest MHWS and veg edge
-        Offset = self.HistoricShorelinesDistances[-1][0] - self.VegEdgeDistance
+        Offset = TS.Distances[-1][0] - self.VegEdgeDistance
 
         # use difference to map future vegetation edges based on future MHWS
         self.FutureVegEdgePositions = []
@@ -3934,122 +3350,94 @@ class Transect:
         else:
             return
     
-    def get_FutureDistance(self, Year):
+    def get_FutureDistance(self, Year, Timeseries="MHWS"):
 
         """
 
         Get the future cposition of the coast in distance along transect
         from Bruun Rule predictions
 
+        Updated July 2026 to work with Timeseries object
+
         MDH, November 2020
 
         """
 
         # check there are predictions for this transect
-        if self.Future:
+        if not self.Future:
+            return None
 
-            # find year index
-            Index = [i for i, x in enumerate(self.FutureSeaLevelYears) if x == Year]
-            
-            if len(Index) == 0:
-                print("ERROR: Transect.get_FutureDistance - length of Index == 0")
-                sys.exit()
-                return
+        # retrieve timeseries
+        TS = self.Timeseries[Timeseries]
 
-            # use to access future position
-            try:
-                self.FutureShorelinesDistances[Index[0]]
-            except:
-                import pdb
-                pdb.set_trace()
+        # convert to datetime if an integer
+        if isinstance(Year, int):
+            Year = datetime(Year, 1, 1)
 
-            return self.FutureShorelinesDistances[Index[0]]
-           
-        else:
-            return
+        # find year index
+        LatestDate = TS.Dates[-1]
 
-    def get_FuturePositionChange(self, Year1, Year2):
+        # Before (or at) latest observation -> observed shoreline
+        if Year <= LatestDate:
+            return TS.Distances[-1]
+
+        # Find index of future
+        Index = self.FutureSeaLevelYears.index(Year)
+
+        # use to access future position
+        return self.FutureShorelinesDistances[Index]
+    
+    def get_FuturePositionChange(self, Year1, Year2, Timeseries="MHWS"):
 
         """
 
         Get the future change in  position of the coast over a particular number of years
         from Bruun Rule predictions
 
+        Updated July 2026 to work with timeseries object
+
         MDH, October 2019
 
         """
+        if not self.Future:
+            return None
 
-        # check there are predictions for this transect
-        if self.Future:
-            
-            # Check and if required, change the type of Year1 to datetime
-            if isinstance(Year1, datetime):
-                pass  # Do nothing if Year1 is already a datetime
-            elif isinstance(Year1, int):  # If it's an integer year, convert to datetime
-                Year1 = datetime(Year1, 1, 1)
-            else:
-                raise ValueError(f"Unsupported type: {type(Year1)}. Expected datetime or int.")
-            
-            # Check and if required, change the type of Year2 to datetime
-            if isinstance(Year2, datetime):
-                pass  # Do nothing if Year2 is already a datetime
-            elif isinstance(Year2, int):  # If it's an integer year, convert to datetime
-                Year2 = datetime(Year2, 1, 1)
-            else:
-                raise ValueError(f"Unsupported type: {type(Year2)}. Expected datetime or int.")
-            
-            # add a check in here if Year1 <= Latest Shoreline
-            if Year1 <= self.HistoricShorelinesDates[-1]:
-                Distance1 = self.HistoricShorelinesDistances[-1][0]
+        Distance1 = self.get_FutureDistance(Year1, Timeseries="MHWS")
+        Distance2 = self.get_FutureDistance(Year2, Timeseries="MHWS")
 
-            else:
-                # find year index
-                Index1 = [i for i, x in enumerate(self.FutureSeaLevelYears) if x == Year1]
-                if len(Index1) == 0:
-                    print("ERROR: Transect.get_FuturePositionChange - length of Index1 == 0 - Year=" + str(Year1))
-                    import pdb
-                    pdb.set_trace()
-                    
-                Distance1 = self.FutureShorelinesDistances[Index1[0]]
-            
-            # find year index for second year
-            Index2 = [i for i, x in enumerate(self.FutureSeaLevelYears) if x == Year2]
-            
-            if len(Index2) == 0:
-                print("ERROR: Transect.get_FuturePositionChange - length of Index2 == 0 - Year=" + str(Year2))
-                sys.exit()
+        if Distance1 is None or Distance2 is None:
+            return None
 
-            # add a check in here if Year1 < Latest Shoreline
-            Distance2 = self.FutureShorelinesDistances[Index2[0]]
-            
-            return Distance1-Distance2
-
-        else:
-            return
+        return Distance1 - Distance2
         
-    def get_ExtrapDistance(self, Year):
+    def get_ExtrapDistance(self, Year, Timeseries="MHWS", RateMethod="TWR"):
 
         """
 
         Get the extrapolated future position of the coast by extrapolating
         historical rate of shoreline change
 
+        Updated to use TS objects July 2026
+
         MDH, October 2020
 
         """
 
-        # check there are predictions for this transect
         if self.Future:
+            
+            TS = self.Timeseries[Timeseries]
+            LatestDate = TS.Dates[-1]
+            Rate = TS.Results[RateMethod]["Rate"]
 
             # extrapolate future position on transect
-            extrapPeriodYrs = (datetime(Year,1,1) - self.HistoricShorelinesDates[-1]).days / 365.2425
-            Distance = self.ChangeRates[-1]*extrapPeriodYrs
+            ExtrapYears = (datetime(Year,1,1) - LatestDate).days / 365.2425
+            Distance = ExtrapYears*Rate
             return Distance
 
         else:
             return
     
-    def get_FutureRate(self, Year1, Year2):
+    def get_FutureRate(self, Year1, Year2, Timeseries="MHWS"):
 
         """
 
@@ -4062,38 +3450,37 @@ class Transect:
         """
 
         # check there are predictions for this transect
-        if self.Future:
-            
-            # Check and if required, change the type of Year1 to datetime
-            if isinstance(Year1, datetime):
-                pass  # Do nothing if Year1 is already a datetime
-            elif isinstance(Year1, int):  # If it's an integer year, convert to datetime
-                Year1 = datetime(Year1, 1, 1)
-            else:
-                raise ValueError(f"Unsupported type: {type(Year1)}. Expected datetime or int.")
-            
-            # Check and if required, change the type of Year2 to datetime
-            if isinstance(Year2, datetime):
-                pass  # Do nothing if Year2 is already a datetime
-            elif isinstance(Year2, int):  # If it's an integer year, convert to datetime
-                Year2 = datetime(Year2, 1, 1)
-            else:
-                raise ValueError(f"Unsupported type: {type(Year2)}. Expected datetime or int.")
-            
-            # check year1 isnt less than an historic shoreline
-            if Year1 < self.HistoricShorelinesDates[-1]:
-                Year1 = self.HistoricShorelinesDates[-1]
+        if not self.Future:
+            return None
 
-            # get the position change
-            Distance = self.get_FuturePositionChange(Year1, Year2)
+        # check the timeseries specified exists probably redundant
+        if Timeseries not in self.Timeseries:
+            raise ValueError(f"Timeseries '{Timeseries}' does not exist")
+        
+        # convert to datetime if an integer
+        if isinstance(Year1, int):
+            Year1 = datetime(Year1, 1, 1)
+        if isinstance(Year2, int):
+            Year2 = datetime(Year2, 1, 1)
 
-            # calculate average rate
-            YrDiff = (Year2-Year1).days / 365.2425
-            Rate = Distance/YrDiff
-            return Rate
+        # get date of most recent observation
+        LatestDate = self.Timeseries[Timeseries].Dates[-1]
 
-        else:
-            return
+            
+        # check year1 isnt less than an historic shoreline
+        if Year1 < LatestDate:
+            Year1 = LatestDate
+
+        # get the position change
+        PositionChange = self.get_FuturePositionChange(Year1, Year2, Timeseries=Timeseries)
+
+        if PositionChange is None:
+            return None
+        
+        # calculate average rate
+        YrDiff = (Year2-Year1).days / 365.2425
+        return PositionChange/YrDiff
+            
 
     def get_TotalErosion(self, Year1, Year2):
 
@@ -4215,27 +3602,28 @@ class Transect:
         
         return Node(X,Y)
 
-    def get_RecentPosition(self):
+    def get_RecentPosition(self, Timeseries="MHWS"):
 
         """
 
         Get the most recent position of the coast 
         
+        Updated July 2026 to work with timeseries objects
+
         MDH, January 2020
 
         """
 
         # catch if no shoreline
-        if len(self.HistoricShorelinesDates) == 0:
-            return
-            #raise Exception("self.get_RecentPosition: No recent position")
+        if Timeseries not in self.Timeseries:
+            return None
 
-        # find index of most recent historical shoreline
-        Index = np.argmax(self.HistoricShorelinesDates)
-        Position = self.HistoricShorelinesPositions[Index][0]
-        Year = self.HistoricShorelinesDates[Index]
-            
-        return Position
+        TS = self.Timeseries[Timeseries]
+
+        if not TS.HasData(Minimum=1):
+            return None
+
+        return TS.Positions[-1]
     
     def get_RecentYear(self):
 
@@ -4258,24 +3646,29 @@ class Transect:
             
         return Year
 
-    def get_RecentDistance(self):
+    def get_RecentDistance(self, Timeseries="MHWS"):
 
         """
 
         Get the most recent position of the coast 
 
+        Updated July 2026 to work with timeseries objects
+        
         MDH, November 2020
 
         """
 
-        # catch if no shoreline
-        if len(self.HistoricShorelinesDates) == 0:
-            raise Exception("self.get_RecentPosition: No recent position")
+        # catch if no timeseries
+        if Timeseries not in self.Timeseries:
+            raise ValueError(f"Timeseries '{Timeseries}' does not exist")
 
-        # find index of most recent historical shoreline
-        Index = np.argmax(self.HistoricShorelinesDates)
-        
-        return self.HistoricShorelinesDistances[Index][0]
+        TS = self.Timeseries[Timeseries]
+
+        # catch if no shoreline
+        if not TS.HasData(Minimum=1):
+            raise ValueError("No recent shoreline distance")
+
+        return TS.Distances[-1]
 
     def get_OldestPosition(self):
 
