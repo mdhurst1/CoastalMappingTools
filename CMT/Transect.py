@@ -958,7 +958,8 @@ class Transect:
             TS.Analyse()
 
         # retrieve results
-        HistoricRate = TS.Results[RateMethod]["Rate"]
+        HistoricRate = -TS.Results[RateMethod]["Rate"]
+        self.ChangeRate = HistoricRate
         LatestDate = TS.Dates[-1]
         LatestPosition = TS.Positions[-1]
         LatestDistance = float(TS.Distances[-1])
@@ -968,12 +969,12 @@ class Transect:
             print("No rate or nan/inf")
             return
         
-        # Get rate of sea level rise during historic record for bruun rule calibratuion
+        # Get rate of sea level rise during historic record for bruun rule calibration
 
-        # start by finding midpoint of historic shorelines
-        StartDate = TS.Dates[0]
+        # sea level rise over most recent 10 years
         EndDate = TS.Dates[-1]
-        CalibrationDate = StartDate + (EndDate - StartDate) / 2
+        StartDate = EndDate - relativedelta(years=10)
+        CalibrationDate = EndDate - relativedelta(years=5)
 
         # get historic RSLR and future RSLR to interpolate between
         HistoricalRSLRate = self.HistoricalRSLR / 1000.0
@@ -982,7 +983,7 @@ class Transect:
 
         # get one associated rate of RSLR associated with CalibrationDate
         self.CalibrationRSLR = np.interp(CalibrationDate.toordinal(),
-                                     [StartDate.toordinal(), self.FutureSeaLevelYears[0].toordinal()],
+                                     [StartDate.toordinal(), self.FutureSeaLevelYears[1].toordinal()],
                                      [HistoricalRSLRate, FutureRSLRate])
 
         # get slope from intertidal zone if we dont already have it
@@ -1007,8 +1008,8 @@ class Transect:
             self.BruunSlope = 0.001
 
         # Calibration term, remembering to convert relative sea level change rates to m/yr
-        CalibrationRate = (self.ShorefaceDepth * HistoricRate + (self.ShorefaceDepth / self.BruunSlope) * self.CalibrationRSLR
-)
+        CalibrationRate = (self.ShorefaceDepth * HistoricRate + (self.ShorefaceDepth / self.BruunSlope) * self.CalibrationRSLR)
+        
         # get sea level at latest time
         self.LatestRSL = np.interp(LatestDate.toordinal(),[Date.toordinal() for Date in self.FutureSeaLevelYears], self.FutureSeaLevels,)
         
@@ -1026,7 +1027,6 @@ class Transect:
                 self.FutureShorelinesDistances.append(LatestDistance)
                 continue
             
-            # self.InterpolatedRSLR
             BruunRuleComponent = -(1./self.BruunSlope)*(FutureSeaLevel-self.LatestRSL)
             CalibrationComponent = (1./self.ShorefaceDepth)*CalibrationRate*dT
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
