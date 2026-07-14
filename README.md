@@ -75,17 +75,12 @@ The driver demonstrates a complete future coastal change analysis workflow, incl
 
 ### Outputs
 
-Example outputs are written to the `results/` directory (ignored by Git) and may include:
+Example outputs in the form of shapefules are written to the `Results/` directory (ignored by Git) and include:
 
 * Predicted shoreline positions.
-* Shoreline change rates.
-* GIS layers (e.g. Shapefiles/GeoPackages).
-* Raster outputs (where applicable).
-* Diagnostic plots and figures.
+* Shore-normal transects with shoreline change rate attributes.
 
 ### Notes
 
-This example is intended as a reference workflow for developing and testing new functionality. As the `Future-Updating` branch is under active development, file formats and outputs may change as the prediction framework evolves.
+This example is intended as a reference workflow for developing and testing new functionality. As the repository is under active development, file formats and outputs may change as the prediction framework evolves.
 
-
-Description goes here.
