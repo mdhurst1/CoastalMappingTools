@@ -134,8 +134,9 @@ venv.bak/
 # mkdocs documentation
 /site
 
-# Results
-/results/
+# Ignore Results Folders if in repo
+./results/
+./Results
 
 # mypy
 .mypy_cache/

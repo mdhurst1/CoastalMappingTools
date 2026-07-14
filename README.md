@@ -46,4 +46,46 @@ conda activate CMT
 
 ### Conduct shoreline change analysis
 
+The repository contains a worked example demonstrating the Coastal Mapping Tools workflow using data from **Montrose Bay, Scotland**. The example takes historical shoreline observations, analyses historical shoreline change, and generates future shoreline predictions under sea-level rise scenarios using a calibrated Bruun-rule approach.
+
+### Prerequisites
+
+Before running the example, ensure you have:
+
+* Cloned the repository.
+* Created and activated the required Python environment.
+
+### Running the example
+
+From the repository root, run:
+
+```bash
+python examples/Montrose_Example_Driver.py
+```
+
+### What the example does
+
+The driver demonstrates a complete future coastal change analysis workflow, including:
+
+1. Loading the Montrose example datasets.
+2. Building coastal transects and MHWS shoreline time series.
+3. Calculating historical shoreline change rates using the available regression methods (including Time-Weighted Regression by default).
+4. Predicting future shoreline positions using a modified Bruun rule approach and future sea-level rise scenarios from UKCP18.
+5. Writing example outputs for visualisation and further analysis.
+
+### Outputs
+
+Example outputs are written to the `results/` directory (ignored by Git) and may include:
+
+* Predicted shoreline positions.
+* Shoreline change rates.
+* GIS layers (e.g. Shapefiles/GeoPackages).
+* Raster outputs (where applicable).
+* Diagnostic plots and figures.
+
+### Notes
+
+This example is intended as a reference workflow for developing and testing new functionality. As the `Future-Updating` branch is under active development, file formats and outputs may change as the prediction framework evolves.
+
+
 Description goes here.
