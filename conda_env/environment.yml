@@ -1,9 +1,29 @@
 name: CMT
 channels:
   - conda-forge
-  - defaults
+channel_priority: strict
 dependencies:
+  # python
+  - python=3.12
+
+  # core scientific
   - numpy
+  - scipy
+  - matplotlib
+  - pandas
+
+  # GIS
   - geopandas
   - rasterio
   - pyshp
+  - shapely
+  - fiona
+  - pyproj
+  - pyogrio
+
+  # other
+  - scikit-image
+  - scikit-learn
+  - networkx
+  - openpyxl
+  - pillow

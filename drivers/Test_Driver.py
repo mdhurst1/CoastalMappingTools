@@ -58,8 +58,10 @@ MontroseCoast.SmoothCoastLines(WindowSize=21,NoSmooths=100)
 MontroseCoast.CheckOrientation(str(BaselinePath),str(MLWSPath))
 
 # write smoothed coast/bathy to file
-MontroseCoast.WriteCoastShp(ResultsPath / "Montrose_Smoothed_Baseline.shp")
+MontroseCoast.WriteCoast(ResultsPath / "Montrose_Smoothed_Baseline.shp")
+MontroseCoast.WriteCoast(ResultsPath / "Montrose_Smoothed_Baseline.geojson")
 
+"""
 # create some initial dummy transects extending 500m offshore and inland
 MontroseCoast.GenerateTransects(TransectSpacing, 500, 500, CheckTopology=False) # transect lengths
 
@@ -131,4 +133,4 @@ for i, Decade in enumerate(Decades):
     
     MontroseCoast.WriteErosionProximityShp(str(ResultsPath / ("Montrose_Influence_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
     MontroseCoast.WriteErosionProximityShp(str(ResultsPath / ("Montrose_Vicinity_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
-       
+"""

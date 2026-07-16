@@ -175,6 +175,54 @@ class Coast:
 
         self.WriteLinesShp("CoastLines", CoastShp)
 
+    def WriteCoast(self, CoastFile, smooth=False):
+        
+        """
+        Write the coastline to a supported vector format.
+        The output format is determined from the filename extension.
+
+        MDH July 2026
+
+        
+        Parameters
+        ----------
+        CoastFile : str or pathlib.Path
+            Output filename. Supported extensions are `.shp`, `.geojson`
+            and `.json`.
+
+        Smooth : bool, optional
+            Smooth line geometries before writing.
+
+            
+        Supported formats
+        -----------------
+
+        .shp
+            ESRI Shapefile.
+
+        .geojson or .json
+            GeoJSON.
+        """
+
+        # print action to screen
+        print("Coast.WriteCoast: Writing coast line to file")
+
+        # convert to path if not not already
+        CoastFile = Path(CoastFile)
+        Extension = CoastFile.suffix.lower()
+
+        # Create the output directory if it does not already exist.
+        CoastFile.parent.mkdir(parents=True, exist_ok=True)
+
+        if Extension == ".shp":
+            self.WriteLinesShp("CoastLines", CoastFile)
+
+        elif Extension in [".geojson", ".json"]:
+            self.WriteLinesGeoJSON("CoastLines", CoastFile)
+
+        else:
+            raise ValueError("Unsupported coastline output format: "f"'{Extension}'. Use '.shp' or '.geojson'.")
+    
     def WriteCliffShp(self, CliffShp):
         
         """
@@ -725,7 +773,7 @@ class Coast:
         for ThisLine in self.__dict__[DictionaryKey]:
             
             if Smooth:
-                Line.SmoothLine(WindowSize=11)
+                ThisLine.SmoothLine(WindowSize=11)
             
             # Find Loops
             ThisLine.MakeSimple()
@@ -775,90 +823,90 @@ class Coast:
 
     def WriteLinesGeoJSON(self, DictionaryKey, GeoJSONFile, Smooth=False, OutputCRS="EPSG:4326"):
     
-    """
-    Writes the contents of a list of line objects to polyline shape file
-    List of line objects is part of the Coast object and identified by 
-    the dictionary key
+        """
+        Writes the contents of a list of line objects to a geojson
+        List of line objects is part of the Coast object and identified by 
+        the dictionary key
 
-    Parameters
-    ----------
-    DictionaryKey : str
-        Name of the Coast attribute containing the Line objects.
+        Parameters
+        ----------
+        DictionaryKey : str
+            Name of the Coast attribute containing the Line objects.
 
-    GeoJSONFile : str
-        Output GeoJSON filename.
+        GeoJSONFile : str
+            Output GeoJSON filename.
 
-    Smooth : bool, optional
-        Option to smooth line geometries before writing.
+        Smooth : bool, optional
+            Option to smooth line geometries before writing.
 
-    OutputCRS : str or None, optional
-        Output CRS. GeoJSON intended for web mapping should normally use
-        EPSG:4326. Set to None to retain the source projection.
-    """
+        OutputCRS : str or None, optional
+            Output CRS. GeoJSON intended for web mapping should normally use
+            EPSG:4326. Set to None to retain the source projection.
+        """
 
-    print("Coast.WriteLinesGeoJSON: Writing lines to GeoJSON")
+        print("Coast.WriteLinesGeoJSON: Writing lines to GeoJSON")
 
-    Geometries = []
-    Records = []
+        Geometries = []
+        Records = []
 
-    for ThisLine in self.__dict__[DictionaryKey]:
+        for ThisLine in self.__dict__[DictionaryKey]:
 
-        # smooth the line
-        if Smooth:
-            ThisLine.SmoothLine(WindowSize=11)
+            # smooth the line
+            if Smooth:
+                ThisLine.SmoothLine(WindowSize=11)
 
-        # check for geometry issues like loops
-        ThisLine.MakeSimple()
+            # check for geometry issues like loops
+            ThisLine.MakeSimple()
 
-        # retrieve the coordinates
-        X, Y = ThisLine.get_XY()
+            # retrieve the coordinates
+            X, Y = ThisLine.get_XY()
 
-        if Smooth and len(X) > 5:
-            XSmooth = X[1:-1]
-            YSmooth = Y[1:-1]
+            if Smooth and len(X) > 5:
+                XSmooth = X[1:-1]
+                YSmooth = Y[1:-1]
 
-            # calculate distance at regular intervals for final spline representation
-            Dist = np.zeros(XSmooth.shape)
-            Dist[1:] = np.sqrt(
-                (XSmooth[1:] - XSmooth[:-1])**2
-                + (YSmooth[1:] - YSmooth[:-1])**2
-            )
-            Dist = np.cumsum(Dist)
+                # calculate distance at regular intervals for final spline representation
+                Dist = np.zeros(XSmooth.shape)
+                Dist[1:] = np.sqrt(
+                    (XSmooth[1:] - XSmooth[:-1])**2
+                    + (YSmooth[1:] - YSmooth[:-1])**2
+                )
+                Dist = np.cumsum(Dist)
 
-            # build a spline representation of the line
-            Spline, u = splprep([XSmooth, YSmooth], u=Dist, s=0)
+                # build a spline representation of the line
+                Spline, u = splprep([XSmooth, YSmooth], u=Dist, s=0)
 
-            # resample it at smaller distance intervals
-            InterpDist = np.arange(0, Dist[-1], 1.0)
-            XSmooth, YSmooth = splev(InterpDist, Spline)
+                # resample it at smaller distance intervals
+                InterpDist = np.arange(0, Dist[-1], 1.0)
+                XSmooth, YSmooth = splev(InterpDist, Spline)
 
-            XSmooth = np.insert(XSmooth, 0, X[0])
-            YSmooth = np.insert(YSmooth, 0, Y[0])
+                XSmooth = np.insert(XSmooth, 0, X[0])
+                YSmooth = np.insert(YSmooth, 0, Y[0])
 
-            X = np.append(XSmooth, X[-1])
-            Y = np.append(YSmooth, Y[-1])
+                X = np.append(XSmooth, X[-1])
+                Y = np.append(YSmooth, Y[-1])
 
-        # get line node positions as a list
-        Coordinates = list(zip(X, Y))
+            # get line node positions as a list
+            Coordinates = list(zip(X, Y))
 
-        if len(Coordinates) < 2:
-            continue
+            if len(Coordinates) < 2:
+                continue
 
-        Geometries.append(LineString(Coordinates))
+            Geometries.append(LineString(Coordinates))
 
-        Records.append({
-            "Line_ID": str(ThisLine.ID),
-            "Method": str(self.Method)})
+            Records.append({
+                "Line_ID": str(ThisLine.ID),
+                "Method": str(self.Method)})
 
-    # create geopandas dataframe
-    GDF = gp.GeoDataFrame(Records, geometry=Geometries, crs=self.Projection)
+        # create geopandas dataframe
+        GDF = gp.GeoDataFrame(Records, geometry=Geometries, crs=self.Projection)
 
-    # change output CRS if required
-    if OutputCRS is not None:
-        GDF = GDF.to_crs(OutputCRS)
+        # change output CRS if required
+        if OutputCRS is not None:
+            GDF = GDF.to_crs(OutputCRS)
 
-    # write to file
-    GDF.to_file(GeoJSONFile, driver="GeoJSON")
+        # write to file
+        GDF.to_file(GeoJSONFile, driver="GeoJSON")
     
     def WritePatchesShp(self, DictionaryKey1, DictionaryKey2, PatchShp, Smooth=True):
 
