@@ -722,22 +722,23 @@ class Coast:
         WL.fields = self.Fields[1:] 
         i=0
 
-        for Line in self.__dict__[DictionaryKey]:
+        for ThisLine in self.__dict__[DictionaryKey]:
             
             if Smooth:
                 Line.SmoothLine(WindowSize=11)
             
             # Find Loops
-            Line.MakeSimple()
+            ThisLine.MakeSimple()
             
             # get line node positions
-            X, Y = Line.get_XY()
+            X, Y = ThisLine.get_XY()
             
             if Smooth and len(X) > 5:
 
                 XSmooth = X[1:-1]
                 YSmooth = Y[1:-1]
-                # calculate distance
+                
+                # calculate distance at regular intervals for final spline representation
                 Dist = np.zeros(XSmooth.shape)
                 Dist[1:] = np.sqrt((XSmooth[1:] - XSmooth[:-1])**2 + (YSmooth[1:] - YSmooth[:-1])**2)
                 Dist = np.cumsum(Dist)
@@ -758,7 +759,7 @@ class Coast:
             WriteLine = [np.column_stack([X,Y]).tolist()]
             
             # generate record
-            Record = [str(Line.ID),str(self.Method)]
+            Record = [str(ThisLine.ID), str(self.Method)]
             
             # write line and record
             WL.line(WriteLine)
@@ -769,11 +770,95 @@ class Coast:
         
         # create the projection file    
         f = open(CoastShp.rstrip("shp")+"prj","w")
-        
         f.write(self.Projection)
-        
         f.close()
-        
+
+    def WriteLinesGeoJSON(self, DictionaryKey, GeoJSONFile, Smooth=False, OutputCRS="EPSG:4326"):
+    
+    """
+    Writes the contents of a list of line objects to polyline shape file
+    List of line objects is part of the Coast object and identified by 
+    the dictionary key
+
+    Parameters
+    ----------
+    DictionaryKey : str
+        Name of the Coast attribute containing the Line objects.
+
+    GeoJSONFile : str
+        Output GeoJSON filename.
+
+    Smooth : bool, optional
+        Option to smooth line geometries before writing.
+
+    OutputCRS : str or None, optional
+        Output CRS. GeoJSON intended for web mapping should normally use
+        EPSG:4326. Set to None to retain the source projection.
+    """
+
+    print("Coast.WriteLinesGeoJSON: Writing lines to GeoJSON")
+
+    Geometries = []
+    Records = []
+
+    for ThisLine in self.__dict__[DictionaryKey]:
+
+        # smooth the line
+        if Smooth:
+            ThisLine.SmoothLine(WindowSize=11)
+
+        # check for geometry issues like loops
+        ThisLine.MakeSimple()
+
+        # retrieve the coordinates
+        X, Y = ThisLine.get_XY()
+
+        if Smooth and len(X) > 5:
+            XSmooth = X[1:-1]
+            YSmooth = Y[1:-1]
+
+            # calculate distance at regular intervals for final spline representation
+            Dist = np.zeros(XSmooth.shape)
+            Dist[1:] = np.sqrt(
+                (XSmooth[1:] - XSmooth[:-1])**2
+                + (YSmooth[1:] - YSmooth[:-1])**2
+            )
+            Dist = np.cumsum(Dist)
+
+            # build a spline representation of the line
+            Spline, u = splprep([XSmooth, YSmooth], u=Dist, s=0)
+
+            # resample it at smaller distance intervals
+            InterpDist = np.arange(0, Dist[-1], 1.0)
+            XSmooth, YSmooth = splev(InterpDist, Spline)
+
+            XSmooth = np.insert(XSmooth, 0, X[0])
+            YSmooth = np.insert(YSmooth, 0, Y[0])
+
+            X = np.append(XSmooth, X[-1])
+            Y = np.append(YSmooth, Y[-1])
+
+        # get line node positions as a list
+        Coordinates = list(zip(X, Y))
+
+        if len(Coordinates) < 2:
+            continue
+
+        Geometries.append(LineString(Coordinates))
+
+        Records.append({
+            "Line_ID": str(ThisLine.ID),
+            "Method": str(self.Method)})
+
+    # create geopandas dataframe
+    GDF = gp.GeoDataFrame(Records, geometry=Geometries, crs=self.Projection)
+
+    # change output CRS if required
+    if OutputCRS is not None:
+        GDF = GDF.to_crs(OutputCRS)
+
+    # write to file
+    GDF.to_file(GeoJSONFile, driver="GeoJSON")
     
     def WritePatchesShp(self, DictionaryKey1, DictionaryKey2, PatchShp, Smooth=True):
 
