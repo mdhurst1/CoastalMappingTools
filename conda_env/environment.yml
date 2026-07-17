@@ -1,7 +1,8 @@
 name: CMT
+
 channels:
   - conda-forge
-channel_priority: strict
+
 dependencies:
   # python
   - python=3.12

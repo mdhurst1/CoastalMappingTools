@@ -135,8 +135,8 @@ venv.bak/
 /site
 
 # Ignore Results Folders if in repo
-./results/
-./Results
+results/
+Results/
 
 # mypy
 .mypy_cache/

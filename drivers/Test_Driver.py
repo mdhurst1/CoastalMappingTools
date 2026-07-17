@@ -12,7 +12,8 @@ Example configured by MH 3/7/26
 """
 
 # import modules needed to run the tools
-import sys, pickle, pathlib
+import sys, pickle
+from pathlib import Path
 
 # add src path to find custom modules
 sys.path.append("../")
@@ -21,8 +22,9 @@ sys.path.append("../")
 from CMT.Coast import *
 
 # define file names for analysis
-DataPath = pathlib.Path("../Example_Data/Montrose/")
-ResultsPath = pathlib.Path("../Results/Montrose/")
+ScriptPath = Path(__file__).resolve().parent
+DataPath = ScriptPath.parent / "Example_Data" / "Montrose"
+ResultsPath = ScriptPath.parent / "Results" / "Montrose"
 
 if not ResultsPath.exists(): # checks if geometry folder exists, if not create
     ResultsPath.mkdir(parents=True, exist_ok=True)
@@ -49,6 +51,8 @@ TransectSpacing = 10.
 print("Creating New Coast Object") # if saved geometry not exist
 
 # SET UP THE COAST FROM -10m Contour
+print(BaselinePath)
+
 MontroseCoast = Coast(str(BaselinePath), MinLength=MinLength)
     
 # may need to think carefully about how much to smooth

@@ -765,10 +765,10 @@ class Coast:
         # open new shapefile        
         WL = shapefile.Writer(CoastShp,shapeType=shapefile.POLYLINE)
                
-        # Create Fields
-        self.Fields = [('DeletionFlag','C',1,0),['Line_ID', 'C', 3, 0],['Method', 'C', 5, 0]]
-        WL.fields = self.Fields[1:] 
-        i=0
+        # Create fields
+        self.Fields = [("Line_ID", "C", 3, 0), ("Method", "C", 5, 0),]
+        for field in self.Fields:
+            WL.field(*field)
 
         for ThisLine in self.__dict__[DictionaryKey]:
             
@@ -817,9 +817,7 @@ class Coast:
         WL.close()
         
         # create the projection file    
-        f = open(CoastShp.rstrip("shp")+"prj","w")
-        f.write(self.Projection)
-        f.close()
+        CoastShp.with_suffix(".prj").write_text(self.Projection)
 
     def WriteLinesGeoJSON(self, DictionaryKey, GeoJSONFile, Smooth=False, OutputCRS="EPSG:4326"):
     
