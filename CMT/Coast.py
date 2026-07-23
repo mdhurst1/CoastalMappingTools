@@ -762,87 +762,49 @@ class Coast:
         # print action to screen
         print("Coast.WriteLinesShp: Writing a list of lines to a polyline shapefile")
 
-        # open new shapefile        
-        WL = shapefile.Writer(CoastShp,shapeType=shapefile.POLYLINE)
-               
-        # Create fields
-        self.Fields = [("Line_ID", "C", 3, 0), ("Method", "C", 5, 0),]
-        for field in self.Fields:
-            WL.field(*field)
-
-        for ThisLine in self.__dict__[DictionaryKey]:
-            
-            if Smooth:
-                ThisLine.SmoothLine(WindowSize=11)
-            
-            # Find Loops
-            ThisLine.MakeSimple()
-            
-            # get line node positions
-            X, Y = ThisLine.get_XY()
-            
-            if Smooth and len(X) > 5:
-
-                XSmooth = X[1:-1]
-                YSmooth = Y[1:-1]
-                
-                # calculate distance at regular intervals for final spline representation
-                Dist = np.zeros(XSmooth.shape)
-                Dist[1:] = np.sqrt((XSmooth[1:] - XSmooth[:-1])**2 + (YSmooth[1:] - YSmooth[:-1])**2)
-                Dist = np.cumsum(Dist)
-                
-                # build a spline representation of the line
-                Spline, u = splprep([XSmooth, YSmooth], u=Dist, s=0)
-
-                # resample it at smaller distance intervals
-                Interp_Dist = np.arange(0, Dist[-1], 1.)
-                XSmooth, YSmooth = splev(Interp_Dist, Spline)
-
-                XSmooth = np.insert(XSmooth,0,X[0])
-                YSmooth = np.insert(YSmooth,0,Y[0])
-                X = np.append(XSmooth,X[-1])
-                Y = np.append(YSmooth,Y[-1])
-            
-            # get line node positions
-            WriteLine = [np.column_stack([X,Y]).tolist()]
-            
-            # generate record
-            Record = [str(ThisLine.ID), str(self.Method)]
-            
-            # write line and record
-            WL.line(WriteLine)
-            WL.record(*Record) ####### ISSUE WITH RECORDS NEEDS FIXING ########
-            
-        # close the shapefiles and clean up
-        WL.close()
+        # call new writelines function, this retains backward compatibility
+        self.WriteLines(DictionaryKey, CoastShp, Smooth=False)
         
-        # create the projection file    
-        CoastShp.with_suffix(".prj").write_text(self.Projection)
 
-    def WriteLinesGeoJSON(self, DictionaryKey, GeoJSONFile, Smooth=False, OutputCRS="EPSG:4326"):
+    def WriteLines(self, DictionaryKey, OutputFile, Smooth=False):
     
         """
-        Writes the contents of a list of line objects to a geojson
+        Writes the contents of a list of line objects to a file
         List of line objects is part of the Coast object and identified by 
         the dictionary key
+
+        Output coordinate system will be the same as the coast object
+        unless output format is geojson, in which case it will convert 
+        to EPSG:4326
+
+        File format is inferred from file extension
+
+        MDH July 2026
 
         Parameters
         ----------
         DictionaryKey : str
             Name of the Coast attribute containing the Line objects.
 
-        GeoJSONFile : str
-            Output GeoJSON filename.
+        OutputFile : str or pathlib.Path
+            Output filename.
 
         Smooth : bool, optional
-            Option to smooth line geometries before writing.
+            Smooth line geometries before writing.
 
-        OutputCRS : str or None, optional
-            Output CRS. GeoJSON intended for web mapping should normally use
-            EPSG:4326. Set to None to retain the source projection.
         """
 
-        print("Coast.WriteLinesGeoJSON: Writing lines to GeoJSON")
+        # get file format from output file extension
+        if Format is None:
+            ExtensionFormats = {".shp": "Shapefile", ".geojson": "GeoJSON"}
+
+        try:
+            Format = ExtensionFormats[OutputFile.suffix.lower()]
+        except KeyError:
+            raise ValueError("Could not infer output format from extension "
+                f"'{OutputFile.suffix}'. Specify Format explicitly.")
+
+        print(f"Coast.WriteLines: Writing a list of lines as {Format}")
 
         Geometries = []
         Records = []
@@ -896,15 +858,21 @@ class Coast:
                 "Line_ID": str(ThisLine.ID),
                 "Method": str(self.Method)})
 
+
         # create geopandas dataframe
         GDF = gp.GeoDataFrame(Records, geometry=Geometries, crs=self.Projection)
 
-        # change output CRS if required
-        if OutputCRS is not None:
-            GDF = GDF.to_crs(OutputCRS)
-
         # write to file
-        GDF.to_file(GeoJSONFile, driver="GeoJSON")
+        if Format == "GeoJSON":
+
+            # GeoJSON output uses geographic WGS 84 coordinates
+            GDF = GDF.to_crs("EPSG:4326")
+            GDF.to_file(OutputFile, driver="GeoJSON")
+
+        elif Format == "Shapefile":
+
+            # Shapefile retains the source projection
+            GDF.to_file(OutputFile, driver="ESRI Shapefile")
     
     def WritePatchesShp(self, DictionaryKey1, DictionaryKey2, PatchShp, Smooth=True):
 
