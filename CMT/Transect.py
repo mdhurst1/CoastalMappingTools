@@ -3684,8 +3684,51 @@ class Transect:
         Index = np.argmin(self.HistoricShorelinesDates)
         Position = self.HistoricShorelinesPositions[Index][0]
         return Position 
+
+    def get_Geometry(self):
+
+        """
+        Return the transect geometry as a Shapely LineString.
+
+        MDH, July 2026
+
+        """
+
+        # get coordinates
+        X = np.asarray([self.StartNode.X, self.EndNode.X])
+        Y = np.asarray([self.StartNode.Y, self.EndNode.Y])
+
+        # check length
+        if len(X) < 2:
+            return None
+
+        # return linestring object
+        return LineString(zip(X, Y))
     
-    
+    def get_Record(self):
+
+        """
+        Return the standard output attributes for the transect.
+
+        MDH, July 2026
+
+        """
+        
+        return {
+            "LineID": int(LineID), "TransectID": int(self.ID),
+            "Cliff_H": self.CliffHeight, "Cliff_S": self.CliffSlope,
+            "Rocky": int(self.Rocky),
+            "Bar_FH": self.FrontHeight, "Bar_FS": self.FrontSlope,
+            "Bar_BH": self.BackHeight, "Bar_BS": self.BackSlope,
+            "Bar_ToeW": self.ToeWidth, "Bar_TopW": self.TopWidth,
+            "Bar_Volume": self.BarrierVolume, "Crest_Elev": self.CrestElevation,
+            "ST_W_low": self.ExtremeWidths[0], "ST_V_low": self.ExtremeVolumes[0],
+            "ST_W_med": self.ExtremeWidths[1], "ST_V_med": self.ExtremeVolumes[1],
+            "ST_W_high": self.ExtremeWidths[2], "ST_V_high": self.ExtremeVolumes[2],
+            "LT_W_low": self.ExtremeTotalWidths[0], "LT_V_low": self.ExtremeTotalVolumes[0],
+            "LT_W_med": self.ExtremeTotalWidths[1], "LT_V_med": self.ExtremeTotalVolumes[1],
+            "LT_W_high": self.ExtremeTotalWidths[2], "LT_V_high": self.ExtremeTotalVolumes[2]
+        }
 
     def Write(self, Folder=os.getcwd(), Filename="", delimiter=","):
         

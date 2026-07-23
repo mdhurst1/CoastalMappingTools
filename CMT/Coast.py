@@ -1003,84 +1003,63 @@ class Coast:
         f.close()
 
     def WriteTransectsShp(self, TransectsShp):
-
         """
         Writes the transects of a Coast object to polyline shape file
-
         builds a large attribute table with all transect properties
 
         MDH, June 2019
+        Updated July 2026 to maintain backward compatibility after new write functions
 
         """
 
-        # print action to screen
-        print("Coast.WriteTransectsShp: Writing coastal transects and attributes to a shapefile")
 
-        # open new shapefile        
-        WL = shapefile.Writer(TransectsShp,shapeType=shapefile.POLYLINE)
-        
+    def WriteTransects(self, OutputFile):
+
+        """
+        Writes the transects of a Coast object to file and
+        builds a large attribute table with all transect properties
+
+        MDH, July 2026
+
+        """
+
+        # Infer format from the file extension
+        ExtensionFormats = {".shp": "Shapefile", ".geojson": "GeoJSON"}
+
+        try:
+            Format = ExtensionFormats[OutputFile.suffix.lower()]
+        except KeyError:
+            raise ValueError("Could not infer output format from extension "
+                f"'{OutputFile.suffix}'. Specify Format explicitly.")
+
+        # print action to screen
+        print(f"Coast.WriteTransects: Writing coastal transects and attributes as {Format}")
+
         # Check length of extreme water levels
         if len(self.ExtremeWaterLevels) != 3:
             self.ExtremeWaterLevels = [[],[],[]]
 
-        # Create Fields
-        Fields = [('DeletionFlag','C',1,0), ['LineID', 'C', 3, 0], ['TransectID', 'C', 5, 0], 
-        ['Cliff_H','N', 5, 2],['Cliff_S','N', 5, 2],
-        ['Rocky','N', 2, 1], 
-        ['Bar_FH','N', 5, 2], ['Bar_FS','N', 5, 2],
-        ['Bar_BH','N', 5, 2], ['Bar_BS','N', 5, 2],
-        ['Bar_ToeW','N', 6, 2], ['Bar_TopW','N', 6, 2],
-        ['Bar_Volume','N', 7, 2], ['Crest_Elev','N', 5, 2], 
-        ['ST_W_low','N', 6, 2], ['ST_V_low','N', 7, 2],
-        ['ST_W_med','N', 6, 2], ['ST_V_med','N', 7, 2],
-        ['ST_W_high','N', 6, 2], ['ST_V_high','N', 7, 2],
-        ['LT_W_low','N', 6, 2], ['LT_V_low','N', 7, 2],
-        ['LT_W_med','N', 6, 2], ['LT_V_med','N', 7, 2],
-        ['LT_W_high','N', 6, 2], ['LT_V_high','N', 7, 2]]
+        # Create geometry list to build
+        Geometries = []
+        Records = []        
         
-        WL.fields = Fields[1:]
+        for ThisLine in self.CoastLines:
+            for ThisTransect in ThisLine.Transects:
 
-        
-        for Line in self.CoastLines:
-            for Transect in Line.Transects:
+                # get transect geometry and record
+                Geometries.append(ThisTransect.get_Geometry)
+                Records.append(ThisTransect.get_Record)
 
-                # get transect node positions
-                X, Y = Transect.get_XY()
-                
-                WriteTransect = [np.column_stack([X,Y]).tolist()]
+        # build the geodataframe
+        GDF = gp.GeoDataFrame(Records, geometry=Geometries, crs=self.Projection)
 
-                # Create the record this could become a function in transect object...
-                Record = [str(Line.ID), str(Transect.ID), Transect.CliffHeight, Transect.CliffSlope, 
-                            Transect.Rocky,
-                            Transect.FrontHeight, Transect.FrontSlope, 
-                            Transect.BackHeight, Transect.BackSlope,
-                            Transect.ToeWidth, Transect.TopWidth,
-                            Transect.BarrierVolume, Transect.CrestElevation,
-                            Transect.ExtremeWidths[0], Transect.ExtremeVolumes[0],
-                            Transect.ExtremeWidths[1], Transect.ExtremeVolumes[1],
-                            Transect.ExtremeWidths[2], Transect.ExtremeVolumes[2],
-                            Transect.ExtremeTotalWidths[0], Transect.ExtremeTotalVolumes[0],
-                            Transect.ExtremeTotalWidths[1], Transect.ExtremeTotalVolumes[1],
-                            Transect.ExtremeTotalWidths[2], Transect.ExtremeTotalVolumes[2]]
+        # if geojson convert coordinates before writing
+        if Format == "GeoJSON":
+            GDF = GDF.to_crs("EPSG:4326")
+            GDF.to_file(OutputFile, driver="GeoJSON", index=False)
 
-                # write transect and record
-                WL.line(WriteTransect)
-                try:
-                    WL.record(*Record) 
-                except:
-                    print(Transect.ID)
-                    print(Record)
-                    #print(Transect.ExtremeWidths)
-                    sys.exit()
-                
-        
-        # close the shapefiles and clean up
-        WL.close()
-            
-        # create the projection file    
-        f = open(TransectsShp.rstrip("shp")+"prj","w")
-        f.write(self.Projection)
-        f.close()
+        else:
+            GDF.to_file(OutputFile, driver="ESRI Shapefile", index=False)
     
     def WriteFutureTransectsShp(self, TransectsShp):
 

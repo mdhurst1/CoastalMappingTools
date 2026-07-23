@@ -65,13 +65,14 @@ MontroseCoast.CheckOrientation(str(BaselinePath),str(MLWSPath))
 MontroseCoast.WriteCoast(ResultsPath / "Montrose_Smoothed_Baseline.shp")
 MontroseCoast.WriteCoast(ResultsPath / "Montrose_Smoothed_Baseline.geojson")
 
-"""
+
 # create some initial dummy transects extending 500m offshore and inland
 MontroseCoast.GenerateTransects(TransectSpacing, 500, 500, CheckTopology=False) # transect lengths
 
 # write initial transects
 MontroseCoast.WriteTransectsShp(str(ResultsPath / "Montrose_Raw_Transects.shp"))            
 
+"""
 ### loop over all shapefiles in MHWS folder to sample MHWS positions
 for shp in MHWSPath.glob("*.shp"):
     MontroseCoast.ExtractIndicatorPositions(str(shp), "MHWS", "Date")
