@@ -6517,6 +6517,78 @@ class Coast:
                 Transect.Rocky = GroupList[Counter]
                 Counter += 1
 
+    def _SmoothOutputLine(self, X, Y, Interval=1.):
+
+        """
+        Smooth and resample a line while preserving the original endpoints.
+
+        A cubic spline is fitted through the interior vertices of the line and
+        resampled at regular intervals along its length. The first and last
+        vertices are retained unchanged to preserve the original line extent.
+
+        Parameters
+        ----------
+        X : array_like
+            X coordinates of the line vertices.
+
+        Y : array_like
+            Y coordinates of the line vertices.
+
+        Interval : float, optional
+            Distance between successive resampled vertices, in the units of the
+            line's coordinate reference system (typically metres). Smaller values
+            produce smoother, denser output lines at the expense of larger file
+            sizes. Default is 1.0.
+
+        Returns
+        -------
+        XOutput : ndarray
+            Smoothed and resampled X coordinates.
+
+        YOutput : ndarray
+            Smoothed and resampled Y coordinates.
+    
+        MDH, July 2026
+
+        """
+
+        X = np.asarray(X)
+        Y = np.asarray(Y)
+
+        XInterior = X[1:-1]
+        YInterior = Y[1:-1]
+
+        SegmentLengths = np.sqrt(np.diff(XInterior) ** 2 + np.diff(YInterior) ** 2)
+
+        Dist = np.insert(np.cumsum(SegmentLengths), 0, 0.0,)
+
+        # Remove coincident points
+        Keep = np.concatenate(([True], np.diff(Dist) > 0))
+        XInterior = XInterior[Keep]
+        YInterior = YInterior[Keep]
+        Dist = Dist[Keep]
+
+        if len(Dist) < 2 or Dist[-1] <= 0:
+            return X, Y
+
+        # setup the spline for smoothing
+        Spline, _ = splprep([XInterior, YInterior], u=Dist, s=0, k=min(3, len(Dist) - 1))
+
+        # get regular distances for resampling smoothed line
+        InterpDist = np.arange(0., Dist[-1], Interval)
+
+        if len(InterpDist) == 0:
+            return X, Y
+
+        # get interpolated coordinates from the spline
+        XInterpolated, YInterpolated = splev(InterpDist, Spline)
+
+        # reinstate start and end nodes
+        XOutput = np.concatenate(([X[0]], XInterpolated, [X[-1]]))
+        YOutput = np.concatenate(([Y[0]], YInterpolated, [Y[-1]]))
+
+        return XOutput, YOutput
+
     def GetFutureShoreLinesProximity(self, BufferDistance):
 
         Lines = []
