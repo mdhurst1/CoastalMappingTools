@@ -134,8 +134,12 @@ MontroseCoast.WriteFutureShorelinesShp(str(ResultsPath / ("Montrose_Future.geojs
 Decades = [2050, 2100]
 for i, Decade in enumerate(Decades):
 
-    MontroseCoast.WriteErodedAreaShp(str(ResultsPath / ("Montrose_ErodedArea_" + str(Decade) + ".shp")), Year=Decade)
-    MontroseCoast.WriteErodedAreaShp(str(ResultsPath / ("Montrose_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
+    MontroseCoast.WriteErodedArea(str(ResultsPath / ("Montrose_ErodedArea_" + str(Decade) + ".shp")), Year=Decade)
+    MontroseCoast.WriteErodedArea(str(ResultsPath / ("Montrose_ErodedArea_" + str(Decade) + ".geojson")), Year=Decade)
+    MontroseCoast.WriteErodedArea(str(ResultsPath / ("Montrose_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
+    MontroseCoast.WriteErodedArea(str(ResultsPath / ("Montrose_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".geojson")), StartYear = Decades[i-1], Year=Decade)
     
-    MontroseCoast.WriteErosionProximityShp(str(ResultsPath / ("Montrose_Influence_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
-    MontroseCoast.WriteErosionProximityShp(str(ResultsPath / ("Montrose_Vicinity_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
+    MontroseCoast.WriteErosionBuffer(str(ResultsPath / ("Montrose_Influence_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
+    MontroseCoast.WriteErosionBuffer(str(ResultsPath / ("Montrose_Influence_" + str(Decade) + ".geojson")), Year=Decade, BufferDistance = 10.)
+    MontroseCoast.WriteErosionBuffer(str(ResultsPath / ("Montrose_Vicinity_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
+    MontroseCoast.WriteErosionBuffer(str(ResultsPath / ("Montrose_Vicinity_" + str(Decade) + ".geojson")), Year=Decade, BufferDistance = 60.)

@@ -349,11 +349,7 @@ class Coast:
             raise ValueError("Could not infer output format from extension "
                 f"'{OutputFile.suffix}'. Specify Format explicitly.")
 
-        print(f"Coast.WriteErodedArea: Writing erosion area from {StartYear} to {Year} as patches in {Format}")
-
-        # extract future shoreline positions from transects
-        self.GetFutureShoreLines()
-
+        
         # check date formatting for indices if statement
         if isinstance(Year, str):
             Year = datetime.strptime(Year, "%Y-%m-%d")
@@ -368,6 +364,11 @@ class Coast:
             StartYear = datetime(StartYear, 1, 1)
         else:
             raise TypeError("Year must be a datetime, YYYY-MM-DD string, or integer year")
+
+        print(f"Coast.WriteErodedArea: Writing erosion area from {StartYear} to {Year} as patches in {Format}")
+
+        # extract future shoreline positions from transects
+        self.GetFutureShoreLines()
         
         # get lists of lines for year of prediction and most recent shoreline position
         FutureLines = [Line for Line in self.FutureShoreLines if Line.Year == Year]
@@ -384,7 +385,7 @@ class Coast:
             raise ValueError("The start and future shoreline lists contain different numbers of lines")
 
         Fields={"StartYear": StartYear.strftime("%Y-%m-%d"), "EndYear": Year.strftime("%Y-%m-%d")}
-        self.WritePatches(FutureLines, StartLines, OutputFile, Fields, Smooth)
+        self.WritePatches(FutureLines, StartLines, OutputFile, Smooth, Fields)
 
     def WriteErosionBuffer(self, OutputFile, BufferDistance=10., Year='2100-01-01', Smooth=True):
 
@@ -448,14 +449,14 @@ class Coast:
         SelectedBufferLines = [Line for Line in BufferLines if Line.Year == Year]
 
         # sense check
-        if not FutureLines:
+        if not SelectedFutureLines:
             raise ValueError(f"No future shorelines found for {Year:%Y-%m-%d}")
 
         if not SelectedBufferLines:
             raise ValueError(f"No proximity buffer lines found for {Year:%Y-%m-%d}")
 
-        if len(FutureLines) != len(SelectedBufferLines):
-        raise ValueError("The number of future shorelines does not match the number of buffer lines")
+        if len(SelectedFutureLines) != len(SelectedBufferLines):
+            raise ValueError("The number of future shorelines does not match the number of buffer lines")
 
         # Write polygons directly from the in-memory lines
         ExtraFields = {"Year": Year.strftime("%Y-%m-%d"), "BufferDist": BufferDistance,}
@@ -1003,9 +1004,11 @@ class Coast:
 
             # retrieve coordinates
             X1, Y1 = Line1.get_XY()
-            X1, Y1 = self._SmoothOutputLine(X1, Y1)
             X2, Y2 = Line2.get_XY()
-            X2, Y2 = self._SmoothOutputLine(X2, Y2)
+
+            if Smooth:
+                X1, Y1 = self._SmoothOutputLine(X1, Y1)
+                X2, Y2 = self._SmoothOutputLine(X2, Y2)
 
             # convert x/y arrays into coordinate pairs
             Coordinates1 = list(zip(X1, Y1))
@@ -1031,7 +1034,7 @@ class Coast:
             # build the record
             Record = {"Poly_ID": str(Line1.ID), "Method": str(self.Method)}
 
-            if ExtraFields:
+            if ExtraFields is not None:
                 Record.update(ExtraFields)
 
             # append to lists
