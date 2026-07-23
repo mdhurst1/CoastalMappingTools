@@ -904,102 +904,137 @@ class Coast:
 
             # Shapefile retains the source projection
             GDF.to_file(OutputFile, driver="ESRI Shapefile")
-    
-    def WritePatchesShp(self, DictionaryKey1, DictionaryKey2, PatchShp, Smooth=True):
+
+    def WritePatches(self, Lines1, Lines2, OutputFile, Smooth=True, ExtraFields=None):
 
         """
+        Write polygon features between corresponding pairs of line objects.
 
-        Writes polygon patches between two lines to a polygon shapefile
+        Each output polygon is constructed by following a line from ``Lines1``
+        in its original coordinate order and then following the corresponding
+        line from ``Lines2`` in reverse order. This creates a closed polygon
+        representing the area between the two lines.
 
-        Dictionary Key refers
+        This method can be used, for example, to write areas of coastal erosion
+        or accretion between shorelines representing different dates.
 
-        MDH, June 2019
-
-        """
-
-        # print action to screen
-        print("Coast.WritePatchesShp: Writing patch between two lines to a polygon shapefile")
-
-        if len(self.__dict__[DictionaryKey1]) == 0:
-            print("Coast.WritePatchesShp (Error): Trying to write from empty list of lines", DictionaryKey1, DictionaryKey2)
-            
-        # open new shapefile        
-        WS = shapefile.Writer(PatchShp,shapeType=shapefile.POLYGON)
-       
-        # Create Fields
-        self.Fields = [('DeletionFlag','C',1,0),['Poly_ID', 'C', 3, 0],['Method', 'C', 5, 0]]
-        WS.fields = self.Fields[1:] 
-
-        for Line1, Line2 in zip(self.__dict__[DictionaryKey1],self.__dict__[DictionaryKey2]):
-            
-            # get line node positions
-            X1, Y1 = Line1.get_XY()
-
-            if Smooth and len(X1) > 5:
-
-                XSmooth = X1[1:-1]
-                YSmooth = Y1[1:-1]
-                
-                # calculate distance
-                Dist = np.zeros(XSmooth.shape)
-                Dist[1:] = np.sqrt((XSmooth[1:] - XSmooth[:-1])**2 + (YSmooth[1:] - YSmooth[:-1])**2)
-                Dist = np.cumsum(Dist)
-                
-                # build a spline representation of the line
-                Spline, u = splprep([XSmooth, YSmooth], u=Dist, s=0)
-
-                # resample it at smaller distance intervals
-                Interp_Dist = np.arange(0, Dist[-1], 1.)
-                XSmooth, YSmooth = splev(Interp_Dist, Spline)
-
-                XSmooth = np.insert(XSmooth,0,X1[0])
-                YSmooth = np.insert(YSmooth,0,Y1[0])
-                X1 = np.append(XSmooth,X1[-1])
-                Y1 = np.append(YSmooth,Y1[-1])
-
-            # get line node positions
-            X2, Y2 = Line2.get_XY()
-
-            if Smooth and len(X2) > 5:
-
-                XSmooth = X2[1:-1]
-                YSmooth = Y2[1:-1]
-                # calculate distance
-                Dist = np.zeros(XSmooth.shape)
-                Dist[1:] = np.sqrt((XSmooth[1:] - XSmooth[:-1])**2 + (YSmooth[1:] - YSmooth[:-1])**2)
-                Dist = np.cumsum(Dist)
-                
-                # build a spline representation of the line
-                Spline, u = splprep([XSmooth, YSmooth], u=Dist, s=0)
-
-                # resample it at smaller distance intervals
-                Interp_Dist = np.arange(0, Dist[-1], 1.)
-                XSmooth, YSmooth = splev(Interp_Dist, Spline)
-
-                XSmooth = np.insert(XSmooth,0,X2[0])
-                YSmooth = np.insert(YSmooth,0,Y2[0])
-                X2 = np.append(XSmooth,X2[-1])
-                Y2 = np.append(YSmooth,Y2[-1])
-
-            # combine, reversing the order of the second line to make a patch
-            X = np.concatenate((X1,X2[::-1]))
-            Y = np.concatenate((Y1,Y2[::-1]))
-            WritePoly = [np.column_stack([X,Y]).tolist()]
-            
-            # generate record
-            Record = [str(Line1.ID), str(self.Method)]
-
-            # write line and record
-            WS.poly(WritePoly)
-            WS.record(*Record) 
+        Parameters
+        ----------
+        Lines1 : sequence of Line
+            First collection of line objects. Each line must correspond by
+            position to a line in ``Lines2``.
+        Lines2 : sequence of Line
+            Second collection of line objects. Must contain the same number of
+            line objects as ``Lines1``.
+        OutputFile : str or pathlib.Path
+            Path of the output vector file. The output format is inferred from
+            the file extension.
         
-        # close the shapefiles and clean up
-        WS.close()
-            
-        # create the projection file    
-        f = open(PatchShp.rstrip("shp")+"prj","w")
-        f.write(self.Projection)
-        f.close()
+        MDH, July 2026
+        """
+
+        # check outputfile is path and folder exists
+        OutputFile = Path(OutputFile)
+        Extension = OutputFile.suffix.lower()
+
+        # get file format from output file extension
+        ExtensionFormats = {".shp": "ESRI Shapefile", ".geojson": "GeoJSON"}
+
+        try:
+            Format = ExtensionFormats[OutputFile.suffix.lower()]
+        except KeyError:
+            raise ValueError(f"Could not infer output format from extension '{OutputFile.suffix}'.")
+        
+        # to write patches we need two sets of lines the same length
+        if len(Lines1) != len(Lines2):
+            raise ValueError("Lines1 and Lines2 must contain the same number of lines")
+
+        Geometries = []
+        Records = []
+
+        # loop through lines in pairs
+        for Line1, Line2 in zip(Lines1, Lines2):
+
+            # retrieve coordinates
+            X1, Y1 = Line1.get_XY()
+            X1, Y1 = self._SmoothOutputLine(X1, Y1)
+            X2, Y2 = Line2.get_XY()
+            X2, Y2 = self._SmoothOutputLine(X2, Y2)
+
+            # convert x/y arrays into coordinate pairs
+            Coordinates1 = list(zip(X1, Y1))
+            Coordinates2 = list(zip(X2, Y2))
+
+            if len(Coordinates1) < 2 or len(Coordinates2) < 2:
+                continue
+
+            # combine into a ring, reversing the order of the second set of coordinates
+            Ring = Coordinates1 + Coordinates2[::-1]
+
+            # create polygon
+            PolygonGeometry = Polygon(Ring)
+
+            # check if empty
+            if PolygonGeometry.is_empty:
+                continue
+
+            # fix any topological issues with buffer(0) trick
+            if not PolygonGeometry.is_valid:
+                PolygonGeometry = PolygonGeometry.buffer(0)
+
+            # build the record
+            Record = {"Poly_ID": str(Line1.ID), "Method": str(self.Method)}
+
+            if ExtraFields:
+                Record.update(ExtraFields)
+
+            # append to lists
+            Geometries.append(PolygonGeometry)
+            Records.append(Record)
+
+        if not Geometries:
+            raise ValueError("No valid erosion polygons were created")
+
+        # create the geodataframe
+        GDF = gp.GeoDataFrame(Records, geometry=Geometries, crs=self.Projection)
+
+        # write to file
+        if Format == "GeoJSON":
+            GDF = GDF.to_crs("EPSG:4326")
+            GDF.to_file(OutputFile, driver="GeoJSON", index=False)
+
+        else:
+            GDF.to_file(OutputFile, driver="ESRI Shapefile", index=False)
+
+    def WritePatchesShp(self, DictionaryKey1, DictionaryKey2, PatchShp, Smooth=True, ExtraFields=None):
+
+        """
+        Legacy wrapper for WritePatches().
+
+        Parameters
+        ----------
+        DictionaryKey1 : str
+            Name of the first line collection stored on the Coast object.
+        DictionaryKey2 : str
+            Name of the second line collection stored on the Coast object.
+        PatchShp : str or pathlib.Path
+            Output shapefile path.
+        Smooth : bool, optional
+            Smooth line coordinates before constructing polygons.
+            Default is False.
+        ExtraFields : dict, optional
+            Additional attribute fields to write to every polygon feature.
+            Keys are field names and values are field values.
+            Default is None.
+
+        Returns
+        -------
+        
+        MDH, July 2026
+
+        """
+
+        self.WritePatches(self.__dict__[DictionaryKey1], self.__dict__[DictionaryKey2], PatchShp, Smooth=Smooth, ExtraFields=ExtraFields)
 
     def WritePointsShp(self, PointsShp):
         """
