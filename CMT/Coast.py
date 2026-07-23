@@ -354,13 +354,6 @@ class Coast:
         # extract future shoreline positions from transects
         self.GetFutureShoreLines()
 
-        # setup empty lists for geometries and records
-        Records = []
-        Geometries = []
-
-        # retrieve future shorelines
-        self.GetFutureShoreLines()
-
         # check date formatting for indices if statement
         if isinstance(Year, str):
             Year = datetime.strptime(Year, "%Y-%m-%d")
@@ -392,6 +385,81 @@ class Coast:
 
         Fields={"StartYear": StartYear.strftime("%Y-%m-%d"), "EndYear": Year.strftime("%Y-%m-%d")}
         self.WritePatches(FutureLines, StartLines, OutputFile, Fields, Smooth)
+
+    def WriteErosionBuffer(self, OutputFile, BufferDistance=10., Year='2100-01-01', Smooth=True):
+
+        """
+        Writes Erosion Buffer polygon patches for a given future shoreline
+
+        Parameters
+        ----------
+        ProximityShp : str or pathlib.Path
+            Path of the output polygon shapefile.
+        BufferDistance : float, optional
+            Distance, in map units, used to construct the proximity buffer.
+            Default is 10.0.
+        Year : datetime, str or int, optional
+            Date of the future shoreline to write. Strings must use
+            ``YYYY-MM-DD`` format. Integer values are interpreted as 1 January
+            of that year. Default is ``"2100-01-01"``.
+        Smooth : bool, optional
+            Smooth the shoreline and buffer-line coordinates before constructing
+            polygons. Default is True.
+            
+        MDH, July, 2026
+        
+
+        """
+        
+        # check output file is a path and create directory if needed
+        OutputFile = Path(OutputFile)
+        OutputFile.parent.mkdir(parents=True, exist_ok=True)
+
+        # get file format from output file extension
+        ExtensionFormats = {".shp": "Shapefile", ".geojson": "GeoJSON"}
+
+        try:
+            Format = ExtensionFormats[OutputFile.suffix.lower()]
+        except KeyError:
+            raise ValueError("Could not infer output format from extension "
+                f"'{OutputFile.suffix}'. Specify Format explicitly.")
+
+        print(f"Coast.WriteErosionBuffer: Writing a buffer of {BufferDistance}m on erosion at {Year} as patches in {Format}")
+
+        # Generate predicted shorelines and associated proximity lines
+        self.GetFutureShoreLines()
+        BufferLines = self.GetFutureShoreLinesProximity(BufferDistance)
+
+        # Normalise Year to datetime
+        if isinstance(Year, datetime):
+            pass
+        elif isinstance(Year, str):
+            try:
+                Year = datetime.strptime(Year, "%Y-%m-%d")
+            except ValueError as Error:
+                raise ValueError("Year must use YYYY-MM-DD format") from Error
+        elif isinstance(Year, int):
+            Year = datetime(Year, 1, 1)
+        else:
+            raise TypeError("Year must be a datetime, YYYY-MM-DD string, or integer year")
+
+        # Select shoreline and buffer lines for requested date
+        SelectedFutureLines = [Line for Line in self.FutureShoreLines if Line.Year == Year]
+        SelectedBufferLines = [Line for Line in BufferLines if Line.Year == Year]
+
+        # sense check
+        if not FutureLines:
+            raise ValueError(f"No future shorelines found for {Year:%Y-%m-%d}")
+
+        if not SelectedBufferLines:
+            raise ValueError(f"No proximity buffer lines found for {Year:%Y-%m-%d}")
+
+        if len(FutureLines) != len(SelectedBufferLines):
+        raise ValueError("The number of future shorelines does not match the number of buffer lines")
+
+        # Write polygons directly from the in-memory lines
+        ExtraFields = {"Year": Year.strftime("%Y-%m-%d"), "BufferDist": BufferDistance,}
+        self.WritePatches(SelectedFutureLines, SelectedBufferLines, OutputFile, Smooth=Smooth, ExtraFields=ExtraFields)
 
     def WriteErosionProximityShp(self, ProximityShp, BufferDistance=10., Year='2100-01-01', Smooth=True, tempWrite=False):
 
