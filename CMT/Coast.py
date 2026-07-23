@@ -461,43 +461,21 @@ class Coast:
         ExtraFields = {"Year": Year.strftime("%Y-%m-%d"), "BufferDist": BufferDistance,}
         self.WritePatches(SelectedFutureLines, SelectedBufferLines, OutputFile, Smooth=Smooth, ExtraFields=ExtraFields)
 
-    def WriteErosionProximityShp(self, ProximityShp, BufferDistance=10., Year='2100-01-01', Smooth=True, tempWrite=False):
+    def WriteErosionProximityShp(self, OutputFile, BufferDistance=10., Year='2100-01-01', Smooth=True):
 
         """
         Writes Erosion Proximity polygon patches for a given decade
 
         MDH, Feb, 2021
+
+        Modified and maintained for backward compatibility
+        
+        MDH, July 2026
         
         """
 
-        # retrieve future shorelines
-        self.GetFutureShoreLines()
-        Lines = self.GetFutureShoreLinesProximity(BufferDistance)
-        
-        # check date formatting for indices if statement
-        if isinstance(Year,str):
-            Year = datetime.strptime(Year,'%Y-%m-%d')
-        elif isinstance(Year,int):
-            Year = datetime(Year, 1, 1)
-        else:
-            sys.exit('Coast.ErosionProximityShp - input Year not in string format for conversion to datetime')
+        self.WriteErosionBuffer(self, OutputFile, BufferDistance, Year, Smooth)
 
-        # get lists of lines for year of prediction and most recent shoreline position
-        Indices = [i for i, Line in enumerate(self.FutureShoreLines) if Line.Year == Year]
-        self.WriteFutureLines = [self.FutureShoreLines[i] for i in Indices]
-        Indices = [i for i, Line in enumerate(Lines) if Line.Year == Year]
-        self.WriteBufferLines = [Lines[i] for i in Indices]
-        
-        # set up files to write
-        ErosionFutureShp = ProximityShp.split(".")[0]+"_temp.shp"
-        ErosionBufferShp = ProximityShp.split(".")[0]+"_temp2.shp"
-
-        # write lines then patches
-        if tempWrite:
-            self.WriteLinesShp("WriteFutureLines", ErosionFutureShp, Smooth)
-            self.WriteLinesShp("WriteBufferLines", ErosionBufferShp, Smooth)
-        self.WritePatchesShp("WriteFutureLines", "WriteBufferLines", ProximityShp, Smooth)
-    
     
     def WriteFutureShorelinesShp(self, FutureShoreLinesShp, Smooth=True):
 
