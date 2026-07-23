@@ -214,7 +214,7 @@ class Coast:
         # Create the output directory if it does not already exist.
         CoastFile.parent.mkdir(parents=True, exist_ok=True)
 
-        if Extension in [".shp", .geojson"]:
+        if Extension in [".shp", ".geojson"]:
             self.WriteLines("CoastLines", CoastFile, smooth)
 
         else:
@@ -405,7 +405,7 @@ class Coast:
 
         """
 
-        WriteFutureShorelines(FutureShorelinesShp, Smooth)
+        self.WriteFutureShorelines(FutureShoreLinesShp, Smooth)
 
     def WriteFutureShorelines(self, OutputFile, Smooth=True):
 
@@ -419,9 +419,12 @@ class Coast:
         MDH, July 2026
         """
 
+        # check output file is a path and create directory if needed
+        OutputFile = Path(OutputFile)
+        OutputFile.parent.mkdir(parents=True, exist_ok=True)
+
         # get file format from output file extension
-        if Format is None:
-            ExtensionFormats = {".shp": "Shapefile", ".geojson": "GeoJSON"}
+        ExtensionFormats = {".shp": "Shapefile", ".geojson": "GeoJSON"}
 
         try:
             Format = ExtensionFormats[OutputFile.suffix.lower()]
@@ -437,72 +440,58 @@ class Coast:
         # extract future shoreline positions from transects
         self.GetFutureShoreLines()
 
-        # print action to screen
-        print("Coast.WriteFutureShorelinesShp: Writing future MHWS line objects to polyline shapefiles")
+        # setup empty lists for geometries and records
+        Records = []
+        Geometries = []
 
-        # open new shapefile        
-        WL = shapefile.Writer(FutureShoreLinesShp,shapeType=shapefile.POLYLINE)
-       
-        # Create Fields
-        self.Fields = [('DeletionFlag','C',1,0),['Cell','C', 2, 0], ['SubCell','C', 2, 0], ['Line_ID', 'C', 20, 0],['Year','C', 10, 0],['Method','C', 5, 0]]
-        WL.fields = self.Fields[1:] 
-        
-        for Line in self.FutureShoreLines:
-            
+        for FutureLine in self.FutureShoreLines:
+
             if Smooth:
-                Line.SmoothLine(WindowSize=11)
+                FutureLine.SmoothLine(WindowSize=11)
 
-            # Find Loops
-            Line.MakeSimple() #LineString is not simple... Valid Geometry
-                
-            # get line node positions
-            # why are we not just recalling Line.SmoothLine here? What is different?
-            X, Y = Line.get_XY()
+            # check for complex topology and fix
+            FutureLine.MakeSimple()
+
+            X, Y = FutureLine.get_XY()
+
+            X = np.asarray(X)
+            Y = np.asarray(Y)
+
+            if len(X) < 2:
+                continue
 
             if Smooth and len(X) > 5:
+                X, Y = self._SmoothOutputLine(X, Y)
 
-                XSmooth = X[1:-1]
-                YSmooth = Y[1:-1]
-                # calculate distance
-                Dist = np.zeros(XSmooth.shape)
-                Dist[1:] = np.sqrt((XSmooth[1:] - XSmooth[:-1])**2 + (YSmooth[1:] - YSmooth[:-1])**2)
-                Dist = np.cumsum(Dist)
-                
-                # build a spline representation of the line
-                Spline, u = splprep([XSmooth, YSmooth], u=Dist, s=0)
-                
-                
-                # resample it at smaller distance intervals
-                Interp_Dist = np.arange(0, Dist[-1], 1.)
-                XSmooth, YSmooth = splev(Interp_Dist, Spline)
+            Geometry = LineString(zip(X, Y))
 
-                XSmooth = np.insert(XSmooth,0,X[0])
-                YSmooth = np.insert(YSmooth,0,Y[0])
-                X = np.append(XSmooth,X[-1])
-                Y = np.append(YSmooth,Y[-1])
-                
-            # convert to list for writing to shapefile
-            WriteLine = [np.column_stack([X,Y]).tolist()]
-            
-            # generate record
-            if self.Method == None:
-                import pdb
-                pdb.set_trace()
-            
-            LineYr_str = Line.Year.strftime('%Y-%m-%d') if isinstance(Line.Year, datetime) else str(Line.Year)
-            Record = [str(Line.Cell), str(Line.SubCell),str(Line.ID),str(LineYr_str), str(self.Method)]
+            if Geometry.is_empty:
+                continue
 
-            # write line and record
-            WL.line(WriteLine)
-            WL.record(*Record) ####### ISSUE WITH RECORDS NEEDS FIXING ########
+            LineYear = (FutureLine.Year.strftime("%Y-%m-%d") if isinstance(FutureLine.Year, datetime) else str(FutureLine.Year))
+
+            Record = {"Cell": str(FutureLine.Cell), "SubCell": str(FutureLine.SubCell),
+                    "Line_ID": str(FutureLine.ID), "Year": str(LineYear), "Method": str(self.Method)}
+
+            Geometries.append(Geometry)
+            Records.append(Record)
+
+        # check we're not empty
+        if not Records:
+            raise ValueError("No valid future shoreline geometries were generated.")
+
+        # setup geodataframe
+        GDF = gp.GeoDataFrame(Records, geometry=Geometries, crs=self.Projection)
         
-        # close the shapefiles and clean up
-        WL.close()
-            
-        # create the projection file    
-        f = open(FutureShoreLinesShp.rstrip("shp")+"prj","w")
-        f.write(self.Projection)
-        f.close()
+        # write to appropriate file format
+        if Format == "GeoJSON":
+
+            #convert if geojson
+            GDF = GDF.to_crs("EPSG:4326")
+            GDF.to_file(OutputFile, driver="GeoJSON", index=False)
+
+        else:
+            GDF.to_file(OutputFile, driver="ESRI Shapefile", index=False)   
 
     def WriteFutureUncertaintyShp(self, UncertaintyShp, Year=2100):
 
@@ -790,7 +779,7 @@ class Coast:
         print("Coast.WriteLinesShp: Writing a list of lines to a polyline shapefile")
 
         # call new writelines function, this retains backward compatibility
-        self.WriteLines(DictionaryKey, CoastShp, Smooth=False)
+        self.WriteLines(DictionaryKey, CoastShp, Smooth=Smooth)
 
 
     def WriteLines(self, DictionaryKey, OutputFile, Smooth=False):
@@ -822,8 +811,7 @@ class Coast:
         """
 
         # get file format from output file extension
-        if Format is None:
-            ExtensionFormats = {".shp": "Shapefile", ".geojson": "GeoJSON"}
+        ExtensionFormats = {".shp": "Shapefile", ".geojson": "GeoJSON"}
 
         try:
             Format = ExtensionFormats[OutputFile.suffix.lower()]
@@ -1086,7 +1074,16 @@ class Coast:
 
         else:
             GDF.to_file(OutputFile, driver="ESRI Shapefile", index=False)
-    
+
+    def WriteFutureTransectsShp(self, OutputFile):
+
+        """
+        Legacy function
+        
+        MDH, July 2026
+        """
+        self.WriteFutureTransects(OutputFile)
+
     def WriteFutureTransects(self, OutputFile):
 
         """
@@ -1097,6 +1094,10 @@ class Coast:
 
         MDH, July 2026
         """
+
+        # check path and folder structure exist
+        OutputFile = Path(OutputFile)
+        OutputFile.parent.mkdir(parents=True, exist_ok=True)
 
         # Infer format from the file extension
         ExtensionFormats = {".shp": "Shapefile", ".geojson": "GeoJSON"}
@@ -1122,7 +1123,7 @@ class Coast:
 
                 # get transect geometry and record
                 Geometries.append(ThisTransect.get_Geometry())
-                Record = ThisTransect.append(ThisTransect.get_FutureRecord())
+                Records.append(ThisTransect.get_FutureRecord())
 
         # build the geodataframe
         GDF = gp.GeoDataFrame(Records, geometry=Geometries, crs=self.Projection)

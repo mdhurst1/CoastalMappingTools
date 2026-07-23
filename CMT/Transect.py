@@ -3735,10 +3735,15 @@ class Transect:
         MDH, July 2026
         """
 
+        # Might need to add dict for TS type
+        TS = self.Timeseries["MHWS"]
+        LatestDateString = str(TS.Dates[-1])
+        LatestSourceString = str(TS.Sources[-1])
+
         return {
             "Cell": str(self.Cell), "SubCell": str(self.SubCell), "CMU": str(self.CMU), "LineID": int(self.LineID), "TransectID": int(self.ID),
             "Hist_Rate": self.ChangeRate,
-            "LatestYr": self.LatestDateString, "LatestSrc": str(self.LatestSource), "FirstEYr": self.get_FirstFutureErosionYear(),
+            "LatestYr": LatestDateString, "LatestSrc": LatestSourceString, "FirstEYr": self.get_FirstFutureErosionYear(),
             "Extrap2050": self.get_ExtrapDistance(2050), "Extrap2100": self.get_ExtrapDistance(2100),
             "pDist_2030": self.get_FuturePositionChange(2020, 2030), "pRate_2030": self.get_FutureRate(2020, 2030), 
             "Dist_2040": self.get_FuturePositionChange(2030, 2040), "Rate_2040": self.get_FutureRate(2030, 2040),
@@ -3748,9 +3753,7 @@ class Transect:
             "Dist_2080": self.get_FuturePositionChange(2070, 2080), "Rate_2080": self.get_FutureRate(2070, 2080),
             "Dist_2090": self.get_FuturePositionChange(2080, 2090), "Rate_2090": self.get_FutureRate(2080, 2090),
             "Dist_2100": self.get_FuturePositionChange(2090, 2100), "Rate_2100": self.get_FutureRate(2090, 2100),
-            "RCP85_2050": self.FutureSeaLevels[2], "RCP85_2100": self.FutureSeaLevels[7],
-            "DC1_SvEn_B": self.DC1Start, "DC1_SvEn_C": self.DC1End, "DC1_DistV": self.DC1Distance, "DC1_RateBC": self.DC1Rate,
-            "OS_2020_Yr": self.OSYearString}
+            "RCP85_2050": self.FutureSeaLevels[2], "RCP85_2100": self.FutureSeaLevels[7]}
         
     def Write(self, Folder=os.getcwd(), Filename="", delimiter=","):
         
