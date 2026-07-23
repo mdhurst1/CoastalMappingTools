@@ -826,6 +826,8 @@ class Coast:
 
         for ThisLine in self.__dict__[DictionaryKey]:
 
+            ### CALL SMOOTHING FUNCTION HERE?
+
             # smooth the line
             if Smooth:
                 ThisLine.SmoothLine(WindowSize=11)
@@ -837,37 +839,10 @@ class Coast:
             X, Y = ThisLine.get_XY()
 
             if Smooth and len(X) > 5:
-                XSmooth = X[1:-1]
-                YSmooth = Y[1:-1]
-
-                # calculate distance at regular intervals for final spline representation
-                Dist = np.zeros(XSmooth.shape)
-                Dist[1:] = np.sqrt(
-                    (XSmooth[1:] - XSmooth[:-1])**2
-                    + (YSmooth[1:] - YSmooth[:-1])**2
-                )
-                Dist = np.cumsum(Dist)
-
-                # build a spline representation of the line
-                Spline, u = splprep([XSmooth, YSmooth], u=Dist, s=0)
-
-                # resample it at smaller distance intervals
-                InterpDist = np.arange(0, Dist[-1], 1.0)
-                XSmooth, YSmooth = splev(InterpDist, Spline)
-
-                XSmooth = np.insert(XSmooth, 0, X[0])
-                YSmooth = np.insert(YSmooth, 0, Y[0])
-
-                X = np.append(XSmooth, X[-1])
-                Y = np.append(YSmooth, Y[-1])
-
-            # get line node positions as a list
-            Coordinates = list(zip(X, Y))
-
-            if len(Coordinates) < 2:
-                continue
-
-            Geometries.append(LineString(Coordinates))
+                X, Y = self._SmoothOutputLine(X, Y)
+            
+            Geometry = LineString(zip(X, Y))
+            Geometries.append(Geometry)
 
             Records.append({
                 "Line_ID": str(ThisLine.ID),
