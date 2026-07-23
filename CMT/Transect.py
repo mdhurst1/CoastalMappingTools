@@ -3709,13 +3709,11 @@ class Transect:
 
         """
         Return the standard output attributes for the transect.
-
         MDH, July 2026
-
         """
         
         return {
-            "LineID": int(LineID), "TransectID": int(self.ID),
+            "Cell": str(self.Cell), "SubCell": str(self.SubCell), "CMU": str(self.CMU), "LineID": int(self.LineID), "TransectID": int(self.ID),
             "Cliff_H": self.CliffHeight, "Cliff_S": self.CliffSlope,
             "Rocky": int(self.Rocky),
             "Bar_FH": self.FrontHeight, "Bar_FS": self.FrontSlope,
@@ -3730,6 +3728,30 @@ class Transect:
             "LT_W_high": self.ExtremeTotalWidths[2], "LT_V_high": self.ExtremeTotalVolumes[2]
         }
 
+    def get_FutureRecord(self):
+
+        """
+        Return the future output attributes for the transect.
+        MDH, July 2026
+        """
+
+        return {
+            "Cell": str(self.Cell), "SubCell": str(self.SubCell), "CMU": str(self.CMU), "LineID": int(self.LineID), "TransectID": int(self.ID),
+            "Hist_Rate": self.ChangeRate,
+            "LatestYr": self.LatestDateString, "LatestSrc": str(self.LatestSource), "FirstEYr": self.get_FirstFutureErosionYear(),
+            "Extrap2050": self.get_ExtrapDistance(2050), "Extrap2100": self.get_ExtrapDistance(2100),
+            "pDist_2030": self.get_FuturePositionChange(2020, 2030), "pRate_2030": self.get_FutureRate(2020, 2030), 
+            "Dist_2040": self.get_FuturePositionChange(2030, 2040), "Rate_2040": self.get_FutureRate(2030, 2040),
+            "Dist_2050": self.get_FuturePositionChange(2040, 2050), "Rate_2050": self.get_FutureRate(2040, 2050),
+            "Dist_2060": self.get_FuturePositionChange(2050, 2060), "Rate_2060": self.get_FutureRate(2050, 2060),
+            "Dist_2070": self.get_FuturePositionChange(2060, 2070), "Rate_2070": self.get_FutureRate(2060, 2070),
+            "Dist_2080": self.get_FuturePositionChange(2070, 2080), "Rate_2080": self.get_FutureRate(2070, 2080),
+            "Dist_2090": self.get_FuturePositionChange(2080, 2090), "Rate_2090": self.get_FutureRate(2080, 2090),
+            "Dist_2100": self.get_FuturePositionChange(2090, 2100), "Rate_2100": self.get_FutureRate(2090, 2100),
+            "RCP85_2050": self.FutureSeaLevels[2], "RCP85_2100": self.FutureSeaLevels[7],
+            "DC1_SvEn_B": self.DC1Start, "DC1_SvEn_C": self.DC1End, "DC1_DistV": self.DC1Distance, "DC1_RateBC": self.DC1Rate,
+            "OS_2020_Yr": self.OSYearString}
+        
     def Write(self, Folder=os.getcwd(), Filename="", delimiter=","):
         
         """

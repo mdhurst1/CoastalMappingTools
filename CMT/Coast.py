@@ -1035,10 +1035,6 @@ class Coast:
         # print action to screen
         print(f"Coast.WriteTransects: Writing coastal transects and attributes as {Format}")
 
-        # Check length of extreme water levels
-        if len(self.ExtremeWaterLevels) != 3:
-            self.ExtremeWaterLevels = [[],[],[]]
-
         # Create geometry list to build
         Geometries = []
         Records = []        
@@ -1061,132 +1057,54 @@ class Coast:
         else:
             GDF.to_file(OutputFile, driver="ESRI Shapefile", index=False)
     
-    def WriteFutureTransectsShp(self, TransectsShp):
+    def WriteFutureTransects(self, OutputFile):
 
         """
-        Writes the transects of a Coast object to polyline shape file
+        Write transects with future shoreline predictions to file.
 
-        builds a large attribute table with all future shoreline info
+        Shapefile output retains the source CRS.
+        GeoJSON output is converted to EPSG:4326.
 
-        MDH, Sept 2020
-
+        MDH, July 2026
         """
+
+        # Infer format from the file extension
+        ExtensionFormats = {".shp": "Shapefile", ".geojson": "GeoJSON"}
+
+        try:
+            Format = ExtensionFormats[OutputFile.suffix.lower()]
+        except KeyError:
+            raise ValueError("Could not infer output format from extension "
+                f"'{OutputFile.suffix}'. Specify Format explicitly.")
 
         # print action to screen
-        print("Coast.WriteFutureTransectsShp: Writing coastal transects and attributes to a shapefile")
+        print(f"Coast.WriteFutureTransects: Writing future coastal transects as {Format}")
 
-        # open new shapefile        
-        WL = shapefile.Writer(TransectsShp,shapeType=shapefile.POLYLINE)
-        
-        # Check length of extreme water levels
-        if len(self.ExtremeWaterLevels) != 3:
-            self.ExtremeWaterLevels = [[],[],[]]
+        Records = []
+        Geometries = []
 
-        # Create Fields
-        Fields = [('DeletionFlag','C',1,0), 
-        ['Cell', 'C', 3, 0], ['SubCell', 'C', 3, 0], ['CMU','C', 20, 0],
-        ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], 
-        #['Min_Rate','N', 6, 4], ['Max_Rate','N', 6, 4], 
-        ['Hist_Rate','N', 6, 4], 
-        ['LatestYr', 'C', 10, 0], ['LatestSrc','C', 50, 0], 
-        ['Extrap2050','N', 6, 4], ['Extrap2100','N', 6, 4], ['FirstEYr','N',4, 4],
-        
-        ['pDist_2030', 'N', 6, 4], ['pRate_2030', 'N', 6, 4],
-        
-        ['Dist_2040', 'N', 6, 4], ['Rate_2040', 'N', 6, 4], 
-        ['Dist_2050', 'N', 6, 4], ['Rate_2050', 'N', 6, 4], 
-        ['Dist_2060', 'N', 6, 4], ['Rate_2060', 'N', 6, 4], 
-        ['Dist_2070', 'N', 6, 4], ['Rate_2070', 'N', 6, 4], 
-        ['Dist_2080', 'N', 6, 4], ['Rate_2080', 'N', 6, 4], 
-        ['Dist_2090', 'N', 6, 4], ['Rate_2090', 'N', 6, 4], 
-        ['Dist_2100', 'N', 6, 4], ['Rate_2100', 'N', 6, 4],
-        #['Dist_2110', 'N', 6, 4], ['Rate_2110', 'N', 6, 4], 
-        #['Dist_2120', 'N', 6, 4], ['Rate_2120', 'N', 6, 4], 
-        
-        #['Dist_2150', 'N', 6, 4], ['Rate_2150', 'N', 6, 4], 
-        #['Dist_2200', 'N', 6, 4], ['Rate_2200', 'N', 6, 4], 
-        #['Dist_2250', 'N', 6, 4], ['Rate_2250', 'N', 6, 4], 
-        #['Dist_2300', 'N', 6, 4], ['Rate_2300', 'N', 6, 4], 
-        
-        ['RCP85_2050', 'N', 4, 3],['RCP85_2100', 'N', 4, 3],
-        #['RCP85_2150', 'N', 4, 3],['RCP85_2200', 'N', 4, 3],
-        #['RCP85_2250', 'N', 4, 3],['RCP85_2300', 'N', 4, 3],
-        
-        ['DC1_SvEn_B','N', 4, 0], ['DC1_SvEn_C','N', 4, 0], 
-        ['DC1_DistV','N', 6, 4], ['DC1_RateBC','N', 6, 4],
-        ['OS_2020_Yr','C',10,0], ['Method','C', 5, 0]
-        ]
-        
-        WL.fields = Fields[1:]
-        
         for Line in self.CoastLines:
-            for Transect in Line.Transects:
 
-                if Transect.Future:
-                    # get transect node positions
-                    X, Y = Transect.get_XY()
-                    
-                    WriteTransect = [np.column_stack([X,Y]).tolist()]
-                    
-                    if not Transect.DC1:
-                        Transect.DC1 = ["","","",""]
-                    else:
-                        try:
-                            Transect.DC1[3] = Transect.DC1[2]/(Transect.DC1[1]-Transect.DC1[0])
-                        except:
-                            Transect.DC1 = ["","","",""]
-                            
-                    # Convert dates to strings in 'yyyy-mm-dd' format
-                    LatestYr_str = Transect.Timeseries["MHWS"].Dates[-1].strftime('%Y-%m-%d')
-                    LatestSrc_str = Transect.Timeseries["MHWS"].Sources[-1]
-                    OSYr_str = Transect.OSYear.strftime('%Y-%m-%d') if isinstance(Transect.OSYear, datetime) else str(Transect.OSYear)
+            for ThisTransect in Line.Transects:
 
-                    
-                    # Create the record this could become a function in transect object...
-                    Record = [str(self.Cell), str(self.SubCell), str(self.CMU), str(Line.ID), str(Transect.ID),
-                                #Transect.MinChangeRate, Transect.MaxChangeRate, 
-                                Transect.ChangeRate, 
-                                LatestYr_str, LatestSrc_str, 
-                                Transect.get_ExtrapDistance(2050), Transect.get_ExtrapDistance(2100), Transect.get_FirstFutureErosionYear(),
-                                
-                                Transect.get_FuturePositionChange(2020, 2030), Transect.get_FutureRate(2020, 2030),
-                                
-                                Transect.get_FuturePositionChange(2030, 2040), Transect.get_FutureRate(2030, 2040),
-                                Transect.get_FuturePositionChange(2040, 2050), Transect.get_FutureRate(2040, 2050),
-                                Transect.get_FuturePositionChange(2050, 2060), Transect.get_FutureRate(2050, 2060),
-                                Transect.get_FuturePositionChange(2060, 2070), Transect.get_FutureRate(2060, 2070),
-                                Transect.get_FuturePositionChange(2070, 2080), Transect.get_FutureRate(2070, 2080),
-                                Transect.get_FuturePositionChange(2080, 2090), Transect.get_FutureRate(2080, 2090),
-                                Transect.get_FuturePositionChange(2090, 2100), Transect.get_FutureRate(2090, 2100),
-                                #Transect.get_FuturePositionChange(2100, 2110), Transect.get_FutureRate(2100, 2110),
-                                #Transect.get_FuturePositionChange(2110, 2120), Transect.get_FutureRate(2110, 2120),
-                                
-                                #Transect.get_FuturePositionChange(2120, 2150), Transect.get_FutureRate(2120, 2150),
-                                #Transect.get_FuturePositionChange(2150, 2200), Transect.get_FutureRate(2150, 2200),
-                                #Transect.get_FuturePositionChange(2200, 2250), Transect.get_FutureRate(2200, 2250),
-                                #Transect.get_FuturePositionChange(2250, 2300), Transect.get_FutureRate(2250, 2300),
-                                
-                                Transect.FutureSeaLevels[2],Transect.FutureSeaLevels[7], # 2050, 2100
-                                #Transect.FutureSeaLevels[11],Transect.FutureSeaLevels[12], # 2150, 2200
-                                #Transect.FutureSeaLevels[13],Transect.FutureSeaLevels[-1], # 2250, 2300
-                                
-                                Transect.DC1[0], Transect.DC1[1], Transect.DC1[2], Transect.DC1[3],
-                                OSYr_str, self.Method]
-                    
-                                
+                if not ThisTransect.Future:
+                    continue
+
+                # get transect geometry and record
+                Geometries.append(ThisTransect.get_Geometry())
+                Record = ThisTransect.append(ThisTransect.get_FutureRecord())
+
+        # build the geodataframe
+        GDF = gp.GeoDataFrame(Records, geometry=Geometries, crs=self.Projection)
+
+        # if geojson convert coordinates before writing
+        if Format == "GeoJSON":
+            GDF = GDF.to_crs("EPSG:4326")
+            GDF.to_file(OutputFile, driver="GeoJSON", index=False)
+
+        else:
+            GDF.to_file(OutputFile, driver="ESRI Shapefile", index=False)
     
-                    # write transect and record
-                    WL.line(WriteTransect)
-                    WL.record(*Record) 
-                                    
-        # close the shapefiles and clean up
-        WL.close()
-            
-        # create the projection file    
-        f = open(TransectsShp.rstrip("shp")+"prj","w")
-        f.write(self.Projection)
-        f.close()
-
     def WriteTransectPointsShp(self, TransectPointsShp):
 
         """
