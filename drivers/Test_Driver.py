@@ -124,9 +124,11 @@ MontroseCoast.PredictFutureShorelines()
 
 # Write Future Transects
 MontroseCoast.WriteFutureTransectsShp(str(ResultsPath / ("Montrose_Transects.shp")))
+MontroseCoast.WriteFutureTransectsShp(str(ResultsPath / ("Montrose_Transects.geojson")))
 
 # write future shorelines
 MontroseCoast.WriteFutureShorelinesShp(str(ResultsPath / ("Montrose_Future.shp")), True)
+MontroseCoast.WriteFutureShorelinesShp(str(ResultsPath / ("Montrose_Future.geojson")), True)
 
 """
 
