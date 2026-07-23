@@ -214,11 +214,8 @@ class Coast:
         # Create the output directory if it does not already exist.
         CoastFile.parent.mkdir(parents=True, exist_ok=True)
 
-        if Extension == ".shp":
-            self.WriteLinesShp("CoastLines", CoastFile)
-
-        elif Extension in [".geojson", ".json"]:
-            self.WriteLinesGeoJSON("CoastLines", CoastFile)
+        if Extension in [".shp", .geojson"]:
+            self.WriteLines("CoastLines", CoastFile, smooth)
 
         else:
             raise ValueError("Unsupported coastline output format: "f"'{Extension}'. Use '.shp' or '.geojson'.")
@@ -764,7 +761,7 @@ class Coast:
 
         # call new writelines function, this retains backward compatibility
         self.WriteLines(DictionaryKey, CoastShp, Smooth=False)
-        
+
 
     def WriteLines(self, DictionaryKey, OutputFile, Smooth=False):
     
