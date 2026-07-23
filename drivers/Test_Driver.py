@@ -72,7 +72,6 @@ MontroseCoast.GenerateTransects(TransectSpacing, 500, 500, CheckTopology=False) 
 # write initial transects
 MontroseCoast.WriteTransectsShp(str(ResultsPath / "Montrose_Raw_Transects.shp"))            
 
-"""
 ### loop over all shapefiles in MHWS folder to sample MHWS positions
 for shp in MHWSPath.glob("*.shp"):
     MontroseCoast.ExtractIndicatorPositions(str(shp), "MHWS", "Date")
@@ -125,7 +124,9 @@ MontroseCoast.PredictFutureShorelines()
 
 # Write Future Transects
 MontroseCoast.WriteFutureTransectsShp(str(ResultsPath / ("Montrose_Transects.shp")))
-        
+
+"""
+
 # write future shorelines
 MontroseCoast.WriteFutureShorelinesShp(str(ResultsPath / ("Montrose_Future.shp")), True)
         

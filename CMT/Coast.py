@@ -394,15 +394,45 @@ class Coast:
 
         """
         Writes the contents of a list of future shoreline objects to polyline shape file
-
-        MDH, June 2019
-
         Added functionality to write spline of future line prediction to get smoothed
         shape that is faithful to predictions
 
         MDH, Jan 2020
 
+        Modified and maintained for backward compatibility
+
+        MDH, July 2026
+
         """
+
+        WriteFutureShorelines(FutureShorelinesShp, Smooth)
+
+    def WriteFutureShorelines(self, OutputFile, Smooth=True):
+
+        """
+        
+        Writes the contents of a list of future shoreline objects to file
+        File format inferred from output file extension
+
+        if geojson, output format is converted to EPSG:4326
+        
+        MDH, July 2026
+        """
+
+        # get file format from output file extension
+        if Format is None:
+            ExtensionFormats = {".shp": "Shapefile", ".geojson": "GeoJSON"}
+
+        try:
+            Format = ExtensionFormats[OutputFile.suffix.lower()]
+        except KeyError:
+            raise ValueError("Could not infer output format from extension "
+                f"'{OutputFile.suffix}'. Specify Format explicitly.")
+
+        print(f"Coast.WriteFutureShorelines: Writing a list of lines as {Format}")
+
+        Geometries = []
+        Records = []
 
         # extract future shoreline positions from transects
         self.GetFutureShoreLines()
@@ -6608,6 +6638,8 @@ class Coast:
         """
 
         Extracts contiguous lines of future predicted MHWS
+
+        Would be good to make this create line objects but not yet MDH July 2026
 
         """
         self.FutureShoreLines = []
