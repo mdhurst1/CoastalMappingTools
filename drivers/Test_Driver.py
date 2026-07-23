@@ -130,8 +130,6 @@ MontroseCoast.WriteFutureTransectsShp(str(ResultsPath / ("Montrose_Transects.geo
 MontroseCoast.WriteFutureShorelinesShp(str(ResultsPath / ("Montrose_Future.shp")), True)
 MontroseCoast.WriteFutureShorelinesShp(str(ResultsPath / ("Montrose_Future.geojson")), True)
 
-"""
-
 #Loop through decades to write areas eroded
 Decades = [2050, 2100]
 for i, Decade in enumerate(Decades):
@@ -141,4 +139,3 @@ for i, Decade in enumerate(Decades):
     
     MontroseCoast.WriteErosionProximityShp(str(ResultsPath / ("Montrose_Influence_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
     MontroseCoast.WriteErosionProximityShp(str(ResultsPath / ("Montrose_Vicinity_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
-"""

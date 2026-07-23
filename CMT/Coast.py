@@ -303,54 +303,95 @@ class Coast:
             
             # launch polygon patches shapefile writer
             self.WritePatchesShp("ExtFrontLines_"+Level, "ExtBackLines_"+Level, ExtPatchesShp)
-    
-    def WriteErodedAreaShp(self, ErosionShp, StartYear='2020-01-01', Year='2100-01-01',Smooth=True,tempWrite=False):
-        
-        """
-        Writes future shorelines to polygon patches
 
-        MDH, Jan 2020
+    def WriteErodedAreaShp(self, OutputFile, StartYear='2020-01-01', Year='2100-01-01',Smooth=True):
 
         """
+        Legacy function
+
+        MDH, July 2026
+
+        """
+
+        self.WriteErodedArea(OutputFile, StartYear, Year, Smooth)
+
+    def WriteErodedArea(self, OutputFile, StartYear='2020-01-01', Year='2100-01-01',Smooth=True):
         
-        # print action to screen
-        print("Coast.WriteErodedAreaShp: Writing predicted erosion area to polygon file")
-        
+        """
+     
+        Write polygons representing the area between two predicted shorelines.
+
+        Parameters
+        ----------
+        OutputFile : str or pathlib.Path
+            Output .shp or .geojson file.
+        StartYear : datetime, str or int
+            Earlier shoreline date.
+        Year : datetime, str or int
+            Later shoreline date.
+        Smooth : bool, optional
+            Smooth shoreline geometries before constructing polygons.
+
+        MDH, July 2026
+
+        """
+
+        # check output file is a path and create directory if needed
+        OutputFile = Path(OutputFile)
+        OutputFile.parent.mkdir(parents=True, exist_ok=True)
+
+        # get file format from output file extension
+        ExtensionFormats = {".shp": "Shapefile", ".geojson": "GeoJSON"}
+
+        try:
+            Format = ExtensionFormats[OutputFile.suffix.lower()]
+        except KeyError:
+            raise ValueError("Could not infer output format from extension "
+                f"'{OutputFile.suffix}'. Specify Format explicitly.")
+
+        print(f"Coast.WriteErodedArea: Writing erosion area from {StartYear} to {Year} as patches in {Format}")
+
+        # extract future shoreline positions from transects
+        self.GetFutureShoreLines()
+
+        # setup empty lists for geometries and records
+        Records = []
+        Geometries = []
+
         # retrieve future shorelines
         self.GetFutureShoreLines()
 
         # check date formatting for indices if statement
-        if isinstance(Year,str):
-            Year = datetime.strptime(Year,'%Y-%m-%d')
-        elif isinstance(Year,int):
+        if isinstance(Year, str):
+            Year = datetime.strptime(Year, "%Y-%m-%d")
+        elif isinstance(Year, int):
             Year = datetime(Year, 1, 1)
         else:
-            sys.exit('Coast.WriteErodedAreaShp - input Year not in string format for conversion to datetime')
-            
+            raise TypeError("Year must be a datetime, YYYY-MM-DD string, or integer year")
+        
         if isinstance(StartYear, str):
             StartYear = datetime.strptime(StartYear,'%Y-%m-%d')
         elif isinstance(StartYear, int):
             StartYear = datetime(StartYear, 1, 1)
         else:
-            sys.exit('Coast.WriteErodedAreaShp - input StartYear not in string format for conversion to datetime')
+            raise TypeError("Year must be a datetime, YYYY-MM-DD string, or integer year")
         
         # get lists of lines for year of prediction and most recent shoreline position
-        Indices = [i for i, Line in enumerate(self.FutureShoreLines) if Line.Year == Year]
-        self.WriteFutureLines = [self.FutureShoreLines[i] for i in Indices]
-        
-        Indices = [i for i, Line in enumerate(self.FutureShoreLines) if Line.Year == StartYear]
-        self.WriteRecentLines = [self.FutureShoreLines[i] for i in Indices]
-        
-        # set up files to write
-        ErosionFrontShp = ErosionShp.split(".")[0]+"_temp.shp"
-        ErosionBackShp = ErosionShp.split(".")[0]+"_temp2.shp"
+        FutureLines = [Line for Line in self.FutureShoreLines if Line.Year == Year]
+        StartLines = [Line for Line in self.FutureShoreLines if Line.Year == StartYear]
 
-        # write lines then patches
-        if tempWrite:
-            self.WriteLinesShp("WriteFutureLines", ErosionBackShp, Smooth)
-            self.WriteLinesShp("WriteRecentLines", ErosionFrontShp, Smooth)
-            
-        self.WritePatchesShp("WriteFutureLines", "WriteRecentLines", ErosionShp, Smooth)
+        # sense check these
+        if not FutureLines:
+            raise ValueError(f"No future shoreline found for {Year:%Y-%m-%d}")
+
+        if not StartLines:
+            raise ValueError(f"No starting shoreline found for {StartYear:%Y-%m-%d}")
+
+        if len(FutureLines) != len(StartLines):
+            raise ValueError("The start and future shoreline lists contain different numbers of lines")
+
+        Fields={"StartYear": StartYear.strftime("%Y-%m-%d"), "EndYear": Year.strftime("%Y-%m-%d")}
+        self.WritePatches(FutureLines, StartLines, OutputFile, Fields, Smooth)
 
     def WriteErosionProximityShp(self, ProximityShp, BufferDistance=10., Year='2100-01-01', Smooth=True, tempWrite=False):
 
