@@ -3684,9 +3684,77 @@ class Transect:
         Index = np.argmin(self.HistoricShorelinesDates)
         Position = self.HistoricShorelinesPositions[Index][0]
         return Position 
-    
-    
 
+    def get_Geometry(self):
+
+        """
+        Return the transect geometry as a Shapely LineString.
+
+        MDH, July 2026
+
+        """
+
+        # get coordinates
+        X = np.asarray([self.StartNode.X, self.EndNode.X])
+        Y = np.asarray([self.StartNode.Y, self.EndNode.Y])
+
+        # check length
+        if len(X) < 2:
+            return None
+
+        # return linestring object
+        return LineString(zip(X, Y))
+    
+    def get_Record(self):
+
+        """
+        Return the standard output attributes for the transect.
+        MDH, July 2026
+        """
+        
+        return {
+            "Cell": str(self.Cell), "SubCell": str(self.SubCell), "CMU": str(self.CMU), "LineID": int(self.LineID), "TransectID": int(self.ID),
+            "Cliff_H": self.CliffHeight, "Cliff_S": self.CliffSlope,
+            "Rocky": int(self.Rocky),
+            "Bar_FH": self.FrontHeight, "Bar_FS": self.FrontSlope,
+            "Bar_BH": self.BackHeight, "Bar_BS": self.BackSlope,
+            "Bar_ToeW": self.ToeWidth, "Bar_TopW": self.TopWidth,
+            "Bar_Volume": self.BarrierVolume, "Crest_Elev": self.CrestElevation,
+            "ST_W_low": self.ExtremeWidths[0], "ST_V_low": self.ExtremeVolumes[0],
+            "ST_W_med": self.ExtremeWidths[1], "ST_V_med": self.ExtremeVolumes[1],
+            "ST_W_high": self.ExtremeWidths[2], "ST_V_high": self.ExtremeVolumes[2],
+            "LT_W_low": self.ExtremeTotalWidths[0], "LT_V_low": self.ExtremeTotalVolumes[0],
+            "LT_W_med": self.ExtremeTotalWidths[1], "LT_V_med": self.ExtremeTotalVolumes[1],
+            "LT_W_high": self.ExtremeTotalWidths[2], "LT_V_high": self.ExtremeTotalVolumes[2]
+        }
+
+    def get_FutureRecord(self):
+
+        """
+        Return the future output attributes for the transect.
+        MDH, July 2026
+        """
+
+        # Might need to add dict for TS type
+        TS = self.Timeseries["MHWS"]
+        LatestDateString = str(TS.Dates[-1])
+        LatestSourceString = str(TS.Sources[-1])
+
+        return {
+            "Cell": str(self.Cell), "SubCell": str(self.SubCell), "CMU": str(self.CMU), "LineID": int(self.LineID), "TransectID": int(self.ID),
+            "Hist_Rate": self.ChangeRate,
+            "LatestYr": LatestDateString, "LatestSrc": LatestSourceString, "FirstEYr": self.get_FirstFutureErosionYear(),
+            "Extrap2050": self.get_ExtrapDistance(2050), "Extrap2100": self.get_ExtrapDistance(2100),
+            "pDist_2030": self.get_FuturePositionChange(2020, 2030), "pRate_2030": self.get_FutureRate(2020, 2030), 
+            "Dist_2040": self.get_FuturePositionChange(2030, 2040), "Rate_2040": self.get_FutureRate(2030, 2040),
+            "Dist_2050": self.get_FuturePositionChange(2040, 2050), "Rate_2050": self.get_FutureRate(2040, 2050),
+            "Dist_2060": self.get_FuturePositionChange(2050, 2060), "Rate_2060": self.get_FutureRate(2050, 2060),
+            "Dist_2070": self.get_FuturePositionChange(2060, 2070), "Rate_2070": self.get_FutureRate(2060, 2070),
+            "Dist_2080": self.get_FuturePositionChange(2070, 2080), "Rate_2080": self.get_FutureRate(2070, 2080),
+            "Dist_2090": self.get_FuturePositionChange(2080, 2090), "Rate_2090": self.get_FutureRate(2080, 2090),
+            "Dist_2100": self.get_FuturePositionChange(2090, 2100), "Rate_2100": self.get_FutureRate(2090, 2100),
+            "RCP85_2050": self.FutureSeaLevels[2], "RCP85_2100": self.FutureSeaLevels[7]}
+        
     def Write(self, Folder=os.getcwd(), Filename="", delimiter=","):
         
         """

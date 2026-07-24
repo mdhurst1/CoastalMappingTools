@@ -12,7 +12,8 @@ Example configured by MH 3/7/26
 """
 
 # import modules needed to run the tools
-import sys, pickle, pathlib
+import sys, pickle
+from pathlib import Path
 
 # add src path to find custom modules
 sys.path.append("../")
@@ -21,8 +22,9 @@ sys.path.append("../")
 from CMT.Coast import *
 
 # define file names for analysis
-DataPath = pathlib.Path("../Example_Data/Montrose/")
-ResultsPath = pathlib.Path("../Results/Montrose/")
+ScriptPath = Path(__file__).resolve().parent
+DataPath = ScriptPath.parent / "Example_Data" / "Montrose"
+ResultsPath = ScriptPath.parent / "Results" / "Montrose"
 
 if not ResultsPath.exists(): # checks if geometry folder exists, if not create
     ResultsPath.mkdir(parents=True, exist_ok=True)
@@ -49,6 +51,8 @@ TransectSpacing = 10.
 print("Creating New Coast Object") # if saved geometry not exist
 
 # SET UP THE COAST FROM -10m Contour
+print(BaselinePath)
+
 MontroseCoast = Coast(str(BaselinePath), MinLength=MinLength)
     
 # may need to think carefully about how much to smooth
@@ -58,7 +62,9 @@ MontroseCoast.SmoothCoastLines(WindowSize=21,NoSmooths=100)
 MontroseCoast.CheckOrientation(str(BaselinePath),str(MLWSPath))
 
 # write smoothed coast/bathy to file
-MontroseCoast.WriteCoastShp(ResultsPath / "Montrose_Smoothed_Baseline.shp")
+MontroseCoast.WriteCoast(ResultsPath / "Montrose_Smoothed_Baseline.shp")
+MontroseCoast.WriteCoast(ResultsPath / "Montrose_Smoothed_Baseline.geojson")
+
 
 # create some initial dummy transects extending 500m offshore and inland
 MontroseCoast.GenerateTransects(TransectSpacing, 500, 500, CheckTopology=False) # transect lengths
@@ -118,17 +124,22 @@ MontroseCoast.PredictFutureShorelines()
 
 # Write Future Transects
 MontroseCoast.WriteFutureTransectsShp(str(ResultsPath / ("Montrose_Transects.shp")))
-        
+MontroseCoast.WriteFutureTransectsShp(str(ResultsPath / ("Montrose_Transects.geojson")))
+
 # write future shorelines
 MontroseCoast.WriteFutureShorelinesShp(str(ResultsPath / ("Montrose_Future.shp")), True)
-        
+MontroseCoast.WriteFutureShorelinesShp(str(ResultsPath / ("Montrose_Future.geojson")), True)
+
 #Loop through decades to write areas eroded
 Decades = [2050, 2100]
 for i, Decade in enumerate(Decades):
 
-    MontroseCoast.WriteErodedAreaShp(str(ResultsPath / ("Montrose_ErodedArea_" + str(Decade) + ".shp")), Year=Decade)
-    MontroseCoast.WriteErodedAreaShp(str(ResultsPath / ("Montrose_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
+    MontroseCoast.WriteErodedArea(str(ResultsPath / ("Montrose_ErodedArea_" + str(Decade) + ".shp")), Year=Decade)
+    MontroseCoast.WriteErodedArea(str(ResultsPath / ("Montrose_ErodedArea_" + str(Decade) + ".geojson")), Year=Decade)
+    MontroseCoast.WriteErodedArea(str(ResultsPath / ("Montrose_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".shp")), StartYear = Decades[i-1], Year=Decade)
+    MontroseCoast.WriteErodedArea(str(ResultsPath / ("Montrose_ErodedArea_" + str(Decades[i-1])+"_"+str(Decade) + ".geojson")), StartYear = Decades[i-1], Year=Decade)
     
-    MontroseCoast.WriteErosionProximityShp(str(ResultsPath / ("Montrose_Influence_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
-    MontroseCoast.WriteErosionProximityShp(str(ResultsPath / ("Montrose_Vicinity_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
-       
+    MontroseCoast.WriteErosionBuffer(str(ResultsPath / ("Montrose_Influence_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 10.)
+    MontroseCoast.WriteErosionBuffer(str(ResultsPath / ("Montrose_Influence_" + str(Decade) + ".geojson")), Year=Decade, BufferDistance = 10.)
+    MontroseCoast.WriteErosionBuffer(str(ResultsPath / ("Montrose_Vicinity_" + str(Decade) + ".shp")), Year=Decade, BufferDistance = 60.)
+    MontroseCoast.WriteErosionBuffer(str(ResultsPath / ("Montrose_Vicinity_" + str(Decade) + ".geojson")), Year=Decade, BufferDistance = 60.)

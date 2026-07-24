@@ -175,6 +175,51 @@ class Coast:
 
         self.WriteLinesShp("CoastLines", CoastShp)
 
+    def WriteCoast(self, CoastFile, smooth=False):
+        
+        """
+        Write the coastline to a supported vector format.
+        The output format is determined from the filename extension.
+
+        MDH July 2026
+
+        
+        Parameters
+        ----------
+        CoastFile : str or pathlib.Path
+            Output filename. Supported extensions are `.shp`, `.geojson`
+            and `.json`.
+
+        Smooth : bool, optional
+            Smooth line geometries before writing.
+
+            
+        Supported formats
+        -----------------
+
+        .shp
+            ESRI Shapefile.
+
+        .geojson or .json
+            GeoJSON.
+        """
+
+        # print action to screen
+        print("Coast.WriteCoast: Writing coast line to file")
+
+        # convert to path if not not already
+        CoastFile = Path(CoastFile)
+        Extension = CoastFile.suffix.lower()
+
+        # Create the output directory if it does not already exist.
+        CoastFile.parent.mkdir(parents=True, exist_ok=True)
+
+        if Extension in [".shp", ".geojson"]:
+            self.WriteLines("CoastLines", CoastFile, smooth)
+
+        else:
+            raise ValueError("Unsupported coastline output format: "f"'{Extension}'. Use '.shp' or '.geojson'.")
+    
     def WriteCliffShp(self, CliffShp):
         
         """
@@ -258,176 +303,283 @@ class Coast:
             
             # launch polygon patches shapefile writer
             self.WritePatchesShp("ExtFrontLines_"+Level, "ExtBackLines_"+Level, ExtPatchesShp)
-    
-    def WriteErodedAreaShp(self, ErosionShp, StartYear='2020-01-01', Year='2100-01-01',Smooth=True,tempWrite=False):
-        
-        """
-        Writes future shorelines to polygon patches
 
-        MDH, Jan 2020
+    def WriteErodedAreaShp(self, OutputFile, StartYear='2020-01-01', Year='2100-01-01',Smooth=True):
 
         """
-        
-        # print action to screen
-        print("Coast.WriteErodedAreaShp: Writing predicted erosion area to polygon file")
-        
-        # retrieve future shorelines
-        self.GetFutureShoreLines()
+        Legacy function
 
+        MDH, July 2026
+
+        """
+
+        self.WriteErodedArea(OutputFile, StartYear, Year, Smooth)
+
+    def WriteErodedArea(self, OutputFile, StartYear='2020-01-01', Year='2100-01-01',Smooth=True):
+        
+        """
+     
+        Write polygons representing the area between two predicted shorelines.
+
+        Parameters
+        ----------
+        OutputFile : str or pathlib.Path
+            Output .shp or .geojson file.
+        StartYear : datetime, str or int
+            Earlier shoreline date.
+        Year : datetime, str or int
+            Later shoreline date.
+        Smooth : bool, optional
+            Smooth shoreline geometries before constructing polygons.
+
+        MDH, July 2026
+
+        """
+
+        # check output file is a path and create directory if needed
+        OutputFile = Path(OutputFile)
+        OutputFile.parent.mkdir(parents=True, exist_ok=True)
+
+        # get file format from output file extension
+        ExtensionFormats = {".shp": "Shapefile", ".geojson": "GeoJSON"}
+
+        try:
+            Format = ExtensionFormats[OutputFile.suffix.lower()]
+        except KeyError:
+            raise ValueError("Could not infer output format from extension "
+                f"'{OutputFile.suffix}'. Specify Format explicitly.")
+
+        
         # check date formatting for indices if statement
-        if isinstance(Year,str):
-            Year = datetime.strptime(Year,'%Y-%m-%d')
-        elif isinstance(Year,int):
+        if isinstance(Year, str):
+            Year = datetime.strptime(Year, "%Y-%m-%d")
+        elif isinstance(Year, int):
             Year = datetime(Year, 1, 1)
         else:
-            sys.exit('Coast.WriteErodedAreaShp - input Year not in string format for conversion to datetime')
-            
+            raise TypeError("Year must be a datetime, YYYY-MM-DD string, or integer year")
+        
         if isinstance(StartYear, str):
             StartYear = datetime.strptime(StartYear,'%Y-%m-%d')
         elif isinstance(StartYear, int):
             StartYear = datetime(StartYear, 1, 1)
         else:
-            sys.exit('Coast.WriteErodedAreaShp - input StartYear not in string format for conversion to datetime')
+            raise TypeError("Year must be a datetime, YYYY-MM-DD string, or integer year")
+
+        print(f"Coast.WriteErodedArea: Writing erosion area from {StartYear} to {Year} as patches in {Format}")
+
+        # extract future shoreline positions from transects
+        self.GetFutureShoreLines()
         
         # get lists of lines for year of prediction and most recent shoreline position
-        Indices = [i for i, Line in enumerate(self.FutureShoreLines) if Line.Year == Year]
-        self.WriteFutureLines = [self.FutureShoreLines[i] for i in Indices]
-        
-        Indices = [i for i, Line in enumerate(self.FutureShoreLines) if Line.Year == StartYear]
-        self.WriteRecentLines = [self.FutureShoreLines[i] for i in Indices]
-        
-        # set up files to write
-        ErosionFrontShp = ErosionShp.split(".")[0]+"_temp.shp"
-        ErosionBackShp = ErosionShp.split(".")[0]+"_temp2.shp"
+        FutureLines = [Line for Line in self.FutureShoreLines if Line.Year == Year]
+        StartLines = [Line for Line in self.FutureShoreLines if Line.Year == StartYear]
 
-        # write lines then patches
-        if tempWrite:
-            self.WriteLinesShp("WriteFutureLines", ErosionBackShp, Smooth)
-            self.WriteLinesShp("WriteRecentLines", ErosionFrontShp, Smooth)
+        # sense check these
+        if not FutureLines:
+            raise ValueError(f"No future shoreline found for {Year:%Y-%m-%d}")
+
+        if not StartLines:
+            raise ValueError(f"No starting shoreline found for {StartYear:%Y-%m-%d}")
+
+        if len(FutureLines) != len(StartLines):
+            raise ValueError("The start and future shoreline lists contain different numbers of lines")
+
+        Fields={"StartYear": StartYear.strftime("%Y-%m-%d"), "EndYear": Year.strftime("%Y-%m-%d")}
+        self.WritePatches(FutureLines, StartLines, OutputFile, Smooth, Fields)
+
+    def WriteErosionBuffer(self, OutputFile, BufferDistance=10., Year='2100-01-01', Smooth=True):
+
+        """
+        Writes Erosion Buffer polygon patches for a given future shoreline
+
+        Parameters
+        ----------
+        ProximityShp : str or pathlib.Path
+            Path of the output polygon shapefile.
+        BufferDistance : float, optional
+            Distance, in map units, used to construct the proximity buffer.
+            Default is 10.0.
+        Year : datetime, str or int, optional
+            Date of the future shoreline to write. Strings must use
+            ``YYYY-MM-DD`` format. Integer values are interpreted as 1 January
+            of that year. Default is ``"2100-01-01"``.
+        Smooth : bool, optional
+            Smooth the shoreline and buffer-line coordinates before constructing
+            polygons. Default is True.
             
-        self.WritePatchesShp("WriteFutureLines", "WriteRecentLines", ErosionShp, Smooth)
+        MDH, July, 2026
+        
 
-    def WriteErosionProximityShp(self, ProximityShp, BufferDistance=10., Year='2100-01-01', Smooth=True, tempWrite=False):
+        """
+        
+        # check output file is a path and create directory if needed
+        OutputFile = Path(OutputFile)
+        OutputFile.parent.mkdir(parents=True, exist_ok=True)
+
+        # get file format from output file extension
+        ExtensionFormats = {".shp": "Shapefile", ".geojson": "GeoJSON"}
+
+        try:
+            Format = ExtensionFormats[OutputFile.suffix.lower()]
+        except KeyError:
+            raise ValueError("Could not infer output format from extension "
+                f"'{OutputFile.suffix}'. Specify Format explicitly.")
+
+        print(f"Coast.WriteErosionBuffer: Writing a buffer of {BufferDistance}m on erosion at {Year} as patches in {Format}")
+
+        # Generate predicted shorelines and associated proximity lines
+        self.GetFutureShoreLines()
+        BufferLines = self.GetFutureShoreLinesProximity(BufferDistance)
+
+        # Normalise Year to datetime
+        if isinstance(Year, datetime):
+            pass
+        elif isinstance(Year, str):
+            try:
+                Year = datetime.strptime(Year, "%Y-%m-%d")
+            except ValueError as Error:
+                raise ValueError("Year must use YYYY-MM-DD format") from Error
+        elif isinstance(Year, int):
+            Year = datetime(Year, 1, 1)
+        else:
+            raise TypeError("Year must be a datetime, YYYY-MM-DD string, or integer year")
+
+        # Select shoreline and buffer lines for requested date
+        SelectedFutureLines = [Line for Line in self.FutureShoreLines if Line.Year == Year]
+        SelectedBufferLines = [Line for Line in BufferLines if Line.Year == Year]
+
+        # sense check
+        if not SelectedFutureLines:
+            raise ValueError(f"No future shorelines found for {Year:%Y-%m-%d}")
+
+        if not SelectedBufferLines:
+            raise ValueError(f"No proximity buffer lines found for {Year:%Y-%m-%d}")
+
+        if len(SelectedFutureLines) != len(SelectedBufferLines):
+            raise ValueError("The number of future shorelines does not match the number of buffer lines")
+
+        # Write polygons directly from the in-memory lines
+        ExtraFields = {"Year": Year.strftime("%Y-%m-%d"), "BufferDist": BufferDistance,}
+        self.WritePatches(SelectedFutureLines, SelectedBufferLines, OutputFile, Smooth=Smooth, ExtraFields=ExtraFields)
+
+    def WriteErosionProximityShp(self, OutputFile, BufferDistance=10., Year='2100-01-01', Smooth=True):
 
         """
         Writes Erosion Proximity polygon patches for a given decade
 
         MDH, Feb, 2021
+
+        Modified and maintained for backward compatibility
+        
+        MDH, July 2026
         
         """
 
-        # retrieve future shorelines
-        self.GetFutureShoreLines()
-        Lines = self.GetFutureShoreLinesProximity(BufferDistance)
-        
-        # check date formatting for indices if statement
-        if isinstance(Year,str):
-            Year = datetime.strptime(Year,'%Y-%m-%d')
-        elif isinstance(Year,int):
-            Year = datetime(Year, 1, 1)
-        else:
-            sys.exit('Coast.ErosionProximityShp - input Year not in string format for conversion to datetime')
+        self.WriteErosionBuffer(self, OutputFile, BufferDistance, Year, Smooth)
 
-        # get lists of lines for year of prediction and most recent shoreline position
-        Indices = [i for i, Line in enumerate(self.FutureShoreLines) if Line.Year == Year]
-        self.WriteFutureLines = [self.FutureShoreLines[i] for i in Indices]
-        Indices = [i for i, Line in enumerate(Lines) if Line.Year == Year]
-        self.WriteBufferLines = [Lines[i] for i in Indices]
-        
-        # set up files to write
-        ErosionFutureShp = ProximityShp.split(".")[0]+"_temp.shp"
-        ErosionBufferShp = ProximityShp.split(".")[0]+"_temp2.shp"
-
-        # write lines then patches
-        if tempWrite:
-            self.WriteLinesShp("WriteFutureLines", ErosionFutureShp, Smooth)
-            self.WriteLinesShp("WriteBufferLines", ErosionBufferShp, Smooth)
-        self.WritePatchesShp("WriteFutureLines", "WriteBufferLines", ProximityShp, Smooth)
-    
     
     def WriteFutureShorelinesShp(self, FutureShoreLinesShp, Smooth=True):
 
         """
         Writes the contents of a list of future shoreline objects to polyline shape file
-
-        MDH, June 2019
-
         Added functionality to write spline of future line prediction to get smoothed
         shape that is faithful to predictions
 
         MDH, Jan 2020
 
+        Modified and maintained for backward compatibility
+
+        MDH, July 2026
+
         """
+
+        self.WriteFutureShorelines(FutureShoreLinesShp, Smooth)
+
+    def WriteFutureShorelines(self, OutputFile, Smooth=True):
+
+        """
+        
+        Writes the contents of a list of future shoreline objects to file
+        File format inferred from output file extension
+
+        if geojson, output format is converted to EPSG:4326
+        
+        MDH, July 2026
+        """
+
+        # check output file is a path and create directory if needed
+        OutputFile = Path(OutputFile)
+        OutputFile.parent.mkdir(parents=True, exist_ok=True)
+
+        # get file format from output file extension
+        ExtensionFormats = {".shp": "Shapefile", ".geojson": "GeoJSON"}
+
+        try:
+            Format = ExtensionFormats[OutputFile.suffix.lower()]
+        except KeyError:
+            raise ValueError("Could not infer output format from extension "
+                f"'{OutputFile.suffix}'. Specify Format explicitly.")
+
+        print(f"Coast.WriteFutureShorelines: Writing a list of lines as {Format}")
+
+        Geometries = []
+        Records = []
 
         # extract future shoreline positions from transects
         self.GetFutureShoreLines()
 
-        # print action to screen
-        print("Coast.WriteFutureShorelinesShp: Writing future MHWS line objects to polyline shapefiles")
+        # setup empty lists for geometries and records
+        Records = []
+        Geometries = []
 
-        # open new shapefile        
-        WL = shapefile.Writer(FutureShoreLinesShp,shapeType=shapefile.POLYLINE)
-       
-        # Create Fields
-        self.Fields = [('DeletionFlag','C',1,0),['Cell','C', 2, 0], ['SubCell','C', 2, 0], ['Line_ID', 'C', 20, 0],['Year','C', 10, 0],['Method','C', 5, 0]]
-        WL.fields = self.Fields[1:] 
-        
-        for Line in self.FutureShoreLines:
-            
+        for FutureLine in self.FutureShoreLines:
+
             if Smooth:
-                Line.SmoothLine(WindowSize=11)
+                FutureLine.SmoothLine(WindowSize=11)
 
-            # Find Loops
-            Line.MakeSimple() #LineString is not simple... Valid Geometry
-                
-            # get line node positions
-            # why are we not just recalling Line.SmoothLine here? What is different?
-            X, Y = Line.get_XY()
+            # check for complex topology and fix
+            FutureLine.MakeSimple()
+
+            X, Y = FutureLine.get_XY()
+
+            X = np.asarray(X)
+            Y = np.asarray(Y)
+
+            if len(X) < 2:
+                continue
 
             if Smooth and len(X) > 5:
+                X, Y = self._SmoothOutputLine(X, Y)
 
-                XSmooth = X[1:-1]
-                YSmooth = Y[1:-1]
-                # calculate distance
-                Dist = np.zeros(XSmooth.shape)
-                Dist[1:] = np.sqrt((XSmooth[1:] - XSmooth[:-1])**2 + (YSmooth[1:] - YSmooth[:-1])**2)
-                Dist = np.cumsum(Dist)
-                
-                # build a spline representation of the line
-                Spline, u = splprep([XSmooth, YSmooth], u=Dist, s=0)
-                
-                
-                # resample it at smaller distance intervals
-                Interp_Dist = np.arange(0, Dist[-1], 1.)
-                XSmooth, YSmooth = splev(Interp_Dist, Spline)
+            Geometry = LineString(zip(X, Y))
 
-                XSmooth = np.insert(XSmooth,0,X[0])
-                YSmooth = np.insert(YSmooth,0,Y[0])
-                X = np.append(XSmooth,X[-1])
-                Y = np.append(YSmooth,Y[-1])
-                
-            # convert to list for writing to shapefile
-            WriteLine = [np.column_stack([X,Y]).tolist()]
-            
-            # generate record
-            if self.Method == None:
-                import pdb
-                pdb.set_trace()
-            
-            LineYr_str = Line.Year.strftime('%Y-%m-%d') if isinstance(Line.Year, datetime) else str(Line.Year)
-            Record = [str(Line.Cell), str(Line.SubCell),str(Line.ID),str(LineYr_str), str(self.Method)]
+            if Geometry.is_empty:
+                continue
 
-            # write line and record
-            WL.line(WriteLine)
-            WL.record(*Record) ####### ISSUE WITH RECORDS NEEDS FIXING ########
+            LineYear = (FutureLine.Year.strftime("%Y-%m-%d") if isinstance(FutureLine.Year, datetime) else str(FutureLine.Year))
+
+            Record = {"Cell": str(FutureLine.Cell), "SubCell": str(FutureLine.SubCell),
+                    "Line_ID": str(FutureLine.ID), "Year": str(LineYear), "Method": str(self.Method)}
+
+            Geometries.append(Geometry)
+            Records.append(Record)
+
+        # check we're not empty
+        if not Records:
+            raise ValueError("No valid future shoreline geometries were generated.")
+
+        # setup geodataframe
+        GDF = gp.GeoDataFrame(Records, geometry=Geometries, crs=self.Projection)
         
-        # close the shapefiles and clean up
-        WL.close()
-            
-        # create the projection file    
-        f = open(FutureShoreLinesShp.rstrip("shp")+"prj","w")
-        f.write(self.Projection)
-        f.close()
+        # write to appropriate file format
+        if Format == "GeoJSON":
+
+            #convert if geojson
+            GDF = GDF.to_crs("EPSG:4326")
+            GDF.to_file(OutputFile, driver="GeoJSON", index=False)
+
+        else:
+            GDF.to_file(OutputFile, driver="ESRI Shapefile", index=False)   
 
     def WriteFutureUncertaintyShp(self, UncertaintyShp, Year=2100):
 
@@ -714,162 +866,224 @@ class Coast:
         # print action to screen
         print("Coast.WriteLinesShp: Writing a list of lines to a polyline shapefile")
 
-        # open new shapefile        
-        WL = shapefile.Writer(CoastShp,shapeType=shapefile.POLYLINE)
-               
-        # Create Fields
-        self.Fields = [('DeletionFlag','C',1,0),['Line_ID', 'C', 3, 0],['Method', 'C', 5, 0]]
-        WL.fields = self.Fields[1:] 
-        i=0
+        # call new writelines function, this retains backward compatibility
+        self.WriteLines(DictionaryKey, CoastShp, Smooth=Smooth)
 
-        for Line in self.__dict__[DictionaryKey]:
-            
-            if Smooth:
-                Line.SmoothLine(WindowSize=11)
-            
-            # Find Loops
-            Line.MakeSimple()
-            
-            # get line node positions
-            X, Y = Line.get_XY()
-            
-            if Smooth and len(X) > 5:
 
-                XSmooth = X[1:-1]
-                YSmooth = Y[1:-1]
-                # calculate distance
-                Dist = np.zeros(XSmooth.shape)
-                Dist[1:] = np.sqrt((XSmooth[1:] - XSmooth[:-1])**2 + (YSmooth[1:] - YSmooth[:-1])**2)
-                Dist = np.cumsum(Dist)
-                
-                # build a spline representation of the line
-                Spline, u = splprep([XSmooth, YSmooth], u=Dist, s=0)
-
-                # resample it at smaller distance intervals
-                Interp_Dist = np.arange(0, Dist[-1], 1.)
-                XSmooth, YSmooth = splev(Interp_Dist, Spline)
-
-                XSmooth = np.insert(XSmooth,0,X[0])
-                YSmooth = np.insert(YSmooth,0,Y[0])
-                X = np.append(XSmooth,X[-1])
-                Y = np.append(YSmooth,Y[-1])
-            
-            # get line node positions
-            WriteLine = [np.column_stack([X,Y]).tolist()]
-            
-            # generate record
-            Record = [str(Line.ID),str(self.Method)]
-            
-            # write line and record
-            WL.line(WriteLine)
-            WL.record(*Record) ####### ISSUE WITH RECORDS NEEDS FIXING ########
-            
-        # close the shapefiles and clean up
-        WL.close()
-        
-        # create the projection file    
-        f = open(CoastShp.rstrip("shp")+"prj","w")
-        
-        f.write(self.Projection)
-        
-        f.close()
-        
+    def WriteLines(self, DictionaryKey, OutputFile, Smooth=False):
     
-    def WritePatchesShp(self, DictionaryKey1, DictionaryKey2, PatchShp, Smooth=True):
+        """
+        Writes the contents of a list of line objects to a file
+        List of line objects is part of the Coast object and identified by 
+        the dictionary key
+
+        Output coordinate system will be the same as the coast object
+        unless output format is geojson, in which case it will convert 
+        to EPSG:4326
+
+        File format is inferred from file extension
+
+        MDH July 2026
+
+        Parameters
+        ----------
+        DictionaryKey : str
+            Name of the Coast attribute containing the Line objects.
+
+        OutputFile : str or pathlib.Path
+            Output filename.
+
+        Smooth : bool, optional
+            Smooth line geometries before writing.
 
         """
 
-        Writes polygon patches between two lines to a polygon shapefile
+        # get file format from output file extension
+        ExtensionFormats = {".shp": "Shapefile", ".geojson": "GeoJSON"}
 
-        Dictionary Key refers
+        try:
+            Format = ExtensionFormats[OutputFile.suffix.lower()]
+        except KeyError:
+            raise ValueError("Could not infer output format from extension "
+                f"'{OutputFile.suffix}'. Specify Format explicitly.")
 
-        MDH, June 2019
+        print(f"Coast.WriteLines: Writing a list of lines as {Format}")
+
+        Geometries = []
+        Records = []
+
+        for ThisLine in self.__dict__[DictionaryKey]:
+
+            ### CALL SMOOTHING FUNCTION HERE?
+
+            # smooth the line
+            if Smooth:
+                ThisLine.SmoothLine(WindowSize=11)
+
+            # check for geometry issues like loops
+            ThisLine.MakeSimple()
+
+            # retrieve the coordinates
+            X, Y = ThisLine.get_XY()
+
+            if Smooth and len(X) > 5:
+                X, Y = self._SmoothOutputLine(X, Y)
+            
+            Geometry = LineString(zip(X, Y))
+            Geometries.append(Geometry)
+
+            Records.append({
+                "Line_ID": str(ThisLine.ID),
+                "Method": str(self.Method)})
+
+
+        # create geopandas dataframe
+        GDF = gp.GeoDataFrame(Records, geometry=Geometries, crs=self.Projection)
+
+        # write to file
+        if Format == "GeoJSON":
+
+            # GeoJSON output uses geographic WGS 84 coordinates
+            GDF = GDF.to_crs("EPSG:4326")
+            GDF.to_file(OutputFile, driver="GeoJSON")
+
+        elif Format == "Shapefile":
+
+            # Shapefile retains the source projection
+            GDF.to_file(OutputFile, driver="ESRI Shapefile")
+
+    def WritePatches(self, Lines1, Lines2, OutputFile, Smooth=True, ExtraFields=None):
 
         """
+        Write polygon features between corresponding pairs of line objects.
 
-        # print action to screen
-        print("Coast.WritePatchesShp: Writing patch between two lines to a polygon shapefile")
+        Each output polygon is constructed by following a line from ``Lines1``
+        in its original coordinate order and then following the corresponding
+        line from ``Lines2`` in reverse order. This creates a closed polygon
+        representing the area between the two lines.
 
-        if len(self.__dict__[DictionaryKey1]) == 0:
-            print("Coast.WritePatchesShp (Error): Trying to write from empty list of lines", DictionaryKey1, DictionaryKey2)
-            
-        # open new shapefile        
-        WS = shapefile.Writer(PatchShp,shapeType=shapefile.POLYGON)
-       
-        # Create Fields
-        self.Fields = [('DeletionFlag','C',1,0),['Poly_ID', 'C', 3, 0],['Method', 'C', 5, 0]]
-        WS.fields = self.Fields[1:] 
+        This method can be used, for example, to write areas of coastal erosion
+        or accretion between shorelines representing different dates.
 
-        for Line1, Line2 in zip(self.__dict__[DictionaryKey1],self.__dict__[DictionaryKey2]):
-            
-            # get line node positions
+        Parameters
+        ----------
+        Lines1 : sequence of Line
+            First collection of line objects. Each line must correspond by
+            position to a line in ``Lines2``.
+        Lines2 : sequence of Line
+            Second collection of line objects. Must contain the same number of
+            line objects as ``Lines1``.
+        OutputFile : str or pathlib.Path
+            Path of the output vector file. The output format is inferred from
+            the file extension.
+        
+        MDH, July 2026
+        """
+
+        # check outputfile is path and folder exists
+        OutputFile = Path(OutputFile)
+        Extension = OutputFile.suffix.lower()
+
+        # get file format from output file extension
+        ExtensionFormats = {".shp": "ESRI Shapefile", ".geojson": "GeoJSON"}
+
+        try:
+            Format = ExtensionFormats[OutputFile.suffix.lower()]
+        except KeyError:
+            raise ValueError(f"Could not infer output format from extension '{OutputFile.suffix}'.")
+        
+        # to write patches we need two sets of lines the same length
+        if len(Lines1) != len(Lines2):
+            raise ValueError("Lines1 and Lines2 must contain the same number of lines")
+
+        Geometries = []
+        Records = []
+
+        # loop through lines in pairs
+        for Line1, Line2 in zip(Lines1, Lines2):
+
+            # retrieve coordinates
             X1, Y1 = Line1.get_XY()
-
-            if Smooth and len(X1) > 5:
-
-                XSmooth = X1[1:-1]
-                YSmooth = Y1[1:-1]
-                
-                # calculate distance
-                Dist = np.zeros(XSmooth.shape)
-                Dist[1:] = np.sqrt((XSmooth[1:] - XSmooth[:-1])**2 + (YSmooth[1:] - YSmooth[:-1])**2)
-                Dist = np.cumsum(Dist)
-                
-                # build a spline representation of the line
-                Spline, u = splprep([XSmooth, YSmooth], u=Dist, s=0)
-
-                # resample it at smaller distance intervals
-                Interp_Dist = np.arange(0, Dist[-1], 1.)
-                XSmooth, YSmooth = splev(Interp_Dist, Spline)
-
-                XSmooth = np.insert(XSmooth,0,X1[0])
-                YSmooth = np.insert(YSmooth,0,Y1[0])
-                X1 = np.append(XSmooth,X1[-1])
-                Y1 = np.append(YSmooth,Y1[-1])
-
-            # get line node positions
             X2, Y2 = Line2.get_XY()
 
-            if Smooth and len(X2) > 5:
+            if Smooth:
+                X1, Y1 = self._SmoothOutputLine(X1, Y1)
+                X2, Y2 = self._SmoothOutputLine(X2, Y2)
 
-                XSmooth = X2[1:-1]
-                YSmooth = Y2[1:-1]
-                # calculate distance
-                Dist = np.zeros(XSmooth.shape)
-                Dist[1:] = np.sqrt((XSmooth[1:] - XSmooth[:-1])**2 + (YSmooth[1:] - YSmooth[:-1])**2)
-                Dist = np.cumsum(Dist)
-                
-                # build a spline representation of the line
-                Spline, u = splprep([XSmooth, YSmooth], u=Dist, s=0)
+            # convert x/y arrays into coordinate pairs
+            Coordinates1 = list(zip(X1, Y1))
+            Coordinates2 = list(zip(X2, Y2))
 
-                # resample it at smaller distance intervals
-                Interp_Dist = np.arange(0, Dist[-1], 1.)
-                XSmooth, YSmooth = splev(Interp_Dist, Spline)
+            if len(Coordinates1) < 2 or len(Coordinates2) < 2:
+                continue
 
-                XSmooth = np.insert(XSmooth,0,X2[0])
-                YSmooth = np.insert(YSmooth,0,Y2[0])
-                X2 = np.append(XSmooth,X2[-1])
-                Y2 = np.append(YSmooth,Y2[-1])
+            # combine into a ring, reversing the order of the second set of coordinates
+            Ring = Coordinates1 + Coordinates2[::-1]
 
-            # combine, reversing the order of the second line to make a patch
-            X = np.concatenate((X1,X2[::-1]))
-            Y = np.concatenate((Y1,Y2[::-1]))
-            WritePoly = [np.column_stack([X,Y]).tolist()]
-            
-            # generate record
-            Record = [str(Line1.ID), str(self.Method)]
+            # create polygon
+            PolygonGeometry = Polygon(Ring)
 
-            # write line and record
-            WS.poly(WritePoly)
-            WS.record(*Record) 
+            # check if empty
+            if PolygonGeometry.is_empty:
+                continue
+
+            # fix any topological issues with buffer(0) trick
+            if not PolygonGeometry.is_valid:
+                PolygonGeometry = PolygonGeometry.buffer(0)
+
+            # build the record
+            Record = {"Poly_ID": str(Line1.ID), "Method": str(self.Method)}
+
+            if ExtraFields is not None:
+                Record.update(ExtraFields)
+
+            # append to lists
+            Geometries.append(PolygonGeometry)
+            Records.append(Record)
+
+        if not Geometries:
+            raise ValueError("No valid erosion polygons were created")
+
+        # create the geodataframe
+        GDF = gp.GeoDataFrame(Records, geometry=Geometries, crs=self.Projection)
+
+        # write to file
+        if Format == "GeoJSON":
+            GDF = GDF.to_crs("EPSG:4326")
+            GDF.to_file(OutputFile, driver="GeoJSON", index=False)
+
+        else:
+            GDF.to_file(OutputFile, driver="ESRI Shapefile", index=False)
+
+    def WritePatchesShp(self, DictionaryKey1, DictionaryKey2, PatchShp, Smooth=True, ExtraFields=None):
+
+        """
+        Legacy wrapper for WritePatches().
+
+        Parameters
+        ----------
+        DictionaryKey1 : str
+            Name of the first line collection stored on the Coast object.
+        DictionaryKey2 : str
+            Name of the second line collection stored on the Coast object.
+        PatchShp : str or pathlib.Path
+            Output shapefile path.
+        Smooth : bool, optional
+            Smooth line coordinates before constructing polygons.
+            Default is False.
+        ExtraFields : dict, optional
+            Additional attribute fields to write to every polygon feature.
+            Keys are field names and values are field values.
+            Default is None.
+
+        Returns
+        -------
         
-        # close the shapefiles and clean up
-        WS.close()
-            
-        # create the projection file    
-        f = open(PatchShp.rstrip("shp")+"prj","w")
-        f.write(self.Projection)
-        f.close()
+        MDH, July 2026
+
+        """
+
+        self.WritePatches(self.__dict__[DictionaryKey1], self.__dict__[DictionaryKey2], PatchShp, Smooth=Smooth, ExtraFields=ExtraFields)
 
     def WritePointsShp(self, PointsShp):
         """
@@ -907,211 +1121,121 @@ class Coast:
         f.close()
 
     def WriteTransectsShp(self, TransectsShp):
-
         """
         Writes the transects of a Coast object to polyline shape file
-
         builds a large attribute table with all transect properties
 
         MDH, June 2019
+        Updated July 2026 to maintain backward compatibility after new write functions
 
         """
+
+
+    def WriteTransects(self, OutputFile):
+
+        """
+        Writes the transects of a Coast object to file and
+        builds a large attribute table with all transect properties
+
+        MDH, July 2026
+
+        """
+
+        # Infer format from the file extension
+        ExtensionFormats = {".shp": "Shapefile", ".geojson": "GeoJSON"}
+
+        try:
+            Format = ExtensionFormats[OutputFile.suffix.lower()]
+        except KeyError:
+            raise ValueError("Could not infer output format from extension "
+                f"'{OutputFile.suffix}'. Specify Format explicitly.")
 
         # print action to screen
-        print("Coast.WriteTransectsShp: Writing coastal transects and attributes to a shapefile")
+        print(f"Coast.WriteTransects: Writing coastal transects and attributes as {Format}")
 
-        # open new shapefile        
-        WL = shapefile.Writer(TransectsShp,shapeType=shapefile.POLYLINE)
+        # Create geometry list to build
+        Geometries = []
+        Records = []        
         
-        # Check length of extreme water levels
-        if len(self.ExtremeWaterLevels) != 3:
-            self.ExtremeWaterLevels = [[],[],[]]
+        for ThisLine in self.CoastLines:
+            for ThisTransect in ThisLine.Transects:
 
-        # Create Fields
-        Fields = [('DeletionFlag','C',1,0), ['LineID', 'C', 3, 0], ['TransectID', 'C', 5, 0], 
-        ['Cliff_H','N', 5, 2],['Cliff_S','N', 5, 2],
-        ['Rocky','N', 2, 1], 
-        ['Bar_FH','N', 5, 2], ['Bar_FS','N', 5, 2],
-        ['Bar_BH','N', 5, 2], ['Bar_BS','N', 5, 2],
-        ['Bar_ToeW','N', 6, 2], ['Bar_TopW','N', 6, 2],
-        ['Bar_Volume','N', 7, 2], ['Crest_Elev','N', 5, 2], 
-        ['ST_W_low','N', 6, 2], ['ST_V_low','N', 7, 2],
-        ['ST_W_med','N', 6, 2], ['ST_V_med','N', 7, 2],
-        ['ST_W_high','N', 6, 2], ['ST_V_high','N', 7, 2],
-        ['LT_W_low','N', 6, 2], ['LT_V_low','N', 7, 2],
-        ['LT_W_med','N', 6, 2], ['LT_V_med','N', 7, 2],
-        ['LT_W_high','N', 6, 2], ['LT_V_high','N', 7, 2]]
-        
-        WL.fields = Fields[1:]
+                # get transect geometry and record
+                Geometries.append(ThisTransect.get_Geometry)
+                Records.append(ThisTransect.get_Record)
 
-        
-        for Line in self.CoastLines:
-            for Transect in Line.Transects:
+        # build the geodataframe
+        GDF = gp.GeoDataFrame(Records, geometry=Geometries, crs=self.Projection)
 
-                # get transect node positions
-                X, Y = Transect.get_XY()
-                
-                WriteTransect = [np.column_stack([X,Y]).tolist()]
+        # if geojson convert coordinates before writing
+        if Format == "GeoJSON":
+            GDF = GDF.to_crs("EPSG:4326")
+            GDF.to_file(OutputFile, driver="GeoJSON", index=False)
 
-                # Create the record this could become a function in transect object...
-                Record = [str(Line.ID), str(Transect.ID), Transect.CliffHeight, Transect.CliffSlope, 
-                            Transect.Rocky,
-                            Transect.FrontHeight, Transect.FrontSlope, 
-                            Transect.BackHeight, Transect.BackSlope,
-                            Transect.ToeWidth, Transect.TopWidth,
-                            Transect.BarrierVolume, Transect.CrestElevation,
-                            Transect.ExtremeWidths[0], Transect.ExtremeVolumes[0],
-                            Transect.ExtremeWidths[1], Transect.ExtremeVolumes[1],
-                            Transect.ExtremeWidths[2], Transect.ExtremeVolumes[2],
-                            Transect.ExtremeTotalWidths[0], Transect.ExtremeTotalVolumes[0],
-                            Transect.ExtremeTotalWidths[1], Transect.ExtremeTotalVolumes[1],
-                            Transect.ExtremeTotalWidths[2], Transect.ExtremeTotalVolumes[2]]
+        else:
+            GDF.to_file(OutputFile, driver="ESRI Shapefile", index=False)
 
-                # write transect and record
-                WL.line(WriteTransect)
-                try:
-                    WL.record(*Record) 
-                except:
-                    print(Transect.ID)
-                    print(Record)
-                    #print(Transect.ExtremeWidths)
-                    sys.exit()
-                
-        
-        # close the shapefiles and clean up
-        WL.close()
-            
-        # create the projection file    
-        f = open(TransectsShp.rstrip("shp")+"prj","w")
-        f.write(self.Projection)
-        f.close()
-    
-    def WriteFutureTransectsShp(self, TransectsShp):
+    def WriteFutureTransectsShp(self, OutputFile):
 
         """
-        Writes the transects of a Coast object to polyline shape file
+        Legacy function
+        
+        MDH, July 2026
+        """
+        self.WriteFutureTransects(OutputFile)
 
-        builds a large attribute table with all future shoreline info
-
-        MDH, Sept 2020
+    def WriteFutureTransects(self, OutputFile):
 
         """
+        Write transects with future shoreline predictions to file.
+
+        Shapefile output retains the source CRS.
+        GeoJSON output is converted to EPSG:4326.
+
+        MDH, July 2026
+        """
+
+        # check path and folder structure exist
+        OutputFile = Path(OutputFile)
+        OutputFile.parent.mkdir(parents=True, exist_ok=True)
+
+        # Infer format from the file extension
+        ExtensionFormats = {".shp": "Shapefile", ".geojson": "GeoJSON"}
+
+        try:
+            Format = ExtensionFormats[OutputFile.suffix.lower()]
+        except KeyError:
+            raise ValueError("Could not infer output format from extension "
+                f"'{OutputFile.suffix}'. Specify Format explicitly.")
 
         # print action to screen
-        print("Coast.WriteFutureTransectsShp: Writing coastal transects and attributes to a shapefile")
+        print(f"Coast.WriteFutureTransects: Writing future coastal transects as {Format}")
 
-        # open new shapefile        
-        WL = shapefile.Writer(TransectsShp,shapeType=shapefile.POLYLINE)
-        
-        # Check length of extreme water levels
-        if len(self.ExtremeWaterLevels) != 3:
-            self.ExtremeWaterLevels = [[],[],[]]
+        Records = []
+        Geometries = []
 
-        # Create Fields
-        Fields = [('DeletionFlag','C',1,0), 
-        ['Cell', 'C', 3, 0], ['SubCell', 'C', 3, 0], ['CMU','C', 20, 0],
-        ['LineID', 'N', 3, 0], ['TransectID', 'N', 5, 0], 
-        #['Min_Rate','N', 6, 4], ['Max_Rate','N', 6, 4], 
-        ['Hist_Rate','N', 6, 4], 
-        ['LatestYr', 'C', 10, 0], ['LatestSrc','C', 50, 0], 
-        ['Extrap2050','N', 6, 4], ['Extrap2100','N', 6, 4], ['FirstEYr','N',4, 4],
-        
-        ['pDist_2030', 'N', 6, 4], ['pRate_2030', 'N', 6, 4],
-        
-        ['Dist_2040', 'N', 6, 4], ['Rate_2040', 'N', 6, 4], 
-        ['Dist_2050', 'N', 6, 4], ['Rate_2050', 'N', 6, 4], 
-        ['Dist_2060', 'N', 6, 4], ['Rate_2060', 'N', 6, 4], 
-        ['Dist_2070', 'N', 6, 4], ['Rate_2070', 'N', 6, 4], 
-        ['Dist_2080', 'N', 6, 4], ['Rate_2080', 'N', 6, 4], 
-        ['Dist_2090', 'N', 6, 4], ['Rate_2090', 'N', 6, 4], 
-        ['Dist_2100', 'N', 6, 4], ['Rate_2100', 'N', 6, 4],
-        #['Dist_2110', 'N', 6, 4], ['Rate_2110', 'N', 6, 4], 
-        #['Dist_2120', 'N', 6, 4], ['Rate_2120', 'N', 6, 4], 
-        
-        #['Dist_2150', 'N', 6, 4], ['Rate_2150', 'N', 6, 4], 
-        #['Dist_2200', 'N', 6, 4], ['Rate_2200', 'N', 6, 4], 
-        #['Dist_2250', 'N', 6, 4], ['Rate_2250', 'N', 6, 4], 
-        #['Dist_2300', 'N', 6, 4], ['Rate_2300', 'N', 6, 4], 
-        
-        ['RCP85_2050', 'N', 4, 3],['RCP85_2100', 'N', 4, 3],
-        #['RCP85_2150', 'N', 4, 3],['RCP85_2200', 'N', 4, 3],
-        #['RCP85_2250', 'N', 4, 3],['RCP85_2300', 'N', 4, 3],
-        
-        ['DC1_SvEn_B','N', 4, 0], ['DC1_SvEn_C','N', 4, 0], 
-        ['DC1_DistV','N', 6, 4], ['DC1_RateBC','N', 6, 4],
-        ['OS_2020_Yr','C',10,0], ['Method','C', 5, 0]
-        ]
-        
-        WL.fields = Fields[1:]
-        
         for Line in self.CoastLines:
-            for Transect in Line.Transects:
 
-                if Transect.Future:
-                    # get transect node positions
-                    X, Y = Transect.get_XY()
-                    
-                    WriteTransect = [np.column_stack([X,Y]).tolist()]
-                    
-                    if not Transect.DC1:
-                        Transect.DC1 = ["","","",""]
-                    else:
-                        try:
-                            Transect.DC1[3] = Transect.DC1[2]/(Transect.DC1[1]-Transect.DC1[0])
-                        except:
-                            Transect.DC1 = ["","","",""]
-                            
-                    # Convert dates to strings in 'yyyy-mm-dd' format
-                    LatestYr_str = Transect.Timeseries["MHWS"].Dates[-1].strftime('%Y-%m-%d')
-                    LatestSrc_str = Transect.Timeseries["MHWS"].Sources[-1]
-                    OSYr_str = Transect.OSYear.strftime('%Y-%m-%d') if isinstance(Transect.OSYear, datetime) else str(Transect.OSYear)
+            for ThisTransect in Line.Transects:
 
-                    
-                    # Create the record this could become a function in transect object...
-                    Record = [str(self.Cell), str(self.SubCell), str(self.CMU), str(Line.ID), str(Transect.ID),
-                                #Transect.MinChangeRate, Transect.MaxChangeRate, 
-                                Transect.ChangeRate, 
-                                LatestYr_str, LatestSrc_str, 
-                                Transect.get_ExtrapDistance(2050), Transect.get_ExtrapDistance(2100), Transect.get_FirstFutureErosionYear(),
-                                
-                                Transect.get_FuturePositionChange(2020, 2030), Transect.get_FutureRate(2020, 2030),
-                                
-                                Transect.get_FuturePositionChange(2030, 2040), Transect.get_FutureRate(2030, 2040),
-                                Transect.get_FuturePositionChange(2040, 2050), Transect.get_FutureRate(2040, 2050),
-                                Transect.get_FuturePositionChange(2050, 2060), Transect.get_FutureRate(2050, 2060),
-                                Transect.get_FuturePositionChange(2060, 2070), Transect.get_FutureRate(2060, 2070),
-                                Transect.get_FuturePositionChange(2070, 2080), Transect.get_FutureRate(2070, 2080),
-                                Transect.get_FuturePositionChange(2080, 2090), Transect.get_FutureRate(2080, 2090),
-                                Transect.get_FuturePositionChange(2090, 2100), Transect.get_FutureRate(2090, 2100),
-                                #Transect.get_FuturePositionChange(2100, 2110), Transect.get_FutureRate(2100, 2110),
-                                #Transect.get_FuturePositionChange(2110, 2120), Transect.get_FutureRate(2110, 2120),
-                                
-                                #Transect.get_FuturePositionChange(2120, 2150), Transect.get_FutureRate(2120, 2150),
-                                #Transect.get_FuturePositionChange(2150, 2200), Transect.get_FutureRate(2150, 2200),
-                                #Transect.get_FuturePositionChange(2200, 2250), Transect.get_FutureRate(2200, 2250),
-                                #Transect.get_FuturePositionChange(2250, 2300), Transect.get_FutureRate(2250, 2300),
-                                
-                                Transect.FutureSeaLevels[2],Transect.FutureSeaLevels[7], # 2050, 2100
-                                #Transect.FutureSeaLevels[11],Transect.FutureSeaLevels[12], # 2150, 2200
-                                #Transect.FutureSeaLevels[13],Transect.FutureSeaLevels[-1], # 2250, 2300
-                                
-                                Transect.DC1[0], Transect.DC1[1], Transect.DC1[2], Transect.DC1[3],
-                                OSYr_str, self.Method]
-                    
-                                
+                if not ThisTransect.Future:
+                    continue
+
+                # get transect geometry and record
+                Geometries.append(ThisTransect.get_Geometry())
+                Records.append(ThisTransect.get_FutureRecord())
+
+        # build the geodataframe
+        GDF = gp.GeoDataFrame(Records, geometry=Geometries, crs=self.Projection)
+
+        # if geojson convert coordinates before writing
+        if Format == "GeoJSON":
+            GDF = GDF.to_crs("EPSG:4326")
+            GDF.to_file(OutputFile, driver="GeoJSON", index=False)
+
+        else:
+            GDF.to_file(OutputFile, driver="ESRI Shapefile", index=False)
     
-                    # write transect and record
-                    WL.line(WriteTransect)
-                    WL.record(*Record) 
-                                    
-        # close the shapefiles and clean up
-        WL.close()
-            
-        # create the projection file    
-        f = open(TransectsShp.rstrip("shp")+"prj","w")
-        f.write(self.Projection)
-        f.close()
-
     def WriteTransectPointsShp(self, TransectPointsShp):
 
         """
@@ -6493,6 +6617,78 @@ class Coast:
                 Transect.Rocky = GroupList[Counter]
                 Counter += 1
 
+    def _SmoothOutputLine(self, X, Y, Interval=1.):
+
+        """
+        Smooth and resample a line while preserving the original endpoints.
+
+        A cubic spline is fitted through the interior vertices of the line and
+        resampled at regular intervals along its length. The first and last
+        vertices are retained unchanged to preserve the original line extent.
+
+        Parameters
+        ----------
+        X : array_like
+            X coordinates of the line vertices.
+
+        Y : array_like
+            Y coordinates of the line vertices.
+
+        Interval : float, optional
+            Distance between successive resampled vertices, in the units of the
+            line's coordinate reference system (typically metres). Smaller values
+            produce smoother, denser output lines at the expense of larger file
+            sizes. Default is 1.0.
+
+        Returns
+        -------
+        XOutput : ndarray
+            Smoothed and resampled X coordinates.
+
+        YOutput : ndarray
+            Smoothed and resampled Y coordinates.
+    
+        MDH, July 2026
+
+        """
+
+        X = np.asarray(X)
+        Y = np.asarray(Y)
+
+        XInterior = X[1:-1]
+        YInterior = Y[1:-1]
+
+        SegmentLengths = np.sqrt(np.diff(XInterior) ** 2 + np.diff(YInterior) ** 2)
+
+        Dist = np.insert(np.cumsum(SegmentLengths), 0, 0.0,)
+
+        # Remove coincident points
+        Keep = np.concatenate(([True], np.diff(Dist) > 0))
+        XInterior = XInterior[Keep]
+        YInterior = YInterior[Keep]
+        Dist = Dist[Keep]
+
+        if len(Dist) < 2 or Dist[-1] <= 0:
+            return X, Y
+
+        # setup the spline for smoothing
+        Spline, _ = splprep([XInterior, YInterior], u=Dist, s=0, k=min(3, len(Dist) - 1))
+
+        # get regular distances for resampling smoothed line
+        InterpDist = np.arange(0., Dist[-1], Interval)
+
+        if len(InterpDist) == 0:
+            return X, Y
+
+        # get interpolated coordinates from the spline
+        XInterpolated, YInterpolated = splev(InterpDist, Spline)
+
+        # reinstate start and end nodes
+        XOutput = np.concatenate(([X[0]], XInterpolated, [X[-1]]))
+        YOutput = np.concatenate(([Y[0]], YInterpolated, [Y[-1]]))
+
+        return XOutput, YOutput
+
     def GetFutureShoreLinesProximity(self, BufferDistance):
 
         Lines = []
@@ -6615,6 +6811,8 @@ class Coast:
         """
 
         Extracts contiguous lines of future predicted MHWS
+
+        Would be good to make this create line objects but not yet MDH July 2026
 
         """
         self.FutureShoreLines = []
