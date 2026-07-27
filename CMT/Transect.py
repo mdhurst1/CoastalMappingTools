@@ -945,9 +945,9 @@ class Transect:
         """
 
         # get sea level history from new sea level timeseries storage
-        Projection = (self.SeaLevelProjections, [Scenario], [Percentile])
+        Projection = self.SeaLevelProjections[Scenario][Percentile]
         FutureSeaLevelDates = list(Projection.Dates)
-        FutureSeaLevels = np.asarray(Projection.Distances, dtype=float)
+        FutureSeaLevels = np.asarray(Projection.Values, dtype=float)
 
         # lists to temporarily store results and return
         FutureDates = []
@@ -971,9 +971,9 @@ class Transect:
             return
         
         # check we have future sea levels MOVE THIS ONTO TIMESEREIES
-        if not FutureSeaLevelDates or not FutureSeaLevels:
-            print("No sea levels")
-            return
+        if len(FutureSeaLevelDates) == 0 or FutureSeaLevels.size == 0:
+            print("No future sea levels")
+            return None
 
         # calculate historical rates from timeseries if not already existing
         if RateMethod not in TS.Results:
@@ -1004,7 +1004,7 @@ class Transect:
         FutureRSLRate = (FutureSeaLevels[1] - FutureSeaLevels[0])/(FutureSeaLevelDates_diff)
 
         # get one associated rate of RSLR associated with CalibrationDate
-        self.CalibrationRSLR = np.interp(CalibrationDate.toordinal(),
+        CalibrationRSLR = np.interp(CalibrationDate.toordinal(),
                                      [StartDate.toordinal(), FutureSeaLevelDates[1].toordinal()],
                                      [HistoricalRSLRate, FutureRSLRate])
 
@@ -1020,21 +1020,15 @@ class Transect:
         self.CalculateHinterlandSlope()
 
         # set slope for Bruun Rule    
-        if self.HinterlandSlope < self.ShorefaceSlope:
-            self.BruunSlope = self.HinterlandSlope
-        else:
-            self.BruunSlope = self.ShorefaceSlope
+        self.BruunSlope = min(self.HinterlandSlope, self.ShorefaceSlope)
+        BruunSlope = max(BruunSlope, 0.001)
         
-        # set minimum shoreface slope to 0.001
-        if self.BruunSlope < 0.001:
-            self.BruunSlope = 0.001
-
         # Calibration term, remembering to convert relative sea level change rates to m/yr
-        CalibrationRate = (self.ShorefaceDepth * HistoricRate + (self.ShorefaceDepth / self.BruunSlope) * self.CalibrationRSLR)
+        CalibrationRate = (self.ShorefaceDepth * HistoricRate + (self.ShorefaceDepth / BruunSlope) * CalibrationRSLR)
         
         # get sea level at latest time
-        self.LatestRSL = np.interp(LatestDate.toordinal(),[Date.toordinal() for Date in self.FutureSeaLevelYears], self.FutureSeaLevels,)
-        
+        LatestRSL = np.interp(LatestDate.toordinal(),[Date.toordinal() for Date in FutureSeaLevelDates],FutureSeaLevels)
+
         # Future shoreline positions
         for FutureDate, FutureSeaLevel in zip(FutureSeaLevelDates, FutureSeaLevels):
 
@@ -1042,14 +1036,13 @@ class Transect:
 
             # catch the condition where observed shorelines are more recent than those we're trying to make predictions for
             if dT <= 0:
-
-                #print('Predict Future Shorelines - observed shorelines are more recent than predictions:', str(self.FutureSeaLevelYears[i]), '-', TS.Dates[-1])
-                self.FutureShorelinesPositions.append(Node(LatestPosition.X, LatestPosition.Y))
-                self.FutureShorelinesRates.append(HistoricRate)
-                self.FutureShorelinesDistances.append(LatestDistance)
+                FutureDates.append(FutureDate)
+                FuturePositions.append(Node(LatestPosition.X, LatestPosition.Y))
+                FutureRates.append(HistoricRate)
+                FutureDistances.append(LatestDistance)
                 continue
             
-            BruunRuleComponent = -(1./self.BruunSlope)*(FutureSeaLevel-self.LatestRSL)
+            BruunRuleComponent = -(1./BruunSlope)*(FutureSeaLevel-LatestRSL)
             CalibrationComponent = (1./self.ShorefaceDepth)*CalibrationRate*dT
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
             
@@ -1123,7 +1116,7 @@ class Transect:
 
             for Percentile in Percentiles:
                 if (Percentile not in self.SeaLevelProjections[Scenario]):
-                    print(f"No sea-level projection for scenario {Scenario}, percentile {Percentile}"
+                    print(f"No sea-level projection for scenario {Scenario}, percentile {Percentile}")
                     continue
 
                 # run the prediction using Bruun Rule
@@ -1133,7 +1126,12 @@ class Transect:
                 if Prediction is not None:
                     self.FutureShorelinePredictions[Scenario][Percentile] = Prediction
 
-        self.Future = True
+        # check if predictions were made
+        self.Future = any(len(ScenarioPredictions) > 0 for ScenarioPredictions in self.FutureShorelinePredictions.values())
+
+        # run legacy function
+        if self.Future:
+            self._SetLegacyFutureShorelinePrediction(Scenario=8, Percentile=95)
 
     def _SetLegacyFutureShorelinePrediction(self, Scenario=8, Percentile=95):
 
