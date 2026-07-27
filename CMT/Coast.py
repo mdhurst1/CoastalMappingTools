@@ -547,15 +547,9 @@ class Coast:
             if Smooth and len(X) > 5:
                 # first smooth
                 X, Y = self._SmoothOutputLine(X, Y)
-                Geometry = LineString(zip(X, Y))
-
-                # check for loops then smooth again
-                CleanLine = Geometry.buffer(0).boundary
-                X, Y = CleanLine.get_XY()
-                X, Y = self._SmoothOutputLine(X, Y)
-                Geometry = LineString(zip(X, Y))
                 
-
+            Geometry = LineString(zip(X, Y))
+            
             if Geometry.is_empty:
                 continue
 
@@ -1034,13 +1028,8 @@ class Coast:
 
                 # first smooth
                 X, Y = self._SmoothOutputLine(X, Y)
-                Geometry = LineString(zip(X, Y))
 
-                # check for loops then smooth again
-                CleanLine = Geometry.buffer(0).boundary
-                X, Y = CleanLine.get_XY()
-                X, Y = self._SmoothOutputLine(X, Y)
-                Geometry = LineString(zip(X, Y))
+            Geometry = LineString(zip(X, Y))
 
             Geometries.append(Geometry)
 
