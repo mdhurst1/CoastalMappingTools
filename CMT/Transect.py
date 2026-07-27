@@ -65,16 +65,10 @@ class Transect:
         self.Overlaps = False
         
         # historic shoreline positions, distances and change rates
-        
         self.HistoricFlag = False
         self.HistoricShorelinesSources = []
         self.HistoricShorelinesDates = []
         self.OSYear = False
-        self.HistoricShorelinesPositions = [] # do we need both of these
-        self.HistoricShorelinesDistances = [] #
-        self.HistoricShorelinesPosition = [] #
-        self.HistoricShorelinesDistance = [] #
-        self.HistoricShorelinesErrors = []
         self.DC1 = []
         
         # change rates will be 1 less than no of positions
@@ -101,6 +95,19 @@ class Transect:
         # set up dictionary to store all timeseries info
         self.Timeseries = {}
 
+        # legacy definitions (remove later)
+        @property
+        def HistoricShorelinesDates(self):
+            return self.Timeseries["MHWS"].Dates
+
+        @property
+        def HistoricShorelinesDistances(self):
+            return self.Timeseries["MHWS"].Distances
+
+        @property
+        def HistoricShorelinesErrors(self):
+            return self.Timeseries["MHWS"].Errors
+
         # rock head info
         self.RockHeadDistance = None
         self.RockHeadPosition = None
@@ -125,8 +132,9 @@ class Transect:
         self.Future = False
         self.LongTermOnly = False
         self.CalibrationYear = None
-        self.FutureSeaLevelYears = []
-        self.FutureSeaLevels = []
+        self.FutureSeaProjections = {}
+
+        # future shoreline predictions
         self.FutureShorelinesPositions = []
         self.FutureShorelinesRates = []
         self.FutureShorelinesDistances = []

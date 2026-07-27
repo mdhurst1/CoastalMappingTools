@@ -6,7 +6,7 @@ from scipy.stats import theilslopes
 # MDH May 2026
 
 class TimeSeriesSignal:
-    def __init__(self, Name, Dates=None, Positions=None, Distances=None, Errors=None, Sources=None):
+    def __init__(self, Name, Dates=None, Values=None, Errors=None, Sources=None):
         
         """
 
@@ -21,8 +21,7 @@ class TimeSeriesSignal:
 
         # set up object attributes and default if empty
         self.Dates = list(Dates) if Dates is not None else []
-        self.Positions = list(Positions) if Positions is not None else []
-        self.Distances = list(Distances) if Distances is not None else []
+        self.Values = list(Values) if Values is not None else []
         self.Errors = list(Errors) if Errors is not None else []
         self.Sources = list(Sources) if Sources is not None else []
 
@@ -32,13 +31,12 @@ class TimeSeriesSignal:
 
         self.Results = {}
 
-    def AddObservation(self, Date, Position, Distance, Error=None, Source=None):
+    def AddObservation(self, Date, Value, Error=None, Source=None):
         
         if Date in self.Dates:
             Index = self.Dates.index(Date)
 
-            self.Positions[Index] = Position
-            self.Distances[Index] = Distance
+            self.Values[Index] = Value
             self.Errors[Index] = Error
             self.Sources[Index] = Source
 
@@ -48,8 +46,7 @@ class TimeSeriesSignal:
         Index = bisect.bisect(self.Dates, Date)
 
         self.Dates.insert(Index, Date)
-        self.Positions.insert(Index, Position)
-        self.Distances.insert(Index, Distance)
+        self.Values.insert(Index, Value)
         self.Errors.insert(Index, Error)
         self.Sources.insert(Index, Source)
 
@@ -75,7 +72,7 @@ class TimeSeriesSignal:
             return
 
         #Calculate rate
-        Rate = (self.Distances[-1] - self.Distances[0]) / TotalDt
+        Rate = (self.Values[-1] - self.Values[0]) / TotalDt
 
         # Calculate rate uncertainty
         Errors = self.ErrorsArray()
@@ -91,8 +88,8 @@ class TimeSeriesSignal:
             "RateUncertainty": RateUncertainty,
             "StartDate": self.Dates[0],
             "EndDate": self.Dates[-1],
-            "StartDistance": self.Distances[0],
-            "EndDistance": self.Distances[-1],
+            "StartValue": self.Values[0],
+            "EndValue": self.Values[-1],
         }
     
     def CalcOLSRate(self, Years=None, ResultName="OLS"):
@@ -115,7 +112,7 @@ class TimeSeriesSignal:
 
         # convert lists to arrays
         DatesArray = self.OrdinalDates.astype(float)
-        DistancesArray = self.DistancesArray()
+        ValuesArray = self.ValuesArray()
 
         # optional recent-window filtering
         if Years is not None:
@@ -126,21 +123,21 @@ class TimeSeriesSignal:
             Mask = DatesArray >= StartDate
 
             DatesArray = DatesArray[Mask]
-            DistancesArray = DistancesArray[Mask]
+            ValuesArray = ValuesArray[Mask]
 
             if len(DatesArray) < 2:
                 return
             
         # perform OLS
-        Slope, Intercept = np.polyfit(DatesArray, DistancesArray, 1)
+        Slope, Intercept = np.polyfit(DatesArray, ValuesArray, 1)
 
         # Calculate residuals and rate
-        FittedDistances = Slope*DatesArray + Intercept
-        Residuals = DistancesArray - FittedDistances
+        FittedValues = Slope*DatesArray + Intercept
+        Residuals = ValuesArray - FittedValues
         Rate = Slope * 365.25
 
         # Calculate uncertainty
-        NObs = len(DistancesArray)
+        NObs = len(ValuesArray)
 
         if NObs > 2:
             
@@ -150,7 +147,7 @@ class TimeSeriesSignal:
             Sxx = np.sum((DatesArray-np.mean(DatesArray))**2)
             
             # get temporal spread
-            Total_SS = np.sum((DistancesArray - np.mean(DistancesArray))**2)
+            Total_SS = np.sum((ValuesArray - np.mean(ValuesArray))**2)
 
             # calculate R2
             R2 = round(1. - (Residual_SS / Total_SS), 3)
@@ -172,7 +169,7 @@ class TimeSeriesSignal:
             "RateSE": Rate_SE,
             "RateUncertainty": Rate_CI95,
             "Intercept": Intercept,
-            "Fitted": FittedDistances,
+            "Fitted": FittedValues,
             "Residuals": Residuals,
             "R2": R2,
             "N": NObs,
@@ -198,10 +195,10 @@ class TimeSeriesSignal:
 
         # convert lists to arrays
         DatesArray = self.OrdinalDates.astype(float)
-        DistancesArray = self.DistancesArray()
+        ValuesArray = self.ValuesArray()
 
         # perform theil sen rate analysis
-        Slope_Days, Intercept, Slope_Low, Slope_High = theilslopes(DistancesArray, DatesArray, alpha=0.95)
+        Slope_Days, Intercept, Slope_Low, Slope_High = theilslopes(ValuesArray, DatesArray, alpha=0.95)
 
         # get rates in per year
         Rate = Slope_Days * 365.25
@@ -209,11 +206,11 @@ class TimeSeriesSignal:
         Rate_High = Slope_High * 365.25
 
         # Calculate residuals and rate
-        FittedDistances = Slope_Days*DatesArray + Intercept
-        Residuals = DistancesArray - FittedDistances
+        FittedValues = Slope_Days*DatesArray + Intercept
+        Residuals = ValuesArray - FittedValues
 
         # Calculate uncertainty
-        NObs = len(DistancesArray)
+        NObs = len(ValuesArray)
 
         if NObs > 2:
             
@@ -223,7 +220,7 @@ class TimeSeriesSignal:
             Sxx = np.sum((DatesArray-np.mean(DatesArray))**2)
             
             # get temporal spread
-            Total_SS = np.sum((DistancesArray - np.mean(DistancesArray))**2)
+            Total_SS = np.sum((ValuesArray - np.mean(ValuesArray))**2)
 
             # calculate R2
             R2 = round(1. - (Residual_SS / Total_SS), 3)
@@ -238,10 +235,10 @@ class TimeSeriesSignal:
             "Rate": Rate,
             "RateCI95": (Rate_Low, Rate_High),
             "Intercept": Intercept,
-            "Fitted": FittedDistances,
+            "Fitted": FittedValues,
             "Residuals": Residuals,
             "R2": R2,
-            "N": len(self.Distances),
+            "N": len(self.Values),
         }    
     
     def CalcTimeWeightedRegression(self, TauYears):
@@ -263,7 +260,7 @@ class TimeSeriesSignal:
 
         # convert lists to arrays
         DatesArray = self.OrdinalDates.astype(float)
-        DistancesArray = self.DistancesArray()
+        ValuesArray = self.ValuesArray()
 
         # Calculate Time-Weights
         MaxDate = np.max(DatesArray)
@@ -282,15 +279,15 @@ class TimeSeriesSignal:
         Weights = Weights / np.sum(Weights)
 
         # perform time-weighted OLS
-        Slope, Intercept = np.polyfit(DatesArray, DistancesArray, 1, w=Weights)
+        Slope, Intercept = np.polyfit(DatesArray, ValuesArray, 1, w=Weights)
 
         # Calculate residuals and rate
-        FittedDistances = Slope*DatesArray + Intercept
-        Residuals = DistancesArray - FittedDistances
+        FittedValues = Slope*DatesArray + Intercept
+        Residuals = ValuesArray - FittedValues
         Rate = Slope * 365.25
 
         # Calculate uncertainty
-        NObs = len(DistancesArray)
+        NObs = len(ValuesArray)
 
         if NObs > 2:
             
@@ -300,7 +297,7 @@ class TimeSeriesSignal:
             Sxx = np.sum((DatesArray-np.mean(DatesArray))**2)
             
             # get temporal spread
-            Total_SS = np.sum((DistancesArray - np.mean(DistancesArray))**2)
+            Total_SS = np.sum((ValuesArray - np.mean(ValuesArray))**2)
 
             # calculate R2
             R2 = round(1. - (Residual_SS / Total_SS), 3)
@@ -322,7 +319,7 @@ class TimeSeriesSignal:
             "RateSE": Rate_SE,
             "RateUncertainty": Rate_CI95,
             "Intercept": Intercept,
-            "Fitted": FittedDistances,
+            "Fitted": FittedValues,
             "Residuals": Residuals,
             "R2": R2,
             "Weights": Weights,
@@ -350,10 +347,10 @@ class TimeSeriesSignal:
         return self.OrdinalDates
 
     def HasData(self, Minimum=2):
-        return len(self.Dates) >= Minimum and len(self.Distances) >= Minimum
+        return len(self.Dates) >= Minimum and len(self.Values) >= Minimum
     
-    def DistancesArray(self):
-        return np.asarray(self.Distances, dtype=float)
+    def ValuesArray(self):
+        return np.asarray(self.Values, dtype=float)
 
     def ErrorsArray(self):
         if len(self.Errors) == 0 or all(Error is None for Error in self.Errors):
