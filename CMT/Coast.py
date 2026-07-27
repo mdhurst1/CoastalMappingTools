@@ -3891,56 +3891,110 @@ class Coast:
                         ThisNode.Z = Elevation
                     
     
-    def SampleFutureRSL(self, FutureRSLFolder, RCP=8, Percentile=95, Dates=['2020-01-01','2030-01-01','2040-01-01','2050-01-01','2060-01-01','2070-01-01','2080-01-01','2090-01-01','2100-01-01'], Location=None):
+    def SampleFutureRSL(self, FutureRSLFolder, Scenarios=None, Percentiles=None, Dates=None):
 
-        """ 
-        
-        Samples a raster of future rates of relative sea level change (rise/fall)
-        at each transect location on coast
+        """
+        Sample future relative sea-level rasters at every transect.
+
+        Sea-level projections are sampled for multiple emissions scenarios,
+        percentiles and dates. Results are added to the existing Transect
+        objects in::
+
+            Transect.SeaLevelProjections[Scenario][Percentile]
 
         Parameters
         ----------
-        FutureRSLFolder : string
-            Folder containing future sea level elevation rasters for Scotland
-        RCP : int
-            RCP scenario to use
-        Percentile : int
-            Percentile scenario to use
-        Dates : list
-            List of dates corresponding to the years to be analysed
-        Location: Node object with location to use
-        
-        MDH, September 2019
+        FutureRSLFolder : str or pathlib.Path
+            Folder containing future relative sea-level rasters.
+        Scenarios : sequence of int, optional
+            RCP scenarios to sample. Defaults to ``[2, 4, 8]``.
+        Percentiles : sequence of int, optional
+            Projection percentiles to sample. Defaults to ``[5, 50, 95]``.
+        Dates : sequence, optional
+            Dates to sample. Values may be datetime objects, integer years,
+            or strings formatted as ``YYYY-MM-DD``. Defaults to decadal dates
+            from 2030 to 2100.
 
+        Notes
+        -----
+        Existing Transect objects are updated in place. The coastlines and
+        transects are not recreated.
+
+        MDH, September 2019
+        Updated July 2026 to include multiple scenarios and percentiles.
         """
 
-        print("Coast.SampleFutureRSL: Sampling future Relative Sea Level raster dataset")
+
+        print("Coast.SampleFutureRSL: Sampling future Relative Sea Level from UKCP")
 
         if self.FutureShoreLinesYears:
             print("\tFuture sea levels already sampled")
             return
 
-        #self.FutureShoreLinesYears = Years
+        # check if list of dates and initiate if required
+        if Dates is None:
+            Dates = [datetime(Year, 1, 1) for Year in range(2020, 2101, 10)]
+        else:
+            Dates = [self._NormaliseDate(Date) for Date in Dates]
+
+        # keep legacy list for now
         self.FutureShoreLinesYears = [datetime.strptime(Date, '%Y-%m-%d') for Date in Dates]
 
-        for Date in self.FutureShoreLinesYears:
-            Year = Date.year
-            FutureRSLRaster = FutureRSLFolder + "/RCP" + str(RCP) + "_" + str(Percentile) + "th_" + str(Year) + "_filled.tif"
+        # check scenarios and initiate default lists:
+        if Scenarios is None: 
+            Scenarios = [2, 4, 8]
+        if Percentiles is None:
+            Percentiles = [5, 50, 95]
 
-            # open the raster dataset to work on
-            with rasterio.open(FutureRSLRaster) as RSLDataset:
-            
-                # loop through transects and sample
-                for Line in self.CoastLines:
-                    for i, Transect in enumerate(Line.Transects[:]):
-                        if Location:
-                            for val in RSLDataset.sample([(Location.X,Location.Y)]):
-                                Transect.FutureSeaLevels.append(val[0])
-                                Transect.FutureSeaLevelYears.append(Date)
-                        else:
-                            for val in RSLDataset.sample([(Transect.CoastNode.X,Transect.CoastNode.Y)]):
-                                Transect.FutureSeaLevels.append(val[0])
-                                Transect.FutureSeaLevelYears.append(Date)
+        # check we have a path to folder
+        FutureRSLFolder = Path(FutureRSLFolder)
+
+        # extract list of transects to work on and get their coordinates
+        Transects = [Transect for Line in self.CoastLines for Transect in Line.Transects]
+        Coordinates = [(Transect.CoastNode.X, Transect.CoastNode.Y,) for Transect in Transects]
+
+        # set up temporary storage dictionary
+        Sampled = {Scenario: 
+                    {Percentile: [] for Percentile in Percentiles}
+                    for Scenario in Scenarios}
+
+        # loop through RCP scenarios then loop through percentiles to sample Future Sea Level at each date
+        for Scenario in Scenarios:
+            for Percentile in Percentiles:
+                for Date in Dates:
+
+                    # specify raster file
+                    RasterFile = (FutureRSLFolder / (f"RCP{Scenario}_{Percentile}th_{Date.year}_filled.tif"))
+                
+                    # open the raster dataset to work on
+                    with rasterio.open(RasterFile) as Dataset:
+                    
+                        # sample using list of coordinates
+                        Samples = list(Dataset.sample(Coordinates, masked=True)
+                        Values = np.asarray([Sample[0] for Sample in Samples, dtype=float)
+
+                        # add to dictionary
+                        Sampled[Scenario][Percentile].append(Values)
+
+        # Add the sampled series to the existing Transect objects.
+        for Scenario in Scenarios:
+            for Percentile in Percentiles:
+
+                # Shape before stacking:
+                #     one array per date, each containing all transects
+                #
+                # Shape after stacking:
+                #     n_transects x n_dates
+                ValuesByTransect = np.stack(Sampled[Scenario][Percentile], axis=1)
+
+                # loop through transects
+                for TransectIndex, Transect in enumerate(Transects):
+
+                    # get the values
+                    Values = ValuesByTransect[TransectIndex,:]
+
+                    #add them to the transect
+                    Transect.AddSeaLevelProjection(Scenario, Percentile, Dates, Values)
 
     def SampleRockHeadPosition(self, UPSMRaster, MaxRockHeadErosionDistance=25.):
 
@@ -8004,3 +8058,35 @@ class Coast:
                     ErosionDistances.append(ErosionDistance)
         
         return ErosionDistances
+
+    @staticmethod
+    def _NormaliseDate(Date):
+
+        """
+        Function to check date is in correct format and convert as required
+        
+        MDH, July 2026
+
+        """
+
+        if isinstance(Date, datetime):
+            return Date
+
+        if isinstance(Date, int):
+            return datetime(Date, 1, 1)
+
+        if isinstance(Date, str):
+            try:
+                return datetime.strptime(
+                    Date,
+                    "%Y-%m-%d",
+                )
+            except ValueError as Error:
+                raise ValueError(
+                    "Date strings must use YYYY-MM-DD format."
+                ) from Error
+
+        raise TypeError(
+            "Dates must be datetime objects, integer years, "
+            "or YYYY-MM-DD strings."
+        )
