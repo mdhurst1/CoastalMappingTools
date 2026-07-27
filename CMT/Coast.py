@@ -65,6 +65,8 @@ class Coast:
         self.ExtBackLines_Low = []
         self.ExtBackLines_Med = []
         self.ExtBackLines_High = []
+        self.FutureRSLScenarios = []
+        self.FutureRSLPercentiles = []
         self.FutureShoreLinesYears = []
         self.FutureShoreLines = []
         self.FutureVegEdgeLines = []
@@ -581,7 +583,7 @@ class Coast:
         else:
             GDF.to_file(OutputFile, driver="ESRI Shapefile", index=False)   
 
-    def WriteFutureShorelinesUncertainty(self, Scenarios, Percentiles, OutputFolder, FilenamePrefix, Format, Smooth=True):
+    def WriteFutureShorelinesUncertainty(self, OutputFolder, FilenamePrefix, Format="GeoJSON", Smooth=True):
         """
         Write future shoreline uncertainty polygons.
 
@@ -620,71 +622,66 @@ class Coast:
         print("Coast.WriteFutureShorelineUncertainty: Writing future shoreline uncertainty polygons")
 
          # check if scenarios is defined
-        if Scenarios is None:
-            Scenarios = [8,]
-
-        # check sea level percentiles (will be redundant soon)
-        if Percentiles is None:
-            Percentiles = [95,]
+        Scenarios = self.FutureRSLScenarios
+        Percentiles = self.FutureRSLPercentiles
+        Dates = self.FutureShoreLinesYears
 
         # setup intervals for uncertainty
-        Intervals = {95: (2.5, 97.5),
-                     68: (16.0, 84.0)}
+        UncertaintyIntervals = {95: (2.5, 97.5),
+                                68: (16.0, 84.0)}
         
         # setup output folder
         OutputFolder = Path(OutputFolder)
         OutputFolder.mkdir(parents=True, exist_ok=True)
 
+        # check file format
+        Format = Format.lower()
+
+        if Format == "geojson":
+            Extension = ".geojson"
+        elif Format == "shp":
+            Extension = ".shp"
+        else:
+            raise ValueError("Format must be 'GeoJSON' or 'shp'.")
+
         for Scenario in Scenarios:
             for Percentile in Percentiles:
 
-                # loop across transects
-                for CoastLine in self.CoastLines:
-                    for Transect in CoastLine.Transects:
+                # loop through dates                
+                for Date in Dates:
 
-                        Result = (Transect.FutureShorelineUncertainty[Scenario][Percentile])
-                        Dates = list(Result["Dates"])
+                    # Reset the patches list
+                    Patches = []
 
-                        # loop through dates                
-                        for Date in Dates:
+                    # loop through percentiles
+                    for UncertaintyInterval, Quantiles in UncertaintyIntervals.items():
 
-                            # loop through percentiles
-                            for Interval, Quantiles in Intervals.items():
+                        LowerPercentile, UpperPercentile = (Quantiles)
+                        LowerLines, UpperLines = (self._GetFutureUncertaintyBoundaryLines(Date, Scenario, Percentile, LowerPercentile, UpperPercentile))
 
-                                LowerPercentile, UpperPercentile = (Quantiles)
-                                LowerLines, UpperLines = (self._GetFutureUncertaintyBoundaryLines(Date, Scenario, Percentile, LowerPercentile, UpperPercentile))
+                        if len(LowerLines) == 0:
+                            continue
 
-                                if len(LowerLines) == 0:
-                                    continue
+                        if len(LowerLines) != len(UpperLines):
+                            raise RuntimeError(
+                                "Lower and upper uncertainty line "
+                                "counts do not match."
+                            )
 
-                                if len(LowerLines) != len(UpperLines):
-                                    raise RuntimeError(
-                                        "Lower and upper uncertainty line "
-                                        "counts do not match."
-                                    )
+                        # add extra metadata as needed
+                        ExtraFields = {"Scenario": Scenario, "SL_Percentile": Percentile, "Year": Date.year, "UncertaintyInterval": UncertaintyInterval, "LowerQ": LowerPercentile, "UpperQ": UpperPercentile}
 
-                                # setup output file
-                                OutputFile = OutputFolder / FilenamePrefix + (f"_Uncertainty_RCP{Scenario}_P{Percentile}_{Date.year}_.geojson")
+                        # retrieve patches
+                        Patches.extend(self.CreatePatches(LowerLines, UpperLines, Smooth=Smooth, ExtraFields=ExtraFields))
 
-                                # add extra metadata as needed
-                                ExtraFields = {"Scenario": Scenario, "SL_Percentile": Percentile, "Year": Date.year, "Interval": Interval, "LowerQ": LowerPercentile, "UpperQ": UpperPercentile}
+                    # setup output file
+                    OutputFile = OutputFolder / (FilenamePrefix + f"_Uncertainty_RCP{Scenario}_P{Percentile}_{Date.year}{Extension}")
 
-                                # reset to empty list of patches
-                                Patches = []
+                    if len(Patches) == 0:
+                        continue
 
-                                # loop through uncertainty intervals
-                                for Interval in [95, 68]:
-
-                                    # setup metadata
-                                    ExtraFields={   "Interval": Interval,
-                                                    "Year": Date.year,
-                                                    "Scenario": Scenario,}
-
-                                    # retrieve patches
-                                    Patches.extend(self.CreatePatches(LowerLines, UpperLines, Smooth=Smooth))
-
-                                # write patches to file    
-                                self.WritePatches(Patches, OutputFile, Smooth, ExtraFields)
+                    # write patches to file    
+                    self.WritePatchObjects(Patches, OutputFile)
 
     
     def WriteFutureUncertaintyShp(self, UncertaintyShp, Year=2100):
@@ -4196,6 +4193,10 @@ class Coast:
         if Percentiles is None:
             Percentiles = [5, 50, 95]
 
+        # track scenarios in use
+        self.FutureRSLScenarios = list(Scenarios)
+        self.FutureRSLPercentiles = list(Percentiles)
+
         # check we have a path to folder
         FutureRSLFolder = Path(FutureRSLFolder)
 
@@ -4461,7 +4462,7 @@ class Coast:
             for Transect in Line.Transects:
                 Transect.PredictFutureShorelines()
 
-    def PredictFutureShorelinesUncertainty(self, Scenarios=None, Percentiles=None, Timeseries="MHWS", RateMethod="TWR", NSamples=1000):
+    def PredictFutureShorelinesUncertainty(self, Scenarios=None, Percentiles=None, Timeseries="MHWS", RateMethod="TWR", NSamples=100):
 
         """
         Run Monte Carlo future shoreline predictions for all transects.
@@ -7295,7 +7296,144 @@ class Coast:
                     
                     # update counter
                     FutureCount += 1
-    
+
+
+    def _GetFutureUncertaintyBoundaryLines(self, Date, Scenario, Percentile, LowerPercentile, UpperPercentile):
+
+        """
+        Build corresponding lower and upper uncertainty boundary lines.
+
+        Contiguous runs of transects with valid uncertainty predictions are
+        converted into Line objects. Each run is anchored to the recent
+        shoreline immediately before and after the predicted section so that
+        the uncertainty polygon tapers to zero width at its ends.
+
+        Parameters
+        ----------
+        Date : datetime
+            Future prediction date.
+        Scenario : int
+            Future relative sea-level scenario.
+        Percentile : float
+            Relative sea-level percentile used as input to the Monte Carlo run.
+        LowerPercentile : float
+            Lower output shoreline-position percentile.
+        UpperPercentile : float
+            Upper output shoreline-position percentile.
+
+        Returns
+        -------
+        LowerLines : list of Line
+            Lower uncertainty boundary lines.
+        UpperLines : list of Line
+            Upper uncertainty boundary lines.
+
+        MDH, July 2026
+        """
+
+        LowerLines = []
+        UpperLines = []
+        LineCount = 0
+
+        for CoastLine in self.CoastLines:
+
+            Transects = CoastLine.Transects
+
+            LowerNodes = []
+            UpperNodes = []
+            StartIndex = None
+            EndIndex = None
+
+            def StoreSegment():
+
+                nonlocal LowerNodes, UpperNodes, StartIndex, EndIndex, LineCount
+
+                # Ignore isolated predictions.
+                if len(LowerNodes) < 2:
+                    LowerNodes = []
+                    UpperNodes = []
+                    StartIndex = None
+                    EndIndex = None
+                    return
+
+                FirstNode = None
+                LastNode = None
+
+                # Use the recent shoreline position on the transect immediately
+                # before the predicted section as the first anchor.
+                if StartIndex > 0:
+                    FirstNode = Transects[StartIndex - 1].get_RecentPosition()
+
+                # Fall back to the recent position on the first valid transect.
+                if FirstNode is None:
+                    FirstNode = Transects[StartIndex].get_RecentPosition()
+
+                # Use the recent shoreline position on the transect immediately
+                # after the predicted section as the final anchor.
+                if EndIndex + 1 < len(Transects):
+                    LastNode = Transects[EndIndex + 1].get_RecentPosition()
+
+                # Fall back to the recent position on the final valid transect.
+                if LastNode is None:
+                    LastNode = Transects[EndIndex].get_RecentPosition()
+
+                # Add identical anchor nodes to both boundaries so the polygon
+                # tapers to zero width at either end.
+                if FirstNode is not None:
+                    LowerNodes.insert(0, FirstNode)
+                    UpperNodes.insert(0, FirstNode)
+
+                if LastNode is not None:
+                    LowerNodes.append(LastNode)
+                    UpperNodes.append(LastNode)
+
+                LowerX = [ThisNode.X for ThisNode in LowerNodes]
+                LowerY = [ThisNode.Y for ThisNode in LowerNodes]
+                UpperX = [ThisNode.X for ThisNode in UpperNodes]
+                UpperY = [ThisNode.Y for ThisNode in UpperNodes]
+
+                LowerLine = Line(f"UncertaintyLower_{LineCount}", LowerX, LowerY, Year=Date)
+                UpperLine = Line(f"UncertaintyUpper_{LineCount}", UpperX, UpperY, Year=Date)
+
+                LowerLines.append(LowerLine)
+                UpperLines.append(UpperLine)
+
+                LineCount += 1
+
+                LowerNodes = []
+                UpperNodes = []
+                StartIndex = None
+                EndIndex = None
+
+            for TransectIndex, Transect in enumerate(Transects):
+
+                try:
+                    Result = Transect.FutureShorelineUncertainty[Scenario][Percentile]
+                    DateIndex = Result["Dates"].index(Date)
+                    LowerNode = Result["PercentilePositions"][LowerPercentile][DateIndex]
+                    UpperNode = Result["PercentilePositions"][UpperPercentile][DateIndex]
+
+                except (AttributeError, KeyError, ValueError, IndexError):
+                    StoreSegment()
+                    continue
+
+                if LowerNode is None or UpperNode is None:
+                    StoreSegment()
+                    continue
+
+                if StartIndex is None:
+                    StartIndex = TransectIndex
+
+                EndIndex = TransectIndex
+
+                LowerNodes.append(LowerNode)
+                UpperNodes.append(UpperNode)
+
+            # Store a contiguous segment reaching the final transect.
+            StoreSegment()
+
+        return LowerLines, UpperLines
+
     def GetFutureShorelineUncertainty(self, Year=2100):
 
         """

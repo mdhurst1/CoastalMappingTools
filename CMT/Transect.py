@@ -925,7 +925,7 @@ class Transect:
             else:
                 continue
 
-    def _PredictFutureShorelineProjection(self, Scenario, Percentile, HistoricRate=None, BruunSlope=None, Timeseries="MHWS", RateMethod="TWR", MaxRockHeadErosionDistance=25.0,):
+    def _PredictFutureShorelineProjection(self, Scenario, Percentile, HistoricRate=None, BruunSlope=None, Timeseries="MHWS", RateMethod="TWR"):
 
         """
         Predict one future shoreline trajectory for one RCP scenario
@@ -953,10 +953,6 @@ class Transect:
 
         # cant make predictions without some historical shorelines
         if Timeseries not in self.Timeseries:
-
-            import pdb
-            pdb.set_trace()
-
             print("No historic positions in timeseries object")
             self.Future = False
             return
@@ -1192,7 +1188,7 @@ class Transect:
         for Index, HistoricRate in enumerate(RandomHistoricRates):
 
             # make predictions for each sample
-            Prediction = (self._PredictFutureShorelineProjection(Scenario, Percentile, HistoricRate, Timeseries, RateMethod))
+            Prediction = (self._PredictFutureShorelineProjection(Scenario, Percentile, HistoricRate, None, Timeseries, RateMethod))            
 
             # catch conditions where future cannot be predicted and break out
             if Prediction is None:
