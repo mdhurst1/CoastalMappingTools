@@ -480,11 +480,7 @@ class Transect:
             
         # get all distances
         DistancesList = []
-        
-        #if self.LineID == "24" and self.ID == "28":
-            #import pdb
-            #pdb.set_trace()
-        
+                
         for i in range(0,len(self.HistoricShorelinesDates)):
             
             # add nodes to lists
@@ -957,6 +953,10 @@ class Transect:
 
         # cant make predictions without some historical shorelines
         if Timeseries not in self.Timeseries:
+
+            import pdb
+            pdb.set_trace()
+
             print("No historic positions in timeseries object")
             self.Future = False
             return
@@ -1166,12 +1166,10 @@ class Transect:
         
         """
 
-        if Scenarios is None:
-            Scenarios = [2,4,8]
-
-        if Percentiles is None:
-            Percentiles = [5, 50, 95]
-
+        # get sea level history from new sea level timeseries storage
+        Projection = self.SeaLevelProjections[Scenario][Percentile]
+        FutureSeaLevelDates = list(Projection.Dates)
+        
         # get the timeseries, normally MHWS
         TS = self.Timeseries[Timeseries]
 
@@ -1181,7 +1179,7 @@ class Transect:
 
         # retrieve the rate estimates and SE
         HistoricRateEstimate = -float(TS.Results[RateMethod]["Rate"])
-        HistoricRateSE = float(TS.Results[RateMethod]["Rate_SE"])
+        HistoricRateSE = float(TS.Results[RateMethod]["RateSE"])
         
         # create a sample of random Historic Rates for the distribution described by the method above
         RandomNs = np.random.default_rng(RandomSeed)
@@ -1189,17 +1187,17 @@ class Transect:
 
         # set up results holder
         DistanceSamples = np.empty((NSamples, len(self.SeaLevelProjections[Scenario][Percentile].Dates)), dtype=float)
-        Dates = None
-
+        
         # loop through the samples
         for Index, HistoricRate in enumerate(RandomHistoricRates):
 
             # make predictions for each sample
-            Prediction = (self._PredictFutureShorelineProjection(Scenario, Percentile, HistoricRate,Timeseries, RateMethod))
+            Prediction = (self._PredictFutureShorelineProjection(Scenario, Percentile, HistoricRate, Timeseries, RateMethod))
 
-            # add prediction dates
-            if Dates is None:
-                Dates = list(Prediction["Dates"])
+            # catch conditions where future cannot be predicted and break out
+            if Prediction is None:
+                self.Future = False
+                return
 
             # populate resulting distances
             DistanceSamples[Index, :] = Prediction["Distances"]
@@ -1215,7 +1213,7 @@ class Transect:
             self.FutureShorelineUncertainty[Scenario] = {}
 
         Result = {
-            "Dates": Dates,
+            "Dates": FutureSeaLevelDates,
             "HistoricRateEstimate": HistoricRateEstimate,
             "HistoricRateSE": HistoricRateSE,
             "DistanceSamples": DistanceSamples,

@@ -638,53 +638,53 @@ class Coast:
         for Scenario in Scenarios:
             for Percentile in Percentiles:
 
-            # loop across transects
-            for CoastLine in self.CoastLines:
-                for Transect in CoastLine.Transects:
+                # loop across transects
+                for CoastLine in self.CoastLines:
+                    for Transect in CoastLine.Transects:
 
-                    Result = (Transect.FutureShorelineUncertainty[Scenario][Percentile])
-                    Dates = list(Result["Dates"])
+                        Result = (Transect.FutureShorelineUncertainty[Scenario][Percentile])
+                        Dates = list(Result["Dates"])
 
-                    # loop through dates                
-                    for Date in Dates:
+                        # loop through dates                
+                        for Date in Dates:
 
-                        # loop through percentiles
-                        for Interval, Quantiles in Intervals.items():
+                            # loop through percentiles
+                            for Interval, Quantiles in Intervals.items():
 
-                            LowerPercentile, UpperPercentile = (Quantiles)
-                            LowerLines, UpperLines = (self._GetFutureUncertaintyBoundaryLines(Date, Scenario, Percentile, LowerPercentile, UpperPercentile))
+                                LowerPercentile, UpperPercentile = (Quantiles)
+                                LowerLines, UpperLines = (self._GetFutureUncertaintyBoundaryLines(Date, Scenario, Percentile, LowerPercentile, UpperPercentile))
 
-                            if len(LowerLines) == 0:
-                                continue
+                                if len(LowerLines) == 0:
+                                    continue
 
-                            if len(LowerLines) != len(UpperLines):
-                                raise RuntimeError(
-                                    "Lower and upper uncertainty line "
-                                    "counts do not match."
-                                )
+                                if len(LowerLines) != len(UpperLines):
+                                    raise RuntimeError(
+                                        "Lower and upper uncertainty line "
+                                        "counts do not match."
+                                    )
 
-                            # setup output file
-                            OutputFile = OutputFolder / FilenamePrefix + (f"_Uncertainty_RCP{Scenario}_P{Percentile}_{Date.year}_.geojson")
+                                # setup output file
+                                OutputFile = OutputFolder / FilenamePrefix + (f"_Uncertainty_RCP{Scenario}_P{Percentile}_{Date.year}_.geojson")
 
-                            # add extra metadata as needed
-                            ExtraFields = {"Scenario": Scenario, "SL_Percentile": Percentile, "Year": Date.year, "Interval": Interval, "LowerQ": LowerPercentile, "UpperQ": UpperPercentile}
+                                # add extra metadata as needed
+                                ExtraFields = {"Scenario": Scenario, "SL_Percentile": Percentile, "Year": Date.year, "Interval": Interval, "LowerQ": LowerPercentile, "UpperQ": UpperPercentile}
 
-                            # reset to empty list of patches
-                            Patches = []
+                                # reset to empty list of patches
+                                Patches = []
 
-                            # loop through uncertainty intervals
-                            for Interval in [95, 68]:
+                                # loop through uncertainty intervals
+                                for Interval in [95, 68]:
 
-                                # setup metadata
-                                ExtraFields={   "Interval": Interval,
-                                                "Year": Date.year,
-                                                "Scenario": Scenario,}
+                                    # setup metadata
+                                    ExtraFields={   "Interval": Interval,
+                                                    "Year": Date.year,
+                                                    "Scenario": Scenario,}
 
-                                # retrieve patches
-                                Patches.extend(self.CreatePatches(LowerLines, UpperLines, Smooth=Smooth))
+                                    # retrieve patches
+                                    Patches.extend(self.CreatePatches(LowerLines, UpperLines, Smooth=Smooth))
 
-                            # write patches to file    
-                            self.WritePatches(Patches, OutputFile, Smooth, ExtraFields)
+                                # write patches to file    
+                                self.WritePatches(Patches, OutputFile, Smooth, ExtraFields)
 
     
     def WriteFutureUncertaintyShp(self, UncertaintyShp, Year=2100):
@@ -4529,11 +4529,9 @@ class Coast:
 
                         # Give each transect/scenario/percentile run a
                         # reproducible but distinct seed.
-                        RandomSeed = (Transect.ID * 1000 + int(Scenario) * 100 + int(Percentile))
+                        RandomSeed = (int(Transect.ID) * 1000 + int(Scenario) * 100 + int(Percentile))
 
                         Transect.PredictFutureShorelineMonteCarlo(Scenario, Percentile, Timeseries, RateMethod, NSamples, RandomSeed)
-
-                   
 
     def PredictFutureShorelinesError(self, Year=2100):
 
