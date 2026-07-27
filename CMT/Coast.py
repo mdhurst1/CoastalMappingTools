@@ -3194,7 +3194,7 @@ class Coast:
                     Distance = Transect.StartNode.get_Distance(Position)
 
                     # add to timeseries object
-                    Transect.AddTimeseriesObservation(SignalName, Date, Position, Distance, Error, Path(HistoricalShp).name)
+                    Transect.AddTimeseriesObservation(SignalName, Date, Distance, Error, Path(HistoricalShp).name)
 
     def ExtractMLWS(self, MLWSShp, NearestNode=0):
 
@@ -3938,7 +3938,7 @@ class Coast:
             Dates = [self._NormaliseDate(Date) for Date in Dates]
 
         # keep legacy list for now
-        self.FutureShoreLinesYears = [datetime.strptime(Date, '%Y-%m-%d') for Date in Dates]
+        self.FutureShoreLinesYears = Dates.copy()
 
         # check scenarios and initiate default lists:
         if Scenarios is None: 
@@ -3964,14 +3964,14 @@ class Coast:
                 for Date in Dates:
 
                     # specify raster file
-                    RasterFile = (FutureRSLFolder / (f"RCP{Scenario}_{Percentile}th_{Date.year}_filled.tif"))
+                    RasterFile = (FutureRSLFolder / (f"RCP{Scenario}") / (f"RCP{Scenario}_{Percentile}th_{Date.year}_filled.tif"))
                 
                     # open the raster dataset to work on
                     with rasterio.open(RasterFile) as Dataset:
                     
                         # sample using list of coordinates
-                        Samples = list(Dataset.sample(Coordinates, masked=True)
-                        Values = np.asarray([Sample[0] for Sample in Samples, dtype=float)
+                        Samples = list(Dataset.sample(Coordinates, masked=True))
+                        Values = np.asarray([Sample[0] for Sample in Samples], dtype=float)
 
                         # add to dictionary
                         Sampled[Scenario][Percentile].append(Values)

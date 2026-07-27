@@ -112,9 +112,7 @@ MontroseCoast.ExtractTransectTopography(DEMFileList)
 MontroseCoast.Method = "Open"
             
 ### get future relative sea level time series from UKCP18 data
-Scenario = 8 # RCP 8.5
-Percentile = 95 # 95th percentile
-MontroseCoast.SampleFutureRSL(str(DataPath / "Future_RSL" / ("RCP"+str(Scenario))), RCP=Scenario, Percentile=Percentile)
+MontroseCoast.SampleFutureRSL(DataPath / "Future_RSL")
 
 ## predict future shorelines
 MontroseCoast.GetShorefaceSlopes(str(BathyPath))
