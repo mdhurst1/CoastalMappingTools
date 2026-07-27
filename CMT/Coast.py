@@ -536,12 +536,6 @@ class Coast:
 
         for FutureLine in self.FutureShoreLines:
 
-            if Smooth:
-                FutureLine.SmoothLine(WindowSize=11)
-
-            # check for complex topology and fix
-            FutureLine.MakeSimple()
-
             X, Y = FutureLine.get_XY()
 
             X = np.asarray(X)
@@ -6987,7 +6981,7 @@ class Coast:
                 Transect.Rocky = GroupList[Counter]
                 Counter += 1
 
-    def _SmoothOutputLine(self, X, Y, Interval=1.):
+    def _SmoothOutputLine(self, X, Y, Smoothness=10, Interval=1.):
 
         """
         Smooth and resample a line while preserving the original endpoints.
@@ -7003,6 +6997,10 @@ class Coast:
 
         Y : array_like
             Y coordinates of the line vertices.
+        
+            Smoothness : float, optional
+        Spline smoothing factor. Zero forces the spline through every point.
+        Larger values produce a smoother line. Default is 10.0.
 
         Interval : float, optional
             Distance between successive resampled vertices, in the units of the
@@ -7042,7 +7040,7 @@ class Coast:
             return X, Y
 
         # setup the spline for smoothing
-        Spline, _ = splprep([XInterior, YInterior], u=Dist, s=0, k=min(3, len(Dist) - 1))
+        Spline, _ = splprep([XInterior, YInterior], u=Dist, s=Smoothness, k=min(3, len(Dist) - 1))
 
         # get regular distances for resampling smoothed line
         InterpDist = np.arange(0., Dist[-1], Interval)
