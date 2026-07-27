@@ -4172,7 +4172,7 @@ class Coast:
                 Transect.DefencesDistance = Distance+MaxDefencesErosionDistance
                 Transect.DefencesPosition = Transect.get_Position(Transect.DefencesDistance)
                 
-    def PredictFutureShorelines(self, MinMaxFlag=None):
+    def PredictFutureShorelines(self):
 
         """
 
@@ -4185,7 +4185,7 @@ class Coast:
         # loop through transects and sample
         for Line in self.CoastLines:
             for Transect in Line.Transects:
-                Transect.PredictFutureShorelines(MinMaxFlag=MinMaxFlag)
+                Transect.PredictFutureShorelines()
 
     def PredictFutureShorelinesBestWorstCase(self):
         """

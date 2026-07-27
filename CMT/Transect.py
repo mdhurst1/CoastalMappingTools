@@ -496,7 +496,7 @@ class Transect:
         for i in range(0, len(self.FutureSeaLevelYears)):
             
             # add nodes to lists
-            if self.FutureShorelinesDistances[i] > TS.Distances[-1][0]:
+            if self.FutureShorelinesDistances[i] > TS.Values[-1][0]:
                 DistancesList.append(self.FutureShorelinesDistances[i])
                     
         # find index of min distance
@@ -684,7 +684,6 @@ class Transect:
         #Slope = np.linalg.lstsq(Distances[:,np.newaxis], Elevations)[0]
         
         if Slope[0] <= 0:
-            print("Zero or negative Hinterland Slope")
             self.HinterlandSlope = 0.001
         else:
             self.HinterlandSlope = Slope[0]
@@ -983,8 +982,8 @@ class Transect:
         HistoricRate = -TS.Results[RateMethod]["Rate"]
         self.ChangeRate = HistoricRate
         LatestDate = TS.Dates[-1]
-        LatestPosition = TS.Positions[-1]
-        LatestDistance = float(TS.Distances[-1])
+        LatestPosition = self.get_Position(TS.Values[-1])
+        LatestDistance = float(TS.Values[-1])
         
         # sense check
         if HistoricRate is None or not np.isfinite(HistoricRate):
@@ -1010,7 +1009,7 @@ class Transect:
 
         # get slope from intertidal zone if we dont already have it
         if not self.ShorefaceSlope:
-            self.ShorefaceDistance = self.MLWS.get_Distance(TS.Positions[-1])
+            self.ShorefaceDistance = self.MLWS.get_Distance(self.get_Position(TS.Values[-1]))
             self.ShorefaceDepth = self.ClosureDepth + self.MHWS
             self.ShorefaceSlope = self.ShorefaceDepth/self.ShorefaceDistance
         
@@ -1020,7 +1019,7 @@ class Transect:
         self.CalculateHinterlandSlope()
 
         # set slope for Bruun Rule    
-        self.BruunSlope = min(self.HinterlandSlope, self.ShorefaceSlope)
+        BruunSlope = min(self.HinterlandSlope, self.ShorefaceSlope)
         BruunSlope = max(BruunSlope, 0.001)
         
         # Calibration term, remembering to convert relative sea level change rates to m/yr
@@ -1053,20 +1052,15 @@ class Transect:
 
                 FutureShorelineDistance = self.DefencesDistance
                 ShorelinePositionChange = LatestDistance - FutureShorelineDistance
-                FuturePosition = self.DefencesPosition
                 
             elif self.RockHeadDistance and (FutureShorelineDistance > self.RockHeadDistance):
 
                 # if landward of
                 FutureShorelineDistance = self.RockHeadDistance
                 ShorelinePositionChange = LatestDistance - FutureShorelineDistance
-                FuturePosition = self.RockHeadPosition
                 
-            # otherwise write new shoreline position as appropriate
-            else:
-                X1 = LatestPosition.X - ShorelinePositionChange * np.sin( np.radians( self.Orientation ) )
-                Y1 = LatestPosition.Y - ShorelinePositionChange * np.cos( np.radians( self.Orientation ) )
-                FuturePosition = Node(X1, Y1)
+            # get position from distance
+            FuturePosition = self.get_Position(FutureShorelineDistance)
 
             # append results to lists
             FutureDates.append(FutureDate)
@@ -1094,7 +1088,7 @@ class Transect:
         """
 
         if Scenarios is None:
-            Scenarios = sorted(self.SeaLevelProjections)
+            Scenarios = [2,4,8]
 
         if Percentiles is None:
             Percentiles = [5, 50, 95]
@@ -1127,11 +1121,10 @@ class Transect:
                     self.FutureShorelinePredictions[Scenario][Percentile] = Prediction
 
         # check if predictions were made
-        self.Future = any(len(ScenarioPredictions) > 0 for ScenarioPredictions in self.FutureShorelinePredictions.values())
+        self.Future = True
 
         # run legacy function
-        if self.Future:
-            self._SetLegacyFutureShorelinePrediction(Scenario=8, Percentile=95)
+        self._SetLegacyFutureShorelinePrediction(Scenario=8, Percentile=95)
 
     def _SetLegacyFutureShorelinePrediction(self, Scenario=8, Percentile=95):
 
@@ -1154,6 +1147,7 @@ class Transect:
 
         # copy results accross to legacy attributes
         self.FutureSeaLevelYears = list(Prediction["Dates"])
+        self.FutureSeaLevels = list(Prediction["SeaLevels"])
         self.FutureShorelinesDistances = list(Prediction["Distances"])
         self.FutureShorelinesPositions = list(Prediction["Positions"])
         self.FutureShorelinesRates = list(Prediction["Rates"])
@@ -1408,7 +1402,7 @@ class Transect:
         self.VegEdgeDistance = self.StartNode.get_Distance(self.VegEdgePosition)
 
         # measure difference between latest MHWS and veg edge
-        Offset = TS.Distances[-1][0] - self.VegEdgeDistance
+        Offset = TS.Values[-1][0] - self.VegEdgeDistance
 
         # use difference to map future vegetation edges based on future MHWS
         self.FutureVegEdgePositions = []
@@ -3478,7 +3472,7 @@ class Transect:
 
         # Before (or at) latest observation -> observed shoreline
         if Year <= LatestDate:
-            return TS.Distances[-1]
+            return TS.Values[-1]
 
         # Find index of future
         Index = self.FutureSeaLevelYears.index(Year)
@@ -3722,7 +3716,7 @@ class Transect:
         if not TS.HasData(Minimum=1):
             return None
 
-        return TS.Positions[-1]
+        return self.get_Position(TS.Values[-1])
     
     def get_RecentYear(self):
 
@@ -3767,7 +3761,7 @@ class Transect:
         if not TS.HasData(Minimum=1):
             raise ValueError("No recent shoreline distance")
 
-        return TS.Distances[-1]
+        return TS.Values[-1]
 
     def get_OldestPosition(self):
 
