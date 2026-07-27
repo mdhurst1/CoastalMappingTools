@@ -9,7 +9,7 @@ June 2019
 
 import numpy as np
 import numpy.ma as ma
-from scipy.stats import t
+from scipy.stats import t, norm
 import os, sys
 
 #import figure plotting stuff here not globally!
@@ -928,7 +928,7 @@ class Transect:
             else:
                 continue
 
-    def _PredictFutureShorelineProjection(self, Scenario, Percentile, Timeseries="MHWS", RateMethod="TWR", MaxRockHeadErosionDistance=25.0,):
+    def _PredictFutureShorelineProjection(self, Scenario, Percentile, HistoricRate=None, BruunSlope=None, Timeseries="MHWS", RateMethod="TWR", MaxRockHeadErosionDistance=25.0,):
 
         """
         Predict one future shoreline trajectory for one RCP scenario
@@ -975,11 +975,12 @@ class Transect:
             return None
 
         # calculate historical rates from timeseries if not already existing
-        if RateMethod not in TS.Results:
-            TS.Analyse()
-
+        if HistoricRate is None:
+            if RateMethod not in TS.Results:
+                TS.Analyse()
+            HistoricRate = -float(TS.Results[RateMethod]["Rate"])
+        
         # retrieve results
-        HistoricRate = -TS.Results[RateMethod]["Rate"]
         self.ChangeRate = HistoricRate
         LatestDate = TS.Dates[-1]
         LatestPosition = self.get_Position(TS.Values[-1])
@@ -1019,8 +1020,9 @@ class Transect:
         self.CalculateHinterlandSlope()
 
         # set slope for Bruun Rule    
-        BruunSlope = min(self.HinterlandSlope, self.ShorefaceSlope)
-        BruunSlope = max(BruunSlope, 0.001)
+        if BruunSlope is None:
+            BruunSlope = min(self.HinterlandSlope, self.ShorefaceSlope)
+            BruunSlope = max(BruunSlope, 0.001)
         
         # Calibration term, remembering to convert relative sea level change rates to m/yr
         CalibrationRate = (self.ShorefaceDepth * HistoricRate + (self.ShorefaceDepth / BruunSlope) * CalibrationRSLR)
@@ -1076,7 +1078,7 @@ class Transect:
             "Rates": FutureRates,
             }
     
-    def PredictFutureShorelines(self, Scenarios=None, Percentiles=None, Timeseries="MHWS", RateMethod="TWR"):
+    def PredictFutureShorelines(self, Scenarios=None, Percentiles=None, HistoricRate=None, BruunSlope=None, Timeseries="MHWS", RateMethod="TWR"):
 
         """
 
@@ -1114,7 +1116,7 @@ class Transect:
                     continue
 
                 # run the prediction using Bruun Rule
-                Prediction = self._PredictFutureShorelineProjection(Scenario, Percentile, Timeseries, RateMethod)
+                Prediction = self._PredictFutureShorelineProjection(Scenario, Percentile, HistoricRate, BruunSlope, Timeseries, RateMethod)
 
                 # add it to the results dict
                 if Prediction is not None:
@@ -1151,7 +1153,64 @@ class Transect:
         self.FutureShorelinesDistances = list(Prediction["Distances"])
         self.FutureShorelinesPositions = list(Prediction["Positions"])
         self.FutureShorelinesRates = list(Prediction["Rates"])
+
+    def PredictFutureShorelineMonteCarlo(self, Scenario=8, Percentile=50, Timeseries="MHWS", RateMethod="TWR", NSamples=1000, RandomSeed=None):
+
+        """
+        Monte Carlo approach to propagate uncertainty through the future shoreline Bruun Rule model.
+
+        Work in progress
+
+        MDH July, 2026
         
+        """
+
+        # get the timeseries, normally MHWS
+        TS = self.Timeseries[Timeseries]
+
+        # check we have rates calculated
+        if RateMethod not in TS.Results:
+            TS.Analyse()
+
+        # retrieve the rate estimates and SE
+        HistoricRateEstimate = -float(TS.Results[RateMethod]["Rate"])
+        HistoricRateSE = float(TS.Results[RateMethod]["Rate_SE"])
+        
+        # create a sample of random Historic Rates for the distribution described by the method above
+        RandomNs = np.random.default_rng(RandomSeed)
+        RandomHistoricRates = rng.normal(loc=HistoricRateEstimate, scale=HistoricRateSE, size=NSamples)
+
+        # set up results holder
+        DistanceSamples = np.empty((NSamples, len(self.SeaLevelProjections[Scenario][Percentile].Dates)), dtype=float)
+        Dates = None
+
+        # loop through the samples
+        for Index, HistoricRate in enumerate(HistoricRates):
+
+            # make predictions for each sample
+            Prediction = (self._PredictFutureShorelineProjection(Scenario, Percentile, HistoricRate,Timeseries, RateMethod))
+
+            # add prediction dates
+            if Dates is None:
+                Dates = list(Prediction["Dates"])
+
+            # populate resulting distances
+            DistanceSamples[Index, :] = (Prediction["Distances"]
+            
+
+        PercentileValues = np.percentile(DistanceSamples, [5, 50, 95], axis=0)
+
+        return {
+            "Dates": Dates,
+            "SampledHistoricRates": HistoricRates,
+            "DistanceSamples": DistanceSamples,
+            "DistancePercentiles": {
+                5: PercentileValues[0],
+                50: PercentileValues[1],
+                95: PercentileValues[2],
+        },
+    }
+
     def PredictFutureShorelineBathtub(self):
 
         """
