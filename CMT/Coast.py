@@ -581,6 +581,112 @@ class Coast:
         else:
             GDF.to_file(OutputFile, driver="ESRI Shapefile", index=False)   
 
+    def WriteFutureShorelinesUncertainty(self, Scenarios, Percentiles, OutputFolder, FilenamePrefix, Format, Smooth=True):
+        """
+        Write future shoreline uncertainty polygons.
+
+        For each requested scenario, input sea-level percentile, prediction
+        date and central probability interval, a polygon is created between
+        the corresponding lower and upper Monte Carlo shoreline percentiles.
+
+        Results are written using the existing ``WritePatches`` method.
+
+        Parameters
+        ----------
+        OutputFolder : str or pathlib.Path
+            Folder in which uncertainty polygon files are written.
+        FilenamePrefix : str
+            Project name or filename prefix for naming the output files
+        Format : str
+            GeoJSON or shp
+        Smooth : bool, optional
+            Smooth the uncertainty boundaries before polygon construction.
+            Default is True.
+
+        Returns
+        -------
+        None
+            Polygon files are written to ``OutputFolder``.
+
+        Notes
+        -----
+        At present, the polygons represent uncertainty propagated from the
+        historical shoreline-change rate, conditional on the selected
+        sea-level scenario and percentile and fixed Bruun morphology.
+
+        MDH, July 2026
+        """
+
+        print("Coast.WriteFutureShorelineUncertainty: Writing future shoreline uncertainty polygons")
+
+         # check if scenarios is defined
+        if Scenarios is None:
+            Scenarios = [8,]
+
+        # check sea level percentiles (will be redundant soon)
+        if Percentiles is None:
+            Percentiles = [95,]
+
+        # setup intervals for uncertainty
+        Intervals = {95: (2.5, 97.5),
+                     68: (16.0, 84.0)}
+        
+        # setup output folder
+        OutputFolder = Path(OutputFolder)
+        OutputFolder.mkdir(parents=True, exist_ok=True)
+
+        for Scenario in Scenarios:
+            for Percentile in Percentiles:
+
+            # loop across transects
+            for CoastLine in self.CoastLines:
+                for Transect in CoastLine.Transects:
+
+                    Result = (Transect.FutureShorelineUncertainty[Scenario][Percentile])
+                    Dates = list(Result["Dates"])
+
+                    # loop through dates                
+                    for Date in Dates:
+
+                        # loop through percentiles
+                        for Interval, Quantiles in Intervals.items():
+
+                            LowerPercentile, UpperPercentile = (Quantiles)
+                            LowerLines, UpperLines = (self._GetFutureUncertaintyBoundaryLines(Date, Scenario, Percentile, LowerPercentile, UpperPercentile))
+
+                            if len(LowerLines) == 0:
+                                continue
+
+                            if len(LowerLines) != len(UpperLines):
+                                raise RuntimeError(
+                                    "Lower and upper uncertainty line "
+                                    "counts do not match."
+                                )
+
+                            # setup output file
+                            OutputFile = OutputFolder / FilenamePrefix + (f"_Uncertainty_RCP{Scenario}_P{Percentile}_{Date.year}_.geojson")
+
+                            # add extra metadata as needed
+                            ExtraFields = {"Scenario": Scenario, "SL_Percentile": Percentile, "Year": Date.year, "Interval": Interval, "LowerQ": LowerPercentile, "UpperQ": UpperPercentile}
+
+                            # reset to empty list of patches
+                            Patches = []
+
+                            # loop through uncertainty intervals
+                            for Interval in [95, 68]:
+
+                                # setup metadata
+                                ExtraFields={   "Interval": Interval,
+                                                "Year": Date.year,
+                                                "Scenario": Scenario,}
+
+                                # retrieve patches
+                                Patches.extend(self.CreatePatches(LowerLines, UpperLines, Smooth=Smooth))
+
+                            # write patches to file    
+                            self.WritePatches(Patches, OutputFile, Smooth, ExtraFields)
+
+    
     def WriteFutureUncertaintyShp(self, UncertaintyShp, Year=2100):
 
         """
@@ -952,6 +1058,150 @@ class Coast:
             # Shapefile retains the source projection
             GDF.to_file(OutputFile, driver="ESRI Shapefile")
 
+    def CreatePatches(self, Lines1, Lines2, Smooth=True, ExtraFields=None):
+
+        """
+        Create polygon records between corresponding pairs of lines.
+
+        Each polygon follows a line from ``Lines1`` in its original
+        coordinate order, then follows the corresponding line from
+        ``Lines2`` in reverse order.
+
+        Parameters
+        ----------
+        Lines1 : sequence of Line
+            First collection of corresponding boundary lines.
+        Lines2 : sequence of Line
+            Second collection of corresponding boundary lines.
+        Smooth : bool, optional
+            Smooth line coordinates before constructing polygons.
+        ExtraFields : dict, optional
+            Attribute values added to every polygon record.
+
+        Returns
+        -------
+        list of dict
+            Polygon geometry and attribute records.
+
+        MDH, July 2026
+        """
+
+        # to write patches we need two sets of lines the same length
+        if len(Lines1) != len(Lines2):
+            raise ValueError("Lines1 and Lines2 must contain the same number of corresponding lines.")
+            
+        if ExtraFields is None:
+            ExtraFields = {}
+
+        # create empty list of patches to return
+        Patches = []
+
+        # loop through lines in pairs
+        for LineIndex, (Line1, Line2) in enumerate(zip(Lines1, Lines2)):
+        
+            # retrieve coordinates
+            X1, Y1 = Line1.get_XY()
+            X2, Y2 = Line2.get_XY()
+
+            if Smooth:
+                X1, Y1 = self._SmoothOutputLine(X1, Y1)
+                X2, Y2 = self._SmoothOutputLine(X2, Y2)
+
+            # convert x/y arrays into coordinate pairs
+            Coordinates1 = list(zip(X1, Y1))
+            Coordinates2 = list(zip(X2, Y2))
+
+            if len(Coordinates1) < 2 or len(Coordinates2) < 2:
+                continue
+
+            # combine into a ring, reversing the order of the second set of coordinates
+            Ring = Coordinates1 + Coordinates2[::-1]
+
+            # create polygon
+            PolygonGeometry = Polygon(Ring)
+
+            # check if empty
+            if PolygonGeometry.is_empty:
+                continue
+
+            # fix any topological issues with buffer(0) trick
+            if not PolygonGeometry.is_valid:
+                PolygonGeometry = PolygonGeometry.buffer(0)
+
+            # build the record
+            Record = {"Poly_ID": str(Line1.ID), "Method": str(self.Method)}
+
+            if ExtraFields is not None:
+                Record.update(ExtraFields)
+
+            # append to lists
+            Patch = {
+                "Geometry": Polygon,
+                "Record": Record,
+            }
+
+            Patches.append(Patch)
+
+        return Patches
+
+    def WritePatchObjects(self, Patches, OutputFile,):
+
+        """
+        Write pre-created polygon patches to a vector file.
+
+        Each patch must contain:
+
+            Patch.Geometry
+                Shapely Polygon geometry.
+
+            Patch.Record
+                Dictionary of attribute values.
+
+        Parameters
+        ----------
+        Patches : sequence of Patch
+            Pre-created patch objects.
+        OutputFile : str or pathlib.Path
+            Output vector filename. The output format is inferred from
+            the file extension.
+
+        Returns
+        -------
+        None
+
+        MDH, July 2026
+        """
+
+        print("Coast.WritePatchObjects: Writing pre-created polygon patches")
+
+        if not Patches:
+            print("\tNo patches available to write")
+            return
+
+        # convert to Path
+        OutputFile = Path(OutputFile)
+        Extension = OutputFile.suffix.lower()
+
+        # get file format from extension
+        if Extension in [".geojson", ".json"]:
+            Driver = "GeoJSON"
+        elif Extension == ".shp":
+            Driver = "ESRI Shapefile"
+        else:
+            raise ValueError(f"Unsupported output format: {Extension}")
+
+        # create the geodataframe
+        GDF = gpd.GeoDataFrame([Patch.Record for Patch in Patches], geometry=[Patch.Geometry for Patch in Patches], crs=self.Projection)
+
+        # write to file
+        if Format == "GeoJSON":
+            GDF = GDF.to_crs("EPSG:4326")
+            GDF.to_file(OutputFile, driver="GeoJSON", index=False)
+
+        else:
+            GDF.to_file(OutputFile, driver="ESRI Shapefile", index=False)
+    
+        
     def WritePatches(self, Lines1, Lines2, OutputFile, Smooth=True, ExtraFields=None):
 
         """
@@ -4172,7 +4422,7 @@ class Coast:
                 Transect.DefencesDistance = Distance+MaxDefencesErosionDistance
                 Transect.DefencesPosition = Transect.get_Position(Transect.DefencesDistance)
                 
-    def PredictFutureShorelines(self):
+    def PredictFutureShorelines(self, Scenarios=None, Percentiles=None):
 
         """
 
@@ -4182,10 +4432,19 @@ class Coast:
 
         """
         print("Coast.PredictFutureShorelines: predicting future shoreline positions")
+
+         # check if scenarios is defined
+        if Scenarios is None:
+            Scenarios = [8,]
+
+        # check sea level percentiles (will be redundant soon)
+        if Percentiles is None:
+            Percentiles = [95,]
+
         # loop through transects and sample
         for Line in self.CoastLines:
             for Transect in Line.Transects:
-                Transect.PredictFutureShorelines()
+                Transect.PredictFutureShorelines(Scenarios, Percentiles)
 
     def PredictFutureShorelinesBestWorstCase(self):
         """

@@ -1155,7 +1155,7 @@ class Transect:
         self.FutureShorelinesPositions = list(Prediction["Positions"])
         self.FutureShorelinesRates = list(Prediction["Rates"])
 
-    def PredictFutureShorelineMonteCarlo(self, Scenario=8, Percentile=50, Timeseries="MHWS", RateMethod="TWR", NSamples=1000, RandomSeed=None):
+    def PredictFutureShorelineMonteCarlo(self, Scenario=None, Percentile=None, Timeseries="MHWS", RateMethod="TWR", NSamples=1000, RandomSeed=None):
 
         """
         Monte Carlo approach to propagate uncertainty through the future shoreline Bruun Rule model.
@@ -1165,6 +1165,12 @@ class Transect:
         MDH July, 2026
         
         """
+
+        if Scenarios is None:
+            Scenarios = [2,4,8]
+
+        if Percentiles is None:
+            Percentiles = [5, 50, 95]
 
         # get the timeseries, normally MHWS
         TS = self.Timeseries[Timeseries]
@@ -1198,10 +1204,11 @@ class Transect:
             # populate resulting distances
             DistanceSamples[Index, :] = Prediction["Distances"]
             
-        Percentiles = [2.5, 8.0, 12.5, 25.0, 37.5, 50.0, 62.5, 75.0, 87.5, 92.0, 97.5,]
-        PercentileDistances = np.percentile(DistanceSamples, Percentiles, axis=0)
-        PercentilePositions = {PercentileValue: [self.get_Position(Distance) for Distance in Distances] 
-                               for PercentileValue, Distances in PercentileDistances.items() }
+        Percentiles = [2.5, 16.0, 50.0, 84.0, 97.5]
+
+        PercentileDistanceArray = np.percentile(DistanceSamples, Percentiles, axis=0)
+        PercentileDistances = { Percentile: PercentileDistanceArray[Index, :] for Index, Percentile in enumerate(Percentiles) }
+        PercentilePositions = { Percentile: [self.get_Position(Distance) for Distance in Distances] for Percentile, Distances in PercentileDistances.items()}
 
         # check if scenario already exists and create if needed
         if Scenario not in self.FutureShorelineUncertainty:

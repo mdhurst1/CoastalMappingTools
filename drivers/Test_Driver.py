@@ -117,6 +117,7 @@ MontroseCoast.SampleFutureRSL(DataPath / "Future_RSL")
 ## predict future shorelines
 MontroseCoast.GetShorefaceSlopes(str(BathyPath))
 MontroseCoast.PredictFutureShorelines()
+MontroseCoast.PredictFutureShorelinesUncertainty()
 
 ### FUTURE SHORELINE ANALYSIS NEEDS MODIFIED TO WORK WITH TIMESERIES OBJECTS
 
