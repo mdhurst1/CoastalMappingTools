@@ -1135,6 +1135,31 @@ class Transect:
 
         self.Future = True
 
+    def _SetLegacyFutureShorelinePrediction(self, Scenario=8, Percentile=95):
+
+        """
+        Populate legacy future shoreline attributes from one stored
+        scenario and percentile.
+
+        For testing and backward compatibility
+
+        MDH, July 2026
+
+        """
+
+        if (Scenario not in self.FutureShorelinePredictions or Percentile not in self.FutureShorelinePredictions[Scenario]):
+            print("No Scenario , unable to run")
+            return
+
+        # retrieve the prediction
+        Prediction = (self.FutureShorelinePredictions[Scenario][Percentile])
+
+        # copy results accross to legacy attributes
+        self.FutureSeaLevelYears = list(Prediction["Dates"])
+        self.FutureShorelinesDistances = list(Prediction["Distances"])
+        self.FutureShorelinesPositions = list(Prediction["Positions"])
+        self.FutureShorelinesRates = list(Prediction["Rates"])
+        
     def PredictFutureShorelineBathtub(self):
 
         """
