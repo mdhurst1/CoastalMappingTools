@@ -545,9 +545,16 @@ class Coast:
                 continue
 
             if Smooth and len(X) > 5:
+                # first smooth
                 X, Y = self._SmoothOutputLine(X, Y)
+                Geometry = LineString(zip(X, Y))
 
-            Geometry = LineString(zip(X, Y))
+                # check for loops then smooth again
+                CleanLine = Geometry.buffer(0).boundary
+                X, Y = CleanLine.get_XY()
+                X, Y = self._SmoothOutputLine(X, Y)
+                Geometry = LineString(zip(X, Y))
+                
 
             if Geometry.is_empty:
                 continue
@@ -577,7 +584,7 @@ class Coast:
         else:
             GDF.to_file(OutputFile, driver="ESRI Shapefile", index=False)   
 
-    def WriteFutureShorelinesUncertainty(self, OutputFolder, FilenamePrefix, Format="GeoJSON", Smooth=True):
+    def WriteFutureShorelinesUncertainty(self, OutputFolder, FilenamePrefix, Format="GeoJSON", Smooth=True, ErosionOnly=True):
         """
         Write future shoreline uncertainty polygons.
 
@@ -651,7 +658,7 @@ class Coast:
                     for UncertaintyInterval, Quantiles in UncertaintyIntervals.items():
 
                         LowerPercentile, UpperPercentile = (Quantiles)
-                        LowerLines, UpperLines = (self._GetFutureUncertaintyBoundaryLines(Date, Scenario, Percentile, LowerPercentile, UpperPercentile))
+                        LowerLines, UpperLines = (self._GetFutureUncertaintyBoundaryLines(Date, Scenario, Percentile, LowerPercentile, UpperPercentile, ErosionOnly))
 
                         if len(LowerLines) == 0:
                             continue
@@ -1024,9 +1031,17 @@ class Coast:
             X, Y = ThisLine.get_XY()
 
             if Smooth and len(X) > 5:
+
+                # first smooth
                 X, Y = self._SmoothOutputLine(X, Y)
-            
-            Geometry = LineString(zip(X, Y))
+                Geometry = LineString(zip(X, Y))
+
+                # check for loops then smooth again
+                CleanLine = Geometry.buffer(0).boundary
+                X, Y = CleanLine.get_XY()
+                X, Y = self._SmoothOutputLine(X, Y)
+                Geometry = LineString(zip(X, Y))
+
             Geometries.append(Geometry)
 
             Records.append({
@@ -7174,7 +7189,7 @@ class Coast:
 
         return Lines
 
-    def GetFutureShoreLines(self):
+    def GetFutureShoreLines(self, ErosionOnly=True):
 
         """
 
@@ -7255,21 +7270,23 @@ class Coast:
                             FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
                             ii= 1
                     
-                    if not FirstNode:
-                        import pdb
-                        pdb.set_trace()
-                        
                     FutureList.append(FirstNode)
                     
                     # loop through transects and get future positions
                     for Transect in CoastLine.Transects[StartList[i]+ii:EndList[i]]:
                         
-                        if Transect.get_FutureDistance(Year) > Transect.get_RecentDistance():
-                            TempNode = Transect.get_FuturePosition(Year)
-                            FutureList.append(TempNode)
-                        
-                        else:
+                        FutureDistance = Transect.get_FutureDistance(Year)
+                        RecentDistance = Transect.get_RecentDistance()
+                        FuturePosition = Transect.get_FuturePosition(Year)
+
+                        if FuturePosition is None:
                             FutureList.append(Transect.get_RecentPosition())
+
+                        elif ErosionOnly and FutureDistance <= RecentDistance:
+                            FutureList.append(Transect.get_RecentPosition())
+
+                        else:
+                            FutureList.append(FuturePosition)
                         
                                                 
                     # add latest MHWS from next node to end
@@ -7296,7 +7313,7 @@ class Coast:
                     FutureCount += 1
 
 
-    def _GetFutureUncertaintyBoundaryLines(self, Date, Scenario, Percentile, LowerPercentile, UpperPercentile):
+    def _GetFutureUncertaintyBoundaryLines(self, Date, Scenario, Percentile, LowerPercentile, UpperPercentile, ErosionOnly=True):
 
         """
         Build corresponding lower and upper uncertainty boundary lines.
@@ -7408,8 +7425,15 @@ class Coast:
                 try:
                     Result = Transect.FutureShorelineUncertainty[Scenario][Percentile]
                     DateIndex = Result["Dates"].index(Date)
+
+                    LowerDistance = Result["PercentileDistances"][LowerPercentile][DateIndex]
+                    UpperDistance = Result["PercentileDistances"][UpperPercentile][DateIndex]
+
                     LowerNode = Result["PercentilePositions"][LowerPercentile][DateIndex]
                     UpperNode = Result["PercentilePositions"][UpperPercentile][DateIndex]
+
+                    RecentDistance = Transect.get_RecentDistance()
+                    RecentNode = Transect.get_RecentPosition()
 
                 except (AttributeError, KeyError, ValueError, IndexError):
                     StoreSegment()
@@ -7418,6 +7442,12 @@ class Coast:
                 if LowerNode is None or UpperNode is None:
                     StoreSegment()
                     continue
+
+                if ErosionOnly and LowerDistance <= RecentDistance:
+                    LowerNode = RecentNode
+
+                if ErosionOnly and UpperDistance <= RecentDistance:
+                    UpperNode = RecentNode
 
                 if StartIndex is None:
                     StartIndex = TransectIndex
