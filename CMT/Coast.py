@@ -1133,7 +1133,7 @@ class Coast:
 
             # append to lists
             Patch = {
-                "Geometry": Polygon,
+                "Geometry": PolygonGeometry,
                 "Record": Record,
             }
 
@@ -1181,14 +1181,14 @@ class Coast:
 
         # get file format from extension
         if Extension in [".geojson", ".json"]:
-            Driver = "GeoJSON"
+            Format = "GeoJSON"
         elif Extension == ".shp":
-            Driver = "ESRI Shapefile"
+            Format = "ESRI Shapefile"
         else:
             raise ValueError(f"Unsupported output format: {Extension}")
 
         # create the geodataframe
-        GDF = gpd.GeoDataFrame([Patch.Record for Patch in Patches], geometry=[Patch.Geometry for Patch in Patches], crs=self.Projection)
+        GDF = gp.GeoDataFrame([Patch["Record"] for Patch in Patches], geometry=[Patch["Geometry"] for Patch in Patches], crs=self.Projection)
 
         # write to file
         if Format == "GeoJSON":
