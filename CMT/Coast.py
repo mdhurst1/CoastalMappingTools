@@ -4202,21 +4202,79 @@ class Coast:
             for Transect in Line.Transects:
                 Transect.PredictFutureShorelines()
 
-    def PredictFutureShorelinesUncertainty(self, Year=2100):
+    def PredictFutureShorelinesUncertainty(self, Scenarios=None, Percentiles=None, Timeseries="MHWS", RateMethod="TWR", NSamples=1000):
 
         """
+        Run Monte Carlo future shoreline predictions for all transects.
 
-        Wrapper to call Transects function to predict future shoreline positions uncertainty
+        The Monte Carlo results are stored on each existing Transect in::
 
-        MDH, September 2019
+            Transect.FutureShorelineUncertainty
+                [Scenario][Percentile]
+
+        At present, uncertainty is propagated from the historical
+        shoreline-change rate. Future sea level is fixed to each requested
+        scenario and percentile, and Bruun morphology is held constant.
+
+        Parameters
+        ----------
+        Scenarios : sequence of int, optional
+            Future sea-level scenarios to process. If omitted, all scenarios
+            available on each transect are used.
+        Percentiles : sequence of int, optional
+            Future sea-level percentiles to process. Defaults to
+            ``[5, 50, 95]``.
+        Timeseries : str, optional
+            Historical shoreline timeseries. Default is ``"MHWS"``.
+        RateMethod : str, optional
+            Historical shoreline-change rate method. Default is ``"TWR"``.
+        NSamples : int, optional
+            Number of Monte Carlo samples per transect, scenario and
+            percentile. Default is 1000.
         
+        Returns
+        -------
+        None
+            Results are stored on the existing Transect objects.
+
+        MDH, July 2026
         """
-        print("Coast.PredictFutureShorelinesUncertainty: predicting future shoreline positions uncertainty %d", Year)
-        # loop through transects and sample
-        for Line in self.CoastLines:
-            for Transect in Line.Transects:
-                if Transect.Future:
-                    Transect.PredictFutureShorelineUncertainty(Year)
+        print("Coast.PredictFutureShorelinesUncertainty: Running Monte Carlo uncertainty estimation")
+
+        # check if scenarios is defined
+        if Scenarios is None:
+            Scenarios = [8,]
+
+        # check sea level percentiles (will be redundant soon)
+        if Percentiles is None:
+            Percentiles = [95,]
+
+        # loop through the transects
+        for CoastLine in self.CoastLines:
+
+            for Transect in CoastLine.Transects:
+
+                # loop through scenarios to run
+                for Scenario in Scenarios:
+
+                    # check with have scenario
+                    if (Scenario not in Transect.SeaLevelProjections):
+                        continue
+
+                    # loop through percentiles
+                    for Percentile in Percentiles:
+
+                        # check we have predictions
+                        if (Percentile not in Transect.SeaLevelProjections[Scenario]):
+                            continue
+
+                        # Give each transect/scenario/percentile run a
+                        # reproducible but distinct seed.
+                        RandomSeed = (Transect.ID * 1000 + int(Scenario) * 100 + int(Percentile))
+
+                        Transect.PredictFutureShorelineMonteCarlo(Scenario, Percentile, Timeseries, RateMethod, NSamples, RandomSeed)
+
+                   
 
     def PredictFutureShorelinesError(self, Year=2100):
 

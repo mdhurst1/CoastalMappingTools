@@ -136,6 +136,7 @@ class Transect:
 
         # future shoreline predictions
         self.FutureShorelinePredictions = {}
+        self.FutureShorelineUncertainty = {}
 
         # legacy holders
         self.FutureShorelinesPositions = []
@@ -1178,14 +1179,14 @@ class Transect:
         
         # create a sample of random Historic Rates for the distribution described by the method above
         RandomNs = np.random.default_rng(RandomSeed)
-        RandomHistoricRates = rng.normal(loc=HistoricRateEstimate, scale=HistoricRateSE, size=NSamples)
+        RandomHistoricRates = RandomNs.normal(loc=HistoricRateEstimate, scale=HistoricRateSE, size=NSamples)
 
         # set up results holder
         DistanceSamples = np.empty((NSamples, len(self.SeaLevelProjections[Scenario][Percentile].Dates)), dtype=float)
         Dates = None
 
         # loop through the samples
-        for Index, HistoricRate in enumerate(HistoricRates):
+        for Index, HistoricRate in enumerate(RandomHistoricRates):
 
             # make predictions for each sample
             Prediction = (self._PredictFutureShorelineProjection(Scenario, Percentile, HistoricRate,Timeseries, RateMethod))
@@ -1195,21 +1196,32 @@ class Transect:
                 Dates = list(Prediction["Dates"])
 
             # populate resulting distances
-            DistanceSamples[Index, :] = (Prediction["Distances"]
+            DistanceSamples[Index, :] = Prediction["Distances"]
             
+        Percentiles = [2.5, 8.0, 12.5, 25.0, 37.5, 50.0, 62.5, 75.0, 87.5, 92.0, 97.5,]
+        PercentileDistances = np.percentile(DistanceSamples, Percentiles, axis=0)
+        PercentilePositions = {PercentileValue: [self.get_Position(Distance) for Distance in Distances] 
+                               for PercentileValue, Distances in PercentileDistances.items() }
 
-        PercentileValues = np.percentile(DistanceSamples, [5, 50, 95], axis=0)
+        # check if scenario already exists and create if needed
+        if Scenario not in self.FutureShorelineUncertainty:
+            self.FutureShorelineUncertainty[Scenario] = {}
 
-        return {
+        Result = {
             "Dates": Dates,
-            "SampledHistoricRates": HistoricRates,
+            "HistoricRateEstimate": HistoricRateEstimate,
+            "HistoricRateSE": HistoricRateSE,
             "DistanceSamples": DistanceSamples,
-            "DistancePercentiles": {
-                5: PercentileValues[0],
-                50: PercentileValues[1],
-                95: PercentileValues[2],
-        },
-    }
+            "Percentiles": Percentiles,
+            "PercentileDistances": PercentileDistances,
+            "PercentilePositions": PercentilePositions
+        }
+
+        # store the result
+        self.FutureShorelineUncertainty[Scenario][Percentile] = Result
+
+        # return the result
+        return Result
 
     def PredictFutureShorelineBathtub(self):
 
