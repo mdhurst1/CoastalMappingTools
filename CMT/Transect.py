@@ -734,14 +734,27 @@ class Transect:
         for Signal in self.Timeseries.values():
             Signal.Analyse(TauYears=TauYears)
 
-    """
-    def get_signal(self, name):
-        return self.signals.get(name, None)
 
+    def AddSeaLevelProjection(self, Scenario, Percentile, Dates, Values):
 
-    def iter_signals(self):
-        return self.signals.values()
-    """
+        """
+        Function to add or replace a future relative sea-level projection.
+
+        MDH, July 2026
+        
+        """
+
+        # check if scenario already exists on dictionary and create if not
+        if Scenario not in self.SeaLevelProjections:
+            self.SeaLevelProjections[Scenario] = {}
+
+        # name the scenario for the timeseries
+        Name = f"RSL_RCP{Scenario}_P{Percentile:02d}"
+
+        self.SeaLevelProjections[Scenario][Percentile] = (
+        TimeSeriesSignal(Name=Name, Dates=Dates, Distances=Values)
+        
+    
 
     def CalculateIntertidalSlope(self):
         
