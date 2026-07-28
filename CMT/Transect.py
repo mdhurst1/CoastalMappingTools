@@ -1144,6 +1144,8 @@ class Transect:
 
         if (Scenario not in self.FutureShorelinePredictions or Percentile not in self.FutureShorelinePredictions[Scenario]):
             print("No Scenario , unable to run")
+            import pdb
+            pdb.set_trace()
             return
 
         # retrieve the prediction

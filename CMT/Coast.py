@@ -481,33 +481,36 @@ class Coast:
         self.WriteErosionBuffer(self, OutputFile, BufferDistance, Year, Smooth)
 
     
-    def WriteFutureShorelinesShp(self, FutureShoreLinesShp, Smooth=True):
+    def WriteFutureShorelinesShp(self, FutureShoreLinesShp, Percentile=50, Smooth=True):
 
         """
-        Writes the contents of a list of future shoreline objects to polyline shape file
-        Added functionality to write spline of future line prediction to get smoothed
-        shape that is faithful to predictions
+        Writes future shoreline objects to separate shapefiles for each
+        RCP scenario.
 
         MDH, Jan 2020
-
-        Modified and maintained for backward compatibility
-
-        MDH, July 2026
+        Modified July 2026
 
         """
 
-        self.WriteFutureShorelines(FutureShoreLinesShp, Smooth)
+        self.WriteFutureShorelines(
+            FutureShoreLinesShp,
+            Percentile=Percentile,
+            Smooth=Smooth,
+        )
 
-    def WriteFutureShorelines(self, OutputFile, Smooth=True):
+    def WriteFutureShorelines(self, OutputFile, Percentile=50, Smooth=True, ErosionOnly=True):
 
         """
         
-        Writes the contents of a list of future shoreline objects to file
-        File format inferred from output file extension
+        Writes future shoreline objects to file for each RCP scenario.
+        File format inferred from output file extension.
 
-        if geojson, output format is converted to EPSG:4326
+        Separate output files are written for each RCP scenario.
+
+        If GeoJSON, output coordinates are converted to EPSG:4326.
         
         MDH, July 2026
+
         """
 
         # check output file is a path and create directory if needed
@@ -520,64 +523,111 @@ class Coast:
         try:
             Format = ExtensionFormats[OutputFile.suffix.lower()]
         except KeyError:
-            raise ValueError("Could not infer output format from extension "
-                f"'{OutputFile.suffix}'. Specify Format explicitly.")
+            raise ValueError(
+                "Could not infer output format from extension "
+                f"'{OutputFile.suffix}'."
+            )
 
-        print(f"Coast.WriteFutureShorelines: Writing a list of lines as {Format}")
+        # check scenarios have been defined
+        if not self.FutureRSLScenarios:
+            raise ValueError("No future RSL scenarios have been defined")
 
-        Geometries = []
-        Records = []
+        # loop through RCP scenarios
+        for Scenario in self.FutureRSLScenarios:
 
-        # extract future shoreline positions from transects
-        self.GetFutureShoreLines()
+            print(
+                "Coast.WriteFutureShorelines: "
+                f"Writing RCP{Scenario}, P{Percentile} as {Format}"
+            )
 
-        # setup empty lists for geometries and records
-        Records = []
-        Geometries = []
+            # extract future shoreline positions from transects
+            self.GetFutureShoreLines(
+                Scenario=Scenario,
+                Percentile=Percentile,
+                ErosionOnly=ErosionOnly,
+            )
 
-        for FutureLine in self.FutureShoreLines:
+            # setup empty lists for geometries and records
+            Records = []
+            Geometries = []
 
-            X, Y = FutureLine.get_XY()
+            for FutureLine in self.FutureShoreLines:
 
-            X = np.asarray(X)
-            Y = np.asarray(Y)
+                X, Y = FutureLine.get_XY()
 
-            if len(X) < 2:
-                continue
+                X = np.asarray(X)
+                Y = np.asarray(Y)
 
-            if Smooth and len(X) > 5:
-                # first smooth
-                X, Y = self._SmoothOutputLine(X, Y)
+                if len(X) < 2:
+                    continue
+
+                if Smooth and len(X) > 5:
+                    X, Y = self._SmoothOutputLine(X, Y)
+                    
+                Geometry = LineString(zip(X, Y))
                 
-            Geometry = LineString(zip(X, Y))
-            
-            if Geometry.is_empty:
+                if Geometry.is_empty:
+                    continue
+
+                if isinstance(FutureLine.Year, datetime):
+                    LineYear = FutureLine.Year.strftime("%Y-%m-%d")
+                else:
+                    LineYear = str(FutureLine.Year)
+
+                Record = {
+                    "Cell": str(FutureLine.Cell),
+                    "SubCell": str(FutureLine.SubCell),
+                    "Line_ID": str(FutureLine.ID),
+                    "Year": LineYear,
+                    "Scenario": int(Scenario),
+                    "Percentile": float(Percentile),
+                    "Method": str(self.Method),
+                }
+
+                Geometries.append(Geometry)
+                Records.append(Record)
+
+            # check we're not empty
+            if not Records:
+                print(
+                    "Coast.WriteFutureShorelines: "
+                    f"No valid shorelines generated for RCP{Scenario}, "
+                    f"P{Percentile}"
+                )
                 continue
 
-            LineYear = (FutureLine.Year.strftime("%Y-%m-%d") if isinstance(FutureLine.Year, datetime) else str(FutureLine.Year))
+            # setup geodataframe
+            GDF = gp.GeoDataFrame(
+                Records,
+                geometry=Geometries,
+                crs=self.Projection,
+            )
 
-            Record = {"Cell": str(FutureLine.Cell), "SubCell": str(FutureLine.SubCell),
-                    "Line_ID": str(FutureLine.ID), "Year": str(LineYear), "Method": str(self.Method)}
+            # add scenario to output filename
+            ScenarioOutputFile = OutputFile.with_name(
+                f"{OutputFile.stem}_RCP{Scenario}_P{Percentile}"
+                f"{OutputFile.suffix}"
+            )
+            
+            # write to appropriate file format
+            if Format == "GeoJSON":
 
-            Geometries.append(Geometry)
-            Records.append(Record)
+                # convert if GeoJSON
+                GDF = GDF.to_crs("EPSG:4326")
 
-        # check we're not empty
-        if not Records:
-            raise ValueError("No valid future shoreline geometries were generated.")
+                GDF.to_file(
+                    ScenarioOutputFile,
+                    driver="GeoJSON",
+                    index=False,
+                )
 
-        # setup geodataframe
-        GDF = gp.GeoDataFrame(Records, geometry=Geometries, crs=self.Projection)
-        
-        # write to appropriate file format
-        if Format == "GeoJSON":
+            else:
 
-            #convert if geojson
-            GDF = GDF.to_crs("EPSG:4326")
-            GDF.to_file(OutputFile, driver="GeoJSON", index=False)
-
-        else:
-            GDF.to_file(OutputFile, driver="ESRI Shapefile", index=False)   
+                GDF.to_file(
+                    ScenarioOutputFile,
+                    driver="ESRI Shapefile",
+                    index=False,
+                )
 
     def WriteFutureShorelinesUncertainty(self, OutputFolder, FilenamePrefix, Format="GeoJSON", Smooth=True, ErosionOnly=True):
         """
@@ -4448,7 +4498,7 @@ class Coast:
 
         # check sea level percentiles (will be redundant soon)
         if Percentiles is None:
-            Percentiles = [50,]
+            Percentiles = [5, 50, 95]
 
         # loop through transects and sample
         for Line in self.CoastLines:
@@ -7184,7 +7234,7 @@ class Coast:
 
         return Lines
 
-    def GetFutureShoreLines(self, ErosionOnly=True):
+    def GetFutureShoreLines(self, Scenario=8, Percentile=50, ErosionOnly=True):
 
         """
 
@@ -7270,9 +7320,9 @@ class Coast:
                     # loop through transects and get future positions
                     for Transect in CoastLine.Transects[StartList[i]+ii:EndList[i]]:
                         
-                        FutureDistance = Transect.get_FutureDistance(Year)
+                        FutureDistance = Transect.get_FutureDistance(Year, Scenario=Scenario, Percentile=Percentile)
                         RecentDistance = Transect.get_RecentDistance()
-                        FuturePosition = Transect.get_FuturePosition(Year)
+                        FuturePosition = Transect.get_FuturePosition(Year, Scenario=Scenario, Percentile=Percentile)
 
                         if FuturePosition is None:
                             FutureList.append(Transect.get_RecentPosition())
@@ -7302,6 +7352,8 @@ class Coast:
                         pdb.set_trace()
                         
                     TempLine = Line("FutureCoast_"+str(FutureCount), X, Y, Year=Year)
+                    TempLine.Scenario = Scenario
+                    TempLine.Percentile = Percentile
                     self.FutureShoreLines.append(TempLine)
                     
                     # update counter
