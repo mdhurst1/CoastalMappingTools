@@ -127,8 +127,8 @@ MontroseCoast.WriteFutureTransects(str(ResultsPath / ("Montrose_Transects.shp"))
 MontroseCoast.WriteFutureTransects(str(ResultsPath / ("Montrose_Transects.geojson")))
 
 # write future shorelines
-MontroseCoast.WriteFutureShorelines(str(ResultsPath / ("Montrose_Future.shp")), True)
-MontroseCoast.WriteFutureShorelines(str(ResultsPath / ("Montrose_Future.geojson")), True)
+MontroseCoast.WriteFutureShorelines(str(ResultsPath / ("Montrose_Future.shp")), Smooth=True)
+MontroseCoast.WriteFutureShorelines(str(ResultsPath / ("Montrose_Future.geojson")), Smooth=True)
 
 # write future shorelones uncertainty
 MontroseCoast.WriteFutureShorelinesUncertainty(str(ResultsPath / ("Uncertainty")), "Montrose", Format="shp", Smooth=True)
