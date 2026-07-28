@@ -254,6 +254,60 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 #             return
 # ============================================================================= 
 
+    def SmoothOutputLine(self, SmoothTolerance=5.0, Interval=1.0, MakeSimple=True):
+
+        
+        X, Y = self.get_XY()
+
+        X = np.asarray(X, dtype=float)
+        Y = np.asarray(Y, dtype=float)
+
+        # Preserve the endpoints from the original line.
+        StartPoint = np.array([X[0], Y[0]])
+        EndPoint = np.array([X[-1], Y[-1]])
+
+        Coordinates = np.column_stack((X, Y))
+
+        # Remove consecutive duplicate coordinates.
+        Keep = np.ones(len(Coordinates), dtype=bool)
+        Keep[1:] = np.any(np.diff(Coordinates, axis=0) != 0, axis=1)
+        Coordinates = Coordinates[Keep]
+
+        if len(Coordinates) < 4:
+            return
+
+        X = Coordinates[:, 0]
+        Y = Coordinates[:, 1]
+
+        SegmentLengths = np.hypot(np.diff(X), np.diff(Y))
+        Dist = np.concatenate(([0.0], np.cumsum(SegmentLengths)))
+
+        if Dist[-1] == 0:
+            return
+
+        K = min(3, len(Dist) - 1)
+        Smoothness = len(Dist) * SmoothTolerance ** 2
+
+        Spline, _ = splprep([X, Y], u=Dist, s=Smoothness, k=K)
+
+        # only spline internally, preserve end points
+        OutputDist = np.arange(Dist[1], Dist[-2], Interval)
+
+        if len(OutputDist) == 0 or OutputDist[-1] < Dist[-1]:
+            OutputDist = np.append(OutputDist, Dist[-1])
+
+        XOutput, YOutput = splev(OutputDist, Spline)
+
+        # Preserve original endpoints.
+        XOutput = np.concatenate((StartPoint.X, XOutput, EndPoint.X))
+        YOutput = np.concatenate((StartPoint.Y, YOutput, EndPoint.Y))
+
+        self.X = np.asarray(XOutput)
+        self.Y = np.asarray(YOutput)
+
+        if MakeSimple:
+            self.MakeSimple()
+            
     def MakeSimple(self):
         """
         Function to find and remove complexities (loops) in a line

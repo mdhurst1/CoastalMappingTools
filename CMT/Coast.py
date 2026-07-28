@@ -15,6 +15,7 @@ from scipy.interpolate import splprep, splev
 import numpy.ma as ma
 from datetime import datetime
 from sklearn.cluster import KMeans
+from copy import deepcopy
 
 import shapefile
 import itertools
@@ -1014,28 +1015,30 @@ class Coast:
 
             ### CALL SMOOTHING FUNCTION HERE?
 
+            """
             # smooth the line
             if Smooth:
                 ThisLine.SmoothLine(WindowSize=11)
 
             # check for geometry issues like loops
             ThisLine.MakeSimple()
+            """
 
-            # retrieve the coordinates
+            if Smooth and len(ThisLine.get_X()) > 5:
+                ThisLine.SmoothOutputLine(SmoothTolerance=5.0, Interval=1.0)
+
+            else:
+                ThisLine.MakeSimple()
+
             X, Y = ThisLine.get_XY()
-
-            if Smooth and len(X) > 5:
-
-                # first smooth
-                X, Y = self._SmoothOutputLine(X, Y)
-
             Geometry = LineString(zip(X, Y))
 
             Geometries.append(Geometry)
 
             Records.append({
                 "Line_ID": str(ThisLine.ID),
-                "Method": str(self.Method)})
+                "Method": str(self.Method),
+            })
 
 
         # create geopandas dataframe
@@ -1092,15 +1095,26 @@ class Coast:
         Patches = []
 
         # loop through lines in pairs
-        for LineIndex, (Line1, Line2) in enumerate(zip(Lines1, Lines2)):
+        for (Line1, Line2) in zip(Lines1, Lines2):
         
-            # retrieve coordinates
-            X1, Y1 = Line1.get_XY()
-            X2, Y2 = Line2.get_XY()
+            # Preserve the identifier before working with output copies.
+            LineID = Line1.ID
+
+            # Work on copies so the original line objects are not modified.
+            OutputLine1 = deepcopy(Line1)
+            OutputLine2 = deepcopy(Line2)
+
 
             if Smooth:
-                X1, Y1 = self._SmoothOutputLine(X1, Y1)
-                X2, Y2 = self._SmoothOutputLine(X2, Y2)
+                OutputLine1.SmoothOutputLine(SmoothTolerance=5.0, Interval=1.0)
+                OutputLine2.SmoothOutputLine(SmoothTolerance=5.0, Interval=1.0)
+            else:
+                OutputLine1.MakeSimple()
+                OutputLine2.MakeSimple()
+
+            # Retrieve the processed coordinates.
+            X1, Y1 = OutputLine1.get_XY()
+            X2, Y2 = OutputLine2.get_XY()
 
             # convert x/y arrays into coordinate pairs
             Coordinates1 = list(zip(X1, Y1))
@@ -6985,7 +6999,7 @@ class Coast:
                 Transect.Rocky = GroupList[Counter]
                 Counter += 1
 
-    def _SmoothOutputLine(self, X, Y, Smoothness=10, Interval=1.):
+    def _SmoothOutputLine(self, X, Y, Smoothness=20, NoSmooths=5, Interval=1.):
 
         """
         Smooth and resample a line while preserving the original endpoints.
@@ -7024,42 +7038,48 @@ class Coast:
 
         """
 
-        X = np.asarray(X)
-        Y = np.asarray(Y)
+        # Preserve the endpoints from the original line.
+        StartPoint = np.array([X[0], Y[0]])
+        EndPoint = np.array([X[-1], Y[-1]])
 
-        XInterior = X[1:-1]
-        YInterior = Y[1:-1]
+        for _ in range(NoSmooths):
 
-        SegmentLengths = np.sqrt(np.diff(XInterior) ** 2 + np.diff(YInterior) ** 2)
+            X = np.asarray(X)
+            Y = np.asarray(Y)
 
-        Dist = np.insert(np.cumsum(SegmentLengths), 0, 0.0,)
+            # Calculate cumulative distance along the complete line.
+            SegmentLengths = np.hypot(np.diff(X), np.diff(Y))
+            Dist = np.concatenate(([0.0], np.cumsum(SegmentLengths)))
 
-        # Remove coincident points
-        Keep = np.concatenate(([True], np.diff(Dist) > 0))
-        XInterior = XInterior[Keep]
-        YInterior = YInterior[Keep]
-        Dist = Dist[Keep]
+            # get smoothness
+            SmoothFactor = len(Dist) * Smoothness**2.
+            
+            # Remove coincident points
+            Keep = np.concatenate(([True], np.diff(Dist) > 0))
+            X = X[Keep]
+            Y = Y[Keep]
+            Dist = Dist[Keep]
 
-        if len(Dist) < 2 or Dist[-1] <= 0:
-            return X, Y
+            if len(Dist) < 2 or Dist[-1] <= 0:
+                return X, Y
 
-        # setup the spline for smoothing
-        Spline, _ = splprep([XInterior, YInterior], u=Dist, s=Smoothness, k=min(3, len(Dist) - 1))
+            # setup the spline for smoothing
+            Spline, _ = splprep([X, Y], u=Dist, s=SmoothFactor, k=min(3, len(Dist) - 1))
 
-        # get regular distances for resampling smoothed line
-        InterpDist = np.arange(0., Dist[-1], Interval)
+            # get regular distances for resampling smoothed line
+            InterpDist = np.arange(0., Dist[-1], Interval)
 
-        if len(InterpDist) == 0:
-            return X, Y
+            if len(InterpDist) == 0:
+                return X, Y
 
-        # get interpolated coordinates from the spline
-        XInterpolated, YInterpolated = splev(InterpDist, Spline)
+            # get interpolated coordinates from the spline
+            XInterpolated, YInterpolated = splev(InterpDist, Spline)
 
-        # reinstate start and end nodes
-        XOutput = np.concatenate(([X[0]], XInterpolated, [X[-1]]))
-        YOutput = np.concatenate(([Y[0]], YInterpolated, [Y[-1]]))
+            # reinstate start and end nodes
+            X[0], Y[0] = StartPoint
+            X[-1], Y[-1] = EndPoint
 
-        return XOutput, YOutput
+        return X, Y
 
     def GetFutureShoreLinesProximity(self, BufferDistance):
 
