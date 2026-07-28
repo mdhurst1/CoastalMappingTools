@@ -938,6 +938,11 @@ class Transect:
         dict
             Dates, distances, positions, rates and component values.
         
+        
+        # uncomment for debug
+        if ((self.LineID == "1") and self.ID == "37"):
+            import pdb
+            pdb.set_trace()
         """
 
         # get sea level history from new sea level timeseries storage
@@ -1019,7 +1024,7 @@ class Transect:
         # set slope for Bruun Rule    
         if BruunSlope is None:
             BruunSlope = min(self.HinterlandSlope, self.ShorefaceSlope)
-            BruunSlope = max(BruunSlope, 0.001)
+            BruunSlope = max(BruunSlope, 0.01)
         
         # Calibration term, remembering to convert relative sea level change rates to m/yr
         CalibrationRate = (self.ShorefaceDepth * HistoricRate + (self.ShorefaceDepth / BruunSlope) * CalibrationRSLR)

@@ -307,7 +307,7 @@ class Coast:
             # launch polygon patches shapefile writer
             self.WritePatchesShp("ExtFrontLines_"+Level, "ExtBackLines_"+Level, ExtPatchesShp)
 
-    def WriteErodedAreaShp(self, OutputFile, StartYear='2020-01-01', Year='2100-01-01',Smooth=True):
+    def WriteErodedAreaShp(self, OutputFile, StartYear='2030-01-01', Year='2100-01-01',Smooth=True):
 
         """
         Legacy function
@@ -318,7 +318,7 @@ class Coast:
 
         self.WriteErodedArea(OutputFile, StartYear, Year, Smooth)
 
-    def WriteErodedArea(self, OutputFile, StartYear='2020-01-01', Year='2100-01-01',Smooth=True):
+    def WriteErodedArea(self, OutputFile, StartYear='2030-01-01', Year='2100-01-01',Smooth=True):
         
         """
      
@@ -1104,17 +1104,14 @@ class Coast:
             OutputLine1 = deepcopy(Line1)
             OutputLine2 = deepcopy(Line2)
 
-
-            if Smooth:
-                OutputLine1.SmoothOutputLine(SmoothTolerance=5.0, Interval=1.0)
-                OutputLine2.SmoothOutputLine(SmoothTolerance=5.0, Interval=1.0)
-            else:
-                OutputLine1.MakeSimple()
-                OutputLine2.MakeSimple()
-
-            # Retrieve the processed coordinates.
+            # Retrieve the processed coordinates and smooth if needed.
             X1, Y1 = OutputLine1.get_XY()
             X2, Y2 = OutputLine2.get_XY()
+
+            if Smooth and len(X1) > 5:
+                X1, Y1 = self._SmoothOutputLine(X1, Y1)
+            if Smooth and len(X2) > 5:
+                X2, Y2 = self._SmoothOutputLine(X2, Y2)
 
             # convert x/y arrays into coordinate pairs
             Coordinates1 = list(zip(X1, Y1))
@@ -4192,7 +4189,7 @@ class Coast:
 
         # check if list of dates and initiate if required
         if Dates is None:
-            Dates = [datetime(Year, 1, 1) for Year in range(2020, 2101, 10)]
+            Dates = [datetime(Year, 1, 1) for Year in range(2030, 2101, 10)]
         else:
             Dates = [self._NormaliseDate(Date) for Date in Dates]
 
@@ -6999,7 +6996,7 @@ class Coast:
                 Transect.Rocky = GroupList[Counter]
                 Counter += 1
 
-    def _SmoothOutputLine(self, X, Y, Smoothness=20, NoSmooths=5, Interval=1.):
+    def _SmoothOutputLine(self, X, Y, Smoothness=1., NoSmooths=1, Interval=1.):
 
         """
         Smooth and resample a line while preserving the original endpoints.
@@ -7039,8 +7036,10 @@ class Coast:
         """
 
         # Preserve the endpoints from the original line.
-        StartPoint = np.array([X[0], Y[0]])
-        EndPoint = np.array([X[-1], Y[-1]])
+        StartX = X[0]
+        EndX = X[-1]
+        StartY = Y[0]
+        EndY = Y[-1]
 
         for _ in range(NoSmooths):
 
@@ -7067,17 +7066,16 @@ class Coast:
             Spline, _ = splprep([X, Y], u=Dist, s=SmoothFactor, k=min(3, len(Dist) - 1))
 
             # get regular distances for resampling smoothed line
-            InterpDist = np.arange(0., Dist[-1], Interval)
+            InterpDist = np.arange(Dist[1], Dist[-2], Interval)
 
             if len(InterpDist) == 0:
                 return X, Y
 
-            # get interpolated coordinates from the spline
-            XInterpolated, YInterpolated = splev(InterpDist, Spline)
+            X, Y = splev(InterpDist, Spline)
 
             # reinstate start and end nodes
-            X[0], Y[0] = StartPoint
-            X[-1], Y[-1] = EndPoint
+            X = np.concatenate(([StartX], X, [EndX]))
+            Y = np.concatenate(([StartY], Y, [EndY]))
 
         return X, Y
 
@@ -7724,7 +7722,7 @@ class Coast:
         """
 
         # Loop through prediction years
-        for Year in self.FutureShoreLinesYears[1:]:
+        for Year in self.FutureShoreLinesYears:
 
             # keep track of no of coastal segments for IDs
             FutureCount = 0

@@ -254,7 +254,7 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
 #             return
 # ============================================================================= 
 
-    def SmoothOutputLine(self, SmoothTolerance=5.0, Interval=1.0, MakeSimple=True):
+    def SmoothOutputLine(self, SmoothTolerance=0.5, Interval=1.0, MakeSimple=True):
 
         
         X, Y = self.get_XY()
@@ -263,8 +263,10 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         Y = np.asarray(Y, dtype=float)
 
         # Preserve the endpoints from the original line.
-        StartPoint = np.array([X[0], Y[0]])
-        EndPoint = np.array([X[-1], Y[-1]])
+        StartX = X[0]
+        EndX = X[-1]
+        StartY = Y[0]
+        EndY = Y[-1]
 
         Coordinates = np.column_stack((X, Y))
 
@@ -299,8 +301,8 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
         XOutput, YOutput = splev(OutputDist, Spline)
 
         # Preserve original endpoints.
-        XOutput = np.concatenate((StartPoint.X, XOutput, EndPoint.X))
-        YOutput = np.concatenate((StartPoint.Y, YOutput, EndPoint.Y))
+        XOutput = np.concatenate(([StartX], XOutput, [EndX]))
+        YOutput = np.concatenate(([StartY], YOutput, [EndY]))
 
         self.X = np.asarray(XOutput)
         self.Y = np.asarray(YOutput)
@@ -363,7 +365,6 @@ length of X: %d\n\tlength of Y:%d\n\n" % (len(X),len(Y)))
             # Get the unary union to find all intersections
             Result = unary_union(LS)
             
-            plt.clf()
             for L in Result.geoms:
                 plt.plot(L.xy[0],L.xy[1])
 

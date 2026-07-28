@@ -144,6 +144,7 @@ class TimeSeriesSignal:
             #Get variance in residuals
             Residual_SS = np.sum(Residuals**2) 
             Residual_Variance = Residual_SS / (NObs - 2)
+            Residual_SE = np.sqrt(Residual_Variance)
             Sxx = np.sum((DatesArray-np.mean(DatesArray))**2)
             
             # get temporal spread
@@ -167,6 +168,7 @@ class TimeSeriesSignal:
             "Method": "Ordinary Least Squares" if Years is None else f"OLS last {Years} years",
             "Rate": Rate,
             "RateSE": Rate_SE,
+            "ResidualSE": Residual_SE,
             "RateUncertainty": Rate_CI95,
             "Intercept": Intercept,
             "Fitted": FittedValues,
@@ -218,7 +220,8 @@ class TimeSeriesSignal:
             Residual_SS = np.sum(Residuals**2) 
             Residual_Variance = Residual_SS / (NObs - 2)
             Sxx = np.sum((DatesArray-np.mean(DatesArray))**2)
-            
+            Residual_SE = np.sqrt(Residual_Variance)
+
             # get temporal spread
             Total_SS = np.sum((ValuesArray - np.mean(ValuesArray))**2)
 
@@ -234,6 +237,7 @@ class TimeSeriesSignal:
             "Method": "Theil-Sen Regression",
             "Rate": Rate,
             "RateCI95": (Rate_Low, Rate_High),
+            "ResidualSE": Residual_SE,
             "Intercept": Intercept,
             "Fitted": FittedValues,
             "Residuals": Residuals,
@@ -295,6 +299,7 @@ class TimeSeriesSignal:
             Residual_SS = np.sum(Weights*Residuals**2) 
             Residual_Variance = Residual_SS / (NObs - 2)
             Sxx = np.sum((DatesArray-np.mean(DatesArray))**2)
+            Residual_SE = np.sqrt(Residual_Variance)
             
             # get temporal spread
             Total_SS = np.sum((ValuesArray - np.mean(ValuesArray))**2)
@@ -317,6 +322,7 @@ class TimeSeriesSignal:
             "Method": "Time-weighted Regression",
             "Rate": Rate,
             "RateSE": Rate_SE,
+            "ResidualSE": Residual_SE,
             "RateUncertainty": Rate_CI95,
             "Intercept": Intercept,
             "Fitted": FittedValues,
