@@ -925,7 +925,7 @@ class Transect:
             else:
                 continue
 
-    def _PredictFutureShorelineProjection(self, Scenario, Percentile, HistoricRate=None, BruunSlope=None, Timeseries="MHWS", RateMethod="TWR"):
+    def _PredictFutureShorelineProjection(self, FutureSeaLevelDates, FutureSeaLevels, HistoricRate=None, BruunSlope=None, Timeseries="MHWS", RateMethod="TWR"):
 
         """
         Predict one future shoreline trajectory for one RCP scenario
@@ -945,10 +945,8 @@ class Transect:
             pdb.set_trace()
         """
 
-        # get sea level history from new sea level timeseries storage
-        Projection = self.SeaLevelProjections[Scenario][Percentile]
-        FutureSeaLevelDates = list(Projection.Dates)
-        FutureSeaLevels = np.asarray(Projection.Values, dtype=float)
+        FutureSeaLevelDates = list(FutureSeaLevelDates)
+        FutureSeaLevels = np.asarray(FutureSeaLevels, dtype=float)
 
         # lists to temporarily store results and return
         FutureDates = []
@@ -1117,8 +1115,10 @@ class Transect:
                     print(f"No sea-level projection for scenario {Scenario}, percentile {Percentile}")
                     continue
 
+                Projection = self.SeaLevelProjections[Scenario][Percentile]
+
                 # run the prediction using Bruun Rule
-                Prediction = self._PredictFutureShorelineProjection(Scenario, Percentile, HistoricRate, BruunSlope, Timeseries, RateMethod)
+                Prediction = self._PredictFutureShorelineProjection(Projection.Dates,Projection.Values, HistoricRate, BruunSlope, Timeseries, RateMethod)
 
                 # add it to the results dict
                 if Prediction is not None:
@@ -1168,9 +1168,22 @@ class Transect:
         """
 
         # get sea level history from new sea level timeseries storage
-        Projection = self.SeaLevelProjections[Scenario][Percentile]
-        FutureSeaLevelDates = list(Projection.Dates)
-        
+        # Get the three sea-level percentile trajectories.
+        Projection5 = self.SeaLevelProjections[Scenario][5]
+        Projection50 = self.SeaLevelProjections[Scenario][50]
+        Projection95 = self.SeaLevelProjections[Scenario][95]
+
+        FutureSeaLevelDates = list(Projection50.Dates)
+
+        SeaLevels5 = np.asarray(Projection5.Values, dtype=float)
+        SeaLevels50 = np.asarray(Projection50.Values, dtype=float)
+        SeaLevels95 = np.asarray(Projection95.Values, dtype=float)
+
+        # Estimate a normal distribution at every date.
+        Z95 = 1.6448536269514722
+        MeanSeaLevels = SeaLevels50
+        SeaLevelSDs = (SeaLevels95 - SeaLevels5) / (2.0 * Z95)
+
         # get the timeseries, normally MHWS
         TS = self.Timeseries[Timeseries]
 
@@ -1192,14 +1205,18 @@ class Transect:
         RandomNs = np.random.default_rng(RandomSeed)
         RandomResiduals = RandomNs.normal(loc=0.0, scale=ResidualSE, size=NSamples)
 
+        # Sample random sea level trajectories based on distributions
+        RandomSeaLevelZScores = RandomNs.normal(loc=0.0, scale=1.0, size=NSamples)
+        FutureSeaLevelSamples = (MeanSeaLevels[None, :] + RandomSeaLevelZScores[:, None] * SeaLevelSDs[None, :])
+        
         # set up results holder
         DistanceSamples = np.empty((NSamples, len(self.SeaLevelProjections[Scenario][Percentile].Dates)), dtype=float)
         
         # loop through the samples
-        for Index, (HistoricRate, Residual) in enumerate(zip(RandomHistoricRates, RandomResiduals)):
+        for Index, (HistoricRate, Residual, FutureSeaLevelSample) in enumerate(zip(RandomHistoricRates, RandomResiduals, FutureSeaLevelSamples)):
 
             # make predictions for each sample
-            Prediction = (self._PredictFutureShorelineProjection(Scenario, Percentile, HistoricRate, None, Timeseries, RateMethod))            
+            Prediction = (self._PredictFutureShorelineProjection(FutureSeaLevelDates, FutureSeaLevelSample HistoricRate, None, Timeseries, RateMethod))            
 
             # catch conditions where future cannot be predicted and break out
             if Prediction is None:
@@ -1230,7 +1247,7 @@ class Transect:
         }
 
         # store the result
-        self.FutureShorelineUncertainty[Scenario][Percentile] = Result
+        self.FutureShorelineUncertainty[Scenario] = Result
 
         # return the result
         return Result

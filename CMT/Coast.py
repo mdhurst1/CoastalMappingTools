@@ -4471,7 +4471,7 @@ class Coast:
             for Transect in Line.Transects:
                 Transect.PredictFutureShorelines()
 
-    def PredictFutureShorelinesUncertainty(self, Scenarios=None, Percentiles=None, Timeseries="MHWS", RateMethod="TWR", NSamples=100):
+    def PredictFutureShorelinesUncertainty(self, Scenarios=None, Timeseries="MHWS", RateMethod="TWR", NSamples=100):
 
         """
         Run Monte Carlo future shoreline predictions for all transects.
@@ -4512,11 +4512,7 @@ class Coast:
 
         # check if scenarios is defined
         if Scenarios is None:
-            Scenarios = [8,]
-
-        # check sea level percentiles (will be redundant soon)
-        if Percentiles is None:
-            Percentiles = [95,]
+            Scenarios = [2,4,8,]
 
         # loop through the transects
         for CoastLine in self.CoastLines:
@@ -4529,9 +4525,6 @@ class Coast:
                     # check with have scenario
                     if (Scenario not in Transect.SeaLevelProjections):
                         continue
-
-                    # loop through percentiles
-                    for Percentile in Percentiles:
 
                         # check we have predictions
                         if (Percentile not in Transect.SeaLevelProjections[Scenario]):
