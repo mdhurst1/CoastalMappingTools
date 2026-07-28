@@ -1181,11 +1181,16 @@ class Transect:
         # retrieve the rate estimates and SE
         HistoricRateEstimate = -float(TS.Results[RateMethod]["Rate"])
         HistoricRateSE = float(TS.Results[RateMethod]["RateSE"])
+        ResidualSE = float(TS.Results[RateMethod]["ResidualSE"])
         
         # create a sample of random Historic Rates for the distribution described by the method above
         RandomNs = np.random.default_rng(RandomSeed)
         RandomHistoricRates = RandomNs.normal(loc=HistoricRateEstimate, scale=HistoricRateSE, size=NSamples)
 
+        # Sample positional variability around the long-term shoreline trend.
+        # Each sample and prediction date receives a residual displacement in metres.
+        RandomResiduals = RandomGenerator.normal(loc=0.0, scale=ResidualSE, size=(NSamples, NDates))
+        
         # set up results holder
         DistanceSamples = np.empty((NSamples, len(self.SeaLevelProjections[Scenario][Percentile].Dates)), dtype=float)
         
@@ -1201,7 +1206,7 @@ class Transect:
                 return
 
             # populate resulting distances
-            DistanceSamples[Index, :] = Prediction["Distances"]
+            DistanceSamples[Index, :] = Prediction["Distances"] + RandomResiduals[Index, :]
             
         Percentiles = [2.5, 16.0, 50.0, 84.0, 97.5]
 
