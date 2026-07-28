@@ -1189,13 +1189,14 @@ class Transect:
 
         # Sample positional variability around the long-term shoreline trend.
         # Each sample and prediction date receives a residual displacement in metres.
-        RandomResiduals = RandomGenerator.normal(loc=0.0, scale=ResidualSE, size=(NSamples, NDates))
-        
+        RandomNs = np.random.default_rng(RandomSeed)
+        RandomResiduals = RandomNs.normal(loc=0.0, scale=ResidualSE, size=NSamples)
+
         # set up results holder
         DistanceSamples = np.empty((NSamples, len(self.SeaLevelProjections[Scenario][Percentile].Dates)), dtype=float)
         
         # loop through the samples
-        for Index, HistoricRate in enumerate(RandomHistoricRates):
+        for Index, (HistoricRate, Residual) in enumerate(zip(RandomHistoricRates, RandomResiduals)):
 
             # make predictions for each sample
             Prediction = (self._PredictFutureShorelineProjection(Scenario, Percentile, HistoricRate, None, Timeseries, RateMethod))            
@@ -1206,7 +1207,7 @@ class Transect:
                 return
 
             # populate resulting distances
-            DistanceSamples[Index, :] = Prediction["Distances"] + RandomResiduals[Index, :]
+            DistanceSamples[Index, :] = Prediction["Distances"] + Residual
             
         Percentiles = [2.5, 16.0, 50.0, 84.0, 97.5]
 

@@ -136,6 +136,12 @@ class TimeSeriesSignal:
         Residuals = ValuesArray - FittedValues
         Rate = Slope * 365.25
 
+        # Set default uncertainty values.
+        Residual_SE = None
+        Rate_SE = None
+        Rate_CI95 = None
+        R2 = None
+
         # Calculate uncertainty
         NObs = len(ValuesArray)
 
@@ -156,12 +162,6 @@ class TimeSeriesSignal:
             # get standard error on the Slope
             Rate_SE = np.sqrt(Residual_Variance / Sxx) * 365.25
             Rate_CI95 = 1.96 * Rate_SE
-
-        else:
-            # no errors if only 2 data points
-            Rate_SE = None
-            Rate_CI95 = None
-            R2 = None
 
         # save results
         self.Results[ResultName] = {
@@ -211,6 +211,11 @@ class TimeSeriesSignal:
         FittedValues = Slope_Days*DatesArray + Intercept
         Residuals = ValuesArray - FittedValues
 
+        # Set default uncertainty values.
+        Residual_SE = None
+        Rate_SE = None
+        R2 = None
+
         # Calculate uncertainty
         NObs = len(ValuesArray)
 
@@ -227,11 +232,6 @@ class TimeSeriesSignal:
 
             # calculate R2
             R2 = round(1. - (Residual_SS / Total_SS), 3)
-
-        else:
-            # no R2
-            R2 = None
-
 
         self.Results["TheilSen"] = {
             "Method": "Theil-Sen Regression",
@@ -289,6 +289,12 @@ class TimeSeriesSignal:
         FittedValues = Slope*DatesArray + Intercept
         Residuals = ValuesArray - FittedValues
         Rate = Slope * 365.25
+
+        # Set default uncertainty values.
+        Residual_SE = None
+        Rate_SE = None
+        Rate_CI95 = None
+        R2 = None
 
         # Calculate uncertainty
         NObs = len(ValuesArray)
