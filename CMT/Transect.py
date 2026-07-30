@@ -495,8 +495,9 @@ class Transect:
 
                 Distance = float(Distance)
 
-                if Distance <= self.get_RecentDistance():
+                if Distance < self.get_RecentDistance():
                     continue
+                
                 DistancesList.append(Distance)
 
                 # include positional uncertainty where available
@@ -518,6 +519,10 @@ class Transect:
                 Distances = Prediction.get("Distances", [])
 
                 for FutureDate, FutureDistance in zip(Dates, Distances):
+
+                    if FutureDistance < self.get_RecentDistance():
+                        continue
+                    
                     DistancesList.append(FutureDistance)
                     
         # find index of min distance
