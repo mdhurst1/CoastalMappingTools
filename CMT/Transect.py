@@ -463,7 +463,7 @@ class Transect:
 
         self.Length = self.CalculateLength(self.StartNode, self.EndNode)
         
-    def Truncate(self, MinLength=25., Year=2100):
+    def Truncate(self, MinLength=25.):
         
         """
         Function to truncate transects to limits of historical and future 
@@ -521,15 +521,13 @@ class Transect:
         MinDistance = np.min(np.array(DistancesList))
         MaxDistance = np.max(np.array(DistancesList))
         
-        # find new end position
-        
         X = self.CoastNode.X + MinDistance * np.sin(np.radians(self.Orientation))
         Y = self.CoastNode.Y + MinDistance * np.cos(np.radians(self.Orientation))
-        self.EndNode = Node(X,Y)
+        self.StartNode = Node(X,Y)
     
         X = self.CoastNode.X + MaxDistance * np.sin(np.radians(self.Orientation))
         Y = self.CoastNode.Y + MaxDistance * np.cos(np.radians(self.Orientation))
-        self.StartNode = Node(X,Y)
+        self.EndNode = Node(X,Y)
         
         # check length and extend in either direction if needs be
         Length = self.StartNode.get_Distance(self.EndNode)
