@@ -3938,9 +3938,9 @@ class Transect:
 
         """
 
-        # extend transect landward and seaward?
-        X = self.StartNode.X + Distance * np.sin( np.radians( self.Orientation ) )
-        Y = self.StartNode.Y + Distance * np.cos( np.radians( self.Orientation ) )
+        # retrieve a position relative to coastnode
+        X = self.CoastNode.X + Distance * np.sin( np.radians( self.Orientation ) )
+        Y = self.CoastNode.Y + Distance * np.cos( np.radians( self.Orientation ) )
         
         return Node(X,Y)
 
