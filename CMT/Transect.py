@@ -574,7 +574,8 @@ class Transect:
         XNodes = np.linspace(self.StartNode.X, self.EndNode.X, self.NoNodes-1)
         YNodes = np.linspace(self.StartNode.Y, self.EndNode.Y, self.NoNodes-1)
         self.DistanceNodes = [Node(X,Y) for X, Y in zip(XNodes,YNodes)]
-        self.Distance = [self.StartNode.get_Distance(ThisNode) for ThisNode in self.DistanceNodes]
+        self.Distance = [self.CalculateDistanceFromCoastNode(ThisNode) for ThisNode in self.DistanceNodes]
+])
 
     def SampleDEM(self,DEM):
 
@@ -659,7 +660,7 @@ class Transect:
 
         # isolate distance and elevation
         Nodes = [ThisNode for ThisNode in self.DistanceNodes if ThisNode.Z]
-        Distances = np.array([ThisNode.get_Distance(self.StartNode) for ThisNode in Nodes if ThisNode.Z > 0])
+        Distances = np.array([self.CalculateDistanceFromCoastNode(ThisNode) for ThisNode in Nodes if ThisNode.Z > 0])
         Elevations = np.array([ThisNode.Z for ThisNode in Nodes if ThisNode.Z > 0])
 
         # normalise distances to minimum value (i.e. make lowest = zero)
@@ -1416,7 +1417,7 @@ class Transect:
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
 
             # check rock head position not exceeded
-            HistoricShorelineDistance = self.StartNode.get_Distance(self.HistoricShorelinesPosition[-1])
+            HistoricShorelineDistance = self.CalculateDistanceFromCoastNode(self.HistoricShorelinesPosition[-1])
             FutureShorelineDistance = HistoricShorelineDistance - ShorelinePositionChange
             
             X1 = self.HistoricShorelinesPosition[-1].X - ShorelinePositionChange * np.sin( np.radians( self.Orientation ) )
@@ -1475,7 +1476,7 @@ class Transect:
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
             
             # check rock head position not exceeded
-            HistoricShorelineDistance = self.StartNode.get_Distance(self.HistoricShorelinesPosition[-1])
+            HistoricShorelineDistance = self.CalculateDistanceFromCoastNode(self.HistoricShorelinesPosition[-1])
             FutureShorelineDistance = HistoricShorelineDistance - ShorelinePositionChange
             
             X1 = self.HistoricShorelinesPosition[-1].X - ShorelinePositionChange * np.sin( np.radians( self.Orientation ) )
@@ -1501,7 +1502,7 @@ class Transect:
         
         """
         # calculate distance along transect to veg edge
-        self.VegEdgeDistance = self.StartNode.get_Distance(self.VegEdgePosition)
+        self.VegEdgeDistance = self.CalculateDistanceFromCoastNode(self.VegEdgePosition)
 
         # measure difference between latest MHWS and veg edge
         Offset = TS.Values[-1][0] - self.VegEdgeDistance
@@ -3361,6 +3362,42 @@ class Transect:
 
         # close the figure
         plt.close(fig)
+
+    def CalculateDistanceFromCoastNode(self, NodePosition):
+        """
+        Calculate signed distance along the transect relative to CoastNode.
+
+        Distances are:
+
+        - negative seaward of CoastNode
+        - zero at CoastNode
+        - positive landward of CoastNode
+
+        Parameters
+        ----------
+        NodePosition : Node
+            Position for which the along-transect distance is required.
+
+        Returns
+        -------
+        float
+            Signed distance from CoastNode in the coordinate units of the
+            transect, normally metres.
+
+        MDH, July 2026
+        """
+
+        DeltaX = NodePosition.X - self.CoastNode.X
+        DeltaY = NodePosition.Y - self.CoastNode.Y
+
+        # Unit vector pointing from StartNode towards EndNode.
+        DirectionX = np.sin(np.radians(self.Orientation))
+        DirectionY = np.cos(np.radians(self.Orientation))
+
+        # Project the CoastNode-to-position vector onto the transect direction.
+        Distance = DeltaX * DirectionX + DeltaY * DirectionY
+
+        return float(Distance)
 
     def get_XY(self):
         
