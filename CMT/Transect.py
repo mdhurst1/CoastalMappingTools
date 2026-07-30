@@ -494,6 +494,9 @@ class Transect:
                     continue
 
                 Distance = float(Distance)
+
+                if FutureDistance <= RecentDistance:
+                    continue
                 DistancesList.append(Distance)
 
                 # include positional uncertainty where available
@@ -512,7 +515,7 @@ class Transect:
             for Prediction in ScenarioPredictions.values():
 
                 Dates = Prediction.get("Dates", [])
-                Distances = Prediction.get("Values", [])
+                Distances = Prediction.get("Distances", [])
 
                 for FutureDate, FutureDistance in zip(Dates, Distances):
                     DistancesList.append(FutureDistance)
