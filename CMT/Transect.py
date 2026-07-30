@@ -495,7 +495,7 @@ class Transect:
 
                 Distance = float(Distance)
 
-                if FutureDistance <= RecentDistance:
+                if Distance <= self.get_RecentDistance():
                     continue
                 DistancesList.append(Distance)
 
