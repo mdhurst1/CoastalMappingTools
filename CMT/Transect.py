@@ -470,44 +470,66 @@ class Transect:
         shoreline positions and uncertainty
         
         MDH, November 2020
+
+        Updated, July 2026 to work with new distance calcs and future predictions
         
         """
         
-        # if self.Future:
-        #     self.PredictFutureShorelineUncertainty(Year)
-        # else:
-        #     return
-            
-        # get all distances
+        # collect shoreline distances and uncertainty limits
         DistancesList = []
-                
-        for i in range(0,len(self.HistoricShorelinesDates)):
-            
-            # add nodes to lists
-            DistancesList.append(self.HistoricShorelinesDistances[i][0])
-            DistancesList.append(self.HistoricShorelinesDistances[i][0]+self.HistoricShorelinesErrors[i])
-            DistancesList.append(self.HistoricShorelinesDistances[i][0]-self.HistoricShorelinesErrors[i])
-        
-        # need a condition here to ignore distances from future where accretion is occuring
-        
-        for i in range(0, len(self.FutureSeaLevelYears)):
-            
-            # add nodes to lists
-            if self.FutureShorelinesDistances[i] > TS.Values[-1][0]:
-                DistancesList.append(self.FutureShorelinesDistances[i])
+
+        # Historical shoreline timeseries
+        for TimeseriesName in ["MHWS", "VEdge"]:
+
+            # timeseries may not exist on every transect
+            if TimeseriesName not in self.Timeseries:
+                continue
+
+            TS = self.Timeseries[TimeseriesName]
+
+            for Index, Distance in enumerate(TS.Values):
+
+                # skip missing or invalid distances
+                if Distance is None or not np.isfinite(Distance):
+                    continue
+
+                Distance = float(Distance)
+                DistancesList.append(Distance)
+
+                # include positional uncertainty where available
+                if Index < len(TS.Errors):
+
+                    Error = TS.Errors[Index]
+
+                    if Error is not None and np.isfinite(Error):
+
+                        Error = float(Error)
+                        DistancesList.extend([Distance - Error, Distance + Error])
+
+
+        # Future MHWS prediction
+        for ScenarioPredictions in self.FutureShorelinePredictions.values():
+            for Prediction in ScenarioPredictions.values():
+
+                Dates = Prediction.get("Dates", [])
+                Distances = Prediction.get("Values", [])
+
+                for FutureDate, FutureDistance in zip(Dates, Distances):
+                    DistancesList.append(FutureDistance)
                     
         # find index of min distance
         MinDistance = np.min(np.array(DistancesList))
         MaxDistance = np.max(np.array(DistancesList))
         
         # find new end position
-        X1 = self.StartNode.X + MaxDistance * np.sin( np.radians( self.Orientation ) )
-        Y1 = self.StartNode.Y + MaxDistance * np.cos( np.radians( self.Orientation ) )
-        self.EndNode = Node(X1,Y1)
+        
+        X = self.CoastNode.X + MinDistance * np.sin(np.radians(self.Orientation))
+        Y = self.CoastNode.Y + MinDistance * np.cos(np.radians(self.Orientation))
+        self.EndNode = Node(X,Y)
     
-        X1 = self.StartNode.X + MinDistance * np.sin( np.radians( self.Orientation ) )
-        Y1 = self.StartNode.Y + MinDistance * np.cos( np.radians( self.Orientation ) )
-        self.StartNode = Node(X1,Y1)
+        X = self.CoastNode.X + MaxDistance * np.sin(np.radians(self.Orientation))
+        Y = self.CoastNode.Y + MaxDistance * np.cos(np.radians(self.Orientation))
+        self.StartNode = Node(X,Y)
         
         # check length and extend in either direction if needs be
         Length = self.StartNode.get_Distance(self.EndNode)
@@ -525,6 +547,10 @@ class Transect:
             X1 = self.StartNode.X - 0.5*Difference * np.sin( np.radians( self.Orientation ) )
             Y1 = self.StartNode.Y - 0.5*Difference * np.cos( np.radians( self.Orientation ) )
             self.StartNode = Node(X1,Y1)
+
+        # rebuild geometry
+        self.LineString = LineString([(self.StartNode.X, self.StartNode.Y),(self.EndNode.X, self.EndNode.Y)])
+        self.Length = self.StartNode.get_Distance(self.EndNode)
 
     def Truncate2Coast(self, D_start, D_end):
         
@@ -575,7 +601,6 @@ class Transect:
         YNodes = np.linspace(self.StartNode.Y, self.EndNode.Y, self.NoNodes-1)
         self.DistanceNodes = [Node(X,Y) for X, Y in zip(XNodes,YNodes)]
         self.Distance = [self.CalculateDistanceFromCoastNode(ThisNode) for ThisNode in self.DistanceNodes]
-])
 
     def SampleDEM(self,DEM):
 
