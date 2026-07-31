@@ -4098,7 +4098,7 @@ class Transect:
         """
 
         # retrieve all timeseries objects
-        Timeseries = {Name: Signal.get_Record() for Name, Signal in self.Timeseries.items()}
+        Timeseries = {Name: Signal.get_GeoJSONRecord() for Name, Signal in self.Timeseries.items()}
         
         return {
 
