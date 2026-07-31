@@ -3249,7 +3249,7 @@ class Coast:
                         Transect.HistoricShorelinesPositions.insert(Index, Positions)
                         
                         # add distance
-                        Distances = [Transect.StartNode.get_Distance(Position),]
+                        Distances = [Transect.CalculateDistanceFromCoastNode(Position),]
                         Transect.HistoricShorelinesDistances.insert(Index, Distances)
                         
                         # add source info
@@ -3320,7 +3320,7 @@ class Coast:
                             Transect.HistoricShorelinesPositions.insert(Index, Positions)
                             
                             # add distance
-                            Distances = [Transect.StartNode.get_Distance(Position),]
+                            Distances = [Transect.CalculateDistanceFromCoastNode(Position),]
                             Transect.HistoricShorelinesDistances.insert(Index, Distances)
                             
                             # add source info
@@ -3496,7 +3496,7 @@ class Coast:
     
                     #Get Position and Distance
                     Position = Node(Intersection.x, Intersection.y)
-                    Distance = Transect.StartNode.get_Distance(Position)
+                    Distance = Transect.CalculateDistanceFromCoastNode(Position)
 
                     # add to timeseries object
                     Transect.AddTimeseriesObservation(SignalName, Date, Distance, Error, Path(HistoricalShp).name)
@@ -3655,7 +3655,7 @@ class Coast:
                     if Intersections.geom_type == "MultiPoint":
                         #if __debug__:
                             #print(Transect.LineID, Transect.ID, "\t More than one intersection!")
-                        StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
+                        StartPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
                         Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections.geoms]
                         if MostSeaward:
                             Index = Distances.index(min(Distances))
@@ -4463,7 +4463,7 @@ class Coast:
                     continue
 
                 # check there arent multiple intersections
-                StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
+                StartPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
                 # store multiple intersections if so
                 if Intersections.geom_type == "MultiPoint":
                     Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections.geoms]
@@ -4647,7 +4647,7 @@ class Coast:
 
                 # check there arent multiple intersections, if there are just get the nearest
                 if Intersection.geom_type == "MultiPoint":
-                    StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
+                    StartPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
                     Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection.geoms]
                     Index = Distances.index(min(Distances))
                     Intersection = Intersection[Index]

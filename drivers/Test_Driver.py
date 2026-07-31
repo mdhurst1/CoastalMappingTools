@@ -56,7 +56,7 @@ print(BaselinePath)
 MontroseCoast = Coast(str(BaselinePath), MinLength=MinLength)
     
 # may need to think carefully about how much to smooth
-MontroseCoast.SmoothCoastLines(WindowSize=21,NoSmooths=100)
+MontroseCoast.SmoothCoastLines(WindowSize=31,NoSmooths=200)
 
 # make sure each baseline is correctly orientated with sea on left as you look down the line
 MontroseCoast.CheckOrientation(str(BaselinePath),str(MLWSPath))
@@ -122,7 +122,8 @@ MontroseCoast.PredictFutureShorelinesUncertainty()
 ### FUTURE SHORELINE ANALYSIS NEEDS MODIFIED TO WORK WITH TIMESERIES OBJECTS
 
 # Write Future Transects
-# MontroseCoast.TruncateTransects()
+MontroseCoast.WriteFutureTransects(str(ResultsPath / ("Montrose_Transects_TEST.shp")))
+MontroseCoast.TruncateTransects()
 MontroseCoast.WriteFutureTransects(str(ResultsPath / ("Montrose_Transects.shp")))
 MontroseCoast.WriteFutureTransects(str(ResultsPath / ("Montrose_Transects.geojson")))
 
