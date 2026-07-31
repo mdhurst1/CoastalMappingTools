@@ -15,6 +15,7 @@ from scipy.interpolate import splprep, splev
 import numpy.ma as ma
 from datetime import datetime
 from sklearn.cluster import KMeans
+from copy import deepcopy
 
 import shapefile
 import itertools
@@ -65,6 +66,8 @@ class Coast:
         self.ExtBackLines_Low = []
         self.ExtBackLines_Med = []
         self.ExtBackLines_High = []
+        self.FutureRSLScenarios = []
+        self.FutureRSLPercentiles = []
         self.FutureShoreLinesYears = []
         self.FutureShoreLines = []
         self.FutureVegEdgeLines = []
@@ -304,7 +307,7 @@ class Coast:
             # launch polygon patches shapefile writer
             self.WritePatchesShp("ExtFrontLines_"+Level, "ExtBackLines_"+Level, ExtPatchesShp)
 
-    def WriteErodedAreaShp(self, OutputFile, StartYear='2020-01-01', Year='2100-01-01',Smooth=True):
+    def WriteErodedAreaShp(self, OutputFile, StartYear='2030-01-01', Year='2100-01-01',Smooth=True):
 
         """
         Legacy function
@@ -315,7 +318,7 @@ class Coast:
 
         self.WriteErodedArea(OutputFile, StartYear, Year, Smooth)
 
-    def WriteErodedArea(self, OutputFile, StartYear='2020-01-01', Year='2100-01-01',Smooth=True):
+    def WriteErodedArea(self, OutputFile, StartYear='2030-01-01', Year='2100-01-01',Smooth=True):
         
         """
      
@@ -478,33 +481,36 @@ class Coast:
         self.WriteErosionBuffer(self, OutputFile, BufferDistance, Year, Smooth)
 
     
-    def WriteFutureShorelinesShp(self, FutureShoreLinesShp, Smooth=True):
+    def WriteFutureShorelinesShp(self, FutureShoreLinesShp, Percentile=50, Smooth=True):
 
         """
-        Writes the contents of a list of future shoreline objects to polyline shape file
-        Added functionality to write spline of future line prediction to get smoothed
-        shape that is faithful to predictions
+        Writes future shoreline objects to separate shapefiles for each
+        RCP scenario.
 
         MDH, Jan 2020
-
-        Modified and maintained for backward compatibility
-
-        MDH, July 2026
+        Modified July 2026
 
         """
 
-        self.WriteFutureShorelines(FutureShoreLinesShp, Smooth)
+        self.WriteFutureShorelines(
+            FutureShoreLinesShp,
+            Percentile=Percentile,
+            Smooth=Smooth,
+        )
 
-    def WriteFutureShorelines(self, OutputFile, Smooth=True):
+    def WriteFutureShorelines(self, OutputFile, Percentile=50, Smooth=True, ErosionOnly=True):
 
         """
         
-        Writes the contents of a list of future shoreline objects to file
-        File format inferred from output file extension
+        Writes future shoreline objects to file for each RCP scenario.
+        File format inferred from output file extension.
 
-        if geojson, output format is converted to EPSG:4326
+        Separate output files are written for each RCP scenario.
+
+        If GeoJSON, output coordinates are converted to EPSG:4326.
         
         MDH, July 2026
+
         """
 
         # check output file is a path and create directory if needed
@@ -517,70 +523,212 @@ class Coast:
         try:
             Format = ExtensionFormats[OutputFile.suffix.lower()]
         except KeyError:
-            raise ValueError("Could not infer output format from extension "
-                f"'{OutputFile.suffix}'. Specify Format explicitly.")
+            raise ValueError(
+                "Could not infer output format from extension "
+                f"'{OutputFile.suffix}'."
+            )
 
-        print(f"Coast.WriteFutureShorelines: Writing a list of lines as {Format}")
+        # check scenarios have been defined
+        if not self.FutureRSLScenarios:
+            raise ValueError("No future RSL scenarios have been defined")
 
-        Geometries = []
-        Records = []
+        # loop through RCP scenarios
+        for Scenario in self.FutureRSLScenarios:
 
-        # extract future shoreline positions from transects
-        self.GetFutureShoreLines()
+            print(
+                "Coast.WriteFutureShorelines: "
+                f"Writing RCP{Scenario}, P{Percentile} as {Format}"
+            )
 
-        # setup empty lists for geometries and records
-        Records = []
-        Geometries = []
+            # extract future shoreline positions from transects
+            self.GetFutureShoreLines(
+                Scenario=Scenario,
+                Percentile=Percentile,
+                ErosionOnly=ErosionOnly,
+            )
 
-        for FutureLine in self.FutureShoreLines:
+            # setup empty lists for geometries and records
+            Records = []
+            Geometries = []
 
-            if Smooth:
-                FutureLine.SmoothLine(WindowSize=11)
+            for FutureLine in self.FutureShoreLines:
 
-            # check for complex topology and fix
-            FutureLine.MakeSimple()
+                X, Y = FutureLine.get_XY()
 
-            X, Y = FutureLine.get_XY()
+                X = np.asarray(X)
+                Y = np.asarray(Y)
 
-            X = np.asarray(X)
-            Y = np.asarray(Y)
+                if len(X) < 2:
+                    continue
 
-            if len(X) < 2:
+                if Smooth and len(X) > 5:
+                    X, Y = self._SmoothOutputLine(X, Y)
+                    
+                Geometry = LineString(zip(X, Y))
+                
+                if Geometry.is_empty:
+                    continue
+
+                if isinstance(FutureLine.Year, datetime):
+                    LineYear = FutureLine.Year.strftime("%Y-%m-%d")
+                else:
+                    LineYear = str(FutureLine.Year)
+
+                Record = {
+                    "Cell": str(FutureLine.Cell),
+                    "SubCell": str(FutureLine.SubCell),
+                    "Line_ID": str(FutureLine.ID),
+                    "Year": LineYear,
+                    "Scenario": int(Scenario),
+                    "Percentile": float(Percentile),
+                    "Method": str(self.Method),
+                }
+
+                Geometries.append(Geometry)
+                Records.append(Record)
+
+            # check we're not empty
+            if not Records:
+                print(
+                    "Coast.WriteFutureShorelines: "
+                    f"No valid shorelines generated for RCP{Scenario}, "
+                    f"P{Percentile}"
+                )
                 continue
 
-            if Smooth and len(X) > 5:
-                X, Y = self._SmoothOutputLine(X, Y)
+            # setup geodataframe
+            GDF = gp.GeoDataFrame(
+                Records,
+                geometry=Geometries,
+                crs=self.Projection,
+            )
 
-            Geometry = LineString(zip(X, Y))
+            # add scenario to output filename
+            ScenarioOutputFile = OutputFile.with_name(
+                f"{OutputFile.stem}_RCP{Scenario}_P{Percentile}"
+                f"{OutputFile.suffix}"
+            )
+            
+            # write to appropriate file format
+            if Format == "GeoJSON":
 
-            if Geometry.is_empty:
-                continue
+                # convert if GeoJSON
+                GDF = GDF.to_crs("EPSG:4326")
 
-            LineYear = (FutureLine.Year.strftime("%Y-%m-%d") if isinstance(FutureLine.Year, datetime) else str(FutureLine.Year))
+                GDF.to_file(
+                    ScenarioOutputFile,
+                    driver="GeoJSON",
+                    index=False,
+                )
 
-            Record = {"Cell": str(FutureLine.Cell), "SubCell": str(FutureLine.SubCell),
-                    "Line_ID": str(FutureLine.ID), "Year": str(LineYear), "Method": str(self.Method)}
+            else:
 
-            Geometries.append(Geometry)
-            Records.append(Record)
+                GDF.to_file(
+                    ScenarioOutputFile,
+                    driver="ESRI Shapefile",
+                    index=False,
+                )
 
-        # check we're not empty
-        if not Records:
-            raise ValueError("No valid future shoreline geometries were generated.")
+    def WriteFutureShorelinesUncertainty(self, OutputFolder, FilenamePrefix, Format="GeoJSON", Smooth=True, ErosionOnly=True):
+        """
+        Write future shoreline uncertainty polygons.
 
-        # setup geodataframe
-        GDF = gp.GeoDataFrame(Records, geometry=Geometries, crs=self.Projection)
+        For each requested scenario, input sea-level percentile, prediction
+        date and central probability interval, a polygon is created between
+        the corresponding lower and upper Monte Carlo shoreline percentiles.
+
+        Results are written using the existing ``WritePatches`` method.
+
+        Parameters
+        ----------
+        OutputFolder : str or pathlib.Path
+            Folder in which uncertainty polygon files are written.
+        FilenamePrefix : str
+            Project name or filename prefix for naming the output files
+        Format : str
+            GeoJSON or shp
+        Smooth : bool, optional
+            Smooth the uncertainty boundaries before polygon construction.
+            Default is True.
+
+        Returns
+        -------
+        None
+            Polygon files are written to ``OutputFolder``.
+
+        Notes
+        -----
+        At present, the polygons represent uncertainty propagated from the
+        historical shoreline-change rate, conditional on the selected
+        sea-level scenario and percentile and fixed Bruun morphology.
+
+        MDH, July 2026
+        """
+
+        print("Coast.WriteFutureShorelineUncertainty: Writing future shoreline uncertainty polygons")
+
+         # check if scenarios is defined
+        Scenarios = self.FutureRSLScenarios
+        Dates = self.FutureShoreLinesYears
+
+        # setup intervals for uncertainty
+        UncertaintyIntervals = {95: (2.5, 97.5),
+                                68: (16.0, 84.0)}
         
-        # write to appropriate file format
-        if Format == "GeoJSON":
+        # setup output folder
+        OutputFolder = Path(OutputFolder)
+        OutputFolder.mkdir(parents=True, exist_ok=True)
 
-            #convert if geojson
-            GDF = GDF.to_crs("EPSG:4326")
-            GDF.to_file(OutputFile, driver="GeoJSON", index=False)
+        # check file format
+        Format = Format.lower()
 
+        if Format == "geojson":
+            Extension = ".geojson"
+        elif Format == "shp":
+            Extension = ".shp"
         else:
-            GDF.to_file(OutputFile, driver="ESRI Shapefile", index=False)   
+            raise ValueError("Format must be 'GeoJSON' or 'shp'.")
 
+        for Scenario in Scenarios:
+            
+            # loop through dates                
+            for Date in Dates:
+
+                # Reset the patches list
+                Patches = []
+
+                # loop through percentiles
+                for UncertaintyInterval, Quantiles in UncertaintyIntervals.items():
+
+                    LowerPercentile, UpperPercentile = (Quantiles)
+                    LowerLines, UpperLines = (self._GetFutureUncertaintyBoundaryLines(Date, Scenario, LowerPercentile, UpperPercentile, ErosionOnly))
+
+                    if len(LowerLines) == 0:
+                        print("Ney lines!")
+                        continue
+
+                    if len(LowerLines) != len(UpperLines):
+                        raise RuntimeError(
+                            "Lower and upper uncertainty line "
+                            "counts do not match."
+                        )
+
+                    # add extra metadata as needed
+                    ExtraFields = {"Scenario": Scenario, "Year": Date.year, "UncertaintyInterval": UncertaintyInterval, "LowerQ": LowerPercentile, "UpperQ": UpperPercentile}
+
+                    # retrieve patches
+                    Patches.extend(self.CreatePatches(LowerLines, UpperLines, Smooth=Smooth, ExtraFields=ExtraFields))
+
+                # setup output file
+                OutputFile = OutputFolder / (FilenamePrefix + f"_Uncertainty_RCP{Scenario}_{Date.year}{Extension}")
+
+                if len(Patches) == 0:
+                    continue
+
+                # write patches to file    
+                self.WritePatchObjects(Patches, OutputFile)
+
+    
     def WriteFutureUncertaintyShp(self, UncertaintyShp, Year=2100):
 
         """
@@ -916,25 +1064,30 @@ class Coast:
 
             ### CALL SMOOTHING FUNCTION HERE?
 
+            """
             # smooth the line
             if Smooth:
                 ThisLine.SmoothLine(WindowSize=11)
 
             # check for geometry issues like loops
             ThisLine.MakeSimple()
+            """
 
-            # retrieve the coordinates
+            if Smooth and len(ThisLine.get_X()) > 5:
+                ThisLine.SmoothOutputLine(SmoothTolerance=5.0, Interval=1.0)
+
+            else:
+                ThisLine.MakeSimple()
+
             X, Y = ThisLine.get_XY()
-
-            if Smooth and len(X) > 5:
-                X, Y = self._SmoothOutputLine(X, Y)
-            
             Geometry = LineString(zip(X, Y))
+
             Geometries.append(Geometry)
 
             Records.append({
                 "Line_ID": str(ThisLine.ID),
-                "Method": str(self.Method)})
+                "Method": str(self.Method),
+            })
 
 
         # create geopandas dataframe
@@ -952,6 +1105,158 @@ class Coast:
             # Shapefile retains the source projection
             GDF.to_file(OutputFile, driver="ESRI Shapefile")
 
+    def CreatePatches(self, Lines1, Lines2, Smooth=True, ExtraFields=None):
+
+        """
+        Create polygon records between corresponding pairs of lines.
+
+        Each polygon follows a line from ``Lines1`` in its original
+        coordinate order, then follows the corresponding line from
+        ``Lines2`` in reverse order.
+
+        Parameters
+        ----------
+        Lines1 : sequence of Line
+            First collection of corresponding boundary lines.
+        Lines2 : sequence of Line
+            Second collection of corresponding boundary lines.
+        Smooth : bool, optional
+            Smooth line coordinates before constructing polygons.
+        ExtraFields : dict, optional
+            Attribute values added to every polygon record.
+
+        Returns
+        -------
+        list of dict
+            Polygon geometry and attribute records.
+
+        MDH, July 2026
+        """
+
+        # to write patches we need two sets of lines the same length
+        if len(Lines1) != len(Lines2):
+            raise ValueError("Lines1 and Lines2 must contain the same number of corresponding lines.")
+            
+        if ExtraFields is None:
+            ExtraFields = {}
+
+        # create empty list of patches to return
+        Patches = []
+
+        # loop through lines in pairs
+        for (Line1, Line2) in zip(Lines1, Lines2):
+        
+            # Preserve the identifier before working with output copies.
+            LineID = Line1.ID
+
+            # Work on copies so the original line objects are not modified.
+            OutputLine1 = deepcopy(Line1)
+            OutputLine2 = deepcopy(Line2)
+
+            # Retrieve the processed coordinates and smooth if needed.
+            X1, Y1 = OutputLine1.get_XY()
+            X2, Y2 = OutputLine2.get_XY()
+
+            if Smooth and len(X1) > 5:
+                X1, Y1 = self._SmoothOutputLine(X1, Y1)
+            if Smooth and len(X2) > 5:
+                X2, Y2 = self._SmoothOutputLine(X2, Y2)
+
+            # convert x/y arrays into coordinate pairs
+            Coordinates1 = list(zip(X1, Y1))
+            Coordinates2 = list(zip(X2, Y2))
+
+            if len(Coordinates1) < 2 or len(Coordinates2) < 2:
+                continue
+
+            # combine into a ring, reversing the order of the second set of coordinates
+            Ring = Coordinates1 + Coordinates2[::-1]
+
+            # create polygon
+            PolygonGeometry = Polygon(Ring)
+
+            # check if empty
+            if PolygonGeometry.is_empty:
+                continue
+
+            # fix any topological issues with buffer(0) trick
+            if not PolygonGeometry.is_valid:
+                PolygonGeometry = PolygonGeometry.buffer(0)
+
+            # build the record
+            Record = {"Poly_ID": str(Line1.ID), "Method": str(self.Method)}
+
+            if ExtraFields is not None:
+                Record.update(ExtraFields)
+
+            # append to lists
+            Patch = {
+                "Geometry": PolygonGeometry,
+                "Record": Record,
+            }
+
+            Patches.append(Patch)
+
+        return Patches
+
+    def WritePatchObjects(self, Patches, OutputFile,):
+
+        """
+        Write pre-created polygon patches to a vector file.
+
+        Each patch must contain:
+
+            Patch.Geometry
+                Shapely Polygon geometry.
+
+            Patch.Record
+                Dictionary of attribute values.
+
+        Parameters
+        ----------
+        Patches : sequence of Patch
+            Pre-created patch objects.
+        OutputFile : str or pathlib.Path
+            Output vector filename. The output format is inferred from
+            the file extension.
+
+        Returns
+        -------
+        None
+
+        MDH, July 2026
+        """
+
+        print("Coast.WritePatchObjects: Writing pre-created polygon patches")
+
+        if not Patches:
+            print("\tNo patches available to write")
+            return
+
+        # convert to Path
+        OutputFile = Path(OutputFile)
+        Extension = OutputFile.suffix.lower()
+
+        # get file format from extension
+        if Extension in [".geojson", ".json"]:
+            Format = "GeoJSON"
+        elif Extension == ".shp":
+            Format = "ESRI Shapefile"
+        else:
+            raise ValueError(f"Unsupported output format: {Extension}")
+
+        # create the geodataframe
+        GDF = gp.GeoDataFrame([Patch["Record"] for Patch in Patches], geometry=[Patch["Geometry"] for Patch in Patches], crs=self.Projection)
+
+        # write to file
+        if Format == "GeoJSON":
+            GDF = GDF.to_crs("EPSG:4326")
+            GDF.to_file(OutputFile, driver="GeoJSON", index=False)
+
+        else:
+            GDF.to_file(OutputFile, driver="ESRI Shapefile", index=False)
+    
+        
     def WritePatches(self, Lines1, Lines2, OutputFile, Smooth=True, ExtraFields=None):
 
         """
@@ -2989,7 +3294,7 @@ class Coast:
                         Transect.HistoricShorelinesPositions.insert(Index, Positions)
                         
                         # add distance
-                        Distances = [Transect.StartNode.get_Distance(Position),]
+                        Distances = [Transect.CalculateDistanceFromCoastNode(Position),]
                         Transect.HistoricShorelinesDistances.insert(Index, Distances)
                         
                         # add source info
@@ -3060,7 +3365,7 @@ class Coast:
                             Transect.HistoricShorelinesPositions.insert(Index, Positions)
                             
                             # add distance
-                            Distances = [Transect.StartNode.get_Distance(Position),]
+                            Distances = [Transect.CalculateDistanceFromCoastNode(Position),]
                             Transect.HistoricShorelinesDistances.insert(Index, Distances)
                             
                             # add source info
@@ -3236,10 +3541,10 @@ class Coast:
     
                     #Get Position and Distance
                     Position = Node(Intersection.x, Intersection.y)
-                    Distance = Transect.StartNode.get_Distance(Position)
+                    Distance = Transect.CalculateDistanceFromCoastNode(Position)
 
                     # add to timeseries object
-                    Transect.AddTimeseriesObservation(SignalName, Date, Position, Distance, Error, Path(HistoricalShp).name)
+                    Transect.AddTimeseriesObservation(SignalName, Date, Distance, Error, Path(HistoricalShp).name)
 
     def ExtractMLWS(self, MLWSShp, NearestNode=0):
 
@@ -3395,7 +3700,7 @@ class Coast:
                     if Intersections.geom_type == "MultiPoint":
                         #if __debug__:
                             #print(Transect.LineID, Transect.ID, "\t More than one intersection!")
-                        StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
+                        StartPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
                         Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections.geoms]
                         if MostSeaward:
                             Index = Distances.index(min(Distances))
@@ -3936,56 +4241,114 @@ class Coast:
                         ThisNode.Z = Elevation
                     
     
-    def SampleFutureRSL(self, FutureRSLFolder, RCP=8, Percentile=95, Dates=['2020-01-01','2030-01-01','2040-01-01','2050-01-01','2060-01-01','2070-01-01','2080-01-01','2090-01-01','2100-01-01'], Location=None):
+    def SampleFutureRSL(self, FutureRSLFolder, Scenarios=None, Percentiles=None, Dates=None):
 
-        """ 
-        
-        Samples a raster of future rates of relative sea level change (rise/fall)
-        at each transect location on coast
+        """
+        Sample future relative sea-level rasters at every transect.
+
+        Sea-level projections are sampled for multiple emissions scenarios,
+        percentiles and dates. Results are added to the existing Transect
+        objects in::
+
+            Transect.SeaLevelProjections[Scenario][Percentile]
 
         Parameters
         ----------
-        FutureRSLFolder : string
-            Folder containing future sea level elevation rasters for Scotland
-        RCP : int
-            RCP scenario to use
-        Percentile : int
-            Percentile scenario to use
-        Dates : list
-            List of dates corresponding to the years to be analysed
-        Location: Node object with location to use
-        
-        MDH, September 2019
+        FutureRSLFolder : str or pathlib.Path
+            Folder containing future relative sea-level rasters.
+        Scenarios : sequence of int, optional
+            RCP scenarios to sample. Defaults to ``[2, 4, 8]``.
+        Percentiles : sequence of int, optional
+            Projection percentiles to sample. Defaults to ``[5, 50, 95]``.
+        Dates : sequence, optional
+            Dates to sample. Values may be datetime objects, integer years,
+            or strings formatted as ``YYYY-MM-DD``. Defaults to decadal dates
+            from 2030 to 2100.
 
+        Notes
+        -----
+        Existing Transect objects are updated in place. The coastlines and
+        transects are not recreated.
+
+        MDH, September 2019
+        Updated July 2026 to include multiple scenarios and percentiles.
         """
 
-        print("Coast.SampleFutureRSL: Sampling future Relative Sea Level raster dataset")
+
+        print("Coast.SampleFutureRSL: Sampling future Relative Sea Level from UKCP")
 
         if self.FutureShoreLinesYears:
             print("\tFuture sea levels already sampled")
             return
 
-        #self.FutureShoreLinesYears = Years
-        self.FutureShoreLinesYears = [datetime.strptime(Date, '%Y-%m-%d') for Date in Dates]
+        # check if list of dates and initiate if required
+        if Dates is None:
+            Dates = [datetime(Year, 1, 1) for Year in range(2030, 2101, 10)]
+        else:
+            Dates = [self._NormaliseDate(Date) for Date in Dates]
 
-        for Date in self.FutureShoreLinesYears:
-            Year = Date.year
-            FutureRSLRaster = FutureRSLFolder + "/RCP" + str(RCP) + "_" + str(Percentile) + "th_" + str(Year) + "_filled.tif"
+        # keep legacy list for now
+        self.FutureShoreLinesYears = Dates.copy()
 
-            # open the raster dataset to work on
-            with rasterio.open(FutureRSLRaster) as RSLDataset:
-            
-                # loop through transects and sample
-                for Line in self.CoastLines:
-                    for i, Transect in enumerate(Line.Transects[:]):
-                        if Location:
-                            for val in RSLDataset.sample([(Location.X,Location.Y)]):
-                                Transect.FutureSeaLevels.append(val[0])
-                                Transect.FutureSeaLevelYears.append(Date)
-                        else:
-                            for val in RSLDataset.sample([(Transect.CoastNode.X,Transect.CoastNode.Y)]):
-                                Transect.FutureSeaLevels.append(val[0])
-                                Transect.FutureSeaLevelYears.append(Date)
+        # check scenarios and initiate default lists:
+        if Scenarios is None: 
+            Scenarios = [2, 4, 8]
+        if Percentiles is None:
+            Percentiles = [5, 50, 95]
+
+        # track scenarios in use
+        self.FutureRSLScenarios = list(Scenarios)
+        self.FutureRSLPercentiles = list(Percentiles)
+
+        # check we have a path to folder
+        FutureRSLFolder = Path(FutureRSLFolder)
+
+        # extract list of transects to work on and get their coordinates
+        Transects = [Transect for Line in self.CoastLines for Transect in Line.Transects]
+        Coordinates = [(Transect.CoastNode.X, Transect.CoastNode.Y,) for Transect in Transects]
+
+        # set up temporary storage dictionary
+        Sampled = {Scenario: 
+                    {Percentile: [] for Percentile in Percentiles}
+                    for Scenario in Scenarios}
+
+        # loop through RCP scenarios then loop through percentiles to sample Future Sea Level at each date
+        for Scenario in Scenarios:
+            for Percentile in Percentiles:
+                for Date in Dates:
+
+                    # specify raster file
+                    RasterFile = (FutureRSLFolder / (f"RCP{Scenario}") / (f"RCP{Scenario}_{Percentile}th_{Date.year}_filled.tif"))
+                
+                    # open the raster dataset to work on
+                    with rasterio.open(RasterFile) as Dataset:
+                    
+                        # sample using list of coordinates
+                        Samples = list(Dataset.sample(Coordinates, masked=True))
+                        Values = np.asarray([Sample[0] for Sample in Samples], dtype=float)
+
+                        # add to dictionary
+                        Sampled[Scenario][Percentile].append(Values)
+
+        # Add the sampled series to the existing Transect objects.
+        for Scenario in Scenarios:
+            for Percentile in Percentiles:
+
+                # Shape before stacking:
+                #     one array per date, each containing all transects
+                #
+                # Shape after stacking:
+                #     n_transects x n_dates
+                ValuesByTransect = np.stack(Sampled[Scenario][Percentile], axis=1)
+
+                # loop through transects
+                for TransectIndex, Transect in enumerate(Transects):
+
+                    # get the values
+                    Values = ValuesByTransect[TransectIndex,:]
+
+                    #add them to the transect
+                    Transect.AddSeaLevelProjection(Scenario, Percentile, Dates, Values)
 
     def SampleRockHeadPosition(self, UPSMRaster, MaxRockHeadErosionDistance=25.):
 
@@ -4145,7 +4508,7 @@ class Coast:
                     continue
 
                 # check there arent multiple intersections
-                StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
+                StartPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
                 # store multiple intersections if so
                 if Intersections.geom_type == "MultiPoint":
                     Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersections.geoms]
@@ -4163,7 +4526,7 @@ class Coast:
                 Transect.DefencesDistance = Distance+MaxDefencesErosionDistance
                 Transect.DefencesPosition = Transect.get_Position(Transect.DefencesDistance)
                 
-    def PredictFutureShorelines(self, MinMaxFlag=None):
+    def PredictFutureShorelines(self, Scenarios=None, Percentiles=None):
 
         """
 
@@ -4173,10 +4536,19 @@ class Coast:
 
         """
         print("Coast.PredictFutureShorelines: predicting future shoreline positions")
+
+         # check if scenarios is defined
+        if Scenarios is None:
+            Scenarios = [2,4,8,]
+
+        # check sea level percentiles (will be redundant soon)
+        if Percentiles is None:
+            Percentiles = [5, 50, 95]
+
         # loop through transects and sample
         for Line in self.CoastLines:
             for Transect in Line.Transects:
-                Transect.PredictFutureShorelines(MinMaxFlag=MinMaxFlag)
+                Transect.PredictFutureShorelines(Scenarios, Percentiles)
 
     def PredictFutureShorelinesBestWorstCase(self):
         """
@@ -4193,21 +4565,66 @@ class Coast:
             for Transect in Line.Transects:
                 Transect.PredictFutureShorelines()
 
-    def PredictFutureShorelinesUncertainty(self, Year=2100):
+    def PredictFutureShorelinesUncertainty(self, Scenarios=None, Timeseries="MHWS", RateMethod="TWR", NSamples=100):
 
         """
+        Run Monte Carlo future shoreline predictions for all transects.
 
-        Wrapper to call Transects function to predict future shoreline positions uncertainty
+        The Monte Carlo results are stored on each existing Transect in::
 
-        MDH, September 2019
+            Transect.FutureShorelineUncertainty
+                [Scenario][Percentile]
+
+        At present, uncertainty is propagated from the historical
+        shoreline-change rate. Future sea level is fixed to each requested
+        scenario and percentile, and Bruun morphology is held constant.
+
+        Parameters
+        ----------
+        Scenarios : sequence of int, optional
+            Future sea-level scenarios to process. If omitted, all scenarios
+            available on each transect are used.
+        Percentiles : sequence of int, optional
+            Future sea-level percentiles to process. Defaults to
+            ``[5, 50, 95]``.
+        Timeseries : str, optional
+            Historical shoreline timeseries. Default is ``"MHWS"``.
+        RateMethod : str, optional
+            Historical shoreline-change rate method. Default is ``"TWR"``.
+        NSamples : int, optional
+            Number of Monte Carlo samples per transect, scenario and
+            percentile. Default is 1000.
         
+        Returns
+        -------
+        None
+            Results are stored on the existing Transect objects.
+
+        MDH, July 2026
         """
-        print("Coast.PredictFutureShorelinesUncertainty: predicting future shoreline positions uncertainty %d", Year)
-        # loop through transects and sample
-        for Line in self.CoastLines:
-            for Transect in Line.Transects:
-                if Transect.Future:
-                    Transect.PredictFutureShorelineUncertainty(Year)
+        print("Coast.PredictFutureShorelinesUncertainty: Running Monte Carlo uncertainty estimation")
+
+        # check if scenarios is defined
+        if Scenarios is None:
+            Scenarios = self.FutureRSLScenarios
+
+        # loop through the transects
+        for CoastLine in self.CoastLines:
+
+            for Transect in CoastLine.Transects:
+
+                # loop through scenarios to run
+                for Scenario in Scenarios:
+
+                    # check with have scenario
+                    if (Scenario not in Transect.SeaLevelProjections):
+                        continue
+
+                    # Give each transect/scenario/percentile run a
+                    # reproducible but distinct seed.
+                    RandomSeed = (int(Transect.ID) * 1000 + int(Scenario) * 100)
+
+                    Transect.PredictFutureShorelineMonteCarlo(Scenario, Timeseries, RateMethod, NSamples, RandomSeed)
 
     def PredictFutureShorelinesError(self, Year=2100):
 
@@ -4275,7 +4692,7 @@ class Coast:
 
                 # check there arent multiple intersections, if there are just get the nearest
                 if Intersection.geom_type == "MultiPoint":
-                    StartPoint = Point(Transect.StartNode.X, Transect.StartNode.Y)
+                    StartPoint = Point(Transect.CoastNode.X, Transect.CoastNode.Y)
                     Distances = [IntersectPoint.distance(StartPoint) for IntersectPoint in Intersection.geoms]
                     Index = Distances.index(min(Distances))
                     Intersection = Intersection[Index]
@@ -6662,7 +7079,7 @@ class Coast:
                 Transect.Rocky = GroupList[Counter]
                 Counter += 1
 
-    def _SmoothOutputLine(self, X, Y, Interval=1.):
+    def _SmoothOutputLine(self, X, Y, Smoothness=1., NoSmooths=1, Interval=1.):
 
         """
         Smooth and resample a line while preserving the original endpoints.
@@ -6678,6 +7095,10 @@ class Coast:
 
         Y : array_like
             Y coordinates of the line vertices.
+        
+            Smoothness : float, optional
+        Spline smoothing factor. Zero forces the spline through every point.
+        Larger values produce a smoother line. Default is 10.0.
 
         Interval : float, optional
             Distance between successive resampled vertices, in the units of the
@@ -6697,42 +7118,49 @@ class Coast:
 
         """
 
-        X = np.asarray(X)
-        Y = np.asarray(Y)
+        # Preserve the endpoints from the original line.
+        StartX = X[0]
+        EndX = X[-1]
+        StartY = Y[0]
+        EndY = Y[-1]
 
-        XInterior = X[1:-1]
-        YInterior = Y[1:-1]
+        for _ in range(NoSmooths):
 
-        SegmentLengths = np.sqrt(np.diff(XInterior) ** 2 + np.diff(YInterior) ** 2)
+            X = np.asarray(X)
+            Y = np.asarray(Y)
 
-        Dist = np.insert(np.cumsum(SegmentLengths), 0, 0.0,)
+            # Calculate cumulative distance along the complete line.
+            SegmentLengths = np.hypot(np.diff(X), np.diff(Y))
+            Dist = np.concatenate(([0.0], np.cumsum(SegmentLengths)))
 
-        # Remove coincident points
-        Keep = np.concatenate(([True], np.diff(Dist) > 0))
-        XInterior = XInterior[Keep]
-        YInterior = YInterior[Keep]
-        Dist = Dist[Keep]
+            # get smoothness
+            SmoothFactor = len(Dist) * Smoothness**2.
+            
+            # Remove coincident points
+            Keep = np.concatenate(([True], np.diff(Dist) > 0))
+            X = X[Keep]
+            Y = Y[Keep]
+            Dist = Dist[Keep]
 
-        if len(Dist) < 2 or Dist[-1] <= 0:
-            return X, Y
+            if len(Dist) < 2 or Dist[-1] <= 0:
+                return X, Y
 
-        # setup the spline for smoothing
-        Spline, _ = splprep([XInterior, YInterior], u=Dist, s=0, k=min(3, len(Dist) - 1))
+            # setup the spline for smoothing
+            Spline, _ = splprep([X, Y], u=Dist, s=SmoothFactor, k=min(3, len(Dist) - 1))
 
-        # get regular distances for resampling smoothed line
-        InterpDist = np.arange(0., Dist[-1], Interval)
+            # get regular distances for resampling smoothed line
+            InterpDist = np.arange(Dist[1], Dist[-2], Interval)
 
-        if len(InterpDist) == 0:
-            return X, Y
+            if len(InterpDist) == 0:
+                return X, Y
 
-        # get interpolated coordinates from the spline
-        XInterpolated, YInterpolated = splev(InterpDist, Spline)
+            X, Y = splev(InterpDist, Spline)
 
-        # reinstate start and end nodes
-        XOutput = np.concatenate(([X[0]], XInterpolated, [X[-1]]))
-        YOutput = np.concatenate(([Y[0]], YInterpolated, [Y[-1]]))
+            # reinstate start and end nodes
+            X = np.concatenate(([StartX], X, [EndX]))
+            Y = np.concatenate(([StartY], Y, [EndY]))
 
-        return XOutput, YOutput
+        return X, Y
 
     def GetFutureShoreLinesProximity(self, BufferDistance):
 
@@ -6851,7 +7279,7 @@ class Coast:
 
         return Lines
 
-    def GetFutureShoreLines(self):
+    def GetFutureShoreLines(self, Scenario=8, Percentile=50, ErosionOnly=True):
 
         """
 
@@ -6932,21 +7360,23 @@ class Coast:
                             FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
                             ii= 1
                     
-                    if not FirstNode:
-                        import pdb
-                        pdb.set_trace()
-                        
                     FutureList.append(FirstNode)
                     
                     # loop through transects and get future positions
                     for Transect in CoastLine.Transects[StartList[i]+ii:EndList[i]]:
                         
-                        if Transect.get_FutureDistance(Year) > Transect.get_RecentDistance():
-                            TempNode = Transect.get_FuturePosition(Year)
-                            FutureList.append(TempNode)
-                        
-                        else:
+                        FutureDistance = Transect.get_FutureDistance(Year, Scenario=Scenario, Percentile=Percentile)
+                        RecentDistance = Transect.get_RecentDistance()
+                        FuturePosition = Transect.get_FuturePosition(Year, Scenario=Scenario, Percentile=Percentile)
+
+                        if FuturePosition is None:
                             FutureList.append(Transect.get_RecentPosition())
+
+                        elif ErosionOnly and FutureDistance <= RecentDistance:
+                            FutureList.append(Transect.get_RecentPosition())
+
+                        else:
+                            FutureList.append(FuturePosition)
                         
                                                 
                     # add latest MHWS from next node to end
@@ -6967,11 +7397,163 @@ class Coast:
                         pdb.set_trace()
                         
                     TempLine = Line("FutureCoast_"+str(FutureCount), X, Y, Year=Year)
+                    TempLine.Scenario = Scenario
+                    TempLine.Percentile = Percentile
                     self.FutureShoreLines.append(TempLine)
                     
                     # update counter
                     FutureCount += 1
-    
+
+
+    def _GetFutureUncertaintyBoundaryLines(self, Date, Scenario, LowerPercentile, UpperPercentile, ErosionOnly=True):
+
+        """
+        Build corresponding lower and upper uncertainty boundary lines.
+
+        Contiguous runs of transects with valid uncertainty predictions are
+        converted into Line objects. Each run is anchored to the recent
+        shoreline immediately before and after the predicted section so that
+        the uncertainty polygon tapers to zero width at its ends.
+
+        Parameters
+        ----------
+        Date : datetime
+            Future prediction date.
+        Scenario : int
+            Future relative sea-level scenario.
+        Percentile : float
+            Relative sea-level percentile used as input to the Monte Carlo run.
+        LowerPercentile : float
+            Lower output shoreline-position percentile.
+        UpperPercentile : float
+            Upper output shoreline-position percentile.
+
+        Returns
+        -------
+        LowerLines : list of Line
+            Lower uncertainty boundary lines.
+        UpperLines : list of Line
+            Upper uncertainty boundary lines.
+
+        MDH, July 2026
+        """
+
+        LowerLines = []
+        UpperLines = []
+        LineCount = 0
+
+        for CoastLine in self.CoastLines:
+
+            Transects = CoastLine.Transects
+
+            LowerNodes = []
+            UpperNodes = []
+            StartIndex = None
+            EndIndex = None
+
+            def StoreSegment():
+
+                nonlocal LowerNodes, UpperNodes, StartIndex, EndIndex, LineCount
+
+                # Ignore isolated predictions.
+                if len(LowerNodes) < 2:
+                    LowerNodes = []
+                    UpperNodes = []
+                    StartIndex = None
+                    EndIndex = None
+                    return
+
+                FirstNode = None
+                LastNode = None
+
+                # Use the recent shoreline position on the transect immediately
+                # before the predicted section as the first anchor.
+                if StartIndex > 0:
+                    FirstNode = Transects[StartIndex - 1].get_RecentPosition()
+
+                # Fall back to the recent position on the first valid transect.
+                if FirstNode is None:
+                    FirstNode = Transects[StartIndex].get_RecentPosition()
+
+                # Use the recent shoreline position on the transect immediately
+                # after the predicted section as the final anchor.
+                if EndIndex + 1 < len(Transects):
+                    LastNode = Transects[EndIndex + 1].get_RecentPosition()
+
+                # Fall back to the recent position on the final valid transect.
+                if LastNode is None:
+                    LastNode = Transects[EndIndex].get_RecentPosition()
+
+                # Add identical anchor nodes to both boundaries so the polygon
+                # tapers to zero width at either end.
+                if FirstNode is not None:
+                    LowerNodes.insert(0, FirstNode)
+                    UpperNodes.insert(0, FirstNode)
+
+                if LastNode is not None:
+                    LowerNodes.append(LastNode)
+                    UpperNodes.append(LastNode)
+
+                LowerX = [ThisNode.X for ThisNode in LowerNodes]
+                LowerY = [ThisNode.Y for ThisNode in LowerNodes]
+                UpperX = [ThisNode.X for ThisNode in UpperNodes]
+                UpperY = [ThisNode.Y for ThisNode in UpperNodes]
+
+                LowerLine = Line(f"UncertaintyLower_{LineCount}", LowerX, LowerY, Year=Date)
+                UpperLine = Line(f"UncertaintyUpper_{LineCount}", UpperX, UpperY, Year=Date)
+
+                LowerLines.append(LowerLine)
+                UpperLines.append(UpperLine)
+
+                LineCount += 1
+
+                LowerNodes = []
+                UpperNodes = []
+                StartIndex = None
+                EndIndex = None
+
+            for TransectIndex, Transect in enumerate(Transects):
+
+                try:
+                    Result = Transect.FutureShorelineUncertainty[Scenario]
+                    DateIndex = Result["Dates"].index(Date)
+
+                    LowerDistance = Result["PercentileDistances"][LowerPercentile][DateIndex]
+                    UpperDistance = Result["PercentileDistances"][UpperPercentile][DateIndex]
+
+                    LowerNode = Result["PercentilePositions"][LowerPercentile][DateIndex]
+                    UpperNode = Result["PercentilePositions"][UpperPercentile][DateIndex]
+
+                    RecentDistance = Transect.get_RecentDistance()
+                    RecentNode = Transect.get_RecentPosition()
+
+                except (AttributeError, KeyError, ValueError, IndexError):
+                    StoreSegment()
+                    continue
+
+                if LowerNode is None or UpperNode is None:
+                    StoreSegment()
+                    continue
+
+                if ErosionOnly and LowerDistance <= RecentDistance:
+                    LowerNode = RecentNode
+
+                if ErosionOnly and UpperDistance <= RecentDistance:
+                    UpperNode = RecentNode
+
+                if StartIndex is None:
+                    StartIndex = TransectIndex
+
+                EndIndex = TransectIndex
+
+                LowerNodes.append(LowerNode)
+                UpperNodes.append(UpperNode)
+
+            # Store a contiguous segment reaching the final transect.
+            StoreSegment()
+
+        return LowerLines, UpperLines
+
     def GetFutureShorelineUncertainty(self, Year=2100):
 
         """
@@ -7225,7 +7807,7 @@ class Coast:
         """
 
         # Loop through prediction years
-        for Year in self.FutureShoreLinesYears[1:]:
+        for Year in self.FutureShoreLinesYears:
 
             # keep track of no of coastal segments for IDs
             FutureCount = 0
@@ -8049,3 +8631,35 @@ class Coast:
                     ErosionDistances.append(ErosionDistance)
         
         return ErosionDistances
+
+    @staticmethod
+    def _NormaliseDate(Date):
+
+        """
+        Function to check date is in correct format and convert as required
+        
+        MDH, July 2026
+
+        """
+
+        if isinstance(Date, datetime):
+            return Date
+
+        if isinstance(Date, int):
+            return datetime(Date, 1, 1)
+
+        if isinstance(Date, str):
+            try:
+                return datetime.strptime(
+                    Date,
+                    "%Y-%m-%d",
+                )
+            except ValueError as Error:
+                raise ValueError(
+                    "Date strings must use YYYY-MM-DD format."
+                ) from Error
+
+        raise TypeError(
+            "Dates must be datetime objects, integer years, "
+            "or YYYY-MM-DD strings."
+        )

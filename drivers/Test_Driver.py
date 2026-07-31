@@ -56,7 +56,7 @@ print(BaselinePath)
 MontroseCoast = Coast(str(BaselinePath), MinLength=MinLength)
     
 # may need to think carefully about how much to smooth
-MontroseCoast.SmoothCoastLines(WindowSize=21,NoSmooths=100)
+MontroseCoast.SmoothCoastLines(WindowSize=31,NoSmooths=200)
 
 # make sure each baseline is correctly orientated with sea on left as you look down the line
 MontroseCoast.CheckOrientation(str(BaselinePath),str(MLWSPath))
@@ -112,13 +112,12 @@ MontroseCoast.ExtractTransectTopography(DEMFileList)
 MontroseCoast.Method = "Open"
             
 ### get future relative sea level time series from UKCP18 data
-Scenario = 8 # RCP 8.5
-Percentile = 95 # 95th percentile
-MontroseCoast.SampleFutureRSL(str(DataPath / "Future_RSL" / ("RCP"+str(Scenario))), RCP=Scenario, Percentile=Percentile)
+MontroseCoast.SampleFutureRSL(DataPath / "Future_RSL")
 
 ## predict future shorelines
 MontroseCoast.GetShorefaceSlopes(str(BathyPath))
 MontroseCoast.PredictFutureShorelines()
+MontroseCoast.PredictFutureShorelinesUncertainty()
 
 ### FUTURE SHORELINE ANALYSIS NEEDS MODIFIED TO WORK WITH TIMESERIES OBJECTS
 
@@ -128,8 +127,13 @@ MontroseCoast.WriteTransects(str(ResultsPath / ("Montrose_Transects.geojson")))
 MontroseCoast.WriteFutureTransects(str(ResultsPath / ("Montrose_Future_Transects.geojson")))
 
 # write future shorelines
-MontroseCoast.WriteFutureShorelinesShp(str(ResultsPath / ("Montrose_Future.shp")), True)
-MontroseCoast.WriteFutureShorelinesShp(str(ResultsPath / ("Montrose_Future.geojson")), True)
+MontroseCoast.WriteFutureShorelines(str(ResultsPath / ("Montrose_Future.shp")), Smooth=True)
+MontroseCoast.WriteFutureShorelines(str(ResultsPath / ("Montrose_Future.geojson")), Smooth=True)
+
+# write future shorelones uncertainty
+MontroseCoast.WriteFutureShorelinesUncertainty(str(ResultsPath / ("Uncertainty")), "Montrose", Format="shp", Smooth=True)
+MontroseCoast.WriteFutureShorelinesUncertainty(str(ResultsPath / ("Uncertainty")), "Montrose", Format="GeoJSON", Smooth=True)
+
 
 #Loop through decades to write areas eroded
 Decades = [2050, 2100]

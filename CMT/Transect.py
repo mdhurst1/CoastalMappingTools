@@ -11,7 +11,7 @@ import json
 
 import numpy as np
 import numpy.ma as ma
-from scipy.stats import t
+from scipy.stats import t, norm
 import os, sys
 
 #import figure plotting stuff here not globally!
@@ -67,16 +67,10 @@ class Transect:
         self.Overlaps = False
         
         # historic shoreline positions, distances and change rates
-        
         self.HistoricFlag = False
         self.HistoricShorelinesSources = []
         self.HistoricShorelinesDates = []
         self.OSYear = False
-        self.HistoricShorelinesPositions = [] # do we need both of these
-        self.HistoricShorelinesDistances = [] #
-        self.HistoricShorelinesPosition = [] #
-        self.HistoricShorelinesDistance = [] #
-        self.HistoricShorelinesErrors = []
         self.DC1 = []
         
         # change rates will be 1 less than no of positions
@@ -103,6 +97,19 @@ class Transect:
         # set up dictionary to store all timeseries info
         self.Timeseries = {}
 
+        # legacy definitions (remove later)
+        @property
+        def HistoricShorelinesDates(self):
+            return self.Timeseries["MHWS"].Dates
+
+        @property
+        def HistoricShorelinesDistances(self):
+            return self.Timeseries["MHWS"].Distances
+
+        @property
+        def HistoricShorelinesErrors(self):
+            return self.Timeseries["MHWS"].Errors
+
         # rock head info
         self.RockHeadDistance = None
         self.RockHeadPosition = None
@@ -127,8 +134,13 @@ class Transect:
         self.Future = False
         self.LongTermOnly = False
         self.CalibrationYear = None
-        self.FutureSeaLevelYears = []
-        self.FutureSeaLevels = []
+        self.SeaLevelProjections = {}
+
+        # future shoreline predictions
+        self.FutureShorelinePredictions = {}
+        self.FutureShorelineUncertainty = {}
+
+        # legacy holders
         self.FutureShorelinesPositions = []
         self.FutureShorelinesRates = []
         self.FutureShorelinesDistances = []
@@ -453,55 +465,79 @@ class Transect:
 
         self.Length = self.CalculateLength(self.StartNode, self.EndNode)
         
-    def Truncate(self, MinLength=25., Year=2100):
+    def Truncate(self, MinLength=25.):
         
         """
         Function to truncate transects to limits of historical and future 
         shoreline positions and uncertainty
         
         MDH, November 2020
+
+        Updated, July 2026 to work with new distance calcs and future predictions
         
         """
         
-        # if self.Future:
-        #     self.PredictFutureShorelineUncertainty(Year)
-        # else:
-        #     return
-            
-        # get all distances
+        # collect shoreline distances and uncertainty limits
         DistancesList = []
-        
-        #if self.LineID == "24" and self.ID == "28":
-            #import pdb
-            #pdb.set_trace()
-        
-        for i in range(0,len(self.HistoricShorelinesDates)):
-            
-            # add nodes to lists
-            DistancesList.append(self.HistoricShorelinesDistances[i][0])
-            DistancesList.append(self.HistoricShorelinesDistances[i][0]+self.HistoricShorelinesErrors[i])
-            DistancesList.append(self.HistoricShorelinesDistances[i][0]-self.HistoricShorelinesErrors[i])
-        
-        # need a condition here to ignore distances from future where accretion is occuring
-        
-        for i in range(0, len(self.FutureSeaLevelYears)):
-            
-            # add nodes to lists
-            if self.FutureShorelinesDistances[i] > TS.Distances[-1][0]:
-                DistancesList.append(self.FutureShorelinesDistances[i])
+
+        # Historical shoreline timeseries
+        for TimeseriesName in ["MHWS", "VEdge"]:
+
+            # timeseries may not exist on every transect
+            if TimeseriesName not in self.Timeseries:
+                continue
+
+            TS = self.Timeseries[TimeseriesName]
+
+            for Index, Distance in enumerate(TS.Values):
+
+                # skip missing or invalid distances
+                if Distance is None or not np.isfinite(Distance):
+                    continue
+
+                Distance = float(Distance)
+
+                if Distance < self.get_RecentDistance():
+                    continue
+                
+                DistancesList.append(Distance)
+
+                # include positional uncertainty where available
+                if Index < len(TS.Errors):
+
+                    Error = TS.Errors[Index]
+
+                    if Error is not None and np.isfinite(Error):
+
+                        Error = float(Error)
+                        DistancesList.extend([Distance - Error, Distance + Error])
+
+
+        # Future MHWS prediction
+        for ScenarioPredictions in self.FutureShorelinePredictions.values():
+            for Prediction in ScenarioPredictions.values():
+
+                Dates = Prediction.get("Dates", [])
+                Distances = Prediction.get("Distances", [])
+
+                for FutureDate, FutureDistance in zip(Dates, Distances):
+
+                    if FutureDistance < self.get_RecentDistance():
+                        continue
+                    
+                    DistancesList.append(FutureDistance)
                     
         # find index of min distance
         MinDistance = np.min(np.array(DistancesList))
         MaxDistance = np.max(np.array(DistancesList))
         
-        # find new end position
-        X1 = self.StartNode.X + MaxDistance * np.sin( np.radians( self.Orientation ) )
-        Y1 = self.StartNode.Y + MaxDistance * np.cos( np.radians( self.Orientation ) )
-        self.EndNode = Node(X1,Y1)
+        X = self.CoastNode.X + MinDistance * np.sin(np.radians(self.Orientation))
+        Y = self.CoastNode.Y + MinDistance * np.cos(np.radians(self.Orientation))
+        self.StartNode = Node(X,Y)
     
-        X1 = self.StartNode.X + MinDistance * np.sin( np.radians( self.Orientation ) )
-        Y1 = self.StartNode.Y + MinDistance * np.cos( np.radians( self.Orientation ) )
-        self.StartNode = Node(X1,Y1)
+        X = self.CoastNode.X + MaxDistance * np.sin(np.radians(self.Orientation))
+        Y = self.CoastNode.Y + MaxDistance * np.cos(np.radians(self.Orientation))
+        self.EndNode = Node(X,Y)
         
         # check length and extend in either direction if needs be
         Length = self.StartNode.get_Distance(self.EndNode)
@@ -519,6 +555,10 @@ class Transect:
             X1 = self.StartNode.X - 0.5*Difference * np.sin( np.radians( self.Orientation ) )
             Y1 = self.StartNode.Y - 0.5*Difference * np.cos( np.radians( self.Orientation ) )
             self.StartNode = Node(X1,Y1)
+
+        # rebuild geometry
+        self.LineString = LineString([(self.StartNode.X, self.StartNode.Y),(self.EndNode.X, self.EndNode.Y)])
+        self.Length = self.StartNode.get_Distance(self.EndNode)
 
     def Truncate2Coast(self, D_start, D_end):
         
@@ -568,7 +608,7 @@ class Transect:
         XNodes = np.linspace(self.StartNode.X, self.EndNode.X, self.NoNodes-1)
         YNodes = np.linspace(self.StartNode.Y, self.EndNode.Y, self.NoNodes-1)
         self.DistanceNodes = [Node(X,Y) for X, Y in zip(XNodes,YNodes)]
-        self.Distance = [self.StartNode.get_Distance(ThisNode) for ThisNode in self.DistanceNodes]
+        self.Distance = [self.CalculateDistanceFromCoastNode(ThisNode) for ThisNode in self.DistanceNodes]
 
     def SampleDEM(self,DEM):
 
@@ -653,7 +693,7 @@ class Transect:
 
         # isolate distance and elevation
         Nodes = [ThisNode for ThisNode in self.DistanceNodes if ThisNode.Z]
-        Distances = np.array([ThisNode.get_Distance(self.StartNode) for ThisNode in Nodes if ThisNode.Z > 0])
+        Distances = np.array([self.CalculateDistanceFromCoastNode(ThisNode) for ThisNode in Nodes if ThisNode.Z > 0])
         Elevations = np.array([ThisNode.Z for ThisNode in Nodes if ThisNode.Z > 0])
 
         # normalise distances to minimum value (i.e. make lowest = zero)
@@ -675,12 +715,11 @@ class Transect:
         #Slope = np.linalg.lstsq(Distances[:,np.newaxis], Elevations)[0]
         
         if Slope[0] <= 0:
-            print("Zero or negative Hinterland Slope")
             self.HinterlandSlope = 0.001
         else:
             self.HinterlandSlope = Slope[0]
     
-    def AddTimeseries(self, Name, Dates=None, Positions=None, Distances=None, Errors=None, Sources=None):
+    def AddTimeseries(self, Name, Dates=None, Values=None, Errors=None, Sources=None):
     
         """
         Add a time series signal to this transect, e.g. MHWS or vegetation edge.
@@ -691,12 +730,11 @@ class Transect:
         self.Timeseries[Name] = TimeSeriesSignal(
             Name=Name,
             Dates=Dates,
-            Positions=Positions,
-            Distances=Distances,
+            Values=Values,
             Errors=Errors,
             Sources=Sources)
         
-    def AddTimeseriesObservation(self, Name, Date, Position, Distance, Error=None, Source=None):
+    def AddTimeseriesObservation(self, Name, Date, Value, Error=None, Source=None):
         
         """
         Add timeseries observation to object
@@ -710,8 +748,7 @@ class Transect:
 
         self.Timeseries[Name].AddObservation(
             Date=Date,
-            Position=Position,
-            Distance=Distance,
+            Value=Value,
             Error=Error,
             Source=Source
         )
@@ -728,15 +765,26 @@ class Transect:
         for Signal in self.Timeseries.values():
             Signal.Analyse(TauYears=TauYears)
 
-    """
-    def get_signal(self, name):
-        return self.signals.get(name, None)
 
+    def AddSeaLevelProjection(self, Scenario, Percentile, Dates, Levels):
 
-    def iter_signals(self):
-        return self.signals.values()
-    """
+        """
+        Function to add or replace a future relative sea-level projection.
 
+        MDH, July 2026
+        
+        """
+
+        # check if scenario already exists on dictionary and create if not
+        if Scenario not in self.SeaLevelProjections:
+            self.SeaLevelProjections[Scenario] = {}
+
+        # name the scenario for the timeseries
+        Name = f"RSL_RCP{Scenario}_P{Percentile:02d}"
+
+        # create the timeseries and add to the dictionary
+        self.SeaLevelProjections[Scenario][Percentile] = TimeSeriesSignal(Name=Name, Dates=Dates, Values=Levels)
+    
     def CalculateIntertidalSlope(self):
         
         if not self.MLWS:
@@ -910,31 +958,35 @@ class Transect:
                         return i
             else:
                 continue
-    
-    def PredictFutureShorelines(self, MaxRockHeadErosionDistance=25., MinMaxFlag=None, Timeseries="MHWS", RateMethod="TWR"):
+
+    def _PredictFutureShorelineProjection(self, FutureSeaLevelDates, FutureSeaLevels, HistoricRate=None, BruunSlope=None, Timeseries="MHWS", RateMethod="TWR"):
 
         """
-        Function to predict the future position of the shoreline based on
-        historical shoreline positions, historical rates of sea level change
-        and future rates of sea level change following a calibrated Bruun Rule
-        type approach.
+        Predict one future shoreline trajectory for one RCP scenario
+        and one sea-level percentile.
 
-        This function requires several functions with the Coast object to have been run
-        first but the Coast wrapper should/could check for this.
+        MDH, July 2026
 
-        Updated to work with timeseries objects 13/7/26
-        Default is to work with MHWS data
-        Default rate method is time-weighted regression
-
-        MDH, September 2019
-
-        """
+        Returns
+        -------
+        dict
+            Dates, distances, positions, rates and component values.
         
-        # boolean flag if making prediction
-        self.Future = False
-        self.FutureShorelinesPositions = []
-        self.FutureShorelinesRates = []
-        self.FutureShorelinesDistances = []
+        
+        # uncomment for debug
+        if ((self.LineID == "1") and self.ID == "37"):
+            import pdb
+            pdb.set_trace()
+        """
+
+        FutureSeaLevelDates = list(FutureSeaLevelDates)
+        FutureSeaLevels = np.asarray(FutureSeaLevels, dtype=float)
+
+        # lists to temporarily store results and return
+        FutureDates = []
+        FutureDistances = []
+        FuturePositions = []
+        FutureRates = []
 
         # cant make predictions without some historical shorelines
         if Timeseries not in self.Timeseries:
@@ -952,19 +1004,21 @@ class Transect:
             return
         
         # check we have future sea levels MOVE THIS ONTO TIMESEREIES
-        if not self.FutureSeaLevelYears or not self.FutureSeaLevels:
-            return
+        if len(FutureSeaLevelDates) == 0 or FutureSeaLevels.size == 0:
+            print("No future sea levels")
+            return None
 
         # calculate historical rates from timeseries if not already existing
-        if RateMethod not in TS.Results:
-            TS.Analyse()
-
+        if HistoricRate is None:
+            if RateMethod not in TS.Results:
+                TS.Analyse()
+            HistoricRate = -float(TS.Results[RateMethod]["Rate"])
+        
         # retrieve results
-        HistoricRate = -TS.Results[RateMethod]["Rate"]
         self.ChangeRate = HistoricRate
         LatestDate = TS.Dates[-1]
-        LatestPosition = TS.Positions[-1]
-        LatestDistance = float(TS.Distances[-1])
+        LatestPosition = self.get_Position(TS.Values[-1])
+        LatestDistance = float(TS.Values[-1])
         
         # sense check
         if HistoricRate is None or not np.isfinite(HistoricRate):
@@ -980,17 +1034,17 @@ class Transect:
 
         # get historic RSLR and future RSLR to interpolate between
         HistoricalRSLRate = self.HistoricalRSLR / 1000.0
-        FutureSeaLevelYears_diff = (self.FutureSeaLevelYears[1] - self.FutureSeaLevelYears[0]).days / 365.2425
-        FutureRSLRate = (self.FutureSeaLevels[1] - self.FutureSeaLevels[0])/(FutureSeaLevelYears_diff)
+        FutureSeaLevelDates_diff = (FutureSeaLevelDates[1] - FutureSeaLevelDates[0]).days / 365.2425
+        FutureRSLRate = (FutureSeaLevels[1] - FutureSeaLevels[0])/(FutureSeaLevelDates_diff)
 
         # get one associated rate of RSLR associated with CalibrationDate
-        self.CalibrationRSLR = np.interp(CalibrationDate.toordinal(),
-                                     [StartDate.toordinal(), self.FutureSeaLevelYears[1].toordinal()],
+        CalibrationRSLR = np.interp(CalibrationDate.toordinal(),
+                                     [StartDate.toordinal(), FutureSeaLevelDates[1].toordinal()],
                                      [HistoricalRSLRate, FutureRSLRate])
 
         # get slope from intertidal zone if we dont already have it
         if not self.ShorefaceSlope:
-            self.ShorefaceDistance = self.MLWS.get_Distance(TS.Positions[-1])
+            self.ShorefaceDistance = self.MLWS.get_Distance(self.get_Position(TS.Values[-1]))
             self.ShorefaceDepth = self.ClosureDepth + self.MHWS
             self.ShorefaceSlope = self.ShorefaceDepth/self.ShorefaceDistance
         
@@ -1000,36 +1054,30 @@ class Transect:
         self.CalculateHinterlandSlope()
 
         # set slope for Bruun Rule    
-        if self.HinterlandSlope < self.ShorefaceSlope:
-            self.BruunSlope = self.HinterlandSlope
-        else:
-            self.BruunSlope = self.ShorefaceSlope
+        if BruunSlope is None:
+            BruunSlope = min(self.HinterlandSlope, self.ShorefaceSlope)
+            BruunSlope = max(BruunSlope, 0.01)
         
-        # set minimum shoreface slope to 0.001
-        if self.BruunSlope < 0.001:
-            self.BruunSlope = 0.001
-
         # Calibration term, remembering to convert relative sea level change rates to m/yr
-        CalibrationRate = (self.ShorefaceDepth * HistoricRate + (self.ShorefaceDepth / self.BruunSlope) * self.CalibrationRSLR)
+        CalibrationRate = (self.ShorefaceDepth * HistoricRate + (self.ShorefaceDepth / BruunSlope) * CalibrationRSLR)
         
         # get sea level at latest time
-        self.LatestRSL = np.interp(LatestDate.toordinal(),[Date.toordinal() for Date in self.FutureSeaLevelYears], self.FutureSeaLevels,)
-        
+        LatestRSL = np.interp(LatestDate.toordinal(),[Date.toordinal() for Date in FutureSeaLevelDates],FutureSeaLevels)
+
         # Future shoreline positions
-        for FutureDate, FutureSeaLevel in zip(self.FutureSeaLevelYears, self.FutureSeaLevels):
+        for FutureDate, FutureSeaLevel in zip(FutureSeaLevelDates, FutureSeaLevels):
 
             dT = (FutureDate - LatestDate).days / 365.2425
 
             # catch the condition where observed shorelines are more recent than those we're trying to make predictions for
             if dT <= 0:
-
-                #print('Predict Future Shorelines - observed shorelines are more recent than predictions:', str(self.FutureSeaLevelYears[i]), '-', TS.Dates[-1])
-                self.FutureShorelinesPositions.append(Node(LatestPosition.X, LatestPosition.Y))
-                self.FutureShorelinesRates.append(HistoricRate)
-                self.FutureShorelinesDistances.append(LatestDistance)
+                FutureDates.append(FutureDate)
+                FuturePositions.append(Node(LatestPosition.X, LatestPosition.Y))
+                FutureRates.append(HistoricRate)
+                FutureDistances.append(LatestDistance)
                 continue
             
-            BruunRuleComponent = -(1./self.BruunSlope)*(FutureSeaLevel-self.LatestRSL)
+            BruunRuleComponent = -(1./BruunSlope)*(FutureSeaLevel-LatestRSL)
             CalibrationComponent = (1./self.ShorefaceDepth)*CalibrationRate*dT
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
             
@@ -1040,26 +1088,205 @@ class Transect:
 
                 FutureShorelineDistance = self.DefencesDistance
                 ShorelinePositionChange = LatestDistance - FutureShorelineDistance
-                FuturePosition = self.DefencesPosition
                 
             elif self.RockHeadDistance and (FutureShorelineDistance > self.RockHeadDistance):
 
                 # if landward of
                 FutureShorelineDistance = self.RockHeadDistance
                 ShorelinePositionChange = LatestDistance - FutureShorelineDistance
-                FuturePosition = self.RockHeadPosition
                 
-            # otherwise write new shoreline position as appropriate
-            else:
-                X1 = LatestPosition.X - ShorelinePositionChange * np.sin( np.radians( self.Orientation ) )
-                Y1 = LatestPosition.Y - ShorelinePositionChange * np.cos( np.radians( self.Orientation ) )
-                FuturePosition = Node(X1, Y1)
-                
-            self.FutureShorelinesPositions.append(FuturePosition)
-            self.FutureShorelinesRates.append(ShorelinePositionChange/dT)
-            self.FutureShorelinesDistances.append(FutureShorelineDistance)
-        
+            # get position from distance
+            FuturePosition = self.get_Position(FutureShorelineDistance)
+
+            # append results to lists
+            FutureDates.append(FutureDate)
+            FuturePositions.append(FuturePosition)
+            FutureRates.append(ShorelinePositionChange/dT)
+            FutureDistances.append(FutureShorelineDistance)
+
+        return {
+            "Dates": FutureDates,
+            "SeaLevels": FutureSeaLevels,
+            "Distances": FutureDistances,
+            "Positions": FuturePositions,
+            "Rates": FutureRates,
+            }
+    
+    def PredictFutureShorelines(self, Scenarios=None, Percentiles=None, HistoricRate=None, BruunSlope=None, Timeseries="MHWS", RateMethod="TWR"):
+
+        """
+
+        Predict future shoreline positions for all requested scenarios
+        and sea-level percentiles.
+
+        MDH, July 2026
+
+        """
+
+        if Scenarios is None:
+            Scenarios = [2,4,8]
+
+        if Percentiles is None:
+            Percentiles = [5, 50, 95]
+
+        # reset holders
+        self.Future = False
+        self.FutureShorelinePredictions = {}
+
+        # loop through sea level scenarios
+        for Scenario in Scenarios:
+
+            # check scenario exists
+            if Scenario not in self.SeaLevelProjections:
+                print(f"No sea-level projections available for scenario {Scenario}")
+                continue
+
+            # reset scenario
+            self.FutureShorelinePredictions[Scenario] = {}
+
+            for Percentile in Percentiles:
+                if (Percentile not in self.SeaLevelProjections[Scenario]):
+                    print(f"No sea-level projection for scenario {Scenario}, percentile {Percentile}")
+                    continue
+
+                Projection = self.SeaLevelProjections[Scenario][Percentile]
+
+                # run the prediction using Bruun Rule
+                Prediction = self._PredictFutureShorelineProjection(Projection.Dates,Projection.Values, HistoricRate, BruunSlope, Timeseries, RateMethod)
+
+                # add it to the results dict
+                if Prediction is not None:
+                    self.FutureShorelinePredictions[Scenario][Percentile] = Prediction
+
+        # check if predictions were made
         self.Future = True
+
+        # run legacy function
+        self._SetLegacyFutureShorelinePrediction(Scenario=8, Percentile=95)
+
+    def _SetLegacyFutureShorelinePrediction(self, Scenario=8, Percentile=95):
+
+        """
+        Populate legacy future shoreline attributes from one stored
+        scenario and percentile.
+
+        For testing and backward compatibility
+
+        MDH, July 2026
+
+        """
+
+        if (Scenario not in self.FutureShorelinePredictions or Percentile not in self.FutureShorelinePredictions[Scenario]):
+            print("No Scenario , unable to run")
+            import pdb
+            pdb.set_trace()
+            return
+
+        # retrieve the prediction
+        Prediction = (self.FutureShorelinePredictions[Scenario][Percentile])
+
+        # copy results accross to legacy attributes
+        self.FutureSeaLevelYears = list(Prediction["Dates"])
+        self.FutureSeaLevels = list(Prediction["SeaLevels"])
+        self.FutureShorelinesDistances = list(Prediction["Distances"])
+        self.FutureShorelinesPositions = list(Prediction["Positions"])
+        self.FutureShorelinesRates = list(Prediction["Rates"])
+
+    def PredictFutureShorelineMonteCarlo(self, Scenario=None, Timeseries="MHWS", RateMethod="TWR", NSamples=1000, RandomSeed=None):
+
+        """
+        Monte Carlo approach to propagate uncertainty through the future shoreline Bruun Rule model.
+
+        Work in progress
+
+        MDH July, 2026
+        
+        """
+
+        # get sea level history from new sea level timeseries storage
+        # Get the three sea-level percentile trajectories.
+        Projection5 = self.SeaLevelProjections[Scenario][5]
+        Projection50 = self.SeaLevelProjections[Scenario][50]
+        Projection95 = self.SeaLevelProjections[Scenario][95]
+
+        FutureSeaLevelDates = list(Projection50.Dates)
+
+        SeaLevels5 = np.asarray(Projection5.Values, dtype=float)
+        SeaLevels50 = np.asarray(Projection50.Values, dtype=float)
+        SeaLevels95 = np.asarray(Projection95.Values, dtype=float)
+
+        # Estimate a normal distribution at every date.
+        Z95 = 1.6448536269514722
+        MeanSeaLevels = SeaLevels50
+        SeaLevelSDs = (SeaLevels95 - SeaLevels5) / (2.0 * Z95)
+
+        # get the timeseries, normally MHWS
+        TS = self.Timeseries[Timeseries]
+
+        # check we have rates calculated
+        if RateMethod not in TS.Results:
+            TS.Analyse()
+
+        # retrieve the rate estimates and SE
+        HistoricRateEstimate = -float(TS.Results[RateMethod]["Rate"])
+        HistoricRateSE = float(TS.Results[RateMethod]["RateSE"])
+        ResidualSE = float(TS.Results[RateMethod]["ResidualSE"])
+        
+        # create a sample of random Historic Rates for the distribution described by the method above
+        RandomNs = np.random.default_rng(RandomSeed)
+        RandomHistoricRates = RandomNs.normal(loc=HistoricRateEstimate, scale=HistoricRateSE, size=NSamples)
+
+        # Sample positional variability around the long-term shoreline trend.
+        # Each sample and prediction date receives a residual displacement in metres.
+        RandomNs = np.random.default_rng(RandomSeed)
+        RandomResiduals = RandomNs.normal(loc=0.0, scale=ResidualSE, size=NSamples)
+
+        # Sample random sea level trajectories based on distributions
+        RandomSeaLevelZScores = RandomNs.normal(loc=0.0, scale=1.0, size=NSamples)
+        FutureSeaLevelSamples = (MeanSeaLevels[None, :] + RandomSeaLevelZScores[:, None] * SeaLevelSDs[None, :])
+        
+        # set up results holder
+        DistanceSamples = np.empty((NSamples, len(self.SeaLevelProjections[Scenario][50].Dates)), dtype=float)
+        
+        # loop through the samples
+        for Index, (HistoricRate, Residual, FutureSeaLevelSample) in enumerate(zip(RandomHistoricRates, RandomResiduals, FutureSeaLevelSamples)):
+
+            # make predictions for each sample
+            Prediction = (self._PredictFutureShorelineProjection(FutureSeaLevelDates, FutureSeaLevelSample, HistoricRate, None, Timeseries, RateMethod))            
+
+            # catch conditions where future cannot be predicted and break out
+            if Prediction is None:
+                self.Future = False
+                return
+
+            # populate resulting distances
+            DistanceSamples[Index, :] = Prediction["Distances"] + Residual
+            
+        Percentiles = [2.5, 16.0, 50.0, 84.0, 97.5]
+
+        PercentileDistanceArray = np.percentile(DistanceSamples, Percentiles, axis=0)
+        PercentileDistances = { Percentile: PercentileDistanceArray[Index, :] for Index, Percentile in enumerate(Percentiles) }
+        PercentilePositions = { Percentile: [self.get_Position(Distance) for Distance in Distances] for Percentile, Distances in PercentileDistances.items()}
+
+        # check if scenario already exists and create if needed
+        if Scenario not in self.FutureShorelineUncertainty:
+            self.FutureShorelineUncertainty[Scenario] = {}
+
+        Result = {
+            "Dates": FutureSeaLevelDates,
+            "HistoricRateEstimate": HistoricRateEstimate,
+            "HistoricRateSE": HistoricRateSE,
+            "DistanceSamples": DistanceSamples,
+            "Percentiles": Percentiles,
+            "PercentileDistances": PercentileDistances,
+            "PercentilePositions": PercentilePositions
+        }
+
+        # store the result
+        self.FutureShorelineUncertainty[Scenario] = Result
+
+        # return the result
+        return Result
 
     def PredictFutureShorelineBathtub(self):
 
@@ -1223,7 +1450,7 @@ class Transect:
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
 
             # check rock head position not exceeded
-            HistoricShorelineDistance = self.StartNode.get_Distance(self.HistoricShorelinesPosition[-1])
+            HistoricShorelineDistance = self.CalculateDistanceFromCoastNode(self.HistoricShorelinesPosition[-1])
             FutureShorelineDistance = HistoricShorelineDistance - ShorelinePositionChange
             
             X1 = self.HistoricShorelinesPosition[-1].X - ShorelinePositionChange * np.sin( np.radians( self.Orientation ) )
@@ -1282,7 +1509,7 @@ class Transect:
             ShorelinePositionChange = BruunRuleComponent+CalibrationComponent
             
             # check rock head position not exceeded
-            HistoricShorelineDistance = self.StartNode.get_Distance(self.HistoricShorelinesPosition[-1])
+            HistoricShorelineDistance = self.CalculateDistanceFromCoastNode(self.HistoricShorelinesPosition[-1])
             FutureShorelineDistance = HistoricShorelineDistance - ShorelinePositionChange
             
             X1 = self.HistoricShorelinesPosition[-1].X - ShorelinePositionChange * np.sin( np.radians( self.Orientation ) )
@@ -1308,10 +1535,10 @@ class Transect:
         
         """
         # calculate distance along transect to veg edge
-        self.VegEdgeDistance = self.StartNode.get_Distance(self.VegEdgePosition)
+        self.VegEdgeDistance = self.CalculateDistanceFromCoastNode(self.VegEdgePosition)
 
         # measure difference between latest MHWS and veg edge
-        Offset = TS.Distances[-1][0] - self.VegEdgeDistance
+        Offset = TS.Values[-1][0] - self.VegEdgeDistance
 
         # use difference to map future vegetation edges based on future MHWS
         self.FutureVegEdgePositions = []
@@ -3169,6 +3396,42 @@ class Transect:
         # close the figure
         plt.close(fig)
 
+    def CalculateDistanceFromCoastNode(self, NodePosition):
+        """
+        Calculate signed distance along the transect relative to CoastNode.
+
+        Distances are:
+
+        - negative seaward of CoastNode
+        - zero at CoastNode
+        - positive landward of CoastNode
+
+        Parameters
+        ----------
+        NodePosition : Node
+            Position for which the along-transect distance is required.
+
+        Returns
+        -------
+        float
+            Signed distance from CoastNode in the coordinate units of the
+            transect, normally metres.
+
+        MDH, July 2026
+        """
+
+        DeltaX = NodePosition.X - self.CoastNode.X
+        DeltaY = NodePosition.Y - self.CoastNode.Y
+
+        # Unit vector pointing from StartNode towards EndNode.
+        DirectionX = np.sin(np.radians(self.Orientation))
+        DirectionY = np.cos(np.radians(self.Orientation))
+
+        # Project the CoastNode-to-position vector onto the transect direction.
+        Distance = DeltaX * DirectionX + DeltaY * DirectionY
+
+        return float(Distance)
+
     def get_XY(self):
         
         """
@@ -3325,43 +3588,16 @@ class Transect:
         else:
             return
 
-    def get_FuturePosition(self, Year):
+    def get_FuturePosition(self, Year, Scenario=8, Percentile=50):
 
         """
 
         Get the future position of the coast for a particular year
         from Bruun Rule predictions
 
+        Updated July 2026 to work with future prediction dictionaries
+
         MDH, October 2019
-
-        """
-
-        # check there are predictions for this transect
-        if self.Future:
-
-            # find year index
-            Index = [i for i, x in enumerate(self.FutureSeaLevelYears) if x == Year]
-            
-            if len(Index) == 0:
-                return
-
-            # use to access future position
-            Position = self.FutureShorelinesPositions[Index[0]]
-            return Position
-
-        else:
-            return
-    
-    def get_FutureDistance(self, Year, Timeseries="MHWS"):
-
-        """
-
-        Get the future cposition of the coast in distance along transect
-        from Bruun Rule predictions
-
-        Updated July 2026 to work with Timeseries object
-
-        MDH, November 2020
 
         """
 
@@ -3369,27 +3605,105 @@ class Transect:
         if not self.Future:
             return None
 
-        # retrieve timeseries
-        TS = self.Timeseries[Timeseries]
-
         # convert to datetime if an integer
         if isinstance(Year, int):
             Year = datetime(Year, 1, 1)
 
+        # retrieve prediction
+        Prediction = self.FutureShorelinePredictions[Scenario][Percentile]
+
         # find year index
-        LatestDate = TS.Dates[-1]
+        Years = [Date.year for Date in Prediction["Dates"]]
 
-        # Before (or at) latest observation -> observed shoreline
-        if Year <= LatestDate:
-            return TS.Distances[-1]
+        if Year.year not in Years:
+            return None
 
-        # Find index of future
-        Index = self.FutureSeaLevelYears.index(Year)
+        Index = Years.index(Year.year)
 
         # use to access future position
-        return self.FutureShorelinesDistances[Index]
+        return Prediction["Positions"][Index]
     
-    def get_FuturePositionChange(self, Year1, Year2, Timeseries="MHWS"):
+    def get_FutureDistance(self, Year, Scenario=8, Percentile=50, Timeseries="MHWS"):
+
+        """
+        Return the observed or predicted shoreline distance for a given date.
+
+        For dates at or before the most recent shoreline observation, the most
+        recent observed shoreline distance is returned. For later dates, the
+        shoreline distance is retrieved from the selected future prediction.
+
+        Parameters
+        ----------
+        Year : int or datetime
+            Requested prediction year or date. Integer years are converted to
+            January 1 of that year.
+
+        Scenario : int, optional
+            Future sea-level scenario. Default is 8.
+
+        Percentile : int or float, optional
+            Sea-level projection percentile. Default is 50.
+
+        Timeseries : str, optional
+            Historic shoreline timeseries. Default is ``"MHWS"``.
+
+        Returns
+        -------
+        float or None
+            Shoreline distance along the transect. Returns ``None`` when the
+            requested prediction or date is unavailable.
+
+        MDH, July 2026
+        """
+
+        # Check the historic timeseries exists.
+        if Timeseries not in self.Timeseries:
+            return None
+
+        TS = self.Timeseries[Timeseries]
+
+        if not TS.HasData(Minimum=1):
+            return None
+
+        # Convert integer years to datetime objects.
+        if isinstance(Year, (int, np.integer)):
+            Date = datetime(int(Year), 1, 1)
+        else:
+            Date = Year
+
+        LatestDate = TS.Dates[-1]
+
+        # Dates at or before the latest observation use the observed shoreline.
+        if Date <= LatestDate:
+            return float(np.asarray(TS.Values[-1]).squeeze())
+
+        # Retrieve the selected future prediction.
+        try:
+            Prediction = self.FutureShorelinePredictions[Scenario][Percentile]
+        except KeyError:
+            return None
+
+        Dates = Prediction["Dates"]
+        Distances = Prediction["Distances"]
+
+        # Match by calendar year to avoid datetime-type mismatches.
+        RequestedYear = Date.year
+
+        PredictionYears = [
+            PredictionDate.year
+            if hasattr(PredictionDate, "year")
+            else int(str(PredictionDate)[:4])
+            for PredictionDate in Dates
+        ]
+
+        if RequestedYear not in PredictionYears:
+            return None
+
+        Index = PredictionYears.index(RequestedYear)
+
+        return float(np.asarray(Distances[Index]).squeeze())
+    
+    def get_FuturePositionChange(self, Year1, Year2,Scenario=8, Percentile=50, Timeseries="MHWS"):
 
         """
 
@@ -3404,8 +3718,8 @@ class Transect:
         if not self.Future:
             return None
 
-        Distance1 = self.get_FutureDistance(Year1, Timeseries="MHWS")
-        Distance2 = self.get_FutureDistance(Year2, Timeseries="MHWS")
+        Distance1 = self.get_FutureDistance(Year1, Scenario, Percentile, Timeseries="MHWS")
+        Distance2 = self.get_FutureDistance(Year2, Scenario, Percentile, Timeseries="MHWS")
 
         if Distance1 is None or Distance2 is None:
             return None
@@ -3439,7 +3753,7 @@ class Transect:
         else:
             return
     
-    def get_FutureRate(self, Year1, Year2, Timeseries="MHWS"):
+    def get_FutureRate(self, Year1, Year2, Scenario=8, Percentile=50, Timeseries="MHWS"):
 
         """
 
@@ -3474,7 +3788,7 @@ class Transect:
             Year1 = LatestDate
 
         # get the position change
-        PositionChange = self.get_FuturePositionChange(Year1, Year2, Timeseries=Timeseries)
+        PositionChange = self.get_FuturePositionChange(Year1, Year2, Scenario, Percentile, Timeseries)
 
         if PositionChange is None:
             return None
@@ -3505,20 +3819,56 @@ class Transect:
         else:
             return
             
-    def get_FirstFutureErosionYear(self):
+    def get_FirstFutureErosionYear(self, Scenario=8, Percentile=50):
 
         """
-        Martin Hurst, October 2020
-        
-        """
-        for i in range(1, len(self.FutureSeaLevelYears)):
+        Return the first year in which the predicted shoreline retreats between
+        consecutive future prediction dates.
 
-            Change = self.get_FuturePositionChange(self.FutureSeaLevelYears[i-1], self.FutureSeaLevelYears[i])
-            
-            if Change < 0:
-                return self.FutureSeaLevelYears[i-1].year
-        
-        return
+        Parameters
+        ----------
+        Scenario : int, optional
+            Future sea-level scenario to inspect. Default is 8.
+
+        Percentile : int or float, optional
+            Sea-level projection percentile to inspect. Default is 50.
+
+        Returns
+        -------
+        int or None
+            First year associated with a period of predicted erosion. Returns
+            ``None`` if no erosion is predicted or the requested prediction does
+            not exist.
+
+        MDH, July 2026
+        """
+
+        # Check the requested prediction exists.
+        if Scenario not in self.FutureShorelinePredictions:
+            return None
+
+        if Percentile not in self.FutureShorelinePredictions[Scenario]:
+            return None
+
+        Prediction = self.FutureShorelinePredictions[Scenario][Percentile]
+
+        Dates = Prediction["Dates"]
+        Distances = Prediction["Distances"]
+
+        # At least two shoreline positions are required to calculate change.
+        if len(Dates) < 2:
+            return None
+
+        for PreviousDate, CurrentDate, PreviousDistance, CurrentDistance in zip(Dates[:-1], Dates[1:], Distances[:-1], Distances[1:],):
+
+            # calculate change
+            Change = CurrentDistance - PreviousDistance
+
+            # check if negative
+            if Change < 0.0:
+                return PreviousDate.year
+
+        return None
 
     def get_FutureMaxRate(self, Year1, Year2):
 
@@ -3598,9 +3948,9 @@ class Transect:
 
         """
 
-        # extend transect landward and seaward?
-        X = self.StartNode.X + Distance * np.sin( np.radians( self.Orientation ) )
-        Y = self.StartNode.Y + Distance * np.cos( np.radians( self.Orientation ) )
+        # retrieve a position relative to coastnode
+        X = self.CoastNode.X + Distance * np.sin( np.radians( self.Orientation ) )
+        Y = self.CoastNode.Y + Distance * np.cos( np.radians( self.Orientation ) )
         
         return Node(X,Y)
 
@@ -3625,7 +3975,7 @@ class Transect:
         if not TS.HasData(Minimum=1):
             return None
 
-        return TS.Positions[-1]
+        return self.get_Position(TS.Values[-1])
     
     def get_RecentYear(self):
 
@@ -3670,7 +4020,7 @@ class Transect:
         if not TS.HasData(Minimum=1):
             raise ValueError("No recent shoreline distance")
 
-        return TS.Distances[-1]
+        return TS.Values[-1]
 
     def get_OldestPosition(self):
 
@@ -3707,7 +4057,7 @@ class Transect:
         # return linestring object
         return LineString(zip(X, Y))
     
-    def get_Record(self):
+    def get_FutureRecord(self, Scenario=8, Percentile=50, Timeseries="MHWS", RateMethod="TWR"):
 
         """
         Return the standard output attributes for the transect.
@@ -3764,30 +4114,44 @@ class Transect:
 
     def get_FutureRecord(self):
 
-        """
         Return the future output attributes for the transect.
+
         MDH, July 2026
+
         """
 
-        # Might need to add dict for TS type
-        TS = self.Timeseries["MHWS"]
+        TS = self.Timeseries[Timeseries]
+
         LatestDateString = str(TS.Dates[-1])
         LatestSourceString = str(TS.Sources[-1])
 
-        return {
-            "Cell": str(self.Cell), "SubCell": str(self.SubCell), "CMU": str(self.CMU), "LineID": int(self.LineID), "TransectID": int(self.ID),
+        Record = {
+            "Cell": str(self.Cell),
+            "SubCell": str(self.SubCell),
+            "CMU": str(self.CMU),
+            "LineID": int(self.LineID),
+            "TransectID": int(self.ID),
             "Hist_Rate": self.ChangeRate,
-            "LatestYr": LatestDateString, "LatestSrc": LatestSourceString, "FirstEYr": self.get_FirstFutureErosionYear(),
-            "Extrap2050": self.get_ExtrapDistance(2050), "Extrap2100": self.get_ExtrapDistance(2100),
-            "pDist_2030": self.get_FuturePositionChange(2020, 2030), "pRate_2030": self.get_FutureRate(2020, 2030), 
-            "Dist_2040": self.get_FuturePositionChange(2030, 2040), "Rate_2040": self.get_FutureRate(2030, 2040),
-            "Dist_2050": self.get_FuturePositionChange(2040, 2050), "Rate_2050": self.get_FutureRate(2040, 2050),
-            "Dist_2060": self.get_FuturePositionChange(2050, 2060), "Rate_2060": self.get_FutureRate(2050, 2060),
-            "Dist_2070": self.get_FuturePositionChange(2060, 2070), "Rate_2070": self.get_FutureRate(2060, 2070),
-            "Dist_2080": self.get_FuturePositionChange(2070, 2080), "Rate_2080": self.get_FutureRate(2070, 2080),
-            "Dist_2090": self.get_FuturePositionChange(2080, 2090), "Rate_2090": self.get_FutureRate(2080, 2090),
-            "Dist_2100": self.get_FuturePositionChange(2090, 2100), "Rate_2100": self.get_FutureRate(2090, 2100),
-            "RCP85_2050": self.FutureSeaLevels[2], "RCP85_2100": self.FutureSeaLevels[7]}
+            "LatestYr": LatestDateString,
+            "LatestSrc": LatestSourceString,
+            "FirstEYr": self.get_FirstFutureErosionYear(Scenario, Percentile),
+            "Extrap2050": self.get_ExtrapDistance(2050, Timeseries, RateMethod),
+            "Extrap2100": self.get_ExtrapDistance(2100, Timeseries, RateMethod),
+        }
+
+        # Retrieve Prediction
+        Prediction = self.FutureShorelinePredictions[Scenario][Percentile]
+        Years = [Date.year for Date in Prediction["Dates"]]
+
+        for Year1, Year2 in zip(Years[:-1], Years[1:]):
+
+            Record[f"Dist_{Year2}"] = self.get_FuturePositionChange(Year1, Year2, Scenario, Percentile, Timeseries)
+            Record[f"Rate_{Year2}"] = self.get_FutureRate(Year1, Year2, Scenario, Percentile, Timeseries)
+
+        Record["RSL_2050"] = Prediction["SeaLevels"][Years.index(2050)]
+        Record["RSL_2100"] = Prediction["SeaLevels"][Years.index(2100)]
+
+        return Record
         
     def Write(self, Folder=os.getcwd(), Filename="", delimiter=","):
         
