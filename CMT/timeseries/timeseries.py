@@ -359,3 +359,45 @@ class TimeSeriesSignal:
         if len(self.Errors) == 0 or all(Error is None for Error in self.Errors):
             return None
         return np.asarray(self.Errors, dtype=float)
+
+    def get_Record(self):
+
+        """ 
+        build record in a style suitable for storage in json/geojson
+
+        MDH, July 2026
+
+        """
+
+        # build the record
+        Record = {
+            "Name": self.Name,
+            "Dates": [Date.isoformat() for Date in self.Dates],
+            "Distances": [float(D) for D in self.Distances],
+            "Errors": [None if E is None else float(E) for E in self.Errors],
+            "Sources": self.Sources,
+            "Results": {}
+        }
+
+        # loop through analytical results and append to results dictionary
+        for Name, Result in self.Results.items():
+
+            ThisResult = {}
+
+            for Key, Value in Result.items():
+
+                if isinstance(Value, np.ndarray):
+                    ThisResult[Key] = Value.tolist()
+
+                elif isinstance(Value, np.floating):
+                    ThisResult[Key] = float(Value)
+
+                elif isinstance(Value, np.integer):
+                    ThisResult[Key] = int(Value)
+
+                else:
+                    ThisResult[Key] = Value
+
+            Record["Results"][Name] = ThisResult
+
+        return Record
