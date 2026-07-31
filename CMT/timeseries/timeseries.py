@@ -360,7 +360,7 @@ class TimeSeriesSignal:
             return None
         return np.asarray(self.Errors, dtype=float)
 
-    def get_Record(self):
+    def get_GeoJSONRecord(self):
 
         """ 
         build record in a style suitable for storage in json/geojson
@@ -369,34 +369,36 @@ class TimeSeriesSignal:
 
         """
 
-        # build the record
+        # Build one dictionary for each observation
+        Observations = []
+
+        for Date, Position, Distance, Error, Source in zip(self.Dates, self.Positions, self.Distances, self.Errors, self.Sources):
+
+            # Build the observation dict
+            Observation = {
+                "Date": Date.isoformat(),
+                "Distance": float(Distance),
+                "Error": None if Error is None else float(Error),
+                "Source": None if Source is None else str(Source),
+            }
+
+            # add it to the list
+            Observations.append(Observation)
+
+        # Build the complete time-series record
         Record = {
             "Name": self.Name,
-            "Dates": [Date.isoformat() for Date in self.Dates],
-            "Distances": [float(D) for D in self.Distances],
-            "Errors": [None if E is None else float(E) for E in self.Errors],
-            "Sources": self.Sources,
-            "Results": {}
+            "Observations": Observations,
+            "Results": {},
         }
 
-        # loop through analytical results and append to results dictionary
+        # Add analytical results
         for Name, Result in self.Results.items():
 
             ThisResult = {}
 
             for Key, Value in Result.items():
-
-                if isinstance(Value, np.ndarray):
-                    ThisResult[Key] = Value.tolist()
-
-                elif isinstance(Value, np.floating):
-                    ThisResult[Key] = float(Value)
-
-                elif isinstance(Value, np.integer):
-                    ThisResult[Key] = int(Value)
-
-                else:
-                    ThisResult[Key] = Value
+                ThisResult[Key] = self._ToJSONCompatible(Value)
 
             Record["Results"][Name] = ThisResult
 
