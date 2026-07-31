@@ -7,6 +7,8 @@ June 2019
 
 """
 
+import json
+
 import numpy as np
 import numpy.ma as ma
 from scipy.stats import t, norm
@@ -4058,6 +4060,59 @@ class Transect:
     def get_FutureRecord(self, Scenario=8, Percentile=50, Timeseries="MHWS", RateMethod="TWR"):
 
         """
+        Return the standard output attributes for the transect.
+        MDH, July 2026
+        """
+        
+        return {
+            "Cell": str(self.Cell), "SubCell": str(self.SubCell), "CMU": str(self.CMU), 
+            "LineID": int(self.LineID), "TransectID": int(self.ID),
+            "Cliff_H": self.CliffHeight, "Cliff_S": self.CliffSlope,
+            "Rocky": int(self.Rocky),
+            "Bar_FH": self.FrontHeight, "Bar_FS": self.FrontSlope,
+            "Bar_BH": self.BackHeight, "Bar_BS": self.BackSlope,
+            "Bar_ToeW": self.ToeWidth, "Bar_TopW": self.TopWidth,
+            "Bar_Volume": self.BarrierVolume, "Crest_Elev": self.CrestElevation,
+            "ST_W_low": self.ExtremeWidths[0], "ST_V_low": self.ExtremeVolumes[0],
+            "ST_W_med": self.ExtremeWidths[1], "ST_V_med": self.ExtremeVolumes[1],
+            "ST_W_high": self.ExtremeWidths[2], "ST_V_high": self.ExtremeVolumes[2],
+            "LT_W_low": self.ExtremeTotalWidths[0], "LT_V_low": self.ExtremeTotalVolumes[0],
+            "LT_W_med": self.ExtremeTotalWidths[1], "LT_V_med": self.ExtremeTotalVolumes[1],
+            "LT_W_high": self.ExtremeTotalWidths[2], "LT_V_high": self.ExtremeTotalVolumes[2]
+        }
+
+    def get_GeoJSONRecord(self):
+    
+        """
+        Return transect attributes for GeoJSON output.
+
+        Time-series data are serialised to a JSON string so that they can
+        be stored in a GeoDataFrame attribute column.
+
+        Returns
+        -------
+        dict
+            Flat transect attributes with an additional Timeseries field.
+
+        MDH, July 2026
+        """
+
+        return {
+
+        "Cell": str(self.Cell),
+        "SubCell": str(self.SubCell),
+        "CMU": str(self.CMU),
+
+        "LineID": int(self.LineID),
+        "TransectID": int(self.ID),
+
+        "Timeseries": {
+            Name: Signal.get_GeoJSONRecord()
+            for Name, Signal in self.Timeseries.items()
+        }
+    }
+
+    def get_FutureRecord(self):
 
         Return the future output attributes for the transect.
 

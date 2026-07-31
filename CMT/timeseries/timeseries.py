@@ -2,6 +2,8 @@
 import numpy as np
 import bisect
 from scipy.stats import theilslopes
+from datetime import datetime
+
 # new object to store generic timeseries data
 # MDH May 2026
 
@@ -368,3 +370,78 @@ class TimeSeriesSignal:
         if len(self.Errors) == 0 or all(Error is None for Error in self.Errors):
             return None
         return np.asarray(self.Errors, dtype=float)
+
+    def get_GeoJSONRecord(self):
+
+        """ 
+        build record in a style suitable for storage in json/geojson
+
+        MDH, July 2026
+
+        """
+
+        # Build one dictionary for each observation
+        Observations = []
+
+        for Date, Position, Distance, Error, Source in zip(self.Dates, self.Positions, self.Distances, self.Errors, self.Sources):
+
+            # Build the observation dict
+            Observation = {
+                "Date": Date.isoformat(),
+                "Distance": float(Distance),
+                "Error": None if Error is None else float(Error),
+                "Source": None if Source is None else str(Source),
+            }
+
+            # add it to the list
+            Observations.append(Observation)
+
+        # Build the complete time-series record
+        Record = {
+            "Name": self.Name,
+            "Observations": Observations,
+            "Results": {},
+        }
+
+        # Add analytical results
+        for Name, Result in self.Results.items():
+
+            ThisResult = {}
+
+            for Key, Value in Result.items():
+                ThisResult[Key] = self._ToJSONCompatible(Value)
+
+            Record["Results"][Name] = ThisResult
+
+        return Record
+
+    def _ToJSONCompatible(self, Value):
+
+        """
+        Convert Python and NumPy values into JSON-compatible values.
+
+        MDH, July 2026
+        """
+
+        if isinstance(Value, np.ndarray):
+            return [self._ToJSONCompatible(Item) for Item in Value.tolist()]
+
+        if isinstance(Value, dict): 
+            return { Key: self._ToJSONCompatible(Item) for Key, Item in Value.items() }
+
+        if isinstance(Value, (list, tuple)):
+            return [self._ToJSONCompatible(Item) for Item in Value]
+
+        if isinstance(Value, np.floating):
+            Value = float(Value)
+
+        elif isinstance(Value, np.integer):
+            return int(Value)
+
+        if isinstance(Value, datetime):
+            return Value.isoformat()
+
+        if isinstance(Value, float) and not np.isfinite(Value):
+            return None
+
+        return Value
