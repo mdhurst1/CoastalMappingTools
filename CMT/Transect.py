@@ -4057,7 +4057,7 @@ class Transect:
         # return linestring object
         return LineString(zip(X, Y))
     
-    def get_FutureRecord(self, Scenario=8, Percentile=50, Timeseries="MHWS", RateMethod="TWR"):
+    def get_Record(self):
 
         """
         Return the standard output attributes for the transect.
@@ -4112,13 +4112,15 @@ class Transect:
         }
     }
 
-    def get_FutureRecord(self):
+    def get_FutureRecord(self, Scenario=8, Percentile=50, Timeseries="MHWS", RateMethod="TWR"):
 
+        """
         Return the future output attributes for the transect.
 
         MDH, July 2026
 
         """
+        
 
         TS = self.Timeseries[Timeseries]
 
