@@ -4097,20 +4097,20 @@ class Transect:
         MDH, July 2026
         """
 
+        # retrieve all timeseries objects
+        Timeseries = {Name: Signal.get_Record() for Name, Signal in self.Timeseries.items()}
+        
         return {
 
-        "Cell": str(self.Cell),
-        "SubCell": str(self.SubCell),
-        "CMU": str(self.CMU),
+            "Cell": None if self.Cell is None else str(self.Cell),
+            "SubCell": None if self.SubCell is None else str(self.SubCell),
+            "CMU": None if self.CMU is None else str(self.CMU),
+            "LineID": int(self.LineID),
+            "TransectID": int(self.ID),
 
-        "LineID": int(self.LineID),
-        "TransectID": int(self.ID),
-
-        "Timeseries": {
-            Name: Signal.get_GeoJSONRecord()
-            for Name, Signal in self.Timeseries.items()
+            # Important: write valid JSON, not str(Timeseries)
+            "Timeseries": json.dumps(Timeseries, allow_nan=False),
         }
-    }
 
     def get_FutureRecord(self, Scenario=8, Percentile=50, Timeseries="MHWS", RateMethod="TWR"):
 
