@@ -7,6 +7,8 @@ June 2019
 
 """
 
+import json
+
 import numpy as np
 import numpy.ma as ma
 from scipy.stats import t
@@ -3713,7 +3715,8 @@ class Transect:
         """
         
         return {
-            "Cell": str(self.Cell), "SubCell": str(self.SubCell), "CMU": str(self.CMU), "LineID": int(self.LineID), "TransectID": int(self.ID),
+            "Cell": str(self.Cell), "SubCell": str(self.SubCell), "CMU": str(self.CMU), 
+            "LineID": int(self.LineID), "TransectID": int(self.ID),
             "Cliff_H": self.CliffHeight, "Cliff_S": self.CliffSlope,
             "Rocky": int(self.Rocky),
             "Bar_FH": self.FrontHeight, "Bar_FS": self.FrontSlope,
@@ -3727,6 +3730,37 @@ class Transect:
             "LT_W_med": self.ExtremeTotalWidths[1], "LT_V_med": self.ExtremeTotalVolumes[1],
             "LT_W_high": self.ExtremeTotalWidths[2], "LT_V_high": self.ExtremeTotalVolumes[2]
         }
+
+    def get_GeoJSONRecord(self):
+    
+        """
+        Return transect attributes for GeoJSON output.
+
+        Time-series data are serialised to a JSON string so that they can
+        be stored in a GeoDataFrame attribute column.
+
+        Returns
+        -------
+        dict
+            Flat transect attributes with an additional Timeseries field.
+
+        MDH, July 2026
+        """
+
+        return {
+
+        "Cell": str(self.Cell),
+        "SubCell": str(self.SubCell),
+        "CMU": str(self.CMU),
+
+        "LineID": int(self.LineID),
+        "TransectID": int(self.ID),
+
+        "Timeseries": {
+            Name: Signal.get_GeoJSONRecord()
+            for Name, Signal in self.Timeseries.items()
+        }
+    }
 
     def get_FutureRecord(self):
 

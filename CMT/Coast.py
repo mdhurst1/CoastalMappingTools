@@ -22,7 +22,7 @@ import rasterio
 import geopandas as gp
 import pandas as pd
 from shapely.geometry import Point, Polygon, LineString, MultiLineString, MultiPoint
-from shapely.ops import nearest_points, linemerge
+from shapely.ops import nearest_points, linemerge, transform
 
 from CMT.Line import *
 
@@ -1120,6 +1120,42 @@ class Coast:
         f.write(self.Projection)
         f.close()
 
+    def _WriteTransectsGeoJSON(self, OutputFile):
+
+        """
+        Write transects to GeoJSON, including nested time-series data.
+
+        Time-series data are serialised as JSON strings because GeoPandas
+        attribute columns cannot reliably contain nested dictionaries.
+
+        MDH, July 2026
+
+        Parameters
+        ----------
+        OutputFile : str or pathlib.Path
+            Path of the output GeoJSON file.
+
+        """
+
+        # Create geometry and attribute lists
+        Geometries = []
+        Records = []
+
+        for ThisLine in self.CoastLines:
+            for ThisTransect in ThisLine.Transects:
+
+                Geometries.append(ThisTransect.get_Geometry)
+                Records.append(ThisTransect.get_GeoJSONRecord)
+
+        # Build the GeoDataFrame in the Coast object's native CRS
+        GDF = gp.GeoDataFrame(Records, geometry=Geometries, crs=self.Projection)
+
+        # GeoJSON coordinates should be longitude and latitude
+        GDF = GDF.to_crs("EPSG:4326")
+
+        # Write GeoJSON
+        GDF.to_file(OutputFile, driver="GeoJSON", index=False)
+
     def WriteTransectsShp(self, TransectsShp):
         """
         Writes the transects of a Coast object to polyline shape file
@@ -1129,6 +1165,19 @@ class Coast:
         Updated July 2026 to maintain backward compatibility after new write functions
 
         """
+        # initiate empty lists for geometries and records    
+        Geometries = []
+        Records = []
+
+        # loop through the transects and get the geometry and record for each
+        for ThisLine in self.CoastLines:
+            for ThisTransect in ThisLine.Transects:
+
+                Geometries.append(ThisTransect.get_Geometry)
+                Records.append(ThisTransect.get_Record)
+
+        GDF = gp.GeoDataFrame(Records, geometry=Geometries, crs=self.Projection)
+        GDF.to_file(TransectsShp, driver="ESRI Shapefile", index=False)
 
 
     def WriteTransects(self, OutputFile):
@@ -1137,9 +1186,20 @@ class Coast:
         Writes the transects of a Coast object to file and
         builds a large attribute table with all transect properties
 
+        Shapefile output uses a flat attribute table.
+        GeoJSON output can include nested time-series information.
+
         MDH, July 2026
 
+        Parameters
+        ----------
+        OutputFile : str or pathlib.Path
+            Output filename. The format is inferred from the extension.
+
         """
+
+        # check we're workin with a path
+        OutputFile = Path(OutputFile)
 
         # Infer format from the file extension
         ExtensionFormats = {".shp": "Shapefile", ".geojson": "GeoJSON"}
@@ -1153,27 +1213,12 @@ class Coast:
         # print action to screen
         print(f"Coast.WriteTransects: Writing coastal transects and attributes as {Format}")
 
-        # Create geometry list to build
-        Geometries = []
-        Records = []        
-        
-        for ThisLine in self.CoastLines:
-            for ThisTransect in ThisLine.Transects:
-
-                # get transect geometry and record
-                Geometries.append(ThisTransect.get_Geometry)
-                Records.append(ThisTransect.get_Record)
-
-        # build the geodataframe
-        GDF = gp.GeoDataFrame(Records, geometry=Geometries, crs=self.Projection)
-
         # if geojson convert coordinates before writing
         if Format == "GeoJSON":
-            GDF = GDF.to_crs("EPSG:4326")
-            GDF.to_file(OutputFile, driver="GeoJSON", index=False)
-
+            self.WriteTransectsGeoJSON(OutputFile)
+            
         else:
-            GDF.to_file(OutputFile, driver="ESRI Shapefile", index=False)
+            self.WriteTransectsShp(OutputFile)
 
     def WriteFutureTransectsShp(self, OutputFile):
 
