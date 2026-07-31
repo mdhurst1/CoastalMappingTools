@@ -123,8 +123,9 @@ MontroseCoast.PredictFutureShorelines()
 ### FUTURE SHORELINE ANALYSIS NEEDS MODIFIED TO WORK WITH TIMESERIES OBJECTS
 
 # Write Future Transects
-MontroseCoast.WriteFutureTransectsShp(str(ResultsPath / ("Montrose_Transects.shp")))
-MontroseCoast.WriteFutureTransectsShp(str(ResultsPath / ("Montrose_Transects.geojson")))
+MontroseCoast.TruncateTransects()
+MontroseCoast.WriteTransects(str(ResultsPath / ("Montrose_Transects.geojson")))
+MontroseCoast.WriteFutureTransects(str(ResultsPath / ("Montrose_Future_Transects.geojson")))
 
 # write future shorelines
 MontroseCoast.WriteFutureShorelinesShp(str(ResultsPath / ("Montrose_Future.shp")), True)

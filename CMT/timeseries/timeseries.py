@@ -2,6 +2,8 @@
 import numpy as np
 import bisect
 from scipy.stats import theilslopes
+from datetime import datetime
+
 # new object to store generic timeseries data
 # MDH May 2026
 
@@ -403,3 +405,34 @@ class TimeSeriesSignal:
             Record["Results"][Name] = ThisResult
 
         return Record
+
+    def _ToJSONCompatible(self, Value):
+
+        """
+        Convert Python and NumPy values into JSON-compatible values.
+
+        MDH, July 2026
+        """
+
+        if isinstance(Value, np.ndarray):
+            return [self._ToJSONCompatible(Item) for Item in Value.tolist()]
+
+        if isinstance(Value, dict): 
+            return { Key: self._ToJSONCompatible(Item) for Key, Item in Value.items() }
+
+        if isinstance(Value, (list, tuple)):
+            return [self._ToJSONCompatible(Item) for Item in Value]
+
+        if isinstance(Value, np.floating):
+            Value = float(Value)
+
+        elif isinstance(Value, np.integer):
+            return int(Value)
+
+        if isinstance(Value, datetime):
+            return Value.isoformat()
+
+        if isinstance(Value, float) and not np.isfinite(Value):
+            return None
+
+        return Value

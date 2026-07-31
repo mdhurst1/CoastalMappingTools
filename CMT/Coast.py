@@ -1120,7 +1120,7 @@ class Coast:
         f.write(self.Projection)
         f.close()
 
-    def _WriteTransectsGeoJSON(self, OutputFile):
+    def WriteTransectsGeoJSON(self, OutputFile):
 
         """
         Write transects to GeoJSON, including nested time-series data.
@@ -1144,8 +1144,8 @@ class Coast:
         for ThisLine in self.CoastLines:
             for ThisTransect in ThisLine.Transects:
 
-                Geometries.append(ThisTransect.get_Geometry)
-                Records.append(ThisTransect.get_GeoJSONRecord)
+                Geometries.append(ThisTransect.get_Geometry())
+                Records.append(ThisTransect.get_GeoJSONRecord())
 
         # Build the GeoDataFrame in the Coast object's native CRS
         GDF = gp.GeoDataFrame(Records, geometry=Geometries, crs=self.Projection)
