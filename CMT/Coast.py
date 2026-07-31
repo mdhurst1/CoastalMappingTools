@@ -1173,8 +1173,8 @@ class Coast:
         for ThisLine in self.CoastLines:
             for ThisTransect in ThisLine.Transects:
 
-                Geometries.append(ThisTransect.get_Geometry)
-                Records.append(ThisTransect.get_Record)
+                Geometries.append(ThisTransect.get_Geometry())
+                Records.append(ThisTransect.get_Record())
 
         GDF = gp.GeoDataFrame(Records, geometry=Geometries, crs=self.Projection)
         GDF.to_file(TransectsShp, driver="ESRI Shapefile", index=False)
