@@ -4095,6 +4095,8 @@ class Transect:
             Flat transect attributes with an additional Timeseries field.
 
         MDH, July 2026
+        Modified Aug 2026 to include transect topography
+
         """
 
         # retrieve all timeseries objects
@@ -4110,6 +4112,12 @@ class Transect:
 
             # Important: write valid JSON, not str(Timeseries)
             "Timeseries": json.dumps(Timeseries, allow_nan=False),
+
+            # Write transect topography
+            "Topography": {
+                "Distance": list(self.Distance) if self.Distance is not None else [],
+                "Elevation": list(self.Elevation) if self.Elevation is not None else [],
+            }
         }
 
     def get_FutureRecord(self, Scenario=8, Percentile=50, Timeseries="MHWS", RateMethod="TWR"):

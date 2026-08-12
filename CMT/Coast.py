@@ -1434,7 +1434,8 @@ class Coast:
         attribute columns cannot reliably contain nested dictionaries.
 
         MDH, July 2026
-
+        Modified Aug 2026 to include transect topography
+        
         Parameters
         ----------
         OutputFile : str or pathlib.Path
