@@ -1571,21 +1571,25 @@ class Coast:
 
             for ThisTransect in Line.Transects:
 
-                Record = {
-                    "Cell": str(ThisTransect.Cell),
-                    "SubCell": str(ThisTransect.SubCell),
-                    "CMU": str(ThisTransect.CMU),
-                    "LineID": int(ThisTransect.LineID),
-                    "TransectID": int(ThisTransect.ID),
-                }
+                # split behaviour depending on format, because shapefiles cannot contain nested structures
+                if Format == "GeoJSON": 
 
-                for Timeseries in ["MHWS", "VEdge"]:
+                    Record = {
+                        "Cell": str(ThisTransect.Cell),
+                        "SubCell": str(ThisTransect.SubCell),
+                        "CMU": str(ThisTransect.CMU),
+                        "LineID": int(ThisTransect.LineID),
+                        "TransectID": int(ThisTransect.ID),
+                    }
+                    for Timeseries in ["MHWS", "VEdge"]:
+                        
+                        # get future record
+                        FutureRecord = ThisTransect.get_FutureRecord(Timeseries=Timeseries)
+                        Record[Timeseries] = json.dumps(FutureRecord, allow_nan=False)
+
+                else:
+                    Record = ThisTransect.get_FutureRecord(Timeseries="MHWS")
                     
-                    # get future record
-                    FutureRecord = ThisTransect.get_FutureRecord(Timeseries=Timeseries)
-
-                    Record[Timeseries] = json.dumps(FutureRecord, allow_nan=False)
-
                 # get transect geometry and record
                 Geometries.append(ThisTransect.get_Geometry())
                 Records.append(Record)
@@ -7319,7 +7323,7 @@ class Coast:
                 
                 # find transects with future predictions for specified timeseries
                 FutureBool = [Timeseries in Transect.FutureShorelinePredictions for Transect in CoastLine.Transects]
-]
+
                 FutureBool.insert(0, False)
                 FutureBool = np.array(FutureBool).astype(int)
 
