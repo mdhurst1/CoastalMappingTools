@@ -383,7 +383,7 @@ class TimeSeriesSignal:
         # Build one dictionary for each observation
         Observations = []
 
-        for Date, Position, Distance, Error, Source in zip(self.Dates, self.Positions, self.Distances, self.Errors, self.Sources):
+        for Date, Distance, Error, Source in zip(self.Dates, self.Values, self.Errors, self.Sources):
 
             # Build the observation dict
             Observation = {

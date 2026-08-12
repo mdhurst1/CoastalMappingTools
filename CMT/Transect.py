@@ -4057,7 +4057,7 @@ class Transect:
         # return linestring object
         return LineString(zip(X, Y))
     
-    def get_FutureRecord(self, Scenario=8, Percentile=50, Timeseries="MHWS", RateMethod="TWR"):
+    def get_Record(self):
 
         """
         Return the standard output attributes for the transect.
@@ -4095,30 +4095,40 @@ class Transect:
             Flat transect attributes with an additional Timeseries field.
 
         MDH, July 2026
+        Modified Aug 2026 to include transect topography
+
         """
 
+        # retrieve all timeseries objects
+        Timeseries = {Name: Signal.get_GeoJSONRecord() for Name, Signal in self.Timeseries.items()}
+        
         return {
 
-        "Cell": str(self.Cell),
-        "SubCell": str(self.SubCell),
-        "CMU": str(self.CMU),
+            "Cell": None if self.Cell is None else str(self.Cell),
+            "SubCell": None if self.SubCell is None else str(self.SubCell),
+            "CMU": None if self.CMU is None else str(self.CMU),
+            "LineID": int(self.LineID),
+            "TransectID": int(self.ID),
 
-        "LineID": int(self.LineID),
-        "TransectID": int(self.ID),
+            # Important: write valid JSON, not str(Timeseries)
+            "Timeseries": json.dumps(Timeseries, allow_nan=False),
 
-        "Timeseries": {
-            Name: Signal.get_GeoJSONRecord()
-            for Name, Signal in self.Timeseries.items()
+            # Write transect topography
+            "Topography": {
+                "Distance": list(self.Distance) if self.Distance is not None else [],
+                "Elevation": list(self.Elevation) if self.Elevation is not None else [],
+            }
         }
-    }
 
-    def get_FutureRecord(self):
+    def get_FutureRecord(self, Scenario=8, Percentile=50, Timeseries="MHWS", RateMethod="TWR"):
 
+        """
         Return the future output attributes for the transect.
 
         MDH, July 2026
 
         """
+        
 
         TS = self.Timeseries[Timeseries]
 
