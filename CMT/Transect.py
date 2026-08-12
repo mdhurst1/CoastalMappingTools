@@ -4114,10 +4114,13 @@ class Transect:
             "Timeseries": json.dumps(Timeseries, allow_nan=False),
 
             # Write transect topography
-            "Topography": {
-                "Distance": list(self.Distance) if self.Distance is not None else [],
-                "Elevation": list(self.Elevation) if self.Elevation is not None else [],
-            }
+            "Topography": json.dumps(
+                {
+                    "Distance": list(self.Distance) if self.Distance is not None else [],
+                    "Elevation": list(self.Elevation) if self.Elevation is not None else [],
+                },
+                allow_nan=False,
+            ),
         }
 
     def get_FutureRecord(self, Scenario=8, Percentile=50, Timeseries="MHWS", RateMethod="TWR"):
