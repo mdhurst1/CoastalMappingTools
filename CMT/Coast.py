@@ -1564,6 +1564,10 @@ class Coast:
         # print action to screen
         print(f"Coast.WriteFutureTransects: Writing future coastal transects as {Format}")
 
+        # default scenario and perecntile
+        Scenario = 8
+        Percentile = 50
+        
         Records = []
         Geometries = []
 
@@ -1582,9 +1586,27 @@ class Coast:
                         "TransectID": int(ThisTransect.ID),
                     }
                     for Timeseries in ["MHWS", "VEdge"]:
-                        
+
+                        if Timeseries not in ThisTransect.Timeseries:
+                            continue
+
+                        Predictions = ThisTransect.FutureShorelinePredictions.get(Timeseries, {})
+
+                        if (Timeseries not in ThisTransect.FutureShorelinePredictions):
+                            continue
+
+                        if Scenario not in Predictions:
+                            continue
+
+                        if Percentile not in Predictions[Scenario]:
+                            continue
+
                         # get future record
-                        FutureRecord = ThisTransect.get_FutureRecord(Timeseries=Timeseries)
+                        FutureRecord = ThisTransect.get_FutureRecord(Scenario=Scenario, Percentile=Percentile, Timeseries=Timeseries)
+
+                        if FutureRecord is None:
+                            continue
+
                         Record[Timeseries] = json.dumps(FutureRecord, allow_nan=False)
 
                 else:
@@ -4570,7 +4592,7 @@ class Coast:
             for Transect in Line.Transects:
                 if Timeseries not in Transect.Timeseries:
                     continue
-                Transect.PredictFutureShorelines(Scenarios, Percentiles, Timeseries, RateMethod)
+                Transect.PredictFutureShorelines(Scenarios=Scenarios, Percentiles=Percentiles, Timeseries=Timeseries, RateMethod=RateMethod)
 
     def PredictFutureShorelinesBestWorstCase(self):
         """

@@ -106,7 +106,7 @@ class TimeSeriesSignal:
 
         """
 
-        if not self.HasData(Minimum=2):
+        if not self.HasData(Minimum=3):
             return
 
         if self.OrdinalDates is None:
@@ -191,7 +191,7 @@ class TimeSeriesSignal:
 
         """
 
-        if not self.HasData(Minimum=2):
+        if not self.HasData(Minimum=3):
             return
 
         if self.OrdinalDates is None:
@@ -258,7 +258,7 @@ class TimeSeriesSignal:
 
         """
     
-        if not self.HasData(Minimum=2):
+        if not self.HasData(Minimum=3):
             return None
 
         if self.OrdinalDates is None:
