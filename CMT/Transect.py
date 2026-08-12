@@ -513,19 +513,20 @@ class Transect:
                         DistancesList.extend([Distance - Error, Distance + Error])
 
 
-        # Future MHWS prediction
-        for ScenarioPredictions in self.FutureShorelinePredictions.values():
-            for Prediction in ScenarioPredictions.values():
+        # Future shoreline predictions for all indicators
+        for TimeseriesPredictions in (self.FutureShorelinePredictions.values()):
+            for ScenarioPredictions in (TimeseriesPredictions.values()):
+                for Prediction in (ScenarioPredictions.values()):
 
-                Dates = Prediction.get("Dates", [])
-                Distances = Prediction.get("Distances", [])
+                    Dates = Prediction.get("Dates", [])
+                    Distances = Prediction.get("Distances", [])
 
-                for FutureDate, FutureDistance in zip(Dates, Distances):
+                    for FutureDate, FutureDistance in zip(Dates, Distances):
 
-                    if FutureDistance < self.get_RecentDistance():
-                        continue
-                    
-                    DistancesList.append(FutureDistance)
+                        if FutureDistance < self.get_RecentDistance():
+                            continue
+                        
+                        DistancesList.append(FutureDistance)
                     
         # find index of min distance
         MinDistance = np.min(np.array(DistancesList))
@@ -1117,10 +1118,16 @@ class Transect:
         """
 
         Predict future shoreline positions for all requested scenarios
-        and sea-level percentiles.
+        and sea-level percentiles for a selected shoreline indicator.
 
-        MDH, July 2026
+        Predictions are stored as:
 
+            FutureShorelinePredictions
+                [Timeseries]
+                [Scenario]
+                [Percentile]
+
+        MDH, August 2026
         """
 
         if Scenarios is None:
@@ -1129,9 +1136,12 @@ class Transect:
         if Percentiles is None:
             Percentiles = [5, 50, 95]
 
-        # reset holders
-        self.Future = False
-        self.FutureShorelinePredictions = {}
+        # Check the requested shoreline timeseries exists.
+        if Timeseries not in self.Timeseries:
+            return
+        
+        # Reset predictions for this shoreline indicator only.
+        self.FutureShorelinePredictions[Timeseries] = {}
 
         # loop through sea level scenarios
         for Scenario in Scenarios:
@@ -1142,7 +1152,7 @@ class Transect:
                 continue
 
             # reset scenario
-            self.FutureShorelinePredictions[Scenario] = {}
+            self.FutureShorelinePredictions[Timeseries][Scenario] = {}
 
             for Percentile in Percentiles:
                 if (Percentile not in self.SeaLevelProjections[Scenario]):
@@ -1156,13 +1166,14 @@ class Transect:
 
                 # add it to the results dict
                 if Prediction is not None:
-                    self.FutureShorelinePredictions[Scenario][Percentile] = Prediction
+                    self.FutureShorelinePredictions[Timeseries][Scenario][Percentile] = Prediction
 
         # check if predictions were made
         self.Future = True
 
         # run legacy function
-        self._SetLegacyFutureShorelinePrediction(Scenario=8, Percentile=95)
+        if Timeseries == "MHWS":
+            self._SetLegacyFutureShorelinePrediction(Scenario=8, Percentile=95)
 
     def _SetLegacyFutureShorelinePrediction(self, Scenario=8, Percentile=95):
 
@@ -3588,7 +3599,7 @@ class Transect:
         else:
             return
 
-    def get_FuturePosition(self, Year, Scenario=8, Percentile=50):
+    def get_FuturePosition(self, Year, Scenario=8, Percentile=50, Timeseries="MHWS"):
 
         """
 
@@ -3610,7 +3621,7 @@ class Transect:
             Year = datetime(Year, 1, 1)
 
         # retrieve prediction
-        Prediction = self.FutureShorelinePredictions[Scenario][Percentile]
+        Prediction = self.FutureShorelinePredictions[Timeseries][Scenario][Percentile]
 
         # find year index
         Years = [Date.year for Date in Prediction["Dates"]]
@@ -3679,7 +3690,7 @@ class Transect:
 
         # Retrieve the selected future prediction.
         try:
-            Prediction = self.FutureShorelinePredictions[Scenario][Percentile]
+            Prediction = self.FutureShorelinePredictions[Timeseries][Scenario][Percentile]
         except KeyError:
             return None
 
@@ -3718,8 +3729,8 @@ class Transect:
         if not self.Future:
             return None
 
-        Distance1 = self.get_FutureDistance(Year1, Scenario, Percentile, Timeseries="MHWS")
-        Distance2 = self.get_FutureDistance(Year2, Scenario, Percentile, Timeseries="MHWS")
+        Distance1 = self.get_FutureDistance(Year1, Scenario, Percentile, Timeseries)
+        Distance2 = self.get_FutureDistance(Year2, Scenario, Percentile, Timeseries)
 
         if Distance1 is None or Distance2 is None:
             return None
@@ -3819,7 +3830,7 @@ class Transect:
         else:
             return
             
-    def get_FirstFutureErosionYear(self, Scenario=8, Percentile=50):
+    def get_FirstFutureErosionYear(self, Scenario=8, Percentile=50, Timeseries="MHWS"):
 
         """
         Return the first year in which the predicted shoreline retreats between
@@ -3850,7 +3861,7 @@ class Transect:
         if Percentile not in self.FutureShorelinePredictions[Scenario]:
             return None
 
-        Prediction = self.FutureShorelinePredictions[Scenario][Percentile]
+        Prediction = self.FutureShorelinePredictions[Timeseries][Scenario][Percentile]
 
         Dates = Prediction["Dates"]
         Distances = Prediction["Distances"]
@@ -4147,13 +4158,13 @@ class Transect:
             "Hist_Rate": self.ChangeRate,
             "LatestYr": LatestDateString,
             "LatestSrc": LatestSourceString,
-            "FirstEYr": self.get_FirstFutureErosionYear(Scenario, Percentile),
+            "FirstEYr": self.get_FirstFutureErosionYear(Scenario, Percentile, Timeseries),
             "Extrap2050": self.get_ExtrapDistance(2050, Timeseries, RateMethod),
             "Extrap2100": self.get_ExtrapDistance(2100, Timeseries, RateMethod),
         }
 
         # Retrieve Prediction
-        Prediction = self.FutureShorelinePredictions[Scenario][Percentile]
+        Prediction = self.FutureShorelinePredictions[Timeseries][Scenario][Percentile]
         Years = [Date.year for Date in Prediction["Dates"]]
 
         for Year1, Year2 in zip(Years[:-1], Years[1:]):
