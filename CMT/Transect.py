@@ -1249,7 +1249,6 @@ class Transect:
 
         # Sample positional variability around the long-term shoreline trend.
         # Each sample and prediction date receives a residual displacement in metres.
-        RandomNs = np.random.default_rng(RandomSeed)
         RandomResiduals = RandomNs.normal(loc=0.0, scale=ResidualSE, size=NSamples)
 
         # Sample random sea level trajectories based on distributions
@@ -1281,12 +1280,13 @@ class Transect:
 
         # check if scenario already exists and create if needed
         if Scenario not in self.FutureShorelineUncertainty:
-            self.FutureShorelineUncertainty[Scenario] = {}
+            self.FutureShorelineUncertainty[Timeseries] = {}
 
         Result = {
             "Dates": FutureSeaLevelDates,
             "HistoricRateEstimate": HistoricRateEstimate,
             "HistoricRateSE": HistoricRateSE,
+            "ResidualSE": ResidualSE,
             "DistanceSamples": DistanceSamples,
             "Percentiles": Percentiles,
             "PercentileDistances": PercentileDistances,
@@ -1294,7 +1294,7 @@ class Transect:
         }
 
         # store the result
-        self.FutureShorelineUncertainty[Scenario] = Result
+        self.FutureShorelineUncertainty[Timeseries][Scenario] = Result
 
         # return the result
         return Result
