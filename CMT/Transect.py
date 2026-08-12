@@ -4116,8 +4116,8 @@ class Transect:
             # Write transect topography
             "Topography": json.dumps(
                 {
-                    "Distance": list(self.Distance) if self.Distance is not None else [],
-                    "Elevation": list(self.Elevation) if self.Elevation is not None else [],
+                    "Distance": [float(Value) for Value in self.Distance] if self.Distance is not None else [],
+                    "Elevation": [float(Value) for Value in self.Elevation] if self.Elevation is not None else [],
                 },
                 allow_nan=False,
             ),
