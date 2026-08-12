@@ -498,7 +498,7 @@ class Coast:
             Smooth=Smooth,
         )
 
-    def WriteFutureShorelines(self, OutputFile, Percentile=50, Smooth=True, ErosionOnly=True):
+    def WriteFutureShorelines(self, OutputFile, Percentile=50, Timeseries="MHWS", Smooth=True, ErosionOnly=True):
 
         """
         
@@ -544,6 +544,7 @@ class Coast:
             self.GetFutureShoreLines(
                 Scenario=Scenario,
                 Percentile=Percentile,
+                Timeseries=Timeseries,
                 ErosionOnly=ErosionOnly,
             )
 
@@ -605,6 +606,7 @@ class Coast:
 
             # add scenario to output filename
             ScenarioOutputFile = OutputFile.with_name(
+                f"{OutputFile.stem}_{Timeseries}"
                 f"{OutputFile.stem}_RCP{Scenario}_P{Percentile}"
                 f"{OutputFile.suffix}"
             )
@@ -629,7 +631,7 @@ class Coast:
                     index=False,
                 )
 
-    def WriteFutureShorelinesUncertainty(self, OutputFolder, FilenamePrefix, Format="GeoJSON", Smooth=True, ErosionOnly=True):
+    def WriteFutureShorelinesUncertainty(self, OutputFolder, FilenamePrefix, Format="GeoJSON", Timeseries="MHWS", Smooth=True, ErosionOnly=True):
         """
         Write future shoreline uncertainty polygons.
 
@@ -701,7 +703,7 @@ class Coast:
                 for UncertaintyInterval, Quantiles in UncertaintyIntervals.items():
 
                     LowerPercentile, UpperPercentile = (Quantiles)
-                    LowerLines, UpperLines = (self._GetFutureUncertaintyBoundaryLines(Date, Scenario, LowerPercentile, UpperPercentile, ErosionOnly))
+                    LowerLines, UpperLines = (self._GetFutureUncertaintyBoundaryLines(Date, Scenario, LowerPercentile, UpperPercentile, Timeseries, ErosionOnly))
 
                     if len(LowerLines) == 0:
                         print("Ney lines!")
@@ -714,13 +716,13 @@ class Coast:
                         )
 
                     # add extra metadata as needed
-                    ExtraFields = {"Scenario": Scenario, "Year": Date.year, "UncertaintyInterval": UncertaintyInterval, "LowerQ": LowerPercentile, "UpperQ": UpperPercentile}
+                    ExtraFields = {"Timeseries": Timeseries, "Scenario": Scenario, "Year": Date.year, "UncertaintyInterval": UncertaintyInterval, "LowerQ": LowerPercentile, "UpperQ": UpperPercentile}
 
                     # retrieve patches
                     Patches.extend(self.CreatePatches(LowerLines, UpperLines, Smooth=Smooth, ExtraFields=ExtraFields))
 
                 # setup output file
-                OutputFile = OutputFolder / (FilenamePrefix + f"_Uncertainty_RCP{Scenario}_{Date.year}{Extension}")
+                OutputFile = OutputFolder / (FilenamePrefix+ f"_{Timeseries}_Uncertainty_RCP{Scenario}_{Date.year}{Extension}")
 
                 if len(Patches) == 0:
                     continue
@@ -1569,12 +1571,24 @@ class Coast:
 
             for ThisTransect in Line.Transects:
 
-                if not ThisTransect.Future:
-                    continue
+                Record = {
+                    "Cell": str(ThisTransect.Cell),
+                    "SubCell": str(ThisTransect.SubCell),
+                    "CMU": str(ThisTransect.CMU),
+                    "LineID": int(ThisTransect.LineID),
+                    "TransectID": int(ThisTransect.ID),
+                }
+
+                for Timeseries in ["MHWS", "VEdge"]:
+                    
+                    # get future record
+                    FutureRecord = ThisTransect.get_FutureRecord(Timeseries=Timeseries)
+
+                    Record[Timeseries] = json.dumps(FutureRecord, allow_nan=False)
 
                 # get transect geometry and record
                 Geometries.append(ThisTransect.get_Geometry())
-                Records.append(ThisTransect.get_FutureRecord())
+                Records.append(Record)
 
         # build the geodataframe
         GDF = gp.GeoDataFrame(Records, geometry=Geometries, crs=self.Projection)
@@ -4527,13 +4541,14 @@ class Coast:
                 Transect.DefencesDistance = Distance+MaxDefencesErosionDistance
                 Transect.DefencesPosition = Transect.get_Position(Transect.DefencesDistance)
                 
-    def PredictFutureShorelines(self, Scenarios=None, Percentiles=None):
+    def PredictFutureShorelines(self, Scenarios=None, Percentiles=None, Timeseries="MHWS", RateMethod="TWR"):
 
         """
 
-        Wrapper to call Transects function to predict future shoreline positions
+        Wrapper to call Transect prediction function for a selected
+        shoreline indicator.
 
-        MDH, September 2019
+        MDH, August 2026
 
         """
         print("Coast.PredictFutureShorelines: predicting future shoreline positions")
@@ -4549,7 +4564,9 @@ class Coast:
         # loop through transects and sample
         for Line in self.CoastLines:
             for Transect in Line.Transects:
-                Transect.PredictFutureShorelines(Scenarios, Percentiles)
+                if Timeseries not in Transect.Timeseries:
+                    continue
+                Transect.PredictFutureShorelines(Scenarios, Percentiles, Timeseries, RateMethod)
 
     def PredictFutureShorelinesBestWorstCase(self):
         """
@@ -4571,23 +4588,20 @@ class Coast:
         """
         Run Monte Carlo future shoreline predictions for all transects.
 
-        The Monte Carlo results are stored on each existing Transect in::
+        Results are stored as:
 
-            Transect.FutureShorelineUncertainty
-                [Scenario][Percentile]
+        Transect.FutureShorelineUncertainty
+            [Timeseries]
+            [Scenario]
 
         At present, uncertainty is propagated from the historical
-        shoreline-change rate. Future sea level is fixed to each requested
-        scenario and percentile, and Bruun morphology is held constant.
+        change rate and future sea level scenario percentiles
 
         Parameters
         ----------
         Scenarios : sequence of int, optional
             Future sea-level scenarios to process. If omitted, all scenarios
             available on each transect are used.
-        Percentiles : sequence of int, optional
-            Future sea-level percentiles to process. Defaults to
-            ``[5, 50, 95]``.
         Timeseries : str, optional
             Historical shoreline timeseries. Default is ``"MHWS"``.
         RateMethod : str, optional
@@ -4614,11 +4628,14 @@ class Coast:
 
             for Transect in CoastLine.Transects:
 
+                if Timeseries not in Transect.Timeseries:
+                    continue
+
                 # loop through scenarios to run
                 for Scenario in Scenarios:
 
                     # check with have scenario
-                    if (Scenario not in Transect.SeaLevelProjections):
+                    if Scenario not in Transect.SeaLevelProjections:
                         continue
 
                     # Give each transect/scenario/percentile run a
@@ -7280,7 +7297,7 @@ class Coast:
 
         return Lines
 
-    def GetFutureShoreLines(self, Scenario=8, Percentile=50, ErosionOnly=True):
+    def GetFutureShoreLines(self, Scenario=8, Percentile=50, Timeseries="MHWS", ErosionOnly=True):
 
         """
 
@@ -7300,8 +7317,9 @@ class Coast:
             # loop through transects and get contiguous cliff lines
             for CoastLine in self.CoastLines:
                 
-                # find transects with future predictions
-                FutureBool = [Transect.Future for Transect in CoastLine.Transects]
+                # find transects with future predictions for specified timeseries
+                FutureBool = [Timeseries in Transect.FutureShorelinePredictions for Transect in CoastLine.Transects]
+]
                 FutureBool.insert(0, False)
                 FutureBool = np.array(FutureBool).astype(int)
 
@@ -7366,15 +7384,15 @@ class Coast:
                     # loop through transects and get future positions
                     for Transect in CoastLine.Transects[StartList[i]+ii:EndList[i]]:
                         
-                        FutureDistance = Transect.get_FutureDistance(Year, Scenario=Scenario, Percentile=Percentile)
-                        RecentDistance = Transect.get_RecentDistance()
+                        FutureDistance = Transect.get_FutureDistance(Year, Scenario=Scenario, Percentile=Percentile, Timeseries=Timeseries)
+                        RecentDistance = Transect.get_RecentDistance(Timeseries=Timeseries)
                         FuturePosition = Transect.get_FuturePosition(Year, Scenario=Scenario, Percentile=Percentile)
 
                         if FuturePosition is None:
-                            FutureList.append(Transect.get_RecentPosition())
+                            FutureList.append(Transect.get_RecentPosition(Timeseries=Timeseries))
 
                         elif ErosionOnly and FutureDistance <= RecentDistance:
-                            FutureList.append(Transect.get_RecentPosition())
+                            FutureList.append(Transect.get_RecentPosition(Timeseries=Timeseries))
 
                         else:
                             FutureList.append(FuturePosition)
@@ -7382,10 +7400,10 @@ class Coast:
                                                 
                     # add latest MHWS from next node to end
                     # might need some logic here to finish
-                    if not CoastLine.Transects[EndList[i]].get_RecentPosition():
-                        LastNode = CoastLine.Transects[EndList[i]-1].get_RecentPosition()
+                    if not CoastLine.Transects[EndList[i]].get_RecentPosition(Timeseries=Timeseries):
+                        LastNode = CoastLine.Transects[EndList[i]-1].get_RecentPosition(Timeseries=Timeseries)
                     else:
-                        LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition()
+                        LastNode = CoastLine.Transects[EndList[i]].get_RecentPosition(Timeseries=Timeseries)
                     
                     FutureList.append(LastNode)
                     
@@ -7406,7 +7424,7 @@ class Coast:
                     FutureCount += 1
 
 
-    def _GetFutureUncertaintyBoundaryLines(self, Date, Scenario, LowerPercentile, UpperPercentile, ErosionOnly=True):
+    def _GetFutureUncertaintyBoundaryLines(self, Date, Scenario, LowerPercentile, UpperPercentile, Timeseries="MHWS", ErosionOnly=True):
 
         """
         Build corresponding lower and upper uncertainty boundary lines.
@@ -7470,20 +7488,20 @@ class Coast:
                 # Use the recent shoreline position on the transect immediately
                 # before the predicted section as the first anchor.
                 if StartIndex > 0:
-                    FirstNode = Transects[StartIndex - 1].get_RecentPosition()
+                    FirstNode = Transects[StartIndex - 1].get_RecentPosition(Timeseries=Timeseries)
 
                 # Fall back to the recent position on the first valid transect.
                 if FirstNode is None:
-                    FirstNode = Transects[StartIndex].get_RecentPosition()
+                    FirstNode = Transects[StartIndex].get_RecentPosition(Timeseries=Timeseries)
 
                 # Use the recent shoreline position on the transect immediately
                 # after the predicted section as the final anchor.
                 if EndIndex + 1 < len(Transects):
-                    LastNode = Transects[EndIndex + 1].get_RecentPosition()
+                    LastNode = Transects[EndIndex + 1].get_RecentPosition(Timeseries=Timeseries)
 
                 # Fall back to the recent position on the final valid transect.
                 if LastNode is None:
-                    LastNode = Transects[EndIndex].get_RecentPosition()
+                    LastNode = Transects[EndIndex].get_RecentPosition(Timeseries=Timeseries)
 
                 # Add identical anchor nodes to both boundaries so the polygon
                 # tapers to zero width at either end.
@@ -7516,7 +7534,7 @@ class Coast:
             for TransectIndex, Transect in enumerate(Transects):
 
                 try:
-                    Result = Transect.FutureShorelineUncertainty[Scenario]
+                    Result = Transect.FutureShorelineUncertainty[Timeseries][Scenario]
                     DateIndex = Result["Dates"].index(Date)
 
                     LowerDistance = Result["PercentileDistances"][LowerPercentile][DateIndex]
@@ -7525,8 +7543,8 @@ class Coast:
                     LowerNode = Result["PercentilePositions"][LowerPercentile][DateIndex]
                     UpperNode = Result["PercentilePositions"][UpperPercentile][DateIndex]
 
-                    RecentDistance = Transect.get_RecentDistance()
-                    RecentNode = Transect.get_RecentPosition()
+                    RecentDistance = Transect.get_RecentDistance(Timeseries=Timeseries)
+                    RecentNode = Transect.get_RecentPosition(Timeseries=Timeseries)
 
                 except (AttributeError, KeyError, ValueError, IndexError):
                     StoreSegment()
