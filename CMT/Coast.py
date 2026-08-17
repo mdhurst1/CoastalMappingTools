@@ -607,7 +607,7 @@ class Coast:
             # add scenario to output filename
             ScenarioOutputFile = OutputFile.with_name(
                 f"{OutputFile.stem}_{Timeseries}"
-                f"{OutputFile.stem}_RCP{Scenario}_P{Percentile}"
+                f"_RCP{Scenario}_P{Percentile}"
                 f"{OutputFile.suffix}"
             )
             
