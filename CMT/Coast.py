@@ -7396,13 +7396,13 @@ class Coast:
                     # add latest MHWS from previous node to start
                     # might need some logic here for first transect
                     if StartList[i] == 0:
-                        FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
+                        FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition(Timeseries=Timeseries)
                         ii = 1
                     else:
-                        FirstNode = CoastLine.Transects[StartList[i]-1].get_RecentPosition()
+                        FirstNode = CoastLine.Transects[StartList[i]-1].get_RecentPosition(Timeseries=Timeseries)
                         ii = 0
                         if not FirstNode:
-                            FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition()
+                            FirstNode = CoastLine.Transects[StartList[i]].get_RecentPosition(Timeseries=Timeseries)
                             ii= 1
                     
                     FutureList.append(FirstNode)
@@ -7412,7 +7412,7 @@ class Coast:
                         
                         FutureDistance = Transect.get_FutureDistance(Year, Scenario=Scenario, Percentile=Percentile, Timeseries=Timeseries)
                         RecentDistance = Transect.get_RecentDistance(Timeseries=Timeseries)
-                        FuturePosition = Transect.get_FuturePosition(Year, Scenario=Scenario, Percentile=Percentile)
+                        FuturePosition = Transect.get_FuturePosition(Year, Scenario=Scenario, Percentile=Percentile, Timeseries=Timeseries)
 
                         if FuturePosition is None:
                             FutureList.append(Transect.get_RecentPosition(Timeseries=Timeseries))
