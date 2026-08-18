@@ -513,19 +513,20 @@ class Transect:
                         DistancesList.extend([Distance - Error, Distance + Error])
 
 
-        # Future MHWS prediction
-        for ScenarioPredictions in self.FutureShorelinePredictions.values():
-            for Prediction in ScenarioPredictions.values():
+        # Future shoreline predictions for all indicators
+        for TimeseriesPredictions in (self.FutureShorelinePredictions.values()):
+            for ScenarioPredictions in (TimeseriesPredictions.values()):
+                for Prediction in (ScenarioPredictions.values()):
 
-                Dates = Prediction.get("Dates", [])
-                Distances = Prediction.get("Distances", [])
+                    Dates = Prediction.get("Dates", [])
+                    Distances = Prediction.get("Distances", [])
 
-                for FutureDate, FutureDistance in zip(Dates, Distances):
+                    for FutureDate, FutureDistance in zip(Dates, Distances):
 
-                    if FutureDistance < self.get_RecentDistance():
-                        continue
-                    
-                    DistancesList.append(FutureDistance)
+                        if FutureDistance < self.get_RecentDistance():
+                            continue
+                        
+                        DistancesList.append(FutureDistance)
                     
         # find index of min distance
         MinDistance = np.min(np.array(DistancesList))
@@ -1012,7 +1013,17 @@ class Transect:
         if HistoricRate is None:
             if RateMethod not in TS.Results:
                 TS.Analyse()
-            HistoricRate = -float(TS.Results[RateMethod]["Rate"])
+
+            # requested analysis method could not be calculated
+            if RateMethod not in TS.Results:
+                return None
+
+            Rate = TS.Results[RateMethod].get("Rate")
+
+            if Rate is None:
+                return None
+
+            HistoricRate = -float(Rate)
         
         # retrieve results
         self.ChangeRate = HistoricRate
@@ -1117,10 +1128,16 @@ class Transect:
         """
 
         Predict future shoreline positions for all requested scenarios
-        and sea-level percentiles.
+        and sea-level percentiles for a selected shoreline indicator.
 
-        MDH, July 2026
+        Predictions are stored as:
 
+            FutureShorelinePredictions
+                [Timeseries]
+                [Scenario]
+                [Percentile]
+
+        MDH, August 2026
         """
 
         if Scenarios is None:
@@ -1129,9 +1146,12 @@ class Transect:
         if Percentiles is None:
             Percentiles = [5, 50, 95]
 
-        # reset holders
-        self.Future = False
-        self.FutureShorelinePredictions = {}
+        # Check the requested shoreline timeseries exists.
+        if Timeseries not in self.Timeseries:
+            return
+        
+        # Build predictions locally so empty holders are not retained.
+        TimeseriesPredictions = {}
 
         # loop through sea level scenarios
         for Scenario in Scenarios:
@@ -1142,7 +1162,7 @@ class Transect:
                 continue
 
             # reset scenario
-            self.FutureShorelinePredictions[Scenario] = {}
+            ScenarioPredictions = {}
 
             for Percentile in Percentiles:
                 if (Percentile not in self.SeaLevelProjections[Scenario]):
@@ -1156,15 +1176,28 @@ class Transect:
 
                 # add it to the results dict
                 if Prediction is not None:
-                    self.FutureShorelinePredictions[Scenario][Percentile] = Prediction
+                    ScenarioPredictions[Percentile] = Prediction
+
+            # Only retain scenarios containing predictions.
+            if ScenarioPredictions:
+                TimeseriesPredictions[Scenario] = ScenarioPredictions
+
+        # Only retain the timeseries if predictions were generated.
+        if TimeseriesPredictions:
+            self.FutureShorelinePredictions[Timeseries] = TimeseriesPredictions
+
+        else:
+            # Remove any predictions from an earlier run.
+            self.FutureShorelinePredictions.pop(Timeseries, None)
 
         # check if predictions were made
         self.Future = True
 
         # run legacy function
-        self._SetLegacyFutureShorelinePrediction(Scenario=8, Percentile=95)
+        if (Timeseries == "MHWS" and TimeseriesPredictions):
+            self._SetLegacyFutureShorelinePrediction(Scenario=8, Percentile=95, Timeseries="MHWS")
 
-    def _SetLegacyFutureShorelinePrediction(self, Scenario=8, Percentile=95):
+    def _SetLegacyFutureShorelinePrediction(self, Scenario=8, Percentile=95, Timeseries="MHWS"):
 
         """
         Populate legacy future shoreline attributes from one stored
@@ -1175,15 +1208,8 @@ class Transect:
         MDH, July 2026
 
         """
-
-        if (Scenario not in self.FutureShorelinePredictions or Percentile not in self.FutureShorelinePredictions[Scenario]):
-            print("No Scenario , unable to run")
-            import pdb
-            pdb.set_trace()
-            return
-
         # retrieve the prediction
-        Prediction = (self.FutureShorelinePredictions[Scenario][Percentile])
+        Prediction = (self.FutureShorelinePredictions[Timeseries][Scenario][Percentile])
 
         # copy results accross to legacy attributes
         self.FutureSeaLevelYears = list(Prediction["Dates"])
@@ -1227,18 +1253,29 @@ class Transect:
         if RateMethod not in TS.Results:
             TS.Analyse()
 
-        # retrieve the rate estimates and SE
-        HistoricRateEstimate = -float(TS.Results[RateMethod]["Rate"])
-        HistoricRateSE = float(TS.Results[RateMethod]["RateSE"])
-        ResidualSE = float(TS.Results[RateMethod]["ResidualSE"])
-        
+        if RateMethod not in TS.Results:
+            return None
+
+        Result = TS.Results[RateMethod]
+
+        Rate = Result.get("Rate")
+        RateSE = Result.get("RateSE")
+        ResidualSE = Result.get("ResidualSE")
+
+        # check we have something
+        if (Rate is None or RateSE is None or ResidualSE is None):
+            return None
+
+        HistoricRateEstimate = -float(Rate)
+        HistoricRateSE = float(RateSE)
+        ResidualSE = float(ResidualSE)
+
         # create a sample of random Historic Rates for the distribution described by the method above
         RandomNs = np.random.default_rng(RandomSeed)
         RandomHistoricRates = RandomNs.normal(loc=HistoricRateEstimate, scale=HistoricRateSE, size=NSamples)
 
         # Sample positional variability around the long-term shoreline trend.
         # Each sample and prediction date receives a residual displacement in metres.
-        RandomNs = np.random.default_rng(RandomSeed)
         RandomResiduals = RandomNs.normal(loc=0.0, scale=ResidualSE, size=NSamples)
 
         # Sample random sea level trajectories based on distributions
@@ -1270,12 +1307,13 @@ class Transect:
 
         # check if scenario already exists and create if needed
         if Scenario not in self.FutureShorelineUncertainty:
-            self.FutureShorelineUncertainty[Scenario] = {}
+            self.FutureShorelineUncertainty[Timeseries] = {}
 
         Result = {
             "Dates": FutureSeaLevelDates,
             "HistoricRateEstimate": HistoricRateEstimate,
             "HistoricRateSE": HistoricRateSE,
+            "ResidualSE": ResidualSE,
             "DistanceSamples": DistanceSamples,
             "Percentiles": Percentiles,
             "PercentileDistances": PercentileDistances,
@@ -1283,7 +1321,7 @@ class Transect:
         }
 
         # store the result
-        self.FutureShorelineUncertainty[Scenario] = Result
+        self.FutureShorelineUncertainty[Timeseries][Scenario] = Result
 
         # return the result
         return Result
@@ -3588,7 +3626,7 @@ class Transect:
         else:
             return
 
-    def get_FuturePosition(self, Year, Scenario=8, Percentile=50):
+    def get_FuturePosition(self, Year, Scenario=8, Percentile=50, Timeseries="MHWS"):
 
         """
 
@@ -3610,7 +3648,7 @@ class Transect:
             Year = datetime(Year, 1, 1)
 
         # retrieve prediction
-        Prediction = self.FutureShorelinePredictions[Scenario][Percentile]
+        Prediction = self.FutureShorelinePredictions[Timeseries][Scenario][Percentile]
 
         # find year index
         Years = [Date.year for Date in Prediction["Dates"]]
@@ -3679,7 +3717,7 @@ class Transect:
 
         # Retrieve the selected future prediction.
         try:
-            Prediction = self.FutureShorelinePredictions[Scenario][Percentile]
+            Prediction = self.FutureShorelinePredictions[Timeseries][Scenario][Percentile]
         except KeyError:
             return None
 
@@ -3718,8 +3756,8 @@ class Transect:
         if not self.Future:
             return None
 
-        Distance1 = self.get_FutureDistance(Year1, Scenario, Percentile, Timeseries="MHWS")
-        Distance2 = self.get_FutureDistance(Year2, Scenario, Percentile, Timeseries="MHWS")
+        Distance1 = self.get_FutureDistance(Year1, Scenario, Percentile, Timeseries)
+        Distance2 = self.get_FutureDistance(Year2, Scenario, Percentile, Timeseries)
 
         if Distance1 is None or Distance2 is None:
             return None
@@ -3740,11 +3778,37 @@ class Transect:
         """
 
         if self.Future:
-            
-            TS = self.Timeseries[Timeseries]
-            LatestDate = TS.Dates[-1]
-            Rate = TS.Results[RateMethod]["Rate"]
 
+            # check timeseries exists
+            if Timeseries not in self.Timeseries:
+                return None
+
+            TS = self.Timeseries[Timeseries]
+
+            # check sufficient data
+            if not TS.HasData(Minimum=2):
+                return None
+
+            # calculate analysis results if needed
+            if RateMethod not in TS.Results:
+                TS.Analyse()
+
+            # requested method still unavailable
+            if RateMethod not in TS.Results:
+                return None
+
+            Rate = TS.Results[RateMethod].get("Rate")
+
+            if Rate is None:
+                return None
+
+            Rate = float(Rate)
+
+            if not np.isfinite(Rate):
+                return None
+
+            LatestDate = TS.Dates[-1]
+            
             # extrapolate future position on transect
             ExtrapYears = (datetime(Year,1,1) - LatestDate).days / 365.2425
             Distance = ExtrapYears*Rate
@@ -3819,7 +3883,7 @@ class Transect:
         else:
             return
             
-    def get_FirstFutureErosionYear(self, Scenario=8, Percentile=50):
+    def get_FirstFutureErosionYear(self, Scenario=8, Percentile=50, Timeseries="MHWS"):
 
         """
         Return the first year in which the predicted shoreline retreats between
@@ -3850,7 +3914,7 @@ class Transect:
         if Percentile not in self.FutureShorelinePredictions[Scenario]:
             return None
 
-        Prediction = self.FutureShorelinePredictions[Scenario][Percentile]
+        Prediction = self.FutureShorelinePredictions[Timeseries][Scenario][Percentile]
 
         Dates = Prediction["Dates"]
         Distances = Prediction["Distances"]
@@ -4131,7 +4195,13 @@ class Transect:
         MDH, July 2026
 
         """
-        
+
+        # check there is a timeseries to work with
+        if Timeseries not in self.Timeseries:
+            return None
+
+        if (Timeseries not in self.FutureShorelinePredictions):
+            return None
 
         TS = self.Timeseries[Timeseries]
 
@@ -4147,13 +4217,18 @@ class Transect:
             "Hist_Rate": self.ChangeRate,
             "LatestYr": LatestDateString,
             "LatestSrc": LatestSourceString,
-            "FirstEYr": self.get_FirstFutureErosionYear(Scenario, Percentile),
+            "FirstEYr": self.get_FirstFutureErosionYear(Scenario, Percentile, Timeseries),
             "Extrap2050": self.get_ExtrapDistance(2050, Timeseries, RateMethod),
             "Extrap2100": self.get_ExtrapDistance(2100, Timeseries, RateMethod),
         }
 
         # Retrieve Prediction
-        Prediction = self.FutureShorelinePredictions[Scenario][Percentile]
+        try:
+            Prediction = self.FutureShorelinePredictions[Timeseries][Scenario][Percentile]
+        except:
+            import pdb
+            pdb.set_trace()
+            
         Years = [Date.year for Date in Prediction["Dates"]]
 
         for Year1, Year2 in zip(Years[:-1], Years[1:]):

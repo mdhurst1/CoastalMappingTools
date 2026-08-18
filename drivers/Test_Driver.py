@@ -117,9 +117,9 @@ MontroseCoast.SampleFutureRSL(DataPath / "Future_RSL")
 ## predict future shorelines
 MontroseCoast.GetShorefaceSlopes(str(BathyPath))
 MontroseCoast.PredictFutureShorelines()
+MontroseCoast.PredictFutureShorelines(Timeseries="VEdge")
 MontroseCoast.PredictFutureShorelinesUncertainty()
-
-### FUTURE SHORELINE ANALYSIS NEEDS MODIFIED TO WORK WITH TIMESERIES OBJECTS
+MontroseCoast.PredictFutureShorelinesUncertainty(Timeseries="VEdge")
 
 # Write Future Transects
 MontroseCoast.TruncateTransects()
@@ -127,13 +127,14 @@ MontroseCoast.WriteTransects(str(ResultsPath / ("Montrose_Transects.geojson")))
 MontroseCoast.WriteFutureTransects(str(ResultsPath / ("Montrose_Future_Transects.geojson")))
 
 # write future shorelines
-MontroseCoast.WriteFutureShorelines(str(ResultsPath / ("Montrose_Future.shp")), Smooth=True)
-MontroseCoast.WriteFutureShorelines(str(ResultsPath / ("Montrose_Future.geojson")), Smooth=True)
+# MontroseCoast.WriteFutureShorelines(str(ResultsPath / ("Montrose_Future.shp")), Smooth=True)
+MontroseCoast.WriteFutureShorelines(str(ResultsPath / ("Montrose_Future.geojson")), Timeseries="MHWS", Smooth=True)
+MontroseCoast.WriteFutureShorelines(str(ResultsPath / ("Montrose_Future.geojson")), Timeseries="VEdge", Smooth=True)
 
 # write future shorelones uncertainty
-MontroseCoast.WriteFutureShorelinesUncertainty(str(ResultsPath / ("Uncertainty")), "Montrose", Format="shp", Smooth=True)
-MontroseCoast.WriteFutureShorelinesUncertainty(str(ResultsPath / ("Uncertainty")), "Montrose", Format="GeoJSON", Smooth=True)
-
+#MontroseCoast.WriteFutureShorelinesUncertainty(str(ResultsPath / ("Uncertainty")), "Montrose", Format="shp", Smooth=True)
+MontroseCoast.WriteFutureShorelinesUncertainty(str(ResultsPath / ("Uncertainty")), "Montrose", Format="GeoJSON", Timeseries="MHWS", Smooth=True)
+MontroseCoast.WriteFutureShorelinesUncertainty(str(ResultsPath / ("Uncertainty")), "Montrose", Format="GeoJSON", Timeseries="VEdge", Smooth=True)
 
 #Loop through decades to write areas eroded
 Decades = [2050, 2100]
