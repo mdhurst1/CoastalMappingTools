@@ -40,6 +40,10 @@ DATA_FOLDER = Path(r"C:\Users\mh322u\OneDrive - University of Glasgow\_Scotgov_F
 INPUT_FILE = (DATA_FOLDER / "Outputs" / "CoastalCells_CoastType_Terrain_Erosion.shp")
 OUTPUT_FILE = (DATA_FOLDER / "Outputs"/ "SG_LiDAR_Priority.shp")
 
+# some user parameters for survey frequency
+TARGET_RETREAT_M = 2.0
+MIN_SURVEY_INTERVAL = 1.0
+MAX_SURVEY_INTERVAL = 10.0
 
 # Current year used to calculate time since the latest LiDAR survey.
 CURRENT_YEAR = datetime.now().year
@@ -139,27 +143,45 @@ def check_fields(cells):
 
 def score_lidar_age(cells):
     """
-    Score time since the latest LiDAR survey.
+    Score time since LiDAR was last acquired.
 
-    A survey this year scores 0, while a survey five or more years ago scores 1.
-    Missing survey years are treated as maximum priority on the assumption that
-    they represent cells for which no previous LiDAR survey is known.
+    Surveys become progressively more important as they approach five years
+    old, with additional priority once the five-year resurvey interval has
+    been exceeded. Cells with no known previous LiDAR receive the maximum
+    LiDAR-age score.
     """
 
     years_since = CURRENT_YEAR - cells[LIDAR_YEAR_FIELD]
-
-    # A future year would otherwise give a negative score, so keep everything
-    # within a sensible range.
     years_since = years_since.clip(lower=0)
 
     cells["lidar_age"] = years_since
 
-    cells["s_lidar"] = (
-        years_since / LIDAR_FULL_SCORE_YEARS
-    ).clip(lower=0, upper=1)
+    # start empty
+    cells["s_lidar"] = np.nan
 
-    # If we genuinely have no record of LiDAR, treat that as fully due.
-    cells.loc[cells[LIDAR_YEAR_FIELD].isna(), "s_lidar"] = 1.0
+    # up to five years: 0 -> 0.6
+    recent = years_since <= 5
+
+    cells.loc[recent, "s_lidar"] = (
+        0.6 * years_since[recent] / 5.0
+    )
+
+    # five to ten years: 0.6 -> 1.0
+    overdue = (years_since > 5) & (years_since < 10)
+
+    cells.loc[overdue, "s_lidar"] = (
+        0.6
+        + 0.4 * ((years_since[overdue] - 5.0) / 5.0)
+    )
+
+    # ten years or more
+    cells.loc[years_since >= 10, "s_lidar"] = 1.0
+
+    # no known LiDAR acquisition
+    cells.loc[
+        cells[LIDAR_YEAR_FIELD].isna(),
+        "s_lidar"
+    ] = 1.0
 
     return cells
 
@@ -299,7 +321,94 @@ def calculate_priority(cells):
 
     cells["score_ok"] = cells["n_score"] == n_factors
 
+    # some additional decision scoring
+    # Predominantly rocky coast with no assets
+    rock_no_assets = (
+        (cells["hard_frac"] >= 0.9)
+        & (cells["s_assets"] == 0)
+    )
+
+    # Never-surveyed cells, excluding rocky coast with no assets
+    never_surveyed = (
+        cells[LIDAR_YEAR_FIELD].isna()
+        & ~rock_no_assets
+    )
+
+    # Give never-surveyed coast a minimum high priority
+    cells.loc[never_surveyed, "priority"] = np.maximum(
+        cells.loc[never_surveyed, "priority"],
+        0.8
+    )
+
+    # Rocky coast with no assets is always zero priority
+    cells.loc[rock_no_assets, "priority"] = 0.0
+
     return cells
+
+
+def calculate_survey_frequency(cells):
+    """
+    Estimate how frequently eroding coastline should be resurveyed.
+
+    Survey frequency is based on the time expected for the shoreline to retreat
+    by TARGET_RETREAT_M, using both the median erosion rate and the 10th
+    percentile erosion rate.
+
+    Recommended intervals are constrained to between one and five years.
+
+    Cells without measured erosion are left as NaN because erosion does not
+    provide a basis for increasing their survey frequency.
+    """
+
+    # Start with empty fields
+    cells["int_med"] = np.nan
+    cells["int_p10"] = np.nan
+
+    # Only calculate an erosion-based interval where erosion has actually
+    # been observed.
+    eroding = (
+        cells[EROS_FRAC_FIELD].notna()
+        & (cells[EROS_FRAC_FIELD] > 0)
+    )
+
+    # -------------------------------------------------------------------------
+    # Median erosion rate
+    # -------------------------------------------------------------------------
+
+    valid_med = (
+        eroding
+        & cells[EROS_MED_FIELD].notna()
+        & (cells[EROS_MED_FIELD] < 0)
+    )
+
+    cells.loc[valid_med, "int_med"] = (
+        TARGET_RETREAT_M
+        / cells.loc[valid_med, EROS_MED_FIELD].abs()
+    ).clip(
+        lower=MIN_SURVEY_INTERVAL,
+        upper=MAX_SURVEY_INTERVAL,
+    )
+
+    # -------------------------------------------------------------------------
+    # 10th percentile erosion rate
+    # -------------------------------------------------------------------------
+
+    valid_p10 = (
+        eroding
+        & cells[EROS_P10_FIELD].notna()
+        & (cells[EROS_P10_FIELD] < 0)
+    )
+
+    cells.loc[valid_p10, "int_p10"] = (
+        TARGET_RETREAT_M
+        / cells.loc[valid_p10, EROS_P10_FIELD].abs()
+    ).clip(
+        lower=MIN_SURVEY_INTERVAL,
+        upper=MAX_SURVEY_INTERVAL,
+    )
+
+    return cells
+
 
 
 # -----------------------------------------------------------------------------
@@ -355,6 +464,9 @@ def main():
 
     print("Calculating overall priority...")
     cells = calculate_priority(cells)
+
+    print("Calculating erosion-based survey frequency...")
+    cells = calculate_survey_frequency(cells)
 
     print_summary(cells)
 
