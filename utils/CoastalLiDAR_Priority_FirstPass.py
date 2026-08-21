@@ -25,8 +25,9 @@ evidence.
 MDH, August 2026
 """
 
+# impor modules
 from pathlib import Path
-
+from datetime import datetime
 import geopandas as gpd
 import numpy as np
 
@@ -35,24 +36,13 @@ import numpy as np
 # User settings
 # -----------------------------------------------------------------------------
 
-DATA_FOLDER = Path(
-    r"C:\Users\mh322u\OneDrive - University of Glasgow\_Scotgov_Fellowship\04_Data"
-)
+DATA_FOLDER = Path(r"C:\Users\mh322u\OneDrive - University of Glasgow\_Scotgov_Fellowship\04_Data")
+INPUT_FILE = (DATA_FOLDER / "Outputs" / "CoastalCells_CoastType_Terrain_Erosion.shp")
+OUTPUT_FILE = (DATA_FOLDER / "Outputs"/ "SG_LiDAR_Priority.shp")
 
-INPUT_FILE = (
-    DATA_FOLDER
-    / "02 CZC LiDAR Index"
-    / "SG_LiDAR_Collected_CoastType_Terrain_Erosion.shp"
-)
-
-OUTPUT_FILE = (
-    DATA_FOLDER
-    / "02 CZC LiDAR Index"
-    / "SG_LiDAR_Priority.shp"
-)
 
 # Current year used to calculate time since the latest LiDAR survey.
-CURRENT_YEAR = 2026
+CURRENT_YEAR = datetime.now().year
 
 # -------------------------------------------------------------------------
 # Source field names
@@ -62,7 +52,7 @@ CURRENT_YEAR = 2026
 # different. The remaining fields are the ones produced by the enrichment
 # scripts we have already made.
 
-LIDAR_YEAR_FIELD = "LiDAR_Year"
+LIDAR_YEAR_FIELD = "Max_LiD_Yr"
 ASSETS_FIELD = "Assets"
 
 SOFT_FRAC_FIELD = "soft_frac"
@@ -105,6 +95,7 @@ ARTIFICIAL_COAST_SCORE = 0.5
 # These are deliberately obvious first-pass assumptions rather than magic
 # numbers buried in the calculation. They can be changed once we have mapped
 # the results and seen how the index behaves.
+# keep these positive to avoid negative score indexing
 MEDIAN_EROSION_FULL_SCORE = 1.0   # m/yr
 P10_EROSION_FULL_SCORE = 2.0      # m/yr
 
@@ -177,11 +168,20 @@ def score_assets(cells):
     """
     Score whether assets are present.
 
-    This is deliberately binary for the first pass. Later this could be made a
-    good deal cleverer using asset numbers, type, value or distance from MHWS.
+    Source field contains Y/N values, which are converted to a binary
+    prioritisation score.
     """
 
-    cells["s_assets"] = cells[ASSETS_FIELD].astype(float).clip(0, 1)
+    cells["s_assets"] = (
+        cells[ASSETS_FIELD]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+        .map({
+            "Y": 1.0,
+            "N": 0.0,
+        })
+    )
 
     return cells
 
@@ -294,7 +294,7 @@ def calculate_priority(cells):
     # also missing and can be investigated rather than silently ignored.
     cells["priority"] = cells[score_fields].mean(
         axis=1,
-        skipna=False,
+        skipna=True,
     )
 
     cells["score_ok"] = cells["n_score"] == n_factors
