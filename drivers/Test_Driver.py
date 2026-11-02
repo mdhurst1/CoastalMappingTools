@@ -33,6 +33,7 @@ if not ResultsPath.exists(): # checks if geometry folder exists, if not create
 BaselinePath = DataPath / ("montrose_baseline.shp")
 MLWSPath = DataPath / ("montrose_MLWS.shp") 
 BathyPath = DataPath / ("montrose_bathy.shp") 
+MSLPath = DataPath / ("MSL_Lines")
 MHWSPath = DataPath / ("MHWS_Lines")
 VEdgePath = DataPath / ("VEdge_Lines")
 DEMPath = DataPath / ("OS_Terrain_5")
@@ -76,6 +77,10 @@ MontroseCoast.WriteTransectsShp(str(ResultsPath / "Montrose_Raw_Transects.shp"))
 for shp in MHWSPath.glob("*.shp"):
     MontroseCoast.ExtractIndicatorPositions(str(shp), "MHWS", "Date")
 
+### loop over all geojson files in MSL folder to sample MSL positions
+for file in MSLPath.glob("*.geojson"):
+    MontroseCoast.ExtractIndicatorPositions(str(file), "MSL", "Date")
+
 ### loop over all shp in a folder to sample VEdge
 for shp in VEdgePath.glob("*.shp"):
     MontroseCoast.ExtractIndicatorPositions(str(shp), "VEdge", "SrcDate")
@@ -118,8 +123,11 @@ MontroseCoast.SampleFutureRSL(DataPath / "Future_RSL")
 MontroseCoast.GetShorefaceSlopes(str(BathyPath))
 MontroseCoast.PredictFutureShorelines()
 MontroseCoast.PredictFutureShorelines(Timeseries="VEdge")
+MontroseCoast.PredictFutureShorelines(Timeseries="MSL")
+
 MontroseCoast.PredictFutureShorelinesUncertainty()
 MontroseCoast.PredictFutureShorelinesUncertainty(Timeseries="VEdge")
+MontroseCoast.PredictFutureShorelinesUncertainty(Timeseries="MSL")
 
 # Write Future Transects
 MontroseCoast.TruncateTransects()
@@ -130,11 +138,13 @@ MontroseCoast.WriteFutureTransects(str(ResultsPath / ("Montrose_Future_Transects
 # MontroseCoast.WriteFutureShorelines(str(ResultsPath / ("Montrose_Future.shp")), Smooth=True)
 MontroseCoast.WriteFutureShorelines(str(ResultsPath / ("Montrose_Future.geojson")), Timeseries="MHWS", Smooth=True)
 MontroseCoast.WriteFutureShorelines(str(ResultsPath / ("Montrose_Future.geojson")), Timeseries="VEdge", Smooth=True)
+MontroseCoast.WriteFutureShorelines(str(ResultsPath / ("Montrose_Future.geojson")), Timeseries="MSL", Smooth=True)
 
 # write future shorelones uncertainty
 #MontroseCoast.WriteFutureShorelinesUncertainty(str(ResultsPath / ("Uncertainty")), "Montrose", Format="shp", Smooth=True)
 MontroseCoast.WriteFutureShorelinesUncertainty(str(ResultsPath / ("Uncertainty")), "Montrose", Format="GeoJSON", Timeseries="MHWS", Smooth=True)
 MontroseCoast.WriteFutureShorelinesUncertainty(str(ResultsPath / ("Uncertainty")), "Montrose", Format="GeoJSON", Timeseries="VEdge", Smooth=True)
+MontroseCoast.WriteFutureShorelinesUncertainty(str(ResultsPath / ("Uncertainty")), "Montrose", Format="GeoJSON", Timeseries="MSL", Smooth=True)
 
 #Loop through decades to write areas eroded
 Decades = [2050, 2100]
